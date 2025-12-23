@@ -1,350 +1,400 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from "react";
 import {
-  Search, ChevronDown, ChevronRight, User, Palette,
-  Heart, History, Sparkles, MapPin, Users, Tag, X
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Character, CharacterRole } from '@/types';
-import { cn } from '@/lib/utils';
+  User,
+  Heart,
+  Sparkles,
+  Users,
+  BookOpen,
+  ChevronRight,
+  Edit,
+  TrendingUp,
+} from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Character, CharacterRole } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface CharacterDetailModalProps {
   character: Character | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-// 카테고리 정의 - LLM이 파싱한 데이터를 그룹화
-const CATEGORY_CONFIG: Record<string, {
-  icon: React.ElementType;
-  label: string;
-  keywords: string[];
-  color: string;
-}> = {
-  basic: {
-    icon: User,
-    label: '기본 정보',
-    keywords: ['이름', '나이', '성별', '종족', '직업', '출신', '신분', '혈액형'],
-    color: 'bg-blue-500',
+const roleLabels: Record<CharacterRole, { label: string; color: string }> = {
+  protagonist: {
+    label: "Protagonist",
+    color: "bg-primary/10 text-primary border-primary/20",
   },
-  appearance: {
-    icon: Palette,
-    label: '외형',
-    keywords: ['키', '몸무게', '외모', '헤어', '머리', '눈', '피부', '특징', '복장', '체형'],
-    color: 'bg-purple-500',
+  antagonist: {
+    label: "Antagonist",
+    color: "bg-rose-50 text-rose-600 border-rose-200",
   },
-  personality: {
-    icon: Heart,
-    label: '성격/심리',
-    keywords: ['성격', '성향', '가치관', '목표', '두려움', '습관', '취미', '좋아하는', '싫어하는', 'MBTI'],
-    color: 'bg-pink-500',
+  supporting: {
+    label: "Supporting",
+    color: "bg-slate-100 text-slate-600 border-slate-200",
   },
-  background: {
-    icon: History,
-    label: '배경/역사',
-    keywords: ['과거', '역사', '트라우마', '사건', '경험', '어린시절', '가족', '부모', '형제'],
-    color: 'bg-amber-500',
+  mentor: {
+    label: "Mentor",
+    color: "bg-amber-50 text-amber-600 border-amber-200",
   },
-  abilities: {
-    icon: Sparkles,
-    label: '능력/스킬',
-    keywords: ['능력', '스킬', '기술', '마법', '무기', '전투', '특기', '재능', '약점'],
-    color: 'bg-emerald-500',
-  },
-  location: {
-    icon: MapPin,
-    label: '장소/소속',
-    keywords: ['거주지', '위치', '소속', '조직', '국가', '마을', '집'],
-    color: 'bg-cyan-500',
-  },
-  relationships: {
-    icon: Users,
-    label: '관계',
-    keywords: ['관계', '친구', '적', '연인', '스승', '제자', '동료'],
-    color: 'bg-rose-500',
+  sidekick: {
+    label: "Sidekick",
+    color: "bg-emerald-50 text-emerald-600 border-emerald-200",
   },
   other: {
-    icon: Tag,
-    label: '기타',
-    keywords: [],
-    color: 'bg-stone-500',
+    label: "Other",
+    color: "bg-stone-100 text-stone-600 border-stone-200",
   },
 };
 
-const roleLabels: Record<CharacterRole, string> = {
-  protagonist: '주인공',
-  antagonist: '적대자',
-  supporting: '조연',
-  mentor: '멘토',
-  sidekick: '조력자',
-  other: '기타',
-};
-
-// 키워드 기반으로 카테고리 분류
-function categorizeExtras(extras: Record<string, unknown> = {}): Record<string, Record<string, unknown>> {
-  const categorized: Record<string, Record<string, unknown>> = {
-    basic: {},
-    appearance: {},
-    personality: {},
-    background: {},
-    abilities: {},
-    location: {},
-    relationships: {},
-    other: {},
-  };
-
-  Object.entries(extras).forEach(([key, value]) => {
-    const lowerKey = key.toLowerCase();
-    let assigned = false;
-
-    for (const [category, config] of Object.entries(CATEGORY_CONFIG)) {
-      if (config.keywords.some(keyword => lowerKey.includes(keyword.toLowerCase()))) {
-        categorized[category][key] = value;
-        assigned = true;
-        break;
+// 성격 특성 추출
+function extractTraits(extras: Record<string, unknown> = {}): string[] {
+  const traitKeys = ["성격", "특성", "성향", "traits", "personality"];
+  for (const key of Object.keys(extras)) {
+    for (const traitKey of traitKeys) {
+      if (key.toLowerCase().includes(traitKey.toLowerCase())) {
+        const value = extras[key];
+        if (Array.isArray(value)) return value.map(String);
+        if (typeof value === "string")
+          return value.split(",").map((s) => s.trim());
       }
     }
+  }
+  return [];
+}
 
-    if (!assigned) {
-      categorized.other[key] = value;
+// 관계 추출 - '이름 (관계)' 형식의 문자열 배열을 파싱
+function extractRelationships(
+  extras: Record<string, unknown> = {},
+): Array<{ name: string; relation: string }> {
+  const relationKeys = ["관계", "relationships", "인물관계"];
+  for (const key of Object.keys(extras)) {
+    for (const relationKey of relationKeys) {
+      if (key.toLowerCase().includes(relationKey.toLowerCase())) {
+        const value = extras[key];
+        if (Array.isArray(value)) {
+          return value.map((v) => {
+            const str = String(v);
+            // '이름 (관계)' 형식 파싱
+            const match = str.match(/^(.+?)\s*\((.+?)\)$/);
+            if (match) {
+              return { name: match[1].trim(), relation: match[2].trim() };
+            }
+            return { name: str, relation: "" };
+          });
+        }
+      }
     }
-  });
+  }
+  return [];
+}
 
-  return categorized;
+// 등장 챕터 추출
+function extractAppearances(extras: Record<string, unknown> = {}): string[] {
+  const appearanceKeys = ["등장", "챕터", "chapters", "appearances"];
+  for (const key of Object.keys(extras)) {
+    for (const appKey of appearanceKeys) {
+      if (key.toLowerCase().includes(appKey.toLowerCase())) {
+        const value = extras[key];
+        if (Array.isArray(value)) return value.map(String);
+        if (typeof value === "string")
+          return value.split(",").map((s) => s.trim());
+      }
+    }
+  }
+  return [];
 }
 
 export default function CharacterDetailModal({
   character,
   isOpen,
   onClose,
+  onEdit,
 }: CharacterDetailModalProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['basic', 'personality', 'abilities'])
+  // 추출된 데이터
+  const traits = useMemo(
+    () => extractTraits(character?.extras as Record<string, unknown>),
+    [character?.extras],
+  );
+  const relationships = useMemo(
+    () => extractRelationships(character?.extras as Record<string, unknown>),
+    [character?.extras],
+  );
+  const appearances = useMemo(
+    () => extractAppearances(character?.extras as Record<string, unknown>),
+    [character?.extras],
   );
 
-  // 카테고리별로 분류된 extras
-  const categorizedExtras = useMemo(() => {
-    if (!character?.extras) return {};
-    return categorizeExtras(character.extras as Record<string, unknown>);
+  // 캐릭터 설명 추출
+  const description = useMemo(() => {
+    const extras = character?.extras as Record<string, unknown> | undefined;
+    if (!extras) return "";
+    const descKeys = ["설명", "소개", "description", "bio", "한줄소개"];
+    for (const key of Object.keys(extras)) {
+      for (const descKey of descKeys) {
+        if (key.toLowerCase().includes(descKey.toLowerCase())) {
+          return String(extras[key]);
+        }
+      }
+    }
+    return "";
   }, [character?.extras]);
 
-  // 검색 필터링
-  const filteredExtras = useMemo(() => {
-    if (!searchQuery.trim()) return categorizedExtras;
-
-    const query = searchQuery.toLowerCase();
-    const filtered: Record<string, Record<string, unknown>> = {};
-
-    Object.entries(categorizedExtras).forEach(([category, items]) => {
-      const matchedItems: Record<string, unknown> = {};
-      Object.entries(items).forEach(([key, value]) => {
-        if (
-          key.toLowerCase().includes(query) ||
-          String(value).toLowerCase().includes(query)
-        ) {
-          matchedItems[key] = value;
-        }
-      });
-      if (Object.keys(matchedItems).length > 0) {
-        filtered[category] = matchedItems;
-      }
-    });
-
-    return filtered;
-  }, [categorizedExtras, searchQuery]);
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
-      return next;
-    });
-  };
-
-  const totalExtrasCount = Object.values(categorizedExtras).reduce(
-    (sum, items) => sum + Object.keys(items).length,
-    0
-  );
+  // 캐릭터 아크 진행률 (임시)
+  const arcProgress = useMemo(() => {
+    const extras = character?.extras as Record<string, unknown> | undefined;
+    if (!extras) return 20;
+    const progressValue = extras["진행률"] || extras["progress"];
+    if (progressValue && typeof progressValue === "number")
+      return progressValue;
+    return 20;
+  }, [character?.extras]);
 
   if (!character) return null;
 
+  const roleInfo = roleLabels[character.role || "other"];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
-        {/* Header */}
-        <DialogHeader className="p-6 pb-4 border-b">
-          <div className="flex items-start gap-4">
-            {/* Character Avatar */}
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center text-4xl shadow-inner">
-              {character.imageUrl ? (
-                <img
-                  src={character.imageUrl}
-                  alt={character.name}
-                  className="w-full h-full object-cover rounded-2xl"
-                />
-              ) : (
-                character.role === 'protagonist' ? '🦸' :
-                character.role === 'antagonist' ? '🦹' :
-                character.role === 'mentor' ? '🧙' : '👤'
-              )}
-            </div>
-
-            {/* Character Info */}
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold mb-1">
-                {character.name}
-              </DialogTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className={cn(
-                  'px-2 py-0.5 rounded-full text-xs font-medium text-white',
-                  character.role === 'protagonist' ? 'bg-sage-500' :
-                  character.role === 'antagonist' ? 'bg-rose-500' :
-                  character.role === 'mentor' ? 'bg-amber-500' : 'bg-stone-400'
-                )}>
-                  {roleLabels[character.role || 'other']}
-                </span>
-                <span>•</span>
-                <span>{totalExtrasCount}개 속성</span>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-white border border-stone-200 shadow-2xl">
+        <ScrollArea className="flex-1">
+          <div className="p-8 sm:p-10">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row gap-8 items-start mb-8 border-b border-stone-200 pb-8">
+              {/* Profile Image */}
+              <div className="h-32 w-32 rounded-lg shrink-0 border border-stone-200 shadow-sm ring-4 ring-stone-50 overflow-hidden bg-stone-100">
+                {character.imageUrl ? (
+                  <img
+                    src={character.imageUrl}
+                    alt={character.name}
+                    className="w-full h-full object-cover transition-all duration-300 grayscale opacity-90 hover:grayscale-0 hover:opacity-100"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-stone-100 to-stone-200">
+                    {character.role === "protagonist"
+                      ? "🦸"
+                      : character.role === "antagonist"
+                        ? "🦹"
+                        : character.role === "mentor"
+                          ? "🧙"
+                          : "👤"}
+                  </div>
+                )}
               </div>
 
-              {/* Quick Stats - 가장 중요한 정보 표시 */}
-              <div className="flex flex-wrap gap-2 mt-3">
-                {Object.entries(character.extras || {}).slice(0, 4).map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="px-2 py-1 bg-stone-100 rounded-lg text-xs"
-                  >
-                    <span className="text-muted-foreground">{key}:</span>{' '}
-                    <span className="font-medium">{String(value)}</span>
-                  </span>
-                ))}
-                {totalExtrasCount > 4 && (
-                  <span className="px-2 py-1 text-xs text-sage-600">
-                    +{totalExtrasCount - 4}개
-                  </span>
+              {/* Character Info */}
+              <div className="flex-1 w-full">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h1 className="text-4xl font-bold text-stone-800 tracking-tight">
+                        {character.name}
+                      </h1>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border",
+                          roleInfo.color,
+                        )}
+                      >
+                        {roleInfo.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-stone-400 font-medium">
+                      마지막 업데이트:{" "}
+                      {new Date(character.updatedAt).toLocaleDateString(
+                        "ko-KR",
+                      )}
+                    </p>
+                  </div>
+                  {onEdit && (
+                    <Button
+                      variant="outline"
+                      onClick={onEdit}
+                      className="gap-2 shadow-sm"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  )}
+                </div>
+
+                {/* Description */}
+                {description && (
+                  <p className="mt-5 text-stone-600 font-serif leading-relaxed text-lg italic opacity-90">
+                    "{description}"
+                  </p>
                 )}
               </div>
             </div>
-          </div>
-        </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="px-6 py-3 border-b bg-stone-50">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="속성 검색... (예: 성격, 능력, 과거)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Categories */}
-        <ScrollArea className="flex-1">
-          <div className="p-6 space-y-3">
-            {Object.entries(CATEGORY_CONFIG).map(([categoryKey, config]) => {
-              const items = filteredExtras[categoryKey];
-              if (!items || Object.keys(items).length === 0) return null;
-
-              const isExpanded = expandedCategories.has(categoryKey);
-              const Icon = config.icon;
-
-              return (
-                <div
-                  key={categoryKey}
-                  className="border rounded-xl overflow-hidden"
-                >
-                  {/* Category Header */}
-                  <button
-                    onClick={() => toggleCategory(categoryKey)}
-                    className="w-full flex items-center gap-3 p-4 hover:bg-stone-50 transition-colors"
-                  >
-                    <div className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center text-white',
-                      config.color
-                    )}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium flex-1 text-left">
-                      {config.label}
-                    </span>
-                    <span className="text-sm text-muted-foreground mr-2">
-                      {Object.keys(items).length}개
-                    </span>
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
-
-                  {/* Category Items */}
-                  {isExpanded && (
-                    <div className="border-t bg-stone-50/50 divide-y">
-                      {Object.entries(items).map(([key, value]) => (
-                        <div
-                          key={key}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-white transition-colors"
+            {/* Content Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Column 1: Key Traits & Character Arc */}
+              <div className="space-y-8">
+                {/* Key Traits */}
+                <div>
+                  <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
+                    <Heart className="h-4 w-4" /> Key Traits
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {traits.length > 0 ? (
+                      traits.map((trait, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
                         >
-                          <span className="text-sm font-medium text-stone-600 min-w-[100px]">
-                            {key}
-                          </span>
-                          <span className="text-sm text-stone-800 flex-1">
-                            {Array.isArray(value)
-                              ? value.join(', ')
-                              : String(value)
-                            }
-                          </span>
-                        </div>
-                      ))}
+                          {trait}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-stone-400">
+                        성격 특성이 없습니다
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Character Arc */}
+                <div>
+                  <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
+                    <TrendingUp className="h-4 w-4" /> Character Arc
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-medium text-stone-600">
+                      <span>진행률</span>
+                      <span>{arcProgress}%</span>
                     </div>
+                    <div className="w-full bg-stone-100 rounded-full h-1.5 border border-stone-200">
+                      <div
+                        className="bg-primary h-1.5 rounded-full transition-all"
+                        style={{ width: `${arcProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-stone-400 mt-1 leading-normal">
+                      캐릭터 아크 진행 상황을 표시합니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 2: Relationships */}
+              <div className="space-y-6">
+                <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
+                  <Users className="h-4 w-4" /> Relationships
+                </h3>
+                <div className="space-y-3">
+                  {relationships.length > 0 ? (
+                    relationships.map((rel, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-400">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-stone-700 group-hover:text-primary">
+                            {rel.name}
+                            {rel.relation && (
+                              <span className="text-[10px] font-normal text-stone-400 ml-1">
+                                ({rel.relation})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-stone-400">
+                      관계 정보가 없습니다
+                    </p>
                   )}
                 </div>
-              );
-            })}
+              </div>
 
-            {/* Empty State */}
-            {Object.keys(filteredExtras).length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>"{searchQuery}"에 해당하는 정보가 없습니다</p>
+              {/* Column 3: Appearances */}
+              <div className="space-y-6">
+                <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
+                  <BookOpen className="h-4 w-4" /> Appearances
+                </h3>
+                <div className="space-y-2">
+                  {appearances.length > 0 ? (
+                    <>
+                      {appearances.slice(0, 3).map((chapter, idx) => (
+                        <a
+                          key={idx}
+                          href="#"
+                          className="flex items-center justify-between p-2.5 rounded border border-stone-200 bg-stone-50/50 hover:bg-white hover:shadow-sm hover:border-primary/30 transition-all group"
+                        >
+                          <span className="text-xs font-bold text-stone-700">
+                            {chapter}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-stone-400 group-hover:text-primary" />
+                        </a>
+                      ))}
+                      {appearances.length > 3 && (
+                        <div className="flex items-center justify-center pt-2">
+                          <button className="text-xs font-bold text-primary hover:underline">
+                            View All Mentions ({appearances.length})
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-stone-400">
+                      등장 정보가 없습니다
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Extras (if any) */}
+            {character.extras && Object.keys(character.extras).length > 0 && (
+              <div className="mt-8 pt-8 border-t border-stone-200">
+                <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> Additional Details
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(character.extras)
+                    .filter(
+                      ([key]) =>
+                        ![
+                          "성격",
+                          "관계",
+                          "등장",
+                          "traits",
+                          "relationships",
+                          "chapters",
+                          "설명",
+                          "description",
+                        ].some((k) =>
+                          key.toLowerCase().includes(k.toLowerCase()),
+                        ),
+                    )
+                    .slice(0, 8)
+                    .map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="p-3 bg-stone-50 rounded-lg border border-stone-100"
+                      >
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">
+                          {key}
+                        </p>
+                        <p className="text-sm font-medium text-stone-700 truncate">
+                          {Array.isArray(value)
+                            ? value.join(", ")
+                            : String(value)}
+                        </p>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
           </div>
         </ScrollArea>
-
-        {/* Footer */}
-        <div className="p-4 border-t bg-stone-50 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            AI가 분석한 캐릭터 정보 • 마지막 업데이트:{' '}
-            {new Date(character.updatedAt).toLocaleDateString('ko-KR')}
-          </p>
-          <Button variant="outline" onClick={onClose}>
-            닫기
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
