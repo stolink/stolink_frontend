@@ -1,11 +1,13 @@
 name: AI Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
 
 jobs:
   ai_review:
+    # Only run on PR comments (not issue comments) with trigger phrase
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -14,24 +16,60 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Code Review with Claude
         uses: anthropics/claude-code-action@main
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--model claude-haiku-4-5-20251001"
           prompt: |
-            You are an expert code reviewer acting as a senior software engineer for "Sto-Link", a story management platform.
+            ## 역할
+            Sto-Link 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다.
 
-            **Project Context:**
-            - We are building a complex web app managing Stories, Foreshadowing, and Character Relationships.
-            - Prioritize **TypeScript type safety** and **Zustand state management efficiency**.
-            - Always consider compatibility with existing data structures (Project, Chapter, etc.) when suggesting changes.
+            ## 프로젝트 컨텍스트
+            - 스토리, 복선, 캐릭터 관계를 관리하는 작가용 웹앱
+            - 기술 스택: React, TypeScript, Zustand, TanStack Query, Tiptap
+            - 핵심 타입: Project, Chapter, Character, Foreshadowing
 
-            **Review Guidelines:**
-            1. Focus on **critical logic errors** and **performance issues**.
-            2. Be **concise and direct**. Skip unnecessary praise or fluff.
-            3. Provide **improved code examples** immediately.
-            4. **Language**: Provide all feedback in **Korean**.
+            ## 리뷰 기준
+            1. **치명적**: 런타임 에러, 타입 오류, 보안 취약점
+            2. **경고**: 성능 이슈, 안티패턴, Zustand 상태 관리 문제
+            3. **제안**: 코드 스타일, 리팩토링 기회
 
-            Please review the changes in this Pull Request following these rules.
+            ## 중점 검토 항목
+            - TypeScript 타입 안전성 (`any` 사용, non-null assertion 남용)
+            - Zustand 스토어 설계 (직렬화 가능 여부, 상태 분리)
+            - React 훅 의존성 배열
+            - 기존 데이터 구조와의 호환성
+
+            ## 출력 규칙
+            - 한국어로 작성
+            - 내부 도구 호출 로그, Token usage, Todo 리스트 출력 금지
+            - 아래 형식만 출력:
+
+            ```
+            ## 코드 리뷰 결과
+
+            ### 🔴 치명적 (N건)
+            **파일명:라인** - 이슈 제목
+            - 문제: 간단한 설명
+            - 개선:
+            \`\`\`코드\`\`\`
+
+            ### ⚠️ 경고 (N건)
+            **파일명:라인** - 이슈 제목
+            > 설명 (1-2문장)
+
+            ### 💡 제안 (N건)
+            - 파일명: 제안 내용
+            ```
+
+            - 이슈가 없는 카테고리는 생략
+            - 칭찬, 인사말, 요약 문장 불필요
+            - 코드 예시는 최소한으로 (변경 전/후만)
+
+            ## 리뷰 시작
+            이 PR의 변경사항을 위 기준에 따라 리뷰해주세요.

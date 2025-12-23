@@ -158,7 +158,7 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-paper">
       {/* Header Section */}
-      <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-stone-100 shadow-sm">
+      <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-sage-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex flex-col gap-6">
             {/* Top Row: Brand & Mobile Menu */}
@@ -168,13 +168,9 @@ export default function LibraryPage() {
                   <img
                     src="/src/assets/main_logo.png"
                     alt="Sto-Link"
-                    className="h-12 w-auto"
+                    className="h-16 w-auto"
                   />
                 </div>
-                <div className="h-8 w-px bg-stone-300 mx-1 hidden sm:block"></div>
-                <span className="text-muted-foreground font-medium hidden sm:block">
-                  My Library
-                </span>
               </div>
 
               {/* Desktop Toolbar */}
@@ -184,7 +180,7 @@ export default function LibraryPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search title..."
-                    className="pl-9 h-9 w-[240px] bg-white border-stone-200 focus:bg-white transition-all text-sm"
+                    className="pl-9 h-9 w-[240px] bg-white border-stone-200 focus:border-sage-400 focus:ring-sage-200 transition-all text-sm rounded-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -246,14 +242,14 @@ export default function LibraryPage() {
                 <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
 
                 {/* View Toggle */}
-                <div className="flex items-center rounded-md border border-stone-200 bg-white p-1">
+                <div className="flex items-center rounded-full border border-stone-200 bg-white p-1">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={cn(
-                      "rounded p-1 transition-all outline-none focus:ring-2 focus:ring-primary/20",
+                      "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
-                        ? "bg-stone-100 shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
+                        ? "bg-sage-500 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -261,10 +257,10 @@ export default function LibraryPage() {
                   <button
                     onClick={() => setViewMode("list")}
                     className={cn(
-                      "rounded p-1 transition-all outline-none focus:ring-2 focus:ring-primary/20",
+                      "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
-                        ? "bg-stone-100 shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
+                        ? "bg-sage-500 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -294,7 +290,9 @@ export default function LibraryPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h2 className="text-2xl font-heading font-bold text-ink">내 서재</h2>
+          <h2 className="text-2xl font-heading font-bold text-ink inline-block border-b-2 border-sage-500 pb-1">
+            내 서재
+          </h2>
         </motion.div>
 
         <motion.div
