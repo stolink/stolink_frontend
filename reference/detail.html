@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editor - Character Detail Modal</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-hover": "#0f6bd0",
+                        "background-base": "#FFFFFF",
+                        "background-subtle": "#F7F9FB",
+                        "surface-light": "#FFFFFF",
+                        "surface-hover": "#F0F2F5",
+                        "border-light": "#E2E8F0",
+                        "border-medium": "#CBD5E1",
+                        "text-main": "#1E293B",
+                        "text-secondary": "#64748B",
+                        "text-tertiary": "#94A3B8",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "serif": ["Merriweather", "serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    boxShadow: {
+                        "soft": "0 2px 8px -2px rgba(0,0,0,0.05)",
+                        "toolbar": "0 4px 12px -2px rgba(0,0,0,0.12)",
+                        "modal": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F7F9FB;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-base text-text-main font-display overflow-hidden h-screen flex flex-col antialiased relative">
+<header class="flex items-center justify-between border-b border-border-light bg-background-base shrink-0 z-30 shadow-sm h-16 px-5 relative">
+<div class="flex items-center gap-3 w-1/3 min-w-[240px]">
+<button class="text-text-secondary hover:text-text-main hover:bg-surface-hover rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20" title="Back to Dashboard">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<input class="bg-transparent border-none p-0 text-text-main font-bold text-sm focus:ring-0 w-auto placeholder-text-tertiary hover:bg-surface-hover rounded px-1 -ml-1 transition-colors truncate max-w-[180px]" type="text" value="The Dark Forest"/>
+<span class="hidden sm:inline-block text-[10px] uppercase font-bold text-text-secondary bg-background-subtle px-1.5 py-0.5 rounded border border-border-light whitespace-nowrap">Draft 1</span>
+</div>
+<span class="text-[10px] text-text-secondary font-medium px-1 -ml-1 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+                    Saved
+                </span>
+</div>
+</div>
+<nav class="flex items-center justify-center gap-1 w-1/3">
+<a class="flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/10 transition-all group relative" href="#">
+<span class="material-symbols-outlined text-[20px] fill-1">edit_note</span>
+<span class="text-sm font-bold hidden xl:inline-block">Write</span>
+<span class="absolute -bottom-[19px] left-0 w-full h-[3px] bg-primary rounded-t-full"></span>
+</a>
+<a class="flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-md text-text-secondary hover:text-text-main hover:bg-surface-hover border border-transparent transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span class="text-sm font-bold hidden xl:inline-block">Plan</span>
+</a>
+<a class="flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-md text-text-secondary hover:text-text-main hover:bg-surface-hover border border-transparent transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px]">monitoring</span>
+<span class="text-sm font-bold hidden xl:inline-block">Graph</span>
+</a>
+<a class="flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-md text-text-secondary hover:text-text-main hover:bg-surface-hover border border-transparent transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span>
+<span class="text-sm font-bold hidden xl:inline-block">Data</span>
+</a>
+</nav>
+<div class="flex items-center justify-end gap-2 w-1/3 min-w-[240px]">
+<div class="hidden lg:flex -space-x-2 mr-2">
+<img alt="Collaborator Avatar" class="inline-block h-8 w-8 rounded-full ring-2 ring-white grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" data-alt="Avatar of a collaborator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB17RN4kx5Pqobtlg3bRU14JgTm8U64VEk2Os2E7sPfBolIPlPRM28ex6asoyhcaXSCKyaELmkl4ekl4WqZYRnHC-buoi3lL_FO4tp86cRgLx72N-K7Q30nj9VMOGDFlqaxJ-f0a3r6w5qcF7zxmC2DUrdXV2UBEfT9z5H8GtK1c2ZGOo0P5WxYO8Up_OaFFN4qttnf62HALGV0byP3Cnsk2ibczL06OEkxJ6EPh07tW39cYFXkefa1lKOZTXsrf4u7LPaQEGtmUJg"/>
+<img alt="Collaborator Avatar" class="inline-block h-8 w-8 rounded-full ring-2 ring-white grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" data-alt="Avatar of a collaborator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY9Ju8mOM-_cvIGc8ZeyBhPMIng32ayKE5XhLUooJUWfCz5ccxxDy3tfG4RIjKnK_gN8KWRzndSSB8WecziWHWFDZswDWO3ZDyI0FF5JcmY0lX_gCtuxUIQHxqXx2GDFKj8LBeeWjsqUFywpduzBf4szYlspg0xa81VWOs9aRF9ReiUboxnyqLStsWUnEwkvzYcWrp0wplnwkpgf2b06Oe5ZiWfl_XtDp9rtgIqukwl5KrdggEGhpReCRDAZ6eeUZpss9VNo6zDXE"/>
+</div>
+<div class="h-6 w-px bg-border-light mx-2 hidden lg:block"></div>
+<button class="flex items-center justify-center gap-2 h-9 px-3 lg:px-4 bg-white border border-border-medium hover:border-primary hover:text-primary hover:shadow-sm text-text-secondary text-xs font-bold rounded shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span class="hidden md:inline">Preview</span>
+</button>
+<button class="flex items-center justify-center h-9 w-9 text-text-secondary hover:text-text-main hover:bg-surface-hover rounded transition-colors" title="Export">
+<span class="material-symbols-outlined text-[20px]">ios_share</span>
+</button>
+<button class="flex items-center justify-center h-9 w-9 text-text-secondary hover:text-text-main hover:bg-surface-hover rounded transition-colors" title="Global Settings">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden relative bg-background-subtle">
+<aside class="w-[260px] shrink-0 flex flex-col border-r border-border-light bg-background-base z-10 hidden md:flex h-full shadow-[2px_0_8px_-4px_rgba(0,0,0,0.05)]">
+<div class="p-4 border-b border-border-light flex justify-between items-center bg-background-subtle/30 h-12">
+<span class="text-xs font-bold text-text-secondary uppercase tracking-wider">Manuscript</span>
+<div class="flex gap-1">
+<button class="text-text-secondary hover:text-primary hover:bg-primary/10 rounded p-1 transition-colors" title="Search">
+<span class="material-symbols-outlined text-[16px]">search</span>
+</button>
+<button class="text-text-secondary hover:text-primary hover:bg-primary/10 rounded p-1 transition-colors" title="Add New">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-1">
+<details class="group" open="">
+<summary class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-surface-hover text-text-main select-none transition-colors">
+<span class="material-symbols-outlined text-[16px] text-text-tertiary group-open:rotate-90 transition-transform">arrow_forward_ios</span>
+<span class="material-symbols-outlined text-[18px] text-text-secondary">folder_open</span>
+<span class="text-sm font-semibold truncate text-text-main">Part 1: The Arrival</span>
+</summary>
+<div class="ml-4 pl-2 border-l border-border-medium mt-1 space-y-1">
+<div class="flex items-center gap-2 p-2 rounded cursor-pointer bg-primary/10 text-primary border-l-[3px] border-primary shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">description</span>
+<span class="text-sm font-bold truncate">Ch 1: The Station</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-surface-hover text-text-secondary hover:text-text-main transition-colors">
+<span class="material-symbols-outlined text-[16px]">description</span>
+<span class="text-sm font-medium truncate">Ch 2: The Ticket</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-surface-hover text-text-secondary hover:text-text-main transition-colors">
+<span class="material-symbols-outlined text-[16px]">description</span>
+<span class="text-sm font-medium truncate">Ch 3: Departure</span>
+</div>
+</div>
+</details>
+<details class="group mt-2">
+<summary class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-surface-hover text-text-secondary hover:text-text-main select-none transition-colors">
+<span class="material-symbols-outlined text-[16px] text-text-tertiary group-open:rotate-90 transition-transform">arrow_forward_ios</span>
+<span class="material-symbols-outlined text-[18px] text-text-secondary">folder</span>
+<span class="text-sm font-medium truncate">Part 2: Rising Action</span>
+</summary>
+</details>
+</div>
+<div class="mt-auto border-t border-border-light">
+<button class="w-full flex items-center gap-3 p-3 text-text-secondary hover:text-text-main hover:bg-surface-hover transition-colors text-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+                    Trash
+                </button>
+<button class="w-full flex items-center gap-3 p-3 text-text-secondary hover:text-text-main hover:bg-surface-hover transition-colors text-sm font-medium border-t border-border-light">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+                    Project Settings
+                </button>
+</div>
+</aside>
+<section class="flex-1 flex flex-col relative min-w-0 bg-background-base shadow-[inset_0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="absolute top-6 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-200 opacity-0 hover:opacity-100 focus-within:opacity-100">
+<div class="flex gap-1 p-1.5 bg-white border border-border-medium rounded-full shadow-toolbar backdrop-blur-sm bg-opacity-95">
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-colors" title="Bold">
+<span class="material-symbols-outlined text-[20px]">format_bold</span>
+</button>
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-colors" title="Italic">
+<span class="material-symbols-outlined text-[20px]">format_italic</span>
+</button>
+<div class="w-px h-6 bg-border-medium my-auto mx-1"></div>
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-colors" title="H1">
+<span class="material-symbols-outlined text-[20px]">title</span>
+</button>
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-colors" title="Quote">
+<span class="material-symbols-outlined text-[20px]">format_quote</span>
+</button>
+<button class="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-full transition-colors" title="Comment">
+<span class="material-symbols-outlined text-[20px]">add_comment</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto px-4 sm:px-12 py-12 flex justify-center bg-[#FAFAFA]">
+<div class="max-w-[720px] w-full pb-20 bg-white shadow-sm border border-border-light min-h-[800px] px-8 sm:px-12 py-12 rounded-sm">
+<h1 class="font-display text-4xl font-bold text-text-main mb-8 leading-tight outline-none border-b border-transparent focus:border-border-medium transition-colors pb-2" contenteditable="true">Chapter 1: The Train Station</h1>
+<div class="font-serif text-lg md:text-xl text-[#2d3748] leading-8 space-y-6 outline-none selection:bg-blue-100 selection:text-blue-900" contenteditable="true">
+<p>The steam hissed violently, obscuring the platform in a veil of industrial fog. It smelled of coal dust and damp wool, a scent that Elena would forever associate with leaving. She tightened her grip on the leather handle of her suitcase, her knuckles turning white against the worn brown material.</p>
+<p>A conductor blew his whistle somewhere in the distance—a sharp, piercing shriek that cut through the low rumble of the idling engine. People pushed past her, shadows in the mist, their faces turned down or hidden behind newspapers. Nobody looked at anybody else. It was a city of ghosts before the war had even started.</p>
+<p>"Ticket, miss?"</p>
+<p>She started, turning to see a man in a navy uniform looming beside her. His cap was pulled low, casting his eyes in shadow, but the brass buttons on his coat caught the dull light of the gas lamps overhead.</p>
+<p>"Yes," she stammered, fumbling with her free hand in the pocket of her trench coat. "Just a moment." Her fingers brushed against the cold metal of the locket—a small comfort, or perhaps a warning. She wasn't sure which anymore.</p>
+<p>The train gave a lurch, metal groaning against metal. The clock on the wall showed 11:58 PM. Two minutes to midnight. Two minutes until the borders closed.</p>
+</div>
+</div>
+</div>
+<footer class="h-10 border-t border-border-light bg-background-subtle flex items-center justify-between px-6 text-xs text-text-secondary shrink-0 select-none">
+<div class="flex items-center gap-4">
+<span class="font-medium text-text-main">1,240 words</span>
+<span class="w-1 h-1 rounded-full bg-border-medium"></span>
+<span>5 min read</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-medium">Drafting</span>
+<div class="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+<div class="h-full bg-primary w-1/3 rounded-full"></div>
+</div>
+<span class="font-bold text-text-main">32%</span>
+</div>
+</footer>
+</section>
+<aside class="w-[320px] shrink-0 flex flex-col border-l border-border-light bg-background-base z-10 hidden xl:flex h-full shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.05)]">
+<div class="flex border-b border-border-light bg-background-subtle/30 h-12">
+<button class="flex-1 py-3 text-xs font-bold text-primary border-b-2 border-primary uppercase tracking-wide bg-white">Context</button>
+<button class="flex-1 py-3 text-xs font-bold text-text-secondary hover:text-text-main hover:bg-surface-hover border-b-2 border-transparent uppercase tracking-wide transition-colors">AI Chat</button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-6 bg-background-subtle/30">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-bold text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-600 text-[18px]">auto_awesome</span>
+                            Scene Analysis
+                        </h3>
+</div>
+<div class="p-3 bg-white rounded-lg border border-border-light shadow-soft">
+<div class="flex gap-2 mb-2 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-100">TENSE</span>
+<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100">MYSTERY</span>
+</div>
+<p class="text-xs text-text-secondary leading-relaxed">
+                            The atmosphere is effectively established through sensory details (smell of coal, sound of whistle). The pacing accelerates towards the end of the section.
+                        </p>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<h3 class="text-sm font-bold text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 text-[18px]">warning</span>
+                        Consistency Check
+                    </h3>
+<div class="p-3 bg-amber-50 rounded-lg border border-amber-200 shadow-soft">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-amber-600 text-[20px] mt-0.5">timer</span>
+<div>
+<p class="text-xs font-bold text-amber-800 mb-1">Timeline Conflict</p>
+<p class="text-xs text-amber-700/80">Previous chapter ended at 8:00 AM. This scene starts at 11:58 PM. Did you mean to skip 16 hours?</p>
+<div class="flex gap-2 mt-2">
+<button class="text-[10px] bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200 hover:bg-amber-100 transition-colors font-medium">Ignore</button>
+<button class="text-[10px] bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700 shadow-sm transition-colors font-medium">Fix</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-bold text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">public</span>
+                            Active Entities
+                        </h3>
+<button class="text-xs text-primary font-bold hover:text-primary-hover hover:underline">View All</button>
+</div>
+<div class="p-3 bg-white rounded-lg border border-border-light flex gap-3 group cursor-pointer hover:border-primary/50 hover:shadow-soft transition-all">
+<div class="w-10 h-10 rounded-full bg-cover bg-center shrink-0 border border-border-light" data-alt="Portrait of a female character" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBEJWh9-VKW1d0ZCNOI_bZqMsbmnqkzxmTgc-N6slHcCQVZb-0YrNU5a6urrbuH_R0mCoPGO244IX-glHI9cHbHhaIz6JOyf6oEo-Ln-NpDDA0YGErW9zojQReJQAaCBwNg4COTE1bjQjZurrGipimrPObW7zVzgM-Fsve3hyBa62VkiwQwWwHA8UilesXLI6xfPwiYfpX2ue_OJMzbEBEyVwP3R4tGfUSyCJPgZnvEQb773EmlWKg6NKgBpMszAejzHRQh9_exvNA');"></div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-bold text-text-main truncate group-hover:text-primary transition-colors">Elena</h4>
+<span class="text-[10px] text-text-secondary bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 font-medium">MC</span>
+</div>
+<p class="text-xs text-text-secondary truncate mt-0.5">Carrying the brass locket.</p>
+</div>
+</div>
+<div class="p-3 bg-white rounded-lg border border-border-light flex gap-3 group cursor-pointer hover:border-primary/50 hover:shadow-soft transition-all">
+<div class="w-10 h-10 rounded bg-cover bg-center shrink-0 border border-border-light" data-alt="Dark city street" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBD5E4a78QwfJYkv5Hp0DtPBJCqx7Y4hC_gHfl58eUIuPsVZ_PL1zjzaofpZvnai6ssh8NXRWD6LWg8-hjiR8yh_poOjzmRg0y87BNJTi9lKGQoXx40arZUwPuJLyS_B_63afsuq7pF7jkwA_ArTBZY3YQfdmVTDqdvH6Ee82fHZx02q7XaML8bjsdSfFfzhyj3v8SPRoUS1qz2VUEEWKPAVEJEfzO1EhmwIvnpDvtWWmBNITlsN5I41gUXnGrJSmTX-hL8k5HyzUI');"></div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-bold text-text-main truncate group-hover:text-primary transition-colors">Central Station</h4>
+<span class="text-[10px] text-text-secondary bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 font-medium">LOC</span>
+</div>
+<p class="text-xs text-text-secondary truncate mt-0.5">Atmosphere: Foggy, industrial.</p>
+</div>
+</div>
+<div class="p-3 bg-white rounded-lg border border-border-light flex gap-3 group cursor-pointer hover:border-primary/50 hover:shadow-soft transition-all">
+<div class="w-10 h-10 flex items-center justify-center rounded bg-blue-50 text-blue-600 shrink-0 border border-blue-100">
+<span class="material-symbols-outlined text-[20px]">watch</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h4 class="text-sm font-bold text-text-main truncate group-hover:text-primary transition-colors">Brass Locket</h4>
+<span class="text-[10px] text-text-secondary bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 font-medium">ITEM</span>
+</div>
+<p class="text-xs text-text-secondary truncate mt-0.5">Contains photo of [REDACTED].</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<div aria-hidden="true" class="fixed inset-0 z-40 bg-gray-900/60 backdrop-blur-[3px] transition-opacity"></div>
+<div class="fixed inset-0 z-50 overflow-y-auto">
+<div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+<div class="relative transform overflow-hidden rounded-lg bg-background-base text-left shadow-modal transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-border-medium/60">
+<div class="absolute right-0 top-0 pr-4 pt-4 block z-10">
+<button class="rounded-full p-2 bg-transparent text-text-tertiary hover:text-text-main hover:bg-surface-hover focus:outline-none transition-colors" type="button">
+<span class="sr-only">Close</span>
+<span class="material-symbols-outlined text-[24px]">close</span>
+</button>
+</div>
+<div class="p-8 sm:p-10">
+<div class="flex flex-col md:flex-row gap-8 items-start mb-8 border-b border-border-light pb-8">
+<div class="h-32 w-32 rounded-lg bg-cover bg-center shrink-0 border border-border-light shadow-soft ring-4 ring-background-subtle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBEJWh9-VKW1d0ZCNOI_bZqMsbmnqkzxmTgc-N6slHcCQVZb-0YrNU5a6urrbuH_R0mCoPGO244IX-glHI9cHbHhaIz6JOyf6oEo-Ln-NpDDA0YGErW9zojQReJQAaCBwNg4COTE1bjQjZurrGipimrPObW7zVzgM-Fsve3hyBa62VkiwQwWwHA8UilesXLI6xfPwiYfpX2ue_OJMzbEBEyVwP3R4tGfUSyCJPgZnvEQb773EmlWKg6NKgBpMszAejzHRQh9_exvNA');"></div>
+<div class="flex-1 w-full">
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h1 class="text-4xl font-display font-bold text-text-main tracking-tight">Elena</h1>
+<span class="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">Protagonist</span>
+</div>
+<p class="text-sm text-text-tertiary font-medium">Last updated: 2 hours ago</p>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-border-medium rounded-md text-sm font-bold text-text-secondary shadow-sm hover:text-primary hover:border-primary hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                                    Edit Profile
+                                </button>
+</div>
+<p class="mt-5 text-text-main font-serif leading-relaxed text-lg italic opacity-90">
+                                "A young woman fleeing a war-torn city, carrying a mysterious brass locket. Driven by survival instinct but haunted by past choices."
+                            </p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="space-y-8">
+<div>
+<h3 class="font-bold text-text-secondary text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border-light pb-2">
+<span class="material-symbols-outlined text-[16px]">psychology</span> Key Traits
+                                </h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">Resilient</span>
+<span class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">Observant</span>
+<span class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">Secretive</span>
+</div>
+</div>
+<div>
+<h3 class="font-bold text-text-secondary text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border-light pb-2">
+<span class="material-symbols-outlined text-[16px]">timeline</span> Character Arc
+                                </h3>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-medium text-text-main">
+<span>Current: The Departure</span>
+<span>20%</span>
+</div>
+<div class="w-full bg-background-subtle rounded-full h-1.5 border border-border-light">
+<div class="bg-primary h-1.5 rounded-full" style="width: 20%"></div>
+</div>
+<p class="text-[10px] text-text-tertiary mt-1 leading-normal">
+                                        Elena is currently in the Reactive phase, responding to external threats (Act 1).
+                                    </p>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-bold text-text-secondary text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border-light pb-2">
+<span class="material-symbols-outlined text-[16px]">group</span> Relationships
+                            </h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-hover transition-colors cursor-pointer group">
+<div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-text-tertiary">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold text-text-main group-hover:text-primary">Maria <span class="text-[10px] font-normal text-text-tertiary ml-1">(Sister)</span></p>
+<p class="text-xs text-text-secondary truncate">Status: Missing</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-hover transition-colors cursor-pointer group">
+<div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-text-tertiary">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold text-text-main group-hover:text-primary">The Conductor <span class="text-[10px] font-normal text-text-tertiary ml-1">(Antagonist)</span></p>
+<p class="text-xs text-text-secondary truncate">Status: Pursuing</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-bold text-text-secondary text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border-light pb-2">
+<span class="material-symbols-outlined text-[16px]">menu_book</span> Appearances
+                            </h3>
+<div class="space-y-2">
+<a class="flex items-center justify-between p-2.5 rounded border border-border-light bg-background-subtle/50 hover:bg-white hover:shadow-sm hover:border-primary/30 transition-all group" href="#">
+<span class="text-xs font-bold text-text-main">Ch 1: The Train Station</span>
+<span class="material-symbols-outlined text-[16px] text-text-tertiary group-hover:text-primary">arrow_forward</span>
+</a>
+<a class="flex items-center justify-between p-2.5 rounded border border-border-light bg-background-subtle/50 hover:bg-white hover:shadow-sm hover:border-primary/30 transition-all group" href="#">
+<span class="text-xs font-bold text-text-main">Ch 3: Departure</span>
+<span class="material-symbols-outlined text-[16px] text-text-tertiary group-hover:text-primary">arrow_forward</span>
+</a>
+<div class="flex items-center justify-center pt-2">
+<button class="text-xs font-bold text-primary hover:text-primary-hover hover:underline">View All Mentions</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

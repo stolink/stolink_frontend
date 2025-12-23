@@ -1,0 +1,240 @@
+import type { TourStep } from '@/components/common/GuidedTour';
+
+export const DEMO_TOUR_STEPS: TourStep[] = [
+  {
+    target: '[data-tour="chapter-tree"]',
+    title: '📚 챕터 관리',
+    content: '부, 장, 절 단위로 스토리를 체계적으로 구성하세요. 클릭하면 해당 챕터로 이동합니다.',
+    placement: 'right',
+  },
+  {
+    target: '[data-tour="editor"]',
+    title: '✍️ 에디터',
+    content: '마크다운을 지원하는 리치 텍스트 에디터입니다. #복선:태그명 형식으로 복선을 표시하세요.',
+    placement: 'bottom',
+  },
+  {
+    target: '[data-tour="foreshadowing-panel"]',
+    title: '🔮 복선 관리',
+    content: 'AI가 감지한 복선을 추적하고, 회수 여부를 관리합니다. 미회수 복선을 한눈에 확인하세요.',
+    placement: 'left',
+  },
+  {
+    target: '[data-tour="ai-panel"]',
+    title: '🤖 AI 어시스턴트',
+    content: '캐릭터 대사 톤 맞추기, 플롯 제안 등 AI가 집필을 도와드립니다.',
+    placement: 'left',
+  },
+  {
+    target: '[data-tour="world-tab"]',
+    title: '🌍 세계관 관리',
+    content: '캐릭터 관계도, 장소, 아이템 등 세계관 정보를 시각적으로 관리하세요.',
+    placement: 'bottom',
+  },
+];
+
+// 데모용 챕터별 컨텐츠
+export const DEMO_CHAPTER_CONTENTS: Record<string, string> = {
+  'chapter-1-1': `
+<h1>1.1 운명의 밤</h1>
+<p>달빛이 창문을 통해 작은 방을 비춘다. 이건우는 아버지의 유품인 검을 바라보며 깊은 생각에 잠겼다.</p>
+<p>"이 검은 네 운명을 바꿀 것이다." <mark data-color="#E8EFE8">#복선:월영검</mark></p>
+<p>15년 전, 가문이 몰살당하던 그날 밤. 어린 건우는 어둠 속에서 붉은 눈을 가진 존재를 보았다. 그 기억은 여전히 악몽으로 찾아왔다.</p>
+<p>"카이로스..." <mark data-color="#E8EFE8">#복선:카이로스의정체</mark></p>
+<p>현자 가온이 말했다. 세상에는 보이지 않는 전쟁이 벌어지고 있다고. 그리고 건우가 그 전쟁의 핵심이 될 것이라고.</p>
+<p>하지만 지금 건우에게는 한 가지 목표만 있었다. 가족의 원수를 찾는 것.</p>
+`,
+  'chapter-1-2': `
+<h1>1.2 첫 만남</h1>
+<p>마을 입구에서 낯선 여인이 서 있었다. 은빛 머리카락이 바람에 흩날리고 있었다.</p>
+<p>"당신이... 이건우인가요?" <mark data-color="#E8EFE8">#복선:아린의과거</mark></p>
+<p>여인은 자신을 아린이라고 소개했다. 정령의 숲에서 온 엘프라고 했다.</p>
+<p>"저도 찾고 있는 것이 있어요. 세계수의 씨앗... 혹시 들어본 적 있으신가요?"</p>
+<p>건우는 고개를 저었다. 하지만 어딘가에서 그 이름을 들어본 것 같은 기묘한 느낌이 들었다.</p>
+<p>"함께 가시겠어요? 우리의 목적지가 같을지도 몰라요."</p>
+`,
+  'chapter-1-3': `
+<h1>1.3 여정의 시작</h1>
+<p>아린이 활을 어깨에 걸치며 다가왔다.</p>
+<p>"정령의 숲으로 가야 해요. 거기서 세계수의 씨앗에 대한 단서를 찾을 수 있을 거예요."</p>
+<p>건우는 고개를 끄덕였다. 두 사람의 목적은 달랐지만, 지금은 함께 가는 것이 옳았다.</p>
+<p>마을을 떠나기 전, 현자 가온이 건우를 불렀다.</p>
+<p>"이것을 가져가거라." 가온은 작은 부적을 건넸다. <mark data-color="#E8EFE8">#복선:가온의부적</mark></p>
+<p>"위험할 때 이것이 너를 지켜줄 것이다. 하지만... 대가가 있다는 것을 기억해라."</p>
+`,
+  'chapter-2-1': `
+<h1>2.1 금지된 숲</h1>
+<p>숲의 입구에 도착했을 때, 아린의 표정이 굳어졌다.</p>
+<p>"이상해요... 정령들의 기운이 느껴지지 않아요."</p>
+<p>원래 이 숲은 정령들로 가득 찬 곳이었다. 하지만 지금은 죽은 듯이 고요했다.</p>
+<p>숲 깊숙이 들어가자, 검게 타버린 나무들이 나타났다. <mark data-color="#E8EFE8">#복선:숲의황폐화</mark></p>
+<p>"누가... 누가 이런 짓을..."</p>
+<p>아린의 눈에 눈물이 고였다. 이곳은 한때 그녀의 고향이었다.</p>
+`,
+  'chapter-2-2': `
+<h1>2.2 과거의 그림자</h1>
+<p>폐허가 된 마을 중앙에서, 그들은 오래된 비석을 발견했다.</p>
+<p>"100년 전의 대재앙... 여기서 시작되었군요." <mark data-color="#E8EFE8">#복선:100년전사건</mark></p>
+<p>건우는 비석에 새겨진 문양을 보고 숨을 멈췄다. 그것은 그의 가문 문장과 똑같았다.</p>
+<p>"이건... 왜 우리 가문의 문장이..."</p>
+<p>아린이 조심스럽게 말했다. "당신 가문과 이 재앙 사이에 연관이 있는 것 같아요."</p>
+<p>건우의 머릿속이 복잡해졌다. 가족을 죽인 원수를 찾아 떠난 여정이, 예상치 못한 방향으로 흘러가고 있었다.</p>
+`,
+  'chapter-3-1': `
+<h1>3.1 암흑의 군주</h1>
+<p>숲의 가장 깊은 곳, 검은 안개가 자욱한 곳에서 그가 나타났다.</p>
+<p>"오랜만이구나, 월영검의 계승자여." <mark data-color="#E8EFE8">#복선:카이로스의정체</mark></p>
+<p>카이로스. 15년 전 그날 밤, 가족을 죽인 원수.</p>
+<p>건우의 손이 검자루를 움켜쥐었다.</p>
+<p>"드디어 만났군. 오늘 여기서 끝내겠다."</p>
+<p>하지만 카이로스는 웃기만 했다. "끝? 이건 시작일 뿐이다. 네가 아직 모르는 진실이 많아."</p>
+`,
+};
+
+// 데모용 챕터 트리 구조
+export const DEMO_CHAPTERS = [
+  {
+    id: 'part-1',
+    projectId: 'demo',
+    title: '제1부: 운명의 시작',
+    content: '',
+    order: 1,
+    type: 'part' as const,
+    characterCount: 0,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-1',
+    projectId: 'demo',
+    parentId: 'part-1',
+    title: '제1장: 만남',
+    content: '',
+    order: 1,
+    type: 'chapter' as const,
+    characterCount: 0,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-1-1',
+    projectId: 'demo',
+    parentId: 'chapter-1',
+    title: '1.1 운명의 밤',
+    content: DEMO_CHAPTER_CONTENTS['chapter-1-1'],
+    order: 1,
+    type: 'section' as const,
+    characterCount: 412,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-1-2',
+    projectId: 'demo',
+    parentId: 'chapter-1',
+    title: '1.2 첫 만남',
+    content: DEMO_CHAPTER_CONTENTS['chapter-1-2'],
+    order: 2,
+    type: 'section' as const,
+    characterCount: 358,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-1-3',
+    projectId: 'demo',
+    parentId: 'chapter-1',
+    title: '1.3 여정의 시작',
+    content: DEMO_CHAPTER_CONTENTS['chapter-1-3'],
+    order: 3,
+    type: 'section' as const,
+    characterCount: 385,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-2',
+    projectId: 'demo',
+    parentId: 'part-1',
+    title: '제2장: 정령의 숲',
+    content: '',
+    order: 2,
+    type: 'chapter' as const,
+    characterCount: 0,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-2-1',
+    projectId: 'demo',
+    parentId: 'chapter-2',
+    title: '2.1 금지된 숲',
+    content: DEMO_CHAPTER_CONTENTS['chapter-2-1'],
+    order: 1,
+    type: 'section' as const,
+    characterCount: 342,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-2-2',
+    projectId: 'demo',
+    parentId: 'chapter-2',
+    title: '2.2 과거의 그림자',
+    content: DEMO_CHAPTER_CONTENTS['chapter-2-2'],
+    order: 2,
+    type: 'section' as const,
+    characterCount: 398,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'part-2',
+    projectId: 'demo',
+    title: '제2부: 진실',
+    content: '',
+    order: 2,
+    type: 'part' as const,
+    characterCount: 0,
+    isPlot: true,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-3',
+    projectId: 'demo',
+    parentId: 'part-2',
+    title: '제3장: 대적',
+    content: '',
+    order: 1,
+    type: 'chapter' as const,
+    characterCount: 0,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+  {
+    id: 'chapter-3-1',
+    projectId: 'demo',
+    parentId: 'chapter-3',
+    title: '3.1 암흑의 군주',
+    content: DEMO_CHAPTER_CONTENTS['chapter-3-1'],
+    order: 1,
+    type: 'section' as const,
+    characterCount: 365,
+    isPlot: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+  },
+];
+
+// 초기 표시될 데모 컨텐츠 (첫 번째 섹션)
+export const DEMO_NOVEL_CONTENT = DEMO_CHAPTER_CONTENTS['chapter-1-1'];
