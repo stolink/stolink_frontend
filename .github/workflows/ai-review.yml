@@ -56,7 +56,7 @@ jobs:
           # Create template file
           cat << 'EOF' > prompt_template.txt
           ## 역할
-          Sto-Link 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다.
+          Sto-Link 프로젝트의 시니어 개발자이자 UI/UX 전문가로서 코드 리뷰를 수행합니다.
 
           ## 프로젝트 컨텍스트
           - 스토리, 복선, 캐릭터 관계를 관리하는 작가용 웹앱
@@ -73,6 +73,7 @@ jobs:
           - Zustand 스토어 설계 (직렬화 가능 여부, 상태 분리)
           - React 훅 의존성 배열
           - 기존 데이터 구조와의 호환성
+          - UI/UX 사용성 및 심미성 (사용자 경험, 디자인 일관성)
 
           ## 변경된 파일
           FILES_PLACEHOLDER

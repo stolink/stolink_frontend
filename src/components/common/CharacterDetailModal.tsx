@@ -375,6 +375,7 @@ export default function CharacterDetailModal({
                             key.toLowerCase().includes(k.toLowerCase()),
                           ),
                       )
+                      .slice(0, 20)
                       .map(([key, value]) => (
                         <div
                           key={key}
