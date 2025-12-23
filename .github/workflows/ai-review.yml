@@ -1,13 +1,30 @@
 name: AI Code Review
 
 on:
+  # 코멘트로 트리거 (/review) - main 브랜치에 머지 후 동작
   issue_comment:
     types: [created]
+  # 라벨로 트리거 - feature 브랜치에서도 동작
+  pull_request:
+    types: [labeled]
+  # 수동 실행
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to review"
+        required: true
+        type: string
 
 jobs:
   ai_review:
-    # Only run on PR comments (not issue comments) with trigger phrase
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/review')
+    # Trigger conditions:
+    # 1. PR comment with /review
+    # 2. PR labeled with 'ai-review'
+    # 3. Manual workflow dispatch
+    if: |
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review')) ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'ai-review') ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
