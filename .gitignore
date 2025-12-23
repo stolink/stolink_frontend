@@ -7,16 +7,56 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional eslint cache
+.eslintcache
+
+# Build outputs
 dist
 dist-ssr
-*.local
+build
+coverage
 
-# Editor directories and files
+# Environment Variables
+# 이미 커밋된 .env.development는 유지하되, 로컬 오버라이드 및 민감한 파일 무시
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# .env 파일 자체에 민감 정보가 있다면 주석 해제하여 무시
+# .env
+
+# Vite
+.vite/
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.idea
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj
