@@ -36,7 +36,7 @@ coverage
 .env.test.local
 .env.production.local
 # .env 파일 자체에 민감 정보가 있다면 주석 해제하여 무시
-# .env
+.env
 
 # Vite
 .vite/
@@ -62,3 +62,10 @@ Desktop.ini
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/

@@ -19,8 +19,9 @@ jobs:
         uses: anthropics/claude-code-action@main # Using main as specific version tag not found
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          anthropic_model: "claude-3-5-sonnet-20240620"
-          direct_prompt: |
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: "AI 리뷰"
+          prompt: |
             You are an expert code reviewer acting as a senior software engineer for "Sto-Link", a story management platform.
 
             **Project Context:**
