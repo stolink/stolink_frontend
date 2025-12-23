@@ -11,6 +11,7 @@ export interface Project {
   description?: string;
   coverImage?: string;
   status: ProjectStatus;
+  author?: string;
 
   // === 동적 추가 정보 (세계관 설정, 메모 등) ===
   extras?: Record<string, string | number | boolean | string[]>;
@@ -22,9 +23,9 @@ export interface Project {
   updatedAt: string;
 }
 
-export type Genre = 'fantasy' | 'romance' | 'sf' | 'mystery' | 'other';
+export type Genre = "fantasy" | "romance" | "sf" | "mystery" | "other";
 
-export type ProjectStatus = 'writing' | 'completed';
+export type ProjectStatus = "writing" | "completed";
 
 export interface ProjectStats {
   totalCharacters: number;

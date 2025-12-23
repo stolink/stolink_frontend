@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   Eye,
+  Clapperboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ export function ProjectLayout() {
 
   const navItems = [
     { to: `/projects/${id}/editor`, label: "에디터", icon: PenLine },
+    { to: `/projects/${id}/studio`, label: "스튜디오", icon: Clapperboard },
     { to: `/projects/${id}/world`, label: "설정집", icon: BookOpen },
     { to: `/projects/${id}/stats`, label: "통계", icon: BarChart3 },
     { to: `/projects/${id}/export`, label: "파일", icon: Download },

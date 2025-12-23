@@ -22,14 +22,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Extended Mock data for UI demo
-interface ExtendedProject extends Project {
+interface ExtendedProject extends Omit<Project, "status"> {
   status: ProjectStatus;
   coverImage?: string;
   location?: string;
   length?: string;
   progress: number;
   lastEditedText: string;
-  genre: string; // Made required for spec compliance
 }
 
 const mockProjects: ExtendedProject[] = [
@@ -40,7 +39,7 @@ const mockProjects: ExtendedProject[] = [
     description: "",
     createdAt: "",
     updatedAt: "",
-    genre: "Mystery",
+    genre: "mystery",
     author: "J.K. WRITER",
     status: "DRAFTING",
     location: "Chapter 12",
@@ -63,7 +62,7 @@ const mockProjects: ExtendedProject[] = [
     description: "",
     createdAt: "",
     updatedAt: "",
-    genre: "Sci-Fi",
+    genre: "sf",
     author: "J.K. WRITER",
     status: "OUTLINE",
     location: "15 Beats",
@@ -86,7 +85,7 @@ const mockProjects: ExtendedProject[] = [
     description: "",
     createdAt: "",
     updatedAt: "",
-    genre: "Sci-Fi",
+    genre: "sf",
     author: "J.K. WRITER",
     status: "EDITING",
     location: "Chapter 28",
@@ -111,7 +110,7 @@ const mockProjects: ExtendedProject[] = [
     description: "",
     createdAt: "",
     updatedAt: "",
-    genre: "Other",
+    genre: "other",
     author: "NO AUTHOR",
     status: "IDEA",
     location: "3 Items",
