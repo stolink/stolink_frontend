@@ -7,86 +7,83 @@ on:
   # 라벨로 트리거 - feature 브랜치에서도 동작
   pull_request:
     types: [labeled]
-  # 수동 실행
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR number to review"
-        required: true
-        type: string
 
 jobs:
   ai_review:
     # Trigger conditions:
     # 1. PR comment with /review
     # 2. PR labeled with 'ai-review'
-    # 3. Manual workflow dispatch
     if: |
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review')) ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'ai-review') ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'pull_request' && github.event.label.name == 'ai-review')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Code Review with Claude
-        uses: anthropics/claude-code-action@main
+      - name: Get PR info
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get changed files
+        id: diff
+        run: |
+          git fetch origin main
+          DIFF=$(git diff origin/main...HEAD --name-only | head -20)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Get diff content
+        id: diff_content
+        run: |
+          CONTENT=$(git diff origin/main...HEAD -- '*.ts' '*.tsx' --stat | head -50)
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Call Claude API
+        id: review
+        run: |
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+            -H "anthropic-version: 2023-06-01" \
+            -d '{
+              "model": "claude-haiku-4-5-20251001",
+              "max_tokens": 2048,
+              "messages": [{
+                "role": "user",
+                "content": "다음 PR의 변경사항을 한국어로 간결하게 코드 리뷰해주세요.\n\n변경된 파일:\n${{ steps.diff.outputs.files }}\n\n변경 통계:\n${{ steps.diff_content.outputs.content }}\n\n## 출력 형식\n### 🔴 치명적 (있으면)\n**파일:라인** - 문제 설명\n\n### ⚠️ 경고 (있으면)\n**파일:라인** - 문제 설명\n\n### 💡 제안 (있으면)\n- 개선 제안\n\n이슈가 없으면 ✅ 이상 없음 으로 응답."
+              }]
+            }')
+
+          # Extract text from response
+          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "리뷰 생성 실패"')
+
+          # Save to file to handle multiline
+          echo "$REVIEW" > review_result.txt
+
+      - name: Post review comment
+        uses: actions/github-script@v7
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: "--model claude-haiku-4-5-20251001"
-          prompt: |
-            ## 역할
-            Sto-Link 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다.
+          script: |
+            const fs = require('fs');
+            const review = fs.readFileSync('review_result.txt', 'utf8');
 
-            ## 프로젝트 컨텍스트
-            - 스토리, 복선, 캐릭터 관계를 관리하는 작가용 웹앱
-            - 기술 스택: React, TypeScript, Zustand, TanStack Query, Tiptap
-            - 핵심 타입: Project, Chapter, Character, Foreshadowing
-
-            ## 리뷰 기준
-            1. **치명적**: 런타임 에러, 타입 오류, 보안 취약점
-            2. **경고**: 성능 이슈, 안티패턴, Zustand 상태 관리 문제
-            3. **제안**: 코드 스타일, 리팩토링 기회
-
-            ## 중점 검토 항목
-            - TypeScript 타입 안전성 (`any` 사용, non-null assertion 남용)
-            - Zustand 스토어 설계 (직렬화 가능 여부, 상태 분리)
-            - React 훅 의존성 배열
-            - 기존 데이터 구조와의 호환성
-
-            ## 출력 규칙
-            - 한국어로 작성
-            - 내부 도구 호출 로그, Token usage, Todo 리스트 출력 금지
-            - 아래 형식만 출력:
-
-            ```
-            ## 코드 리뷰 결과
-
-            ### 🔴 치명적 (N건)
-            **파일명:라인** - 이슈 제목
-            - 문제: 간단한 설명
-            - 개선:
-            \`\`\`코드\`\`\`
-
-            ### ⚠️ 경고 (N건)
-            **파일명:라인** - 이슈 제목
-            > 설명 (1-2문장)
-
-            ### 💡 제안 (N건)
-            - 파일명: 제안 내용
-            ```
-
-            - 이슈가 없는 카테고리는 생략
-            - 칭찬, 인사말, 요약 문장 불필요
-            - 코드 예시는 최소한으로 (변경 전/후만)
-
-            ## 리뷰 시작
-            이 PR의 변경사항을 위 기준에 따라 리뷰해주세요.
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pr.outputs.number }},
+              body: `## 🤖 AI 코드 리뷰\n\n${review}`
+            });
