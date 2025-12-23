@@ -1,0 +1,33 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Code Review with Claude
+        uses: anthropics/claude-code-action@v0.1.0 # 최신 버전 확인 권장
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_model: "claude-3-5-sonnet-20240620"
+          direct_prompt: |
+            You are an expert code reviewer acting as a senior software engineer.
+            Please review the changes in this Pull Request.
+
+            Focus your review on:
+            1. Logic bugs and potential runtime errors.
+            2. Security vulnerabilities.
+            3. Code readability and maintainability.
+            4. Performance improvements.
+
+            Please provide your feedback in **Korean**.
+            Be constructive and specific. If the code is excellent, simply comment "LGTM! (Looks Good To Me) ✨".

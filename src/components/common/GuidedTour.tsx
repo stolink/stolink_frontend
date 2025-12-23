@@ -1,13 +1,13 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useState, useLayoutEffect } from "react";
+import { X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface TourStep {
   target: string; // CSS selector
   title: string;
   content: string;
-  placement?: 'top' | 'bottom' | 'left' | 'right';
+  placement?: "top" | "bottom" | "left" | "right";
 }
 
 interface GuidedTourProps {
@@ -37,7 +37,7 @@ export default function GuidedTour({
       if (element) {
         const rect = element.getBoundingClientRect();
         setTargetRect(rect);
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     };
 
@@ -45,19 +45,19 @@ export default function GuidedTour({
     const timer = setTimeout(updatePosition, 100);
 
     // 리사이즈/스크롤 이벤트 리스너
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
     };
   }, [isOpen, step?.target]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     } else {
       onComplete();
     }
@@ -65,7 +65,7 @@ export default function GuidedTour({
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
@@ -168,14 +168,18 @@ export default function GuidedTour({
               size="sm"
               onClick={handlePrev}
               disabled={currentStep === 0}
-              className={cn(currentStep === 0 && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                currentStep === 0 && "opacity-50 cursor-not-allowed",
+              )}
             >
               <ChevronLeft className="h-4 w-4" />
               이전
             </Button>
             <Button size="sm" onClick={handleNext} className="min-w-[80px]">
-              {currentStep === steps.length - 1 ? '완료!' : '다음'}
-              {currentStep < steps.length - 1 && <ChevronRight className="h-4 w-4 ml-1" />}
+              {currentStep === steps.length - 1 ? "완료!" : "다음"}
+              {currentStep < steps.length - 1 && (
+                <ChevronRight className="h-4 w-4 ml-1" />
+              )}
             </Button>
           </div>
         </div>

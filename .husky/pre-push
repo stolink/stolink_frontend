@@ -1,0 +1,26 @@
+
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+echo "🔍 Pushing to: $BRANCH"
+
+# 모든 브랜치: 타입 체크
+echo "Running type check..."
+npm run type-check || exit 1
+
+# main, release 브랜치: 더 엄격한 검증
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "release" ]; then
+  echo "🚨 Protected branch detected. Running full checks..."
+
+  # 전체 린트
+  npm run lint || exit 1
+
+  echo "✅ All checks passed!"
+fi
+
+# release 브랜치: 직접 푸시 금지
+if [ "$BRANCH" = "release" ]; then
+  echo "⛔ Direct push to release is not allowed!"
+  echo "Please create a PR from main to release."
+  exit 1
+fi
