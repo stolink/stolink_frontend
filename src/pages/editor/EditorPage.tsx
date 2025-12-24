@@ -153,6 +153,20 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   }, [isDemo, isTourCompleted, isTourActive]);
 
+  // Ctrl+S 저장 단축키
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        // TODO: 실제 저장 로직 연결
+        console.log("저장됨 (Ctrl+S)");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleStartTour = () => {
     setShowTourPrompt(false);
     startTour();

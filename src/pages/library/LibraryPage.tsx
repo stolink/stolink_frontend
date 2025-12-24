@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Search, LayoutGrid, List, Filter, ArrowUpDown } from "lucide-react";
+import {
+  Search,
+  LayoutGrid,
+  List,
+  Filter,
+  ArrowUpDown,
+  User,
+  LogOut,
+  FileText,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
 
@@ -7,10 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
-import { useUIStore } from "@/stores";
+import { useUIStore, useAuthStore } from "@/stores";
 import type { Project } from "@/types";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -163,13 +172,16 @@ export default function LibraryPage() {
             {/* Top Row: Brand & Mobile Menu */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center">
+                <Link
+                  to="/"
+                  className="flex items-center hover:opacity-80 transition-opacity"
+                >
                   <img
                     src="/src/assets/main_logo.png"
                     alt="Sto-Link"
                     className="h-16 w-auto"
                   />
-                </div>
+                </Link>
               </div>
 
               {/* Desktop Toolbar */}
@@ -265,6 +277,43 @@ export default function LibraryPage() {
                     <List className="h-4 w-4" />
                   </button>
                 </div>
+
+                <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 rounded-full bg-sage-100 hover:bg-sage-200"
+                    >
+                      <User className="h-4 w-4 text-sage-700" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">내 계정</p>
+                        <p className="text-xs text-muted-foreground">
+                          {useAuthStore.getState().user?.email ||
+                            "user@example.com"}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        useAuthStore.getState().logout();
+                        navigate("/");
+                      }}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      로그아웃
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -340,9 +389,33 @@ export default function LibraryPage() {
               <Search className="h-8 w-8" />
             </div>
             <h3 className="text-lg font-semibold text-stone-900">
-              No results found
+              검색 결과가 없습니다
             </h3>
-            <p className="text-stone-500">Try adjusting your search terms.</p>
+            <p className="text-stone-500">다른 검색어로 시도해보세요.</p>
+          </div>
+        )}
+
+        {/* Empty State - No Projects at all */}
+        {projects.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-24 h-24 bg-sage-50 rounded-full flex items-center justify-center mb-6 text-sage-400">
+              <FileText className="h-12 w-12" />
+            </div>
+            <h3 className="text-2xl font-heading font-bold text-stone-900 mb-2">
+              📚 아직 작품이 없어요
+            </h3>
+            <p className="text-stone-500 mb-6 max-w-md">
+              첫 작품을 만들어 당신만의 이야기를 시작해보세요.
+              <br />
+              복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
+            </p>
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={() => setCreateProjectModalOpen(true)}
+            >
+              <FileText className="w-5 h-5" />새 작품 만들기
+            </Button>
           </div>
         )}
       </main>

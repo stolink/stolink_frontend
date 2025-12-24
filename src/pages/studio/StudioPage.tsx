@@ -1,4 +1,11 @@
-import { Clapperboard, Youtube, Sparkles, Wand2, FileText } from "lucide-react";
+import {
+  Clapperboard,
+  Youtube,
+  Sparkles,
+  Wand2,
+  FileText,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,10 +17,11 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams, Link } from "react-router-dom";
 
 export default function StudioPage() {
   const location = useLocation();
+  const { id: projectId } = useParams<{ id: string }>();
   const selectedText = location.state?.selectedText as string | undefined;
 
   return (
@@ -66,7 +74,7 @@ export default function StudioPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Imported Text from Editor */}
-                  {selectedText && (
+                  {selectedText ? (
                     <div className="p-4 rounded-lg border-2 border-indigo-500 bg-indigo-50/50 cursor-pointer shadow-sm ring-1 ring-indigo-200">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-indigo-700 flex items-center gap-1">
@@ -80,6 +88,30 @@ export default function StudioPage() {
                       <p className="text-sm font-medium text-stone-800 leading-snug line-clamp-4">
                         {selectedText}
                       </p>
+                    </div>
+                  ) : (
+                    <div className="p-6 rounded-lg border border-dashed border-stone-300 bg-stone-50/50 flex flex-col items-center justify-center text-center gap-3 min-h-[150px] col-span-full">
+                      <FileText className="w-8 h-8 text-stone-300" />
+                      <div>
+                        <p className="text-sm font-medium text-stone-500">
+                          선택된 텍스트가 없습니다
+                        </p>
+                        <p className="text-xs text-stone-400 mt-1">
+                          에디터에서 텍스트를 선택하고
+                          <br />
+                          'Studio로 보내기'를 클릭하세요.
+                        </p>
+                      </div>
+                      <Link to={`/projects/${projectId}/editor`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 gap-2"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          에디터로 돌아가기
+                        </Button>
+                      </Link>
                     </div>
                   )}
 

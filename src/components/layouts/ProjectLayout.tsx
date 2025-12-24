@@ -107,12 +107,12 @@ export function ProjectLayout() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/library")}
-              className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-stone-100 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -122,6 +122,7 @@ export function ProjectLayout() {
               >
                 <path d="m15 18-6-6 6-6" />
               </svg>
+              <span className="text-sm font-medium">서재</span>
             </button>
             <div className="h-6 w-px bg-stone-200" />
             <img
