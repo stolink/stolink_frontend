@@ -129,8 +129,47 @@
    Tiptap Editor & Scrivenings Styles
    ============================================ */
 
+/* Block-level element enter animation */
+@keyframes softAppear {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .ProseMirror {
   outline: none !important;
+
+  /* 1. Font rendering smoothing (essential for macOS) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 2. Text rendering optimization */
+  text-rendering: optimizeLegibility;
+
+  /* 3. Custom caret color (softer than black) */
+  caret-color: #6366f1;
+  caret-shape: bar; /* Ensure vertical bar caret, not underscore */
+
+  /* 4. Font size and line settings */
+  font-size: 1rem; /* Slightly reduced for smaller caret */
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+}
+
+/* Block level animation for new elements */
+.ProseMirror p,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror ul,
+.ProseMirror ol,
+.ProseMirror blockquote {
+  animation: softAppear 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .ProseMirror h1 {
