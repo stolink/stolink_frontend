@@ -66,7 +66,8 @@ export default function StudioPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Imported Text from Editor */}
-                  {selectedText && (
+                  {/* Imported Text from Editor */}
+                  {selectedText ? (
                     <div className="p-4 rounded-lg border-2 border-indigo-500 bg-indigo-50/50 cursor-pointer shadow-sm ring-1 ring-indigo-200">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-indigo-700 flex items-center gap-1">
@@ -80,6 +81,20 @@ export default function StudioPage() {
                       <p className="text-sm font-medium text-stone-800 leading-snug line-clamp-4">
                         {selectedText}
                       </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-lg border border-dashed border-stone-200 bg-stone-50/50 flex flex-col items-center justify-center text-center gap-2 min-h-[120px]">
+                      <FileText className="w-5 h-5 text-stone-300" />
+                      <div>
+                        <p className="text-sm font-medium text-stone-500">
+                          선택된 텍스트가 없습니다
+                        </p>
+                        <p className="text-xs text-stone-400 mt-1">
+                          에디터에서 문단을 선택하여
+                          <br />
+                          'Studio로 보내기'를 실행해보세요.
+                        </p>
+                      </div>
                     </div>
                   )}
 

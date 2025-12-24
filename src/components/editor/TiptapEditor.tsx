@@ -4,7 +4,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
-import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
 import { useEffect } from "react";
 import {
   Bold,
@@ -20,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 
-interface TiptapEditorProps {
+export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
   initialContent?: string;
 }
@@ -75,7 +74,6 @@ export default function TiptapEditor({
         multicolor: true,
       }),
       CharacterCount,
-      BubbleMenuExtension,
     ],
     content: initialContent || DEFAULT_CONTENT,
     editorProps: {
@@ -105,7 +103,11 @@ export default function TiptapEditor({
     const { from, to } = editor.state.selection;
     const text = editor.state.doc.textBetween(from, to, " ");
 
-    if (text && projectId) {
+    if (!text?.trim()) {
+      return;
+    }
+
+    if (projectId) {
       navigate(`/projects/${projectId}/studio`, {
         state: { selectedText: text },
       });

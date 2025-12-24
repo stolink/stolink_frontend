@@ -1,18 +1,18 @@
 name: AI Code Review
 
 on:
-  # 코멘트로 트리거 (/review) - main 브랜치에 머지 후 동작
+  # 코멘트로 트리거 (/review) - 수동 실행
   issue_comment:
     types: [created]
-  # 라벨로 트리거 - feature 브랜치에서도 동작
+  # PR 생성 및 업데이트 시 자동 실행
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize]
 
 jobs:
   ai_review:
     if: |
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review')) ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'ai-review')
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
     permissions:
       contents: read

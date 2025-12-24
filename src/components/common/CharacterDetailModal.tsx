@@ -375,7 +375,7 @@ export default function CharacterDetailModal({
                             key.toLowerCase().includes(k.toLowerCase()),
                           ),
                       )
-                      .slice(0, 20)
+                      .slice(0, MAX_FILTERED_ITEMS)
                       .map(([key, value]) => (
                         <div
                           key={key}
