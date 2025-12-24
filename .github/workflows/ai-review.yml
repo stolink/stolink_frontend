@@ -1,18 +1,18 @@
 name: AI Code Review
 
 on:
-  # 코멘트로 트리거 (/review) - main 브랜치에 머지 후 동작
+  # 코멘트로 트리거 (/review) - 수동 실행
   issue_comment:
     types: [created]
-  # 라벨로 트리거 - feature 브랜치에서도 동작
+  # PR 생성 및 업데이트 시 자동 실행
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize]
 
 jobs:
   ai_review:
     if: |
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review')) ||
-      (github.event_name == 'pull_request' && github.event.label.name == 'ai-review')
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,7 +50,7 @@ jobs:
       - name: Prepare prompt
         id: prompt
         run: |
-          DIFF_CONTENT=$(cat diff_content.txt | head -c 15000 | iconv -c -f utf-8 -t utf-8)
+          DIFF_CONTENT=$(head -n 500 diff_content.txt)
           FILES="${{ steps.diff.outputs.files }}"
 
           # Create template file
@@ -83,7 +83,12 @@ jobs:
           DIFF_PLACEHOLDER
           ```
 
-          ## 출력 형식 (이 형식만 출력, 다른 설명 금지)
+          ## 출력 규칙
+          1. 🔴 치명적, ⚠️ 경고가 하나라도 있으면 해당 섹션 출력
+          2. 🔴, ⚠️가 없으면 반드시 '✅ 코드 리뷰 통과 - 수정 필요 사항 없음' 출력 후 종료
+          3. 💡 제안은 선택사항이므로 '수정 필요'로 취급하지 않음
+
+          ## 출력 형식 (이 형식만 출력)
 
           ### 🔴 치명적 (N건)
           **파일:라인** - 이슈 제목
@@ -94,10 +99,11 @@ jobs:
           **파일:라인** - 이슈 제목
           > 설명
 
-          ### 💡 제안 (N건)
-          - 파일: 제안 내용
+          ---
+          💡 **참고 제안** (선택사항, 수정 불필요)
+          - 제안 내용
 
-          (이슈 없는 카테고리는 생략, 문제 없으면 '✅ 이상 없음' 출력)
+          (🔴, ⚠️가 없으면: '✅ 코드 리뷰 통과 - 수정 필요 사항 없음' 만 출력)
           EOF
 
           # Use jq to generate JSON safely
