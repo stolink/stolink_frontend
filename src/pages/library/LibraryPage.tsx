@@ -139,6 +139,7 @@ const mockProjects: ExtendedProject[] = [
 
 export default function LibraryPage() {
   const { setCreateProjectModalOpen } = useUIStore();
+  const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [projects] = useState<ExtendedProject[]>(mockProjects);
@@ -296,15 +297,14 @@ export default function LibraryPage() {
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium">내 계정</p>
                         <p className="text-xs text-muted-foreground">
-                          {useAuthStore.getState().user?.email ||
-                            "user@example.com"}
+                          {user?.email || "user@example.com"}
                         </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => {
-                        useAuthStore.getState().logout();
+                        logout();
                         navigate("/");
                       }}
                       className="text-red-600 focus:text-red-600"
