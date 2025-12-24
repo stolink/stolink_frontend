@@ -18,6 +18,7 @@ interface SectionStripProps {
   onSelect: (id: string) => void;
   onAdd: () => void;
   parentTitle?: string;
+  liveWordCount?: number; // Real-time word count for selected section
 }
 
 export default function SectionStrip({
@@ -26,6 +27,7 @@ export default function SectionStrip({
   onSelect,
   onAdd,
   parentTitle,
+  liveWordCount,
 }: SectionStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -98,6 +100,9 @@ export default function SectionStrip({
                 onClick={() => onSelect(section.id)}
                 onDragStart={(e) => handleDragStart(e, section.id)}
                 onDragEnd={handleDragEnd}
+                liveWordCount={
+                  section.id === selectedId ? liveWordCount : undefined
+                }
               />
             ))}
 
@@ -126,6 +131,7 @@ interface SectionCardProps {
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
+  liveWordCount?: number; // Real-time count for selected section
 }
 
 function SectionCard({
@@ -136,6 +142,7 @@ function SectionCard({
   onClick,
   onDragStart,
   onDragEnd,
+  liveWordCount,
 }: SectionCardProps) {
   const statusConfig = {
     draft: {
@@ -160,7 +167,8 @@ function SectionCard({
 
   const status = section.metadata?.status || "draft";
   const config = statusConfig[status];
-  const wordCount = section.metadata?.wordCount || 0;
+  // Use liveWordCount for selected section, otherwise use saved metadata
+  const wordCount = liveWordCount ?? section.metadata?.wordCount ?? 0;
   const synopsis = section.synopsis || "";
 
   return (

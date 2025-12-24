@@ -1,237 +1,228 @@
 # StoLink 에디터 핵심 기능 명세
 
-> **버전**: 1.1
+> **버전**: 1.2
 > **최종 수정**: 2024년 12월 24일
-> **참고**: Scrivener 워크플로우 기반, TypeScript + Zustand 최적화
+> **검증**: 코드베이스 대조 완료
 
 ---
 
 ## 구현 현황 요약
 
-| 기능                            | 상태      | 파일/위치                                |
-| ------------------------------- | --------- | ---------------------------------------- |
-| 통합 Document 모델              | ✅ 완료   | `src/types/document.ts`                  |
-| Repository 패턴                 | ✅ 완료   | `src/repositories/`                      |
-| Section Strip (하단 네비게이션) | ✅ 완료   | `src/components/editor/SectionStrip.tsx` |
-| 분할 화면                       | ✅ 완료   | `useEditorStore`, `EditorPage.tsx`       |
-| 집중 모드                       | ✅ 완료   | `useEditorStore`                         |
-| 복선 관리                       | ✅ 완료   | `useForeshadowingStore`                  |
-| Corkboard 뷰                    | ✅ 완료   | `CorkboardView.tsx`                      |
-| 씬 인스펙터                     | ✅ 완료   | `SceneInspector.tsx`                     |
-| Scrivenings 뷰                  | ❌ 미구현 | -                                        |
-| Outline 뷰                      | ❌ 미구현 | -                                        |
-| 버전/스냅샷 관리                | ❌ 미구현 | -                                        |
-| 인라인 링크/코멘트              | ❌ 미구현 | -                                        |
-| Compile/출력                    | ❌ 미구현 | -                                        |
+| 기능               | 상태      | 검증 결과                                  |
+| ------------------ | --------- | ------------------------------------------ |
+| 통합 Document 모델 | ✅ 완료   | `src/types/document.ts` - folder/text 타입 |
+| Repository 패턴    | ✅ 완료   | `src/repositories/` - 2개 파일             |
+| Section Strip      | ✅ 완료   | `SectionStrip.tsx` - EditorPage에서 사용   |
+| 분할 화면          | ✅ 완료   | `useEditorStore.ts` - splitView            |
+| 집중 모드          | ✅ 완료   | `useEditorStore.ts` - isFocusMode          |
+| 복선 관리          | ✅ 완료   | `useForeshadowingStore.ts` - appearances   |
+| 씬 인스펙터        | ✅ 완료   | `SceneInspector.tsx`                       |
+| Character 타입     | ✅ 완료   | `character.ts` - Role, Relationship        |
+| Place/Item 타입    | ✅ 완료   | `character.ts` - 세계관 요소               |
+| ~~Corkboard 뷰~~   | ⚠️ 대체됨 | Section Strip으로 대체 (파일은 존재)       |
+| Scrivenings 뷰     | ❌ 미구현 | grep 검색 결과 없음                        |
+| Outline 뷰         | ❌ 미구현 | grep 검색 결과 없음                        |
+| 버전/스냅샷        | ❌ 미구현 | grep 검색 결과 없음                        |
+| 인라인 링크        | ❌ 미구현 | `[[...]]` 패턴 없음                        |
+
+> **Note:** CorkboardView.tsx 파일은 존재하나 EditorPage에서 import하지 않음
 
 ---
 
 ## 1. 문서 구조 관리
 
-### 1.1 계층적 바인더 ✅
+### 1.1 계층적 바인더 ✅ 검증됨
 
+**타입 정의** (`src/types/document.ts`):
+
+```typescript
+export type DocumentType = "folder" | "text";
+
+export interface Document {
+  id: string;
+  projectId: string;
+  parentId?: string;
+  type: DocumentType;
+  title: string;
+  order: number;
+  content: string;
+  synopsis: string;
+  characterIds: string[];
+  // ...
+}
 ```
-Project > Part > Chapter > Section (text)
-```
 
-**구현 완료:**
+**Repository 구현** (`src/repositories/`):
 
-- `Document` 통합 타입 (`type: 'folder' | 'text'`)
-- `LocalDocumentRepository` (Zustand + localStorage)
-- `useDocumentTree` 훅으로 트리 데이터 제공
-- 좌측 사이드바 `ChapterTree` 컴포넌트
+- `DocumentRepository.ts` - 인터페이스 + buildDocumentTree()
+- `LocalDocumentRepository.ts` - Zustand 기반 구현
 
-**파일:**
+**Hooks** (`src/hooks/useDocuments.ts`):
 
-- `src/types/document.ts`
-- `src/repositories/LocalDocumentRepository.ts`
-- `src/hooks/useDocuments.ts`
+- `useDocumentTree(projectId)` - 트리 구조 반환
+- `useDocumentContent(id)` - 콘텐츠 읽기/저장
+- `useChildDocuments(parentId, projectId)` - 자식 문서
 
-### 1.2 뷰 모드
+### 1.2 뷰 모드 ⚠️ 부분 구현
 
-| 모드              | 상태      | 설명                                  |
-| ----------------- | --------- | ------------------------------------- |
-| **Editor**        | ✅ 완료   | TiptapEditor 기반 WYSIWYG             |
-| **Section Strip** | ✅ 완료   | 하단 카드 네비게이션 (Corkboard 대체) |
-| **Scrivenings**   | ❌ 미구현 | 여러 문서 연속 편집                   |
-| **Outline**       | ❌ 미구현 | 메타데이터 테이블 뷰                  |
+| 모드          | 상태      | 위치                                |
+| ------------- | --------- | ----------------------------------- |
+| Editor        | ✅ 완료   | `TiptapEditor.tsx`                  |
+| Section Strip | ✅ 완료   | `SectionStrip.tsx` (하단 카드 네비) |
+| ~~Corkboard~~ | ⚠️ 대체됨 | EditorPage에서 제거됨               |
+| Scrivenings   | ❌ 미구현 | -                                   |
+| Outline       | ❌ 미구현 | -                                   |
 
 ---
 
-## 2. 메타데이터 시스템 ✅
+## 2. 메타데이터 시스템 ✅ 검증됨
+
+**Document Metadata** (`src/types/document.ts`):
 
 ```typescript
-interface DocumentMetadata {
+export interface DocumentMetadata {
   status: "draft" | "revised" | "final";
   keywords: string[];
   notes: string;
   wordCount: number;
   targetWordCount?: number;
   includeInCompile: boolean;
-  label?: string; // POV, 타임라인 등
+  label?: string;
 }
 ```
 
-**구현 위치:** `src/types/document.ts`
-
-### Label 컬러 매핑
+**Scene Metadata** (`src/types/scene.ts`):
 
 ```typescript
-// CorkboardView.tsx
-const LABEL_COLORS = {
-  "POV: 주인공": "bg-blue-500",
-  "POV: 히로인": "bg-pink-500",
-  과거: "bg-gray-400",
-  현재: "bg-green-500",
-  미래: "bg-amber-500",
-};
+synopsis: string;  // ✅ 존재
+wordCount: number; // ✅ 존재
+targetWordCount?: number; // ✅ 존재
 ```
 
 ---
 
 ## 3. 캐릭터 & 복선 관리
 
-### 3.1 캐릭터 시스템 ⚠️ 부분 구현
+### 3.1 캐릭터 시스템 ✅ 검증됨
 
-**구현 완료:**
-
-- 기본 Character 타입 (`src/types/index.ts`)
-- Scene-Character 연결 (`characterIds` 필드)
-
-**미구현:**
-
-- 상세 프로필 (appearance, personality, backstory)
-- 관계(Relationship) 시스템
-- 캐릭터 등장 통계
-
-### 3.2 복선 추적 시스템 ✅
+**타입** (`src/types/character.ts`):
 
 ```typescript
-// src/stores/useForeshadowingStore.ts
-interface Foreshadowing {
+export interface Character {
   id: string;
   projectId: string;
-  title: string;
-  description: string;
-  status: "pending" | "hinted" | "recovered" | "abandoned";
-  importance: "major" | "minor";
-  appearances: ForeshadowingAppearance[]; // 등장 씬 목록
-  relatedCharacterIds: string[];
+  name: string;
+  role?: CharacterRole;  // protagonist | antagonist | supporting | mentor | sidekick
+  imageUrl?: string;
+  extras?: Record<string, ...>;
+}
+
+export interface CharacterRelationship {
+  sourceId: string;
+  targetId: string;
+  type: RelationshipType;  // friendly | hostile | neutral
+  strength: number;  // 1-10
 }
 ```
 
-**구현 완료:**
+**추가 세계관 타입**:
 
-- CRUD 작업
-- 상태별 필터링 (`getByStatus`)
-- 씬별 복선 조회 (`getByScene`)
-- 캐릭터 연결
+- `Place` - 장소 (region, building, special)
+- `Item` - 아이템 (weapon, accessory, document)
+
+### 3.2 복선 추적 시스템 ✅ 검증됨
+
+**Store** (`src/stores/useForeshadowingStore.ts`):
+
+```typescript
+interface Foreshadowing {
+  status: "pending" | "hinted" | "recovered" | "abandoned";
+  appearances: ForeshadowingAppearance[]; // 등장 씬 목록
+  // ...
+}
+
+// 주요 함수
+getByScene(sceneId);
+getByStatus(projectId, status);
+getUnresolved(projectId);
+addAppearance(id, sceneId, description);
+markAsRecovered(id, sceneId);
+```
+
+### 3.3 캐릭터-씬 연결 ✅ 검증됨
+
+```typescript
+// document.ts & scene.ts
+characterIds: string[];  // ✅ 양쪽에 존재
+```
 
 ---
 
 ## 4. 에디터 기능
 
-### 4.1 분할 화면 ✅
+### 4.1 분할 화면 ✅ 검증됨
+
+**Store** (`src/stores/useEditorStore.ts`):
 
 ```typescript
-// useEditorStore
 splitView: {
   enabled: boolean;
   direction: "horizontal" | "vertical";
 }
+toggleSplitView();
 ```
 
-**구현:** `react-resizable-panels` 사용
+**구현**: `react-resizable-panels` 사용
 
-### 4.2 집중 모드 ✅
+### 4.2 집중 모드 ✅ 검증됨
 
-- `isFocusMode` 상태
-- UI 최소화 (사이드바, 툴바 숨김)
-- ESC 키 또는 버튼으로 종료
+```typescript
+isFocusMode: boolean;
+toggleFocusMode();
+```
 
 ### 4.3 인라인 기능 ❌ 미구현
 
-- 코멘트 시스템
-- 내부 링크 (`[[캐릭터명]]`)
-- 하이라이트
+- 코멘트 시스템 - 없음
+- 내부 링크 `[[캐릭터명]]` - 없음
+- 하이라이트 - 없음
 
 ---
 
 ## 5. 버전 관리 ❌ 미구현
 
-스냅샷/버전 비교 기능 미구현
+스냅샷/버전 시스템 코드 없음
 
 ---
 
-## 6. 진행 추적 ⚠️ 부분 구현
+## 6. 에디터 컴포넌트 목록 (14개)
 
-**구현 완료:**
-
-- 문서별 글자 수 카운트 (`metadata.wordCount`)
-- StatusBar에 현재 글자 수 표시
-
-**미구현:**
-
-- 일별/주별 작성량 통계
-- 목표 설정 및 진행률
-- 마감일 관리
-
----
-
-## 7. 상태 관리 구조 (Zustand)
-
-### EditorStore ✅
-
-```typescript
-// src/stores/useEditorStore.ts
-interface EditorStore {
-  splitView: { enabled: boolean; direction: "horizontal" | "vertical" };
-  isFocusMode: boolean;
-  // actions
-  toggleSplitView: () => void;
-  toggleFocusMode: () => void;
-}
 ```
-
-### DocumentStore ✅
-
-```typescript
-// src/repositories/LocalDocumentRepository.ts
-interface DocumentStore {
-  documents: Record<string, Document>;
-  // actions (repository pattern)
-}
-```
-
-### ForeshadowingStore ✅
-
-```typescript
-// src/stores/useForeshadowingStore.ts
-- foreshadowings: Record<string, Foreshadowing>
-- getByProject, getByScene, getByStatus
-- add, update, delete, addAppearance, markAsRecovered
+src/components/editor/
+├── AIAssistantPanel.tsx
+├── ChapterTree.tsx
+├── ConsistencyPanel.tsx
+├── CorkboardView.tsx     ⚠️ EditorPage에서 미사용
+├── DemoHeader.tsx
+├── EditorLeftSidebar.tsx
+├── EditorRightSidebar.tsx
+├── EditorToolbar.tsx
+├── ForeshadowingPanel.tsx
+├── SceneInspector.tsx
+├── SectionGridView.tsx
+├── SectionStrip.tsx      ✅ EditorPage에서 사용
+├── StatusBar.tsx
+└── TiptapEditor.tsx
 ```
 
 ---
 
-## 8. 우선순위 및 다음 단계
+## 7. 다음 구현 대상
 
-### ✅ 완료된 P0/P1
-
-- [x] 바인더 + 기본 에디터
-- [x] 씬별 캐릭터 태깅
-- [x] 복선 관리 시스템
-- [x] 분할 화면
-- [x] Synopsis + Section Strip
-
-### 🚧 다음 구현 대상
-
-| 순위   | 기능             | 예상 작업                           |
-| ------ | ---------------- | ----------------------------------- |
-| **P1** | 캐릭터 시트 연동 | CharacterStore 확장, 상세 프로필 UI |
-| **P1** | Scrivenings 뷰   | 선택된 여러 문서 연속 표시          |
-| **P2** | Outline 뷰       | 메타데이터 테이블 + 드래그 정렬     |
-| **P2** | 스냅샷/버전 관리 | SnapshotStore, diff 비교 UI         |
-| **P2** | 목표/통계        | 일별 작성량, 진행률 차트            |
-| **P3** | 인라인 링크      | TipTap extension                    |
-| **P3** | Compile/출력     | 마크다운/HTML/PDF 내보내기          |
+| 우선순위 | 기능                    | 상태 |
+| -------- | ----------------------- | ---- |
+| P1       | Scrivenings 뷰          | ❌   |
+| P2       | Outline 뷰              | ❌   |
+| P2       | 스냅샷/버전 관리        | ❌   |
+| P3       | 인라인 링크 (`[[...]]`) | ❌   |
+| P3       | Compile/출력            | ❌   |

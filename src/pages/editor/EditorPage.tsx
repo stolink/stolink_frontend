@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PanelLeft,
@@ -34,6 +34,7 @@ import {
   useDocumentContent,
   useDocumentMutations,
   useChildDocuments,
+  useDocument,
 } from "@/hooks/useDocuments";
 import {
   SAMPLE_PROJECT_ID,
@@ -176,11 +177,16 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isDemo ? null : selectedSectionId,
   );
   const { createDocument } = useDocumentMutations(projectId);
+  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
   // Get child sections of the selected folder
   const { children: sectionDocuments } = useChildDocuments(
     selectedFolderId,
     projectId,
   );
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
 
   // ============================================================
   // Initialize Sample Data
@@ -306,11 +312,58 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setSelectedSectionId(id);
   };
 
-  const handleContentChange = (content: string) => {
-    if (!isDemo) {
-      saveContent(content);
-    }
-  };
+  // Debounced content saving to reduce latency
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const handleContentChange = useCallback(
+    (content: string) => {
+      if (isDemo) return;
+
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Debounce save by 500ms
+      saveTimeoutRef.current = setTimeout(() => {
+        saveContent(content);
+      }, 500);
+    },
+    [isDemo, saveContent],
+  );
+
+  // Handle character count update and sync to document metadata
+  const handleCharacterCountChange = useCallback(
+    (count: number) => {
+      setCharacterCount(count);
+
+      // Update document wordCount with debounce (1s to avoid too many updates)
+      if (!isDemo && selectedSectionId) {
+        if (wordCountTimeoutRef.current) {
+          clearTimeout(wordCountTimeoutRef.current);
+        }
+        wordCountTimeoutRef.current = setTimeout(() => {
+          updateDocument({ metadata: { wordCount: count } });
+        }, 1000);
+      }
+    },
+    [isDemo, selectedSectionId, updateDocument],
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (wordCountTimeoutRef.current) {
+        clearTimeout(wordCountTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -379,11 +432,53 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                   </button>
                 )}
 
-                {/* Current Section Title */}
+                {/* Current Section Title - Editable */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-stone-800 truncate max-w-[300px]">
-                    {currentSectionTitle || "섹션을 선택하세요"}
-                  </span>
+                  {isEditingTitle ? (
+                    <input
+                      type="text"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      onBlur={() => {
+                        if (
+                          editedTitle.trim() &&
+                          editedTitle !== currentSectionTitle
+                        ) {
+                          updateDocument({ title: editedTitle.trim() });
+                        }
+                        setIsEditingTitle(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          if (
+                            editedTitle.trim() &&
+                            editedTitle !== currentSectionTitle
+                          ) {
+                            updateDocument({ title: editedTitle.trim() });
+                          }
+                          setIsEditingTitle(false);
+                        }
+                        if (e.key === "Escape") {
+                          setIsEditingTitle(false);
+                        }
+                      }}
+                      autoFocus
+                      className="text-sm font-medium text-stone-800 bg-stone-50 border border-stone-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-sage-500 max-w-[300px]"
+                    />
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!isDemo && selectedSectionId) {
+                          setEditedTitle(currentSectionTitle);
+                          setIsEditingTitle(true);
+                        }
+                      }}
+                      className="text-sm font-medium text-stone-800 truncate max-w-[300px] px-2 py-1 rounded-md hover:bg-stone-100 hover:text-sage-700 cursor-pointer transition-colors"
+                      title={isDemo ? "데모 모드" : "클릭하여 제목 편집"}
+                    >
+                      {currentSectionTitle || "섹션을 선택하세요"}
+                    </button>
+                  )}
                   {characterCount > 0 && (
                     <span className="text-xs text-stone-400">
                       ({characterCount.toLocaleString()}자)
@@ -450,7 +545,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 <ResizablePanel defaultSize={50} minSize={30}>
                   <div className="h-full overflow-y-auto">
                     <TiptapEditor
-                      onUpdate={(count) => setCharacterCount(count)}
+                      onUpdate={handleCharacterCountChange}
                       onContentChange={handleContentChange}
                       initialContent={currentContent}
                       hideToolbar={isFocusMode}
@@ -479,7 +574,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             ) : (
               <div className="h-full overflow-y-auto">
                 <TiptapEditor
-                  onUpdate={(count) => setCharacterCount(count)}
+                  onUpdate={handleCharacterCountChange}
                   onContentChange={handleContentChange}
                   initialContent={currentContent}
                   hideToolbar={isFocusMode}
@@ -496,6 +591,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onSelect={handleSelectSection}
               onAdd={handleAddSection}
               parentTitle={currentFolderTitle}
+              liveWordCount={characterCount}
             />
           )}
         </main>
