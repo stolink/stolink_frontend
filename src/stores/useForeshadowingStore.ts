@@ -137,11 +137,13 @@ export const useForeshadowingStore = create<ForeshadowingStore>()(
         if (state.foreshadowings[id]) {
           state.foreshadowings[id].status = "recovered";
           // 마지막 appearance를 회수 지점으로 표시
-          const lastAppearance = state.foreshadowings[id].appearances.find(
-            (a) => a.sceneId === sceneId,
-          );
-          if (lastAppearance) {
-            lastAppearance.isRecovery = true;
+          const lastAppearanceIndex = state.foreshadowings[
+            id
+          ].appearances.findIndex((a) => a.sceneId === sceneId);
+          if (lastAppearanceIndex !== -1) {
+            state.foreshadowings[id].appearances[
+              lastAppearanceIndex
+            ].isRecovery = true;
           }
           state.foreshadowings[id].updatedAt = new Date().toISOString();
         }

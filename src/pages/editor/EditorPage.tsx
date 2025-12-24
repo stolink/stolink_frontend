@@ -1,43 +1,55 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
+  PanelLeft,
   PanelRightOpen,
-  FileText,
-  Bot,
-  CheckCircle,
-  ArrowLeft,
-  Sparkles,
-  Play,
-  LayoutGrid,
-  FileEdit,
+  Maximize2,
+  Minimize2,
+  Columns,
+  Settings,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUIStore } from "@/stores";
 import { useDemoStore } from "@/stores/useDemoStore";
 import { cn } from "@/lib/utils";
-import ChapterTree from "@/components/editor/ChapterTree";
 import TiptapEditor from "@/components/editor/TiptapEditor";
-import ForeshadowingPanel from "@/components/editor/ForeshadowingPanel";
-import AIAssistantPanel from "@/components/editor/AIAssistantPanel";
-import ConsistencyPanel from "@/components/editor/ConsistencyPanel";
 import GuidedTour from "@/components/common/GuidedTour";
-import SectionGridView from "@/components/editor/SectionGridView";
 import {
   DEMO_TOUR_STEPS,
   DEMO_CHAPTERS,
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
+import { useEditorStore } from "@/stores";
+import { type ChapterNode } from "@/components/editor/ChapterTree";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
-interface EditorPageProps {
-  isDemo?: boolean;
-}
+// New Document-based imports
+import {
+  useDocumentTree,
+  useDocumentContent,
+  useDocumentMutations,
+  useChildDocuments,
+} from "@/hooks/useDocuments";
+import {
+  SAMPLE_PROJECT_ID,
+  initializeSampleDocuments,
+} from "@/data/sampleDocuments";
 
-// 챕터 트리 노드 타입 (local, for demo purposes)
+// Refactored Components
+import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
+import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
+import DemoHeader from "@/components/editor/DemoHeader";
+import SectionStrip from "@/components/editor/SectionStrip";
+
+// ============================================================
+// Demo Data Utilities (for demo mode only)
+// ============================================================
+
 interface DemoChapterTreeNode {
   id: string;
   title: string;
@@ -47,7 +59,6 @@ interface DemoChapterTreeNode {
   children?: DemoChapterTreeNode[];
 }
 
-// Fixed: Build tree once at module level (Issue #5 - no useMemo needed)
 function buildDemoChapterTree(
   chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
@@ -67,7 +78,7 @@ function buildDemoChapterTree(
 
   chapters.forEach((ch) => {
     const node = map.get(ch.id);
-    if (!node) return; // Defensive check (Issue #7 style fix)
+    if (!node) return;
 
     if (ch.parentId) {
       const parent = map.get(ch.parentId);
@@ -82,83 +93,246 @@ function buildDemoChapterTree(
   return roots;
 }
 
-// Pre-computed at module level (Issue #5 - more efficient than useMemo)
 const DEMO_CHAPTER_TREE = buildDemoChapterTree(DEMO_CHAPTERS);
 
-// 뷰 모드 타입
-type ViewMode = "editor" | "grid";
+// ============================================================
+// Types
+// ============================================================
+
+interface EditorPageProps {
+  isDemo?: boolean;
+}
+
+// Convert DocumentTreeNode to ChapterNode for EditorLeftSidebar
+function documentTreeToChapterTree(
+  nodes: {
+    id: string;
+    title: string;
+    type: string;
+    children: {
+      id: string;
+      title: string;
+      type: string;
+      children: unknown[];
+    }[];
+  }[],
+): ChapterNode[] {
+  return nodes.map((node) => ({
+    id: node.id,
+    title: node.title,
+    type: node.type === "folder" ? "chapter" : "section",
+    characterCount: 0,
+    isPlot: false,
+    children: documentTreeToChapterTree(node.children as typeof nodes),
+  }));
+}
+
+// ============================================================
+// Main Component
+// ============================================================
 
 export default function EditorPage({ isDemo = false }: EditorPageProps) {
-  const navigate = useNavigate();
+  // Navigation hook
+  useNavigate();
+
+  // UI Store
   const {
-    leftSidebarOpen,
     rightSidebarOpen,
-    toggleLeftSidebar,
     toggleRightSidebar,
     rightSidebarTab,
     setRightSidebarTab,
   } = useUIStore();
 
+  // Demo Store
   const { isTourActive, startTour, endTour, completeTour, isTourCompleted } =
     useDemoStore();
+
+  // Local State
   const [characterCount, setCharacterCount] = useState(0);
   const [showTourPrompt, setShowTourPrompt] = useState(false);
+  // selectedFolderId = currently selected folder (chapter) in sidebar
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(
+    isDemo ? "chapter-1" : "doc-chapter-1",
+  );
+  // selectedSectionId = currently editing section in editor
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    isDemo ? "chapter-1-1" : "doc-sample-1-1",
+  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // 뷰 모드 상태
-  const [viewMode, setViewMode] = useState<ViewMode>("editor");
+  // Editor Store
+  const { splitView, toggleSplitView, isFocusMode, toggleFocusMode } =
+    useEditorStore();
 
-  // 챕터 선택 상태
-  const [selectedChapterId, setSelectedChapterId] =
-    useState<string>("chapter-1-1");
-  const [editorKey, setEditorKey] = useState(0);
+  // Project ID
+  const projectId = isDemo ? "demo-project" : SAMPLE_PROJECT_ID;
 
-  // Fixed: Use pre-computed tree instead of useMemo (Issue #2, #5)
+  // ============================================================
+  // Document Hooks (for non-demo mode)
+  // ============================================================
 
-  // 섹션 목록 (Grid View용)
-  const sections = useMemo(() => {
-    return DEMO_CHAPTERS.filter(
-      (ch) => ch.type === "section" && DEMO_CHAPTER_CONTENTS[ch.id],
-    ).map((ch) => ({
-      id: ch.id,
-      title: ch.title,
-      content: DEMO_CHAPTER_CONTENTS[ch.id] || "",
-      characterCount: ch.characterCount,
-      type: "section" as const,
-    }));
-  }, []);
+  const { tree: documentTree, documents } = useDocumentTree(projectId);
+  const { content: documentContent, saveContent } = useDocumentContent(
+    isDemo ? null : selectedSectionId,
+  );
+  const { createDocument } = useDocumentMutations(projectId);
+  // Get child sections of the selected folder
+  const { children: sectionDocuments } = useChildDocuments(
+    selectedFolderId,
+    projectId,
+  );
 
-  // 현재 선택된 챕터의 컨텐츠
+  // ============================================================
+  // Initialize Sample Data
+  // ============================================================
+
+  useEffect(() => {
+    if (!isDemo) {
+      initializeSampleDocuments();
+    }
+  }, [isDemo]);
+
+  // ============================================================
+  // Computed Data
+  // ============================================================
+
+  // Build chapter tree for sidebar (folders only)
+  const chapterTreeData = useMemo<ChapterNode[]>(() => {
+    if (isDemo) return DEMO_CHAPTER_TREE;
+    return documentTreeToChapterTree(documentTree);
+  }, [isDemo, documentTree]);
+
+  // Current folder title for section strip
+  const currentFolderTitle = useMemo(() => {
+    if (isDemo) {
+      return (
+        DEMO_CHAPTERS.find((c) => c.id === selectedFolderId)?.title || "챕터"
+      );
+    }
+    const doc = documents.find((d) => d.id === selectedFolderId);
+    return doc?.title || "폴더 선택";
+  }, [isDemo, selectedFolderId, documents]);
+
+  // Current section title
+  const currentSectionTitle = useMemo(() => {
+    if (isDemo) {
+      return DEMO_CHAPTERS.find((c) => c.id === selectedSectionId)?.title || "";
+    }
+    const doc = documents.find((d) => d.id === selectedSectionId);
+    return doc?.title || "";
+  }, [isDemo, selectedSectionId, documents]);
+
+  // Current content
   const currentContent = useMemo(() => {
-    if (!isDemo) return undefined;
-    return DEMO_CHAPTER_CONTENTS[selectedChapterId] || "";
-  }, [isDemo, selectedChapterId]);
+    if (isDemo && selectedSectionId) {
+      return DEMO_CHAPTER_CONTENTS[selectedSectionId] || "";
+    }
+    return documentContent;
+  }, [isDemo, selectedSectionId, documentContent]);
 
-  // 챕터 선택 핸들러
-  const handleSelectChapter = (chapterId: string) => {
-    setSelectedChapterId(chapterId);
-    setEditorKey((prev) => prev + 1);
-    // Grid에서 선택 시 에디터 모드로 전환
-    if (viewMode === "grid") {
-      setViewMode("editor");
+  // Sections for the strip (text documents under selected folder)
+  const currentSections = useMemo(() => {
+    if (isDemo) {
+      // Get demo sections under selected folder
+      return DEMO_CHAPTERS.filter(
+        (ch) => ch.parentId === selectedFolderId && ch.type === "section",
+      ).map((ch) => ({
+        id: ch.id,
+        projectId: "demo-project",
+        type: "text" as const,
+        title: ch.title,
+        content: DEMO_CHAPTER_CONTENTS[ch.id] || "",
+        synopsis: "",
+        order: ch.order,
+        metadata: {
+          status: "draft" as const,
+          wordCount: ch.characterCount || 0,
+          includeInCompile: true,
+          keywords: [],
+          notes: "",
+        },
+        characterIds: [],
+        foreshadowingIds: [],
+        createdAt: ch.createdAt,
+        updatedAt: ch.updatedAt,
+      }));
+    }
+    return sectionDocuments.filter((doc) => doc.type === "text");
+  }, [isDemo, selectedFolderId, sectionDocuments]);
+
+  // ============================================================
+  // Handlers
+  // ============================================================
+
+  const handleAddChapter = (title: string, parentId?: string) => {
+    if (isDemo) return;
+    createDocument({
+      type: "folder",
+      title,
+      parentId,
+    });
+  };
+
+  const handleAddSection = async () => {
+    if (isDemo) return;
+    const newDoc = await createDocument({
+      type: "text",
+      title: "새 섹션",
+      parentId: selectedFolderId,
+    });
+    // Auto-select the new section
+    if (newDoc) {
+      setSelectedSectionId(newDoc.id);
     }
   };
 
-  // 데모 모드 진입 시 투어 시작 프롬프트
+  const handleSelectFolder = (id: string) => {
+    // Check if it's a text document (section) - if so, select both folder and section
+    const doc = documents.find((d) => d.id === id);
+    if (doc?.type === "text" && doc.parentId) {
+      setSelectedFolderId(doc.parentId);
+      setSelectedSectionId(id);
+    } else {
+      setSelectedFolderId(id);
+      // Auto-select first section if available
+      const firstSection = sectionDocuments.find((s) => s.type === "text");
+      if (firstSection) {
+        setSelectedSectionId(firstSection.id);
+      }
+    }
+  };
+
+  const handleSelectSection = (id: string) => {
+    setSelectedSectionId(id);
+  };
+
+  const handleContentChange = (content: string) => {
+    if (!isDemo) {
+      saveContent(content);
+    }
+  };
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const isSidebarVisible = isSidebarOpen && !isFocusMode;
+
+  // ============================================================
+  // Effects
+  // ============================================================
+
+  // Tour Prompt
   useEffect(() => {
     if (isDemo && !isTourCompleted && !isTourActive) {
-      const timer = setTimeout(() => {
-        setShowTourPrompt(true);
-      }, 500);
+      const timer = setTimeout(() => setShowTourPrompt(true), 500);
       return () => clearTimeout(timer);
     }
   }, [isDemo, isTourCompleted, isTourActive]);
 
-  // Ctrl+S 저장 단축키
+  // Ctrl+S Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        // TODO: 실제 저장 로직 연결
         console.log("저장됨 (Ctrl+S)");
       }
     };
@@ -167,240 +341,174 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleStartTour = () => {
-    setShowTourPrompt(false);
-    startTour();
-  };
-
-  const handleSkipTour = () => {
-    setShowTourPrompt(false);
-  };
+  // ============================================================
+  // Render
+  // ============================================================
 
   return (
     <div className={cn("flex flex-col", isDemo ? "h-screen" : "h-full")}>
-      {/* Demo Mode Header */}
+      {/* Demo Header */}
       {isDemo && (
-        <div className="px-4 py-2 bg-gradient-to-r from-sage-500 to-sage-600 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/")}
-              className="text-white hover:bg-white/20"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              홈으로
-            </Button>
-            <span className="text-sm opacity-90">
-              🎮 데모 모드 - "마법사의 여정" 체험 중
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isTourCompleted && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={startTour}
-                className="text-white hover:bg-white/20"
-              >
-                <Play className="h-4 w-4 mr-1" />
-                가이드 투어
-              </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={() => navigate("/auth")}
-              className="bg-white text-sage-600 hover:bg-white/90"
-            >
-              <Sparkles className="h-4 w-4 mr-1" />
-              회원가입하고 시작
-            </Button>
-          </div>
-        </div>
+        <DemoHeader isTourCompleted={isTourCompleted} onStartTour={startTour} />
       )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Chapter Tree */}
-        <aside
-          data-tour="chapter-tree"
-          className={cn(
-            "bg-paper border-r border-stone-200 transition-all duration-300 flex flex-col",
-            leftSidebarOpen ? "w-64" : "w-0",
-          )}
-        >
-          {leftSidebarOpen && (
-            <>
-              <div className="p-3 border-b flex items-center justify-between">
-                <h2 className="font-medium text-sm">챕터 목록</h2>
-                <Button variant="ghost" size="icon" onClick={toggleLeftSidebar}>
-                  <PanelLeftClose className="h-4 w-4" />
-                </Button>
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Sidebar */}
+        <EditorLeftSidebar
+          chapters={chapterTreeData}
+          selectedChapterId={selectedSectionId || selectedFolderId}
+          onSelectChapter={handleSelectFolder}
+          onAddChapter={handleAddChapter}
+          isOpen={isSidebarVisible}
+          onToggle={toggleSidebar}
+        />
+
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col min-w-0 bg-white">
+          {/* Toolbar */}
+          {!isFocusMode && (
+            <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-white z-10">
+              <div className="flex items-center gap-3">
+                {!isSidebarVisible && (
+                  <button
+                    onClick={toggleSidebar}
+                    className="p-1 hover:bg-stone-100 rounded-md text-stone-500 transition-colors"
+                    title="사이드바 열기"
+                  >
+                    <PanelLeft className="w-5 h-5" />
+                  </button>
+                )}
+
+                {/* Current Section Title */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-stone-800 truncate max-w-[300px]">
+                    {currentSectionTitle || "섹션을 선택하세요"}
+                  </span>
+                  {characterCount > 0 && (
+                    <span className="text-xs text-stone-400">
+                      ({characterCount.toLocaleString()}자)
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 flex flex-col">
-                <ChapterTree
-                  chapters={isDemo ? DEMO_CHAPTER_TREE : undefined}
-                  selectedChapterId={selectedChapterId}
-                  onSelectChapter={handleSelectChapter}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleSplitView}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    splitView.enabled
+                      ? "bg-sage-100 text-sage-700"
+                      : "hover:bg-stone-100 text-stone-500",
+                  )}
+                  title="분할 화면"
+                >
+                  <Columns className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={toggleFocusMode}
+                  className="p-1.5 hover:bg-stone-100 rounded-md text-stone-500 transition-colors"
+                  title="집중 모드"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+
+                <div className="h-4 w-px bg-stone-200" />
+                <button
+                  onClick={toggleRightSidebar}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    rightSidebarOpen
+                      ? "bg-sage-100 text-sage-700"
+                      : "hover:bg-stone-100 text-stone-500",
+                  )}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Focus Mode Exit Button */}
+          {isFocusMode && (
+            <div className="absolute top-4 right-4 z-50 opacity-0 hover:opacity-100 transition-opacity">
+              <button
+                onClick={toggleFocusMode}
+                className="bg-white/90 shadow-md border px-3 py-1.5 rounded-full text-xs font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1.5 backdrop-blur-sm"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                집중 모드 종료
+              </button>
+            </div>
+          )}
+
+          {/* Editor Content */}
+          <div className="flex-1 overflow-hidden relative">
+            {splitView.enabled ? (
+              <ResizablePanelGroup direction={splitView.direction}>
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <div className="h-full overflow-y-auto">
+                    <TiptapEditor
+                      onUpdate={(count) => setCharacterCount(count)}
+                      onContentChange={handleContentChange}
+                      initialContent={currentContent}
+                      hideToolbar={isFocusMode}
+                    />
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <div className="h-full overflow-y-auto bg-stone-50/50 border-l border-stone-100 flex flex-col">
+                    <div className="h-10 border-b flex items-center px-4 bg-stone-50 text-xs text-muted-foreground shrink-0">
+                      <span className="font-medium mr-2">참조 화면</span>
+                      <span className="text-stone-400">|</span>
+                      <span className="ml-2 truncate">
+                        {currentSectionTitle}
+                      </span>
+                    </div>
+                    <TiptapEditor
+                      initialContent={currentContent}
+                      onUpdate={() => {}}
+                      readOnly
+                      hideToolbar
+                    />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <div className="h-full overflow-y-auto">
+                <TiptapEditor
+                  onUpdate={(count) => setCharacterCount(count)}
+                  onContentChange={handleContentChange}
+                  initialContent={currentContent}
+                  hideToolbar={isFocusMode}
                 />
               </div>
-            </>
+            )}
+          </div>
+
+          {/* Section Strip (Bottom) */}
+          {!isFocusMode && (
+            <SectionStrip
+              sections={currentSections}
+              selectedId={selectedSectionId}
+              onSelect={handleSelectSection}
+              onAdd={handleAddSection}
+              parentTitle={currentFolderTitle}
+            />
           )}
-        </aside>
-
-        {/* Toggle button when closed */}
-        {!leftSidebarOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleLeftSidebar}
-            className="absolute left-2 top-2 z-10"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
-        )}
-
-        {/* Center - Editor or Grid View */}
-        <main
-          data-tour="editor"
-          className="flex-1 flex flex-col bg-white min-w-0"
-        >
-          {/* View Mode Toggle */}
-          <div className="px-4 py-2 border-b bg-stone-50 flex items-center justify-between">
-            <div className="flex items-center gap-1 bg-white rounded-lg p-1 border">
-              <Button
-                variant={viewMode === "editor" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("editor")}
-                className={cn(
-                  "h-7 px-3",
-                  viewMode === "editor" && "bg-sage-500 hover:bg-sage-600",
-                )}
-              >
-                <FileEdit className="h-3.5 w-3.5 mr-1.5" />
-                에디터
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "h-7 px-3",
-                  viewMode === "grid" && "bg-sage-500 hover:bg-sage-600",
-                )}
-              >
-                <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-                카드뷰
-              </Button>
-            </div>
-
-            {viewMode === "editor" && (
-              <span className="text-xs text-muted-foreground">
-                현재:{" "}
-                {sections.find((s) => s.id === selectedChapterId)?.title ||
-                  "섹션 선택"}
-              </span>
-            )}
-          </div>
-
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto">
-            {viewMode === "editor" ? (
-              <TiptapEditor
-                key={editorKey}
-                onUpdate={(count) => setCharacterCount(count)}
-                initialContent={currentContent}
-              />
-            ) : (
-              <SectionGridView
-                sections={sections}
-                selectedSectionId={selectedChapterId}
-                onSelectSection={handleSelectChapter}
-              />
-            )}
-          </div>
-
-          {/* Bottom Status Bar */}
-          <div className="px-4 py-2 border-t bg-stone-50 flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              {viewMode === "editor" ? (
-                <>
-                  <span>글자수: {characterCount.toLocaleString()}</span>
-                  <span className="text-sage-500">맞춤법 검사 ON</span>
-                </>
-              ) : (
-                <span>총 {sections.length}개 섹션</span>
-              )}
-            </div>
-            <span className="text-xs">자동 저장 활성화</span>
-          </div>
         </main>
 
-        {/* Right Sidebar - Foreshadowing / AI / Consistency */}
-        <aside
-          className={cn(
-            "bg-white border-l transition-all duration-300 flex flex-col",
-            rightSidebarOpen ? "w-80" : "w-0",
-          )}
-        >
-          {rightSidebarOpen && (
-            <>
-              <div className="p-2 border-b flex items-center justify-between">
-                <Tabs
-                  value={rightSidebarTab}
-                  onValueChange={(v) =>
-                    setRightSidebarTab(
-                      v as "foreshadowing" | "ai" | "consistency",
-                    )
-                  }
-                >
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger
-                      value="foreshadowing"
-                      className="text-xs px-2"
-                      data-tour="foreshadowing-panel"
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      복선
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="ai"
-                      className="text-xs px-2"
-                      data-tour="ai-panel"
-                    >
-                      <Bot className="h-3 w-3 mr-1" />
-                      AI
-                    </TabsTrigger>
-                    <TabsTrigger value="consistency" className="text-xs px-2">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      체크
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleRightSidebar}
-                >
-                  <PanelRightClose className="h-4 w-4" />
-                </Button>
-              </div>
-              <div
-                className={cn(
-                  "flex-1",
-                  rightSidebarTab === "ai"
-                    ? "overflow-hidden"
-                    : "overflow-y-auto",
-                )}
-              >
-                {rightSidebarTab === "foreshadowing" && <ForeshadowingPanel />}
-                {rightSidebarTab === "ai" && <AIAssistantPanel />}
-                {rightSidebarTab === "consistency" && <ConsistencyPanel />}
-              </div>
-            </>
-          )}
-        </aside>
+        {/* Right Sidebar */}
+        <EditorRightSidebar
+          isOpen={rightSidebarOpen}
+          onClose={toggleRightSidebar}
+          activeTab={rightSidebarTab}
+          onTabChange={setRightSidebarTab}
+        />
 
-        {/* Toggle button when closed */}
+        {/* Right Sidebar Toggle (when closed) */}
         {!rightSidebarOpen && (
           <Button
             variant="ghost"
@@ -413,13 +521,13 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         )}
       </div>
 
-      {/* Tour Start Prompt */}
+      {/* Tour Prompt */}
       {showTourPrompt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-sage-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-8 w-8 text-sage-600" />
+                <span className="text-3xl">✨</span>
               </div>
               <h2 className="text-xl font-bold mb-2">StoLink 둘러보기</h2>
               <p className="text-muted-foreground">
@@ -431,12 +539,17 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={handleSkipTour}
+                onClick={() => setShowTourPrompt(false)}
               >
                 나중에 할게요
               </Button>
-              <Button className="flex-1" onClick={handleStartTour}>
-                <Play className="h-4 w-4 mr-2" />
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  setShowTourPrompt(false);
+                  startTour();
+                }}
+              >
                 시작하기
               </Button>
             </div>

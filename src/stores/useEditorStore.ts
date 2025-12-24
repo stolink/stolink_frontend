@@ -5,6 +5,7 @@ interface EditorState {
   // Current editing state
   currentProjectId: string | null;
   currentChapterId: string | null;
+  currentSceneId: string | null;
   chapters: Chapter[];
 
   // Editor content
@@ -24,9 +25,13 @@ interface EditorState {
     secondaryDocumentId: string | null;
   };
 
+  // UX Features
+  isFocusMode: boolean;
+
   // Actions
   setCurrentProject: (projectId: string) => void;
   setCurrentChapter: (chapterId: string) => void;
+  setCurrentScene: (sceneId: string) => void;
   setChapters: (chapters: Chapter[]) => void;
   setContent: (content: string) => void;
   setSaveStatus: (status: "saved" | "saving" | "unsaved") => void;
@@ -38,11 +43,13 @@ interface EditorState {
   toggleSplitView: () => void;
   setSplitDirection: (direction: "horizontal" | "vertical") => void;
   setSecondaryDocument: (docId: string | null) => void;
+  toggleFocusMode: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   currentProjectId: null,
   currentChapterId: null,
+  currentSceneId: null,
   chapters: [],
   content: "",
   isSaving: false,
@@ -58,15 +65,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     secondaryDocumentId: null,
   },
 
+  isFocusMode: false,
+
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
 
   setCurrentChapter: (chapterId) => {
     const chapter = get().chapters.find((c) => c.id === chapterId);
     set({
       currentChapterId: chapterId,
+      currentSceneId: null, // 챕터 변경 시 씬 선택 초기화
       content: chapter?.content || "",
     });
   },
+
+  setCurrentScene: (sceneId) => set({ currentSceneId: sceneId }),
 
   setChapters: (chapters) => {
     const tree = get().buildChapterTree(chapters);
@@ -157,4 +169,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         secondaryDocumentId: docId,
       },
     })),
+
+  toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
 }));

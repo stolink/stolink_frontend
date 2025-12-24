@@ -43,6 +43,7 @@ export interface CreateSceneInput {
   projectId: string;
   title: string;
   synopsis?: string;
+  targetWordCount?: number; // Added as per instruction
   characterIds?: string[];
 }
 

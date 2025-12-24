@@ -3,3 +3,4 @@ export { useUIStore } from "./useUIStore";
 export { useEditorStore } from "./useEditorStore";
 export { useSceneStore } from "./useSceneStore";
 export { useForeshadowingStore } from "./useForeshadowingStore";
+export { useChapterStore } from "./useChapterStore";

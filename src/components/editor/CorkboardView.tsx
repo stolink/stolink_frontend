@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, GripVertical, FileText } from "lucide-react";
+import { LayoutGrid, GripVertical, FileText, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Scene, SceneStatus } from "@/types";
 
@@ -8,6 +8,7 @@ interface CorkboardViewProps {
   selectedSceneId?: string;
   onSelectScene?: (sceneId: string) => void;
   onReorderScenes?: (sceneIds: string[]) => void;
+  onAddScene?: () => void;
   className?: string;
 }
 
@@ -29,15 +30,47 @@ export default function CorkboardView({
   scenes,
   selectedSceneId,
   onSelectScene,
+  onReorderScenes,
+  onAddScene,
   className,
 }: CorkboardViewProps) {
   const [columns, setColumns] = useState(3);
+  const [draggedSceneId, setDraggedSceneId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, sceneId: string) => {
+    setDraggedSceneId(sceneId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetSceneId: string) => {
+    e.preventDefault();
+    if (!draggedSceneId || draggedSceneId === targetSceneId || !onReorderScenes)
+      return;
+
+    const currentIds = scenes.map((s) => s.id);
+    const draggedIndex = currentIds.indexOf(draggedSceneId);
+    const targetIndex = currentIds.indexOf(targetSceneId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newIds = [...currentIds];
+    newIds.splice(draggedIndex, 1);
+    newIds.splice(targetIndex, 0, draggedSceneId);
+
+    onReorderScenes(newIds);
+    setDraggedSceneId(null);
+  };
 
   if (scenes.length === 0) {
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center p-8 text-center",
+          "flex flex-col items-center justify-center p-8 text-center h-full",
           className,
         )}
       >
@@ -45,9 +78,17 @@ export default function CorkboardView({
         <h3 className="text-lg font-medium text-stone-700 mb-2">
           씬이 없습니다
         </h3>
-        <p className="text-sm text-muted-foreground">
-          챕터를 선택하고 새 씬을 추가해주세요.
+        <p className="text-sm text-muted-foreground mb-4">
+          새로운 씬을 추가하여 이야기를 시작해보세요.
         </p>
+        {onAddScene && (
+          <button
+            onClick={onAddScene}
+            className="flex items-center gap-2 px-4 py-2 bg-sage-600 text-white rounded-md hover:bg-sage-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />새 씬 만들기
+          </button>
+        )}
       </div>
     );
   }
@@ -88,6 +129,7 @@ export default function CorkboardView({
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          gridAutoRows: "max-content",
           gap: "16px",
         }}
       >
@@ -97,8 +139,28 @@ export default function CorkboardView({
             scene={scene}
             isSelected={scene.id === selectedSceneId}
             onClick={() => onSelectScene?.(scene.id)}
+            draggable={!!onReorderScenes}
+            onDragStart={(e) => handleDragStart(e, scene.id)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, scene.id)}
+            isDragging={draggedSceneId === scene.id}
           />
         ))}
+
+        {/* Add Button Card */}
+        {onAddScene && (
+          <button
+            onClick={onAddScene}
+            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-stone-300 rounded-lg hover:border-sage-500 hover:bg-sage-50/50 transition-all group min-h-[160px]"
+          >
+            <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-sage-100 transition-colors mb-2">
+              <Plus className="w-5 h-5 text-stone-400 group-hover:text-sage-600" />
+            </div>
+            <span className="text-sm font-medium text-stone-500 group-hover:text-sage-700">
+              새 씬 추가
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -108,9 +170,23 @@ interface SceneCardProps {
   scene: Scene;
   isSelected: boolean;
   onClick: () => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
 }
 
-function SceneCard({ scene, isSelected, onClick }: SceneCardProps) {
+function SceneCard({
+  scene,
+  isSelected,
+  onClick,
+  draggable,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragging,
+}: SceneCardProps) {
   const statusColor = STATUS_COLORS[scene.metadata?.status || "draft"];
   const labelColor = scene.metadata?.label
     ? LABEL_COLORS[scene.metadata.label] || "bg-stone-400"
@@ -118,14 +194,27 @@ function SceneCard({ scene, isSelected, onClick }: SceneCardProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       className={cn(
-        "group relative bg-white rounded-lg shadow-sm border-2 border-l-4 cursor-pointer transition-all",
+        "group relative bg-white rounded-lg shadow-sm border-2 border-l-4 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-sage-500",
         "hover:shadow-md hover:-translate-y-0.5",
         statusColor,
         isSelected
           ? "ring-2 ring-sage-500 border-sage-300"
           : "border-stone-200",
+        isDragging && "opacity-50 border-dashed border-stone-400",
       )}
     >
       {/* Drag Handle */}

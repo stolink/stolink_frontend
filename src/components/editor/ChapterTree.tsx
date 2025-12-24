@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface ChapterNode {
+export interface ChapterNode {
   id: string;
   title: string;
   type: "part" | "chapter" | "section";
@@ -415,16 +415,12 @@ export default function ChapterTree({
   onSelectChapter,
   onAddChapter,
 }: ChapterTreeProps) {
-  const [chapters, setChapters] = useState<ChapterNode[]>(initialChapters);
+  // Use prop directly instead of state to avoid infinite loop
+  const chapters = initialChapters;
   const [isAdding, setIsAdding] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Fixed: Sync chapters state when initialChapters prop changes (Issue #4)
-  useEffect(() => {
-    setChapters(initialChapters);
-  }, [initialChapters]);
 
   useEffect(() => {
     if (isAdding && inputRef.current) {
@@ -435,53 +431,11 @@ export default function ChapterTree({
   const handleAddChapter = () => {
     if (!newChapterTitle.trim()) return;
 
-    const newId = `chapter-${Date.now()}`;
-    const newChapter: ChapterNode = {
-      id: newId,
-      title: newChapterTitle.trim(),
-      type: "chapter",
-      characterCount: 0,
-    };
-
-    if (addingToParent) {
-      // Add as child to a part
-      setChapters((prev) =>
-        prev.map((part) => {
-          if (part.id === addingToParent) {
-            return {
-              ...part,
-              children: [...(part.children || []), newChapter],
-            };
-          }
-          return part;
-        }),
-      );
-    } else {
-      // Add to the first part by default, or create standalone
-      if (chapters.length > 0 && chapters[0].type === "part") {
-        setChapters((prev) =>
-          prev.map((part, index) => {
-            if (index === 0) {
-              return {
-                ...part,
-                children: [...(part.children || []), newChapter],
-              };
-            }
-            return part;
-          }),
-        );
-      } else {
-        setChapters((prev) => [...prev, newChapter]);
-      }
-    }
-
-    // Callback to parent
+    // Only call the parent callback - let the store handle creation
+    // The new chapter will come back via the chapters prop
     onAddChapter?.(newChapterTitle.trim(), addingToParent || undefined);
 
-    // Select the new chapter
-    onSelectChapter?.(newId);
-
-    // Reset
+    // Reset form
     setNewChapterTitle("");
     setIsAdding(false);
     setAddingToParent(null);
@@ -549,59 +503,82 @@ export default function ChapterTree({
       className="flex-1 flex flex-col space-y-1"
       onContextMenu={handleEmptyContextMenu}
     >
-      {chapters.map((node) => (
-        <ChapterTreeItem
-          key={node.id}
-          node={node}
-          selectedId={selectedChapterId}
-          onSelect={onSelectChapter}
-          onAddChild={handleStartAddChild}
-        />
-      ))}
-
-      {/* Inline Add Form */}
-      {isAdding ? (
-        <div className="flex items-center gap-2 px-2 py-1.5 bg-sage-50 rounded-md border border-sage-200">
-          <FileText className="h-4 w-4 text-sage-400 shrink-0" />
-          <Input
-            ref={inputRef}
-            value={newChapterTitle}
-            onChange={(e) => setNewChapterTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddChapter();
-              if (e.key === "Escape") handleCancel();
-            }}
-            placeholder="새 챕터 제목..."
-            className="h-7 text-sm border-0 bg-transparent focus-visible:ring-0 px-0"
-          />
+      {chapters.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground animate-in fade-in zoom-in-95">
+          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
+            <Folder className="h-6 w-6 text-stone-300" />
+          </div>
+          <p className="text-sm font-medium text-stone-600 mb-1">
+            챕터가 비어있습니다
+          </p>
+          <p className="text-xs text-stone-400 mb-4">
+            새로운 챕터를 만들어 이야기를 시작하세요.
+          </p>
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 shrink-0"
-            onClick={handleAddChapter}
-            disabled={!newChapterTitle.trim()}
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAdding(true)}
+            className="text-xs"
           >
-            <Plus className="h-3.5 w-3.5 text-sage-600" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 shrink-0"
-            onClick={handleCancel}
-          >
-            <X className="h-3.5 w-3.5 text-muted-foreground" />
+            <Plus className="h-3.5 w-3.5 mr-1.5" />첫 챕터 만들기
           </Button>
         </div>
       ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-muted-foreground mt-1 hover:text-sage-600 hover:bg-sage-50"
-          onClick={() => setIsAdding(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />새 챕터 추가
-        </Button>
+        chapters.map((node) => (
+          <ChapterTreeItem
+            key={node.id}
+            node={node}
+            selectedId={selectedChapterId}
+            onSelect={onSelectChapter}
+            onAddChild={handleStartAddChild}
+          />
+        ))
       )}
+
+      {/* Inline Add Form */}
+      {chapters.length > 0 /* 목록이 있을 때만 하단 추가 버튼 표시 */ &&
+        (isAdding ? (
+          <div className="flex items-center gap-2 px-2 py-1.5 bg-sage-50 rounded-md border border-sage-200 mt-1">
+            <FileText className="h-4 w-4 text-sage-400 shrink-0" />
+            <Input
+              ref={inputRef}
+              value={newChapterTitle}
+              onChange={(e) => setNewChapterTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddChapter();
+                if (e.key === "Escape") handleCancel();
+              }}
+              placeholder="새 챕터 제목..."
+              className="h-7 text-sm border-0 bg-transparent focus-visible:ring-0 px-0"
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0"
+              onClick={handleAddChapter}
+              disabled={!newChapterTitle.trim()}
+            >
+              <Plus className="h-3.5 w-3.5 text-sage-600" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0"
+              onClick={handleCancel}
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground mt-1 hover:text-sage-600 hover:bg-sage-50"
+            onClick={() => setIsAdding(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />새 챕터 추가
+          </Button>
+        ))}
 
       {/* 빈 공간 컨텍스트 메뉴 */}
       {showEmptyMenu && (
