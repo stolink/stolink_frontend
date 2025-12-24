@@ -1,5 +1,13 @@
 // Section Strip - Bottom navigation bar for sections within a chapter
-import { Plus, FileText, GripVertical } from "lucide-react";
+// Scrivener-inspired section navigation with visual structure indicators
+import {
+  Plus,
+  FileText,
+  GripVertical,
+  BookOpen,
+  PenLine,
+  CheckCircle2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document";
 import { useRef, useState } from "react";
@@ -31,56 +39,86 @@ export default function SectionStrip({
     setDraggedId(null);
   };
 
+  // Calculate total word count
+  const totalWords = sections.reduce(
+    (sum, s) => sum + (s.metadata?.wordCount || 0),
+    0,
+  );
+
   return (
-    <div className="h-16 border-t bg-stone-50 flex items-center shrink-0">
-      {/* Parent Title */}
-      <div className="px-4 border-r h-full flex items-center min-w-[140px]">
-        <span className="text-xs font-medium text-stone-500 truncate">
-          {parentTitle || "섹션 없음"}
-        </span>
+    <div className="border-t bg-gradient-to-b from-stone-50 to-stone-100 flex flex-col shrink-0">
+      {/* Header Bar */}
+      <div className="h-10 flex items-center justify-between px-4 border-b border-stone-200/50">
+        <div className="flex items-center gap-3">
+          <BookOpen className="w-4 h-4 text-sage-600" />
+          <span className="text-sm font-semibold text-stone-700">
+            {parentTitle || "챕터"}
+          </span>
+          <span className="text-xs text-stone-400">
+            {sections.length}개 섹션
+          </span>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-stone-500">
+          <span>{totalWords.toLocaleString()}자</span>
+        </div>
       </div>
 
       {/* Sections Scroll Area */}
       <div
         ref={scrollRef}
-        className="flex-1 flex items-center gap-2 px-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300"
+        className="flex items-stretch gap-3 px-4 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300"
       >
         {sections.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-stone-400 italic">
-            <FileText className="w-4 h-4" />
-            <span>섹션이 없습니다. 새 섹션을 추가하세요.</span>
+          <div className="flex flex-col items-center justify-center w-full py-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-2">
+              <FileText className="w-5 h-5 text-stone-300" />
+            </div>
+            <p className="text-sm text-stone-500 font-medium">
+              섹션이 비어있습니다
+            </p>
+            <p className="text-xs text-stone-400 mb-3">
+              새 섹션을 추가하여 챕터를 구성하세요
+            </p>
+            <button
+              onClick={onAdd}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-sage-600 hover:bg-sage-700 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />첫 섹션 만들기
+            </button>
           </div>
         ) : (
-          sections.map((section, index) => (
-            <SectionTab
-              key={section.id}
-              section={section}
-              index={index + 1}
-              isSelected={section.id === selectedId}
-              isDragging={section.id === draggedId}
-              onClick={() => onSelect(section.id)}
-              onDragStart={(e) => handleDragStart(e, section.id)}
-              onDragEnd={handleDragEnd}
-            />
-          ))
-        )}
-      </div>
+          <>
+            {sections.map((section, index) => (
+              <SectionCard
+                key={section.id}
+                section={section}
+                index={index + 1}
+                isSelected={section.id === selectedId}
+                isDragging={section.id === draggedId}
+                onClick={() => onSelect(section.id)}
+                onDragStart={(e) => handleDragStart(e, section.id)}
+                onDragEnd={handleDragEnd}
+              />
+            ))}
 
-      {/* Add Button */}
-      <div className="px-3 border-l h-full flex items-center">
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 hover:text-sage-700 hover:bg-sage-50 rounded-md transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>새 섹션</span>
-        </button>
+            {/* Add Button Card */}
+            <button
+              onClick={onAdd}
+              className="flex flex-col items-center justify-center min-w-[100px] px-4 py-3 border-2 border-dashed border-stone-300 rounded-xl hover:border-sage-400 hover:bg-sage-50/50 transition-all group"
+            >
+              <Plus className="w-5 h-5 text-stone-400 group-hover:text-sage-600 mb-1" />
+              <span className="text-xs text-stone-400 group-hover:text-sage-600 font-medium">
+                새 섹션
+              </span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-interface SectionTabProps {
+interface SectionCardProps {
   section: Document;
   index: number;
   isSelected: boolean;
@@ -90,7 +128,7 @@ interface SectionTabProps {
   onDragEnd: () => void;
 }
 
-function SectionTab({
+function SectionCard({
   section,
   index,
   isSelected,
@@ -98,14 +136,32 @@ function SectionTab({
   onClick,
   onDragStart,
   onDragEnd,
-}: SectionTabProps) {
-  const statusColors = {
-    draft: "bg-stone-400",
-    revised: "bg-amber-400",
-    final: "bg-green-500",
+}: SectionCardProps) {
+  const statusConfig = {
+    draft: {
+      color: "bg-stone-400",
+      label: "초안",
+      icon: PenLine,
+      ring: "ring-stone-200",
+    },
+    revised: {
+      color: "bg-amber-400",
+      label: "수정중",
+      icon: PenLine,
+      ring: "ring-amber-200",
+    },
+    final: {
+      color: "bg-green-500",
+      label: "완료",
+      icon: CheckCircle2,
+      ring: "ring-green-200",
+    },
   };
 
-  const statusColor = statusColors[section.metadata?.status || "draft"];
+  const status = section.metadata?.status || "draft";
+  const config = statusConfig[status];
+  const wordCount = section.metadata?.wordCount || 0;
+  const synopsis = section.synopsis || "";
 
   return (
     <button
@@ -114,45 +170,73 @@ function SectionTab({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "group relative flex items-center gap-2 px-3 py-2 rounded-lg border transition-all whitespace-nowrap",
-        "hover:shadow-sm hover:-translate-y-0.5",
+        "group relative flex flex-col min-w-[160px] max-w-[200px] p-3 rounded-xl border-2 transition-all text-left",
+        "hover:shadow-md hover:-translate-y-1",
         isSelected
-          ? "bg-white border-sage-300 shadow-sm ring-1 ring-sage-200"
-          : "bg-white/60 border-stone-200 hover:bg-white hover:border-stone-300",
-        isDragging && "opacity-50",
+          ? "bg-white border-sage-400 shadow-md ring-2 ring-sage-100"
+          : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300",
+        isDragging && "opacity-50 scale-95",
       )}
     >
-      {/* Status Indicator */}
-      <div
-        className={cn("w-2 h-2 rounded-full shrink-0", statusColor)}
-        title={section.metadata?.status || "draft"}
-      />
-
-      {/* Index */}
-      <span className="text-[10px] text-stone-400 font-mono">{index}.</span>
+      {/* Header: Index + Status */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
+              isSelected
+                ? "bg-sage-600 text-white"
+                : "bg-stone-100 text-stone-600",
+            )}
+          >
+            {index}
+          </span>
+          <div
+            className={cn("w-2 h-2 rounded-full", config.color)}
+            title={config.label}
+          />
+        </div>
+        <GripVertical
+          className={cn(
+            "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
+            isDragging && "cursor-grabbing",
+          )}
+        />
+      </div>
 
       {/* Title */}
-      <span
+      <h4
         className={cn(
-          "text-xs font-medium max-w-[120px] truncate",
+          "text-sm font-semibold truncate mb-1",
           isSelected ? "text-sage-800" : "text-stone-700",
         )}
       >
         {section.title}
-      </span>
+      </h4>
 
-      {/* Word Count */}
-      <span className="text-[10px] text-stone-400">
-        {section.metadata?.wordCount?.toLocaleString() || 0}자
-      </span>
+      {/* Synopsis Preview */}
+      <p className="text-xs text-stone-400 line-clamp-2 min-h-[32px] mb-2">
+        {synopsis || "시놉시스 없음"}
+      </p>
 
-      {/* Drag Handle (on hover) */}
-      <GripVertical
-        className={cn(
-          "w-3 h-3 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
-          isDragging && "cursor-grabbing",
-        )}
-      />
+      {/* Footer: Word Count + Status Label */}
+      <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+        <span className="text-[11px] text-stone-500 font-medium">
+          {wordCount.toLocaleString()}자
+        </span>
+        <span
+          className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+            status === "final"
+              ? "bg-green-100 text-green-700"
+              : status === "revised"
+                ? "bg-amber-100 text-amber-700"
+                : "bg-stone-100 text-stone-500",
+          )}
+        >
+          {config.label}
+        </span>
+      </div>
     </button>
   );
 }
