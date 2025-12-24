@@ -50,7 +50,7 @@ jobs:
       - name: Prepare prompt
         id: prompt
         run: |
-          DIFF_CONTENT=$(cat diff_content.txt | head -c 15000 | iconv -c -f utf-8 -t utf-8)
+          DIFF_CONTENT=$(head -n 500 diff_content.txt)
           FILES="${{ steps.diff.outputs.files }}"
 
           # Create template file
