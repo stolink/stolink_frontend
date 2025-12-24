@@ -10,25 +10,76 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
+import { useChildDocuments, useDocumentTree } from "@/hooks/useDocuments";
+import { DEMO_CHAPTERS, DEMO_CHAPTER_CONTENTS } from "@/data/demoData";
 
 interface SectionStripProps {
-  sections: Document[];
-  selectedId: string | null;
+  selectedFolderId: string;
+  selectedSectionId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
-  parentTitle?: string;
+  projectId: string;
+  isDemo: boolean;
   liveWordCount?: number; // Real-time word count for selected section
 }
 
 export default function SectionStrip({
-  sections,
-  selectedId,
+  selectedFolderId,
+  selectedSectionId,
   onSelect,
   onAdd,
-  parentTitle,
+  projectId,
+  isDemo,
   liveWordCount,
 }: SectionStripProps) {
+  // 1. Fetch data based on mode
+  const { documents } = useDocumentTree(projectId);
+  const { children: sectionDocuments } = useChildDocuments(
+    selectedFolderId,
+    projectId,
+  );
+
+  // 2. Compute Sections List
+  const sections = useMemo(() => {
+    if (isDemo) {
+      return DEMO_CHAPTERS.filter(
+        (ch) => ch.parentId === selectedFolderId && ch.type === "section",
+      ).map((ch) => ({
+        id: ch.id,
+        projectId: "demo-project",
+        type: "text" as const,
+        title: ch.title,
+        content: DEMO_CHAPTER_CONTENTS[ch.id] || "",
+        synopsis: "",
+        order: ch.order,
+        metadata: {
+          status: "draft" as const,
+          wordCount: ch.characterCount || 0,
+          includeInCompile: true,
+          keywords: [],
+          notes: "",
+        },
+        characterIds: [],
+        foreshadowingIds: [],
+        createdAt: ch.createdAt,
+        updatedAt: ch.updatedAt,
+      })) as Document[];
+    }
+    return sectionDocuments.filter((doc) => doc.type === "text");
+  }, [isDemo, selectedFolderId, sectionDocuments]);
+
+  // 3. Compute Parent Folder Title
+  const parentTitle = useMemo(() => {
+    if (isDemo) {
+      return (
+        DEMO_CHAPTERS.find((c) => c.id === selectedFolderId)?.title || "챕터"
+      );
+    }
+    const doc = documents.find((d) => d.id === selectedFolderId);
+    return doc?.title || "폴더 선택";
+  }, [isDemo, selectedFolderId, documents]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
@@ -40,12 +91,6 @@ export default function SectionStrip({
   const handleDragEnd = () => {
     setDraggedId(null);
   };
-
-  // Calculate total word count
-  const totalWords = sections.reduce(
-    (sum, s) => sum + (s.metadata?.wordCount || 0),
-    0,
-  );
 
   return (
     <div className="border-t bg-gradient-to-b from-stone-50 to-stone-100 flex flex-col shrink-0">
@@ -61,7 +106,11 @@ export default function SectionStrip({
           </span>
         </div>
         <div className="flex items-center gap-4 text-xs text-stone-500">
-          <span>{totalWords.toLocaleString()}자</span>
+          {selectedSectionId && (
+            <span className="text-sage-600 font-medium">
+              {(liveWordCount ?? 0).toLocaleString()}자
+            </span>
+          )}
         </div>
       </div>
 
@@ -95,13 +144,13 @@ export default function SectionStrip({
                 key={section.id}
                 section={section}
                 index={index + 1}
-                isSelected={section.id === selectedId}
+                isSelected={section.id === selectedSectionId}
                 isDragging={section.id === draggedId}
                 onClick={() => onSelect(section.id)}
                 onDragStart={(e) => handleDragStart(e, section.id)}
                 onDragEnd={handleDragEnd}
                 liveWordCount={
-                  section.id === selectedId ? liveWordCount : undefined
+                  section.id === selectedSectionId ? liveWordCount : undefined
                 }
               />
             ))}
