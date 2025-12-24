@@ -1,21 +1,14 @@
 import { NodeViewWrapper } from "@tiptap/react";
+import type { NodeViewProps } from "@tiptap/react";
 import { User } from "lucide-react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import { CharacterHoverCard } from "./CharacterHoverCard";
 import { DEMO_CHARACTERS } from "./CharacterMention";
 
-interface CharacterNodeViewProps {
-  node: {
-    attrs: {
-      id: string;
-      label: string;
-    };
-  };
-}
-
-export default function CharacterNodeView({ node }: CharacterNodeViewProps) {
-  const { id, label } = node.attrs;
+export default function CharacterNodeView({ node }: NodeViewProps) {
+  const id = node.attrs.id as string;
+  const label = node.attrs.label as string;
 
   // Find character data from DEMO_CHARACTERS
   const character = DEMO_CHARACTERS.find(
@@ -34,7 +27,7 @@ export default function CharacterNodeView({ node }: CharacterNodeViewProps) {
           character ? (
             <CharacterHoverCard
               name={character.name}
-              role={character.role}
+              role={character.role ?? "기타"}
               description={description}
               age={age}
               trait={traits?.[0]}

@@ -5,7 +5,8 @@ import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionDivider } from "./extensions/SectionDivider";
 import { CharacterMention } from "./extensions/CharacterMention";
@@ -72,43 +73,57 @@ export default function ScriveningsEditor({
       // Bulk Save logic
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-      saveTimeoutRef.current = setTimeout(() => {
-        const html = editor.getHTML();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        const dividers = doc.querySelectorAll(
-          'div[data-type="section-divider"]'
-        );
-        const updates: Record<string, string> = {};
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const html = editor.getHTML();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const dividers = doc.querySelectorAll(
+            'div[data-type="section-divider"]'
+          );
+          const updates: Record<string, string> = {};
 
-        dividers.forEach((divider) => {
-          const docId = divider.getAttribute("data-document-id");
-          if (!docId) return;
+          dividers.forEach((divider) => {
+            const docId = divider.getAttribute("data-document-id");
+            if (!docId) return;
 
-          let content = "";
-          let next = divider.nextElementSibling;
-          while (next && next.getAttribute("data-type") !== "section-divider") {
-            content += next.outerHTML;
-            next = next.nextElementSibling;
+            let content = "";
+            let next = divider.nextElementSibling;
+            while (
+              next &&
+              next.getAttribute("data-type") !== "section-divider"
+            ) {
+              content += next.outerHTML;
+              next = next.nextElementSibling;
+            }
+            updates[docId] = content;
+          });
+
+          if (Object.keys(updates).length > 0) {
+            await bulkSaveContent(updates);
           }
-          updates[docId] = content;
-        });
-
-        if (Object.keys(updates).length > 0) {
-          bulkSaveContent(updates);
+        } catch (error) {
+          console.error("[ScriveningsEditor] Failed to save content:", error);
         }
       }, 1000);
     },
   });
 
-  // Update editor content if children change (but only if not dirty?)
-  // Actually, we should be careful not to overwrite user input.
-  // For MVP, we only set content once or when folder changes.
+  // Update editor content when folder changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const childrenIds = useMemo(
+    () => children.map((c) => c.id).join(","),
+    [children]
+  );
+
   useEffect(() => {
-    if (editor && folderId) {
-      editor.commands.setContent(getCombinedContent());
+    if (editor && folderId && children.length > 0) {
+      const newContent = getCombinedContent();
+      if (editor.getHTML() !== newContent) {
+        editor.commands.setContent(newContent);
+      }
     }
-  }, [editor, folderId, getCombinedContent]);
+  }, [editor, folderId, childrenIds]);
 
   if (isLoading || !editor) {
     return (
@@ -122,7 +137,7 @@ export default function ScriveningsEditor({
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-stone-50/30">
         <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-          <List className="w-8 h-8 text-stone-300" />
+          <FileText className="w-8 h-8 text-stone-300" />
         </div>
         <h3 className="text-lg font-semibold text-stone-700 mb-2">
           통합 편집할 섹션이 없습니다

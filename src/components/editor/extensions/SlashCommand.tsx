@@ -1,10 +1,14 @@
 import { Extension } from "@tiptap/core";
 import Suggestion from "@tiptap/suggestion";
+import type {
+  SuggestionProps,
+  SuggestionKeyDownProps,
+} from "@tiptap/suggestion";
 import { ReactRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
 import type { Instance as TippyInstance } from "tippy.js";
 import { CommandList } from "./CommandList";
-import type { CommandListRef, CommandItemProps } from "./CommandList";
+import type { CommandListRef } from "./CommandList";
 import {
   Heading1,
   Heading2,
@@ -124,7 +128,7 @@ export const SlashCommandExtension = SlashCommand.configure({
       let popup: TippyInstance[];
 
       return {
-        onStart: (props) => {
+        onStart: (props: SuggestionProps) => {
           component = new ReactRenderer(CommandList, {
             props,
             editor: props.editor,
@@ -145,7 +149,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           });
         },
 
-        onUpdate(props) {
+        onUpdate(props: SuggestionProps) {
           component.updateProps(props);
 
           if (!props.clientRect) {
@@ -157,7 +161,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           });
         },
 
-        onKeyDown(props) {
+        onKeyDown(props: SuggestionKeyDownProps) {
           if (props.event.key === "Escape") {
             popup[0].hide();
             return true;
