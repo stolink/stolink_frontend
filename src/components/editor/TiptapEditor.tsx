@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
+import { CharacterMention } from "./extensions/CharacterMention";
+import { SlashCommandExtension } from "./extensions/SlashCommand";
 
 export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
@@ -46,10 +48,13 @@ export default function TiptapEditor({
   const editor = useEditor({
     editable: !readOnly,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+      }),
       Placeholder.configure({
-        placeholder:
-          "이야기를 시작하세요... #복선:태그명 형식으로 복선을 추가할 수 있습니다.",
+        placeholder: "마크다운(#, ##, > 등)으로 자유롭게 내용을 입력하세요...",
       }),
       Highlight.configure({
         multicolor: true,
@@ -59,14 +64,17 @@ export default function TiptapEditor({
         types: ["heading", "paragraph"],
       }),
       Underline,
+      CharacterMention,
+      SlashCommandExtension,
     ],
     content: initialContent || DEFAULT_CONTENT,
     editorProps: {
       attributes: {
         class: cn(
           "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
-          readOnly && "pointer-events-none opacity-80", // 읽기 전용 스타일
+          readOnly && "pointer-events-none opacity-80" // 읽기 전용 스타일
         ),
+        spellcheck: "false",
       },
     },
     onUpdate: ({ editor }) => {
@@ -151,7 +159,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("bold") && "bg-stone-100",
+              editor.isActive("bold") && "bg-stone-100"
             )}
           >
             <Bold className="w-3.5 h-3.5" />
@@ -162,7 +170,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("italic") && "bg-stone-100",
+              editor.isActive("italic") && "bg-stone-100"
             )}
           >
             <Italic className="w-3.5 h-3.5" />

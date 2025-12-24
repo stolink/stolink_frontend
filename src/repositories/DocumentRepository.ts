@@ -25,6 +25,7 @@ export interface IDocumentRepository {
   // === Content Operations (separate for optimization) ===
   getContent(id: string): Promise<string>;
   updateContent(id: string, content: string): Promise<void>;
+  bulkUpdateContent(updates: Record<string, string>): Promise<void>;
 }
 
 // Helper function to build tree from flat list
