@@ -4,44 +4,21 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
 import { useEffect } from "react";
-import {
-  Bold,
-  Italic,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Clapperboard,
-} from "lucide-react";
+import { Bold, Italic, Clapperboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
+import { EditorToolbar } from "@/components/editor/EditorToolbar";
 
 export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
+  onContentChange?: (content: string) => void;
   initialContent?: string;
-}
-
-// ToolbarButton을 컴포넌트 외부에 정의
-interface ToolbarButtonProps {
-  onClick: () => void;
-  isActive?: boolean;
-  children: React.ReactNode;
-}
-
-function ToolbarButton({ onClick, isActive, children }: ToolbarButtonProps) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={onClick}
-      className={cn("h-8 w-8", isActive && "bg-sage-100 text-sage-700")}
-    >
-      {children}
-    </Button>
-  );
+  readOnly?: boolean;
+  hideToolbar?: boolean;
 }
 
 const DEFAULT_CONTENT = `
@@ -58,12 +35,16 @@ const DEFAULT_CONTENT = `
 
 export default function TiptapEditor({
   onUpdate,
+  onContentChange,
   initialContent,
+  readOnly = false,
+  hideToolbar = false,
 }: TiptapEditorProps) {
   const navigate = useNavigate();
   const { id: projectId } = useParams<{ id: string }>();
 
   const editor = useEditor({
+    editable: !readOnly,
     extensions: [
       StarterKit,
       Placeholder.configure({
@@ -74,26 +55,58 @@ export default function TiptapEditor({
         multicolor: true,
       }),
       CharacterCount,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      Underline,
     ],
     content: initialContent || DEFAULT_CONTENT,
     editorProps: {
       attributes: {
-        class:
+        class: cn(
           "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
+          readOnly && "pointer-events-none opacity-80", // 읽기 전용 스타일
+        ),
       },
     },
     onUpdate: ({ editor }) => {
+      // Character count is cheap - update immediately
       if (onUpdate) {
         onUpdate(editor.storage.characterCount.characters());
+      }
+      // getHTML is expensive - only call if needed
+      if (onContentChange) {
+        onContentChange(editor.getHTML());
       }
     },
   });
 
   useEffect(() => {
-    if (editor && onUpdate) {
-      onUpdate(editor.storage.characterCount.characters());
+    if (editor) {
+      editor.setEditable(!readOnly);
     }
-  }, [editor, onUpdate]);
+  }, [editor, readOnly]);
+
+  // Initial character count (only on mount)
+  useEffect(() => {
+    if (editor && onUpdate) {
+      // Use requestAnimationFrame to defer
+      requestAnimationFrame(() => {
+        onUpdate(editor.storage.characterCount.characters());
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]); // Intentionally exclude onUpdate to prevent loops
+
+  // initialContent 변경 감지하여 에디터 내용 업데이트 (씬 전환 시)
+  useEffect(() => {
+    if (editor && initialContent !== undefined) {
+      const currentHTML = editor.getHTML();
+      if (currentHTML !== initialContent) {
+        editor.commands.setContent(initialContent);
+      }
+    }
+  }, [editor, initialContent]);
 
   if (!editor) {
     return null;
@@ -115,12 +128,12 @@ export default function TiptapEditor({
   };
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative group">
       {/* Bubble Menu for Selection */}
-      {editor && (
+      {editor && !readOnly && (
         <BubbleMenu
           editor={editor}
-          className="flex overflow-hidden rounded-md border border-stone-200 bg-white shadow-md"
+          className="flex overflow-hidden rounded-md border border-stone-200 bg-white shadow-md z-50"
         >
           <Button
             variant="ghost"
@@ -157,66 +170,12 @@ export default function TiptapEditor({
         </BubbleMenu>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b bg-stone-50">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          isActive={editor.isActive("bold")}
-        >
-          <Bold className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          isActive={editor.isActive("italic")}
-        >
-          <Italic className="h-4 w-4" />
-        </ToolbarButton>
-
-        <div className="w-px h-6 bg-stone-300 mx-2" />
-
-        <ToolbarButton
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-          isActive={editor.isActive("heading", { level: 1 })}
-        >
-          <Heading1 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
-          isActive={editor.isActive("heading", { level: 2 })}
-        >
-          <Heading2 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 3 }).run()
-          }
-          isActive={editor.isActive("heading", { level: 3 })}
-        >
-          <Heading3 className="h-4 w-4" />
-        </ToolbarButton>
-
-        <div className="w-px h-6 bg-stone-300 mx-2" />
-
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          isActive={editor.isActive("bulletList")}
-        >
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          isActive={editor.isActive("orderedList")}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
-      </div>
+      {/* Toolbar - Focus Mode 혹은 readOnly일 때 숨김 가능 or readOnly여도 툴바는 볼 수 있음?
+          보통 readOnly는 툴바도 안 보임. */}
+      {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto w-full">
         <EditorContent editor={editor} />
       </div>
     </div>

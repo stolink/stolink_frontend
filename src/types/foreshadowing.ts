@@ -9,6 +9,8 @@ export interface Foreshadowing {
 
   // === 주요 선택 필드 ===
   description?: string;
+  importance?: ForeshadowingImportance; // 중요도
+  relatedCharacterIds?: string[]; // 관련 캐릭터
 
   // === 동적 추가 정보 ===
   extras?: Record<string, string | number | boolean>;
@@ -20,9 +22,11 @@ export interface Foreshadowing {
   updatedAt: string;
 }
 
-export type ForeshadowingStatus = 'pending' | 'recovered' | 'ignored';
+export type ForeshadowingStatus = "pending" | "recovered" | "ignored";
+export type ForeshadowingImportance = "major" | "minor";
 
 export interface ForeshadowingAppearance {
+  sceneId?: string; // Scene 레벨 추적 (신규)
   chapterId: string;
   chapterTitle: string;
   line: number;

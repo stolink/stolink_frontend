@@ -5,6 +5,7 @@ interface EditorState {
   // Current editing state
   currentProjectId: string | null;
   currentChapterId: string | null;
+  currentSceneId: string | null;
   chapters: Chapter[];
 
   // Editor content
@@ -17,27 +18,54 @@ interface EditorState {
   chapterTree: ChapterTreeNode[];
   expandedNodes: string[]; // Changed from Set<string> for serialization
 
+  // Split view (Phase 2)
+  splitView: {
+    enabled: boolean;
+    direction: "horizontal" | "vertical";
+    secondaryDocumentId: string | null;
+  };
+
+  // UX Features
+  isFocusMode: boolean;
+
   // Actions
   setCurrentProject: (projectId: string) => void;
   setCurrentChapter: (chapterId: string) => void;
+  setCurrentScene: (sceneId: string) => void;
   setChapters: (chapters: Chapter[]) => void;
   setContent: (content: string) => void;
   setSaveStatus: (status: "saved" | "saving" | "unsaved") => void;
   toggleNodeExpanded: (nodeId: string) => void;
   isNodeExpanded: (nodeId: string) => boolean;
   buildChapterTree: (chapters: Chapter[]) => ChapterTreeNode[];
+
+  // Split view actions
+  toggleSplitView: () => void;
+  setSplitDirection: (direction: "horizontal" | "vertical") => void;
+  setSecondaryDocument: (docId: string | null) => void;
+  toggleFocusMode: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   currentProjectId: null,
   currentChapterId: null,
+  currentSceneId: null,
   chapters: [],
   content: "",
   isSaving: false,
   saveStatus: "saved",
   lastSavedAt: null,
   chapterTree: [],
-  expandedNodes: [], // Changed from new Set<string>()
+  expandedNodes: [],
+
+  // Split view initial state
+  splitView: {
+    enabled: false,
+    direction: "vertical",
+    secondaryDocumentId: null,
+  },
+
+  isFocusMode: false,
 
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
 
@@ -45,9 +73,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const chapter = get().chapters.find((c) => c.id === chapterId);
     set({
       currentChapterId: chapterId,
+      currentSceneId: null, // 챕터 변경 시 씬 선택 초기화
       content: chapter?.content || "",
     });
   },
+
+  setCurrentScene: (sceneId) => set({ currentSceneId: sceneId }),
 
   setChapters: (chapters) => {
     const tree = get().buildChapterTree(chapters);
@@ -113,4 +144,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
     return sortChildren(roots);
   },
+
+  // Split view actions
+  toggleSplitView: () =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        enabled: !state.splitView.enabled,
+      },
+    })),
+
+  setSplitDirection: (direction) =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        direction,
+      },
+    })),
+
+  setSecondaryDocument: (docId) =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        secondaryDocumentId: docId,
+      },
+    })),
+
+  toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
 }));

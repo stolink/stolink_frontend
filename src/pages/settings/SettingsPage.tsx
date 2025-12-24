@@ -1,56 +1,35 @@
-import { useState } from 'react';
-import { Share2, Trash2, Settings, Bell, Palette, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-// Custom Toggle Switch Component
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (val: boolean) => void; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`
-        relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent
-        transition-colors duration-200 ease-organic focus-visible:outline-none focus-visible:ring-2
-        focus-visible:ring-sage-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
-        ${checked ? 'bg-sage-500' : 'bg-stone-200'}
-      `}
-    >
-      <span
-        className={`
-          pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0
-          transition duration-200 ease-organic
-          ${checked ? 'translate-x-5' : 'translate-x-0'}
-        `}
-      />
-    </button>
-  );
-}
+import { useState } from "react";
+import { Share2, Trash2, Settings, Bell, Palette, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Toggle } from "@/components/ui/toggle";
+import { SettingRow } from "@/components/ui/setting-row";
 
 export default function SettingsPage() {
   const [autoSave, setAutoSave] = useState(true);
   const [spellCheck, setSpellCheck] = useState(true);
   const [typingSound, setTypingSound] = useState(false);
   const [goalNotification, setGoalNotification] = useState(true);
-  const [foreshadowingNotification, setForeshadowingNotification] = useState(true);
+  const [foreshadowingNotification, setForeshadowingNotification] =
+    useState(true);
 
   return (
     <div className="h-full overflow-y-auto bg-paper">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Settings className="h-6 w-6 text-sage-500" />
-            관리
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            작품 정보 및 설정을 관리하세요
-          </p>
-        </div>
+        <PageHeader
+          icon={Settings}
+          title="관리"
+          description="작품 정보 및 설정을 관리하세요"
+        />
 
         {/* Preferences */}
         <Card>
@@ -62,27 +41,15 @@ export default function SettingsPage() {
             <CardDescription>에디터 환경을 설정합니다</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">자동 저장</p>
-                <p className="text-sm text-muted-foreground">30초마다 자동 저장</p>
-              </div>
+            <SettingRow title="자동 저장" description="30초마다 자동 저장">
               <Toggle checked={autoSave} onChange={setAutoSave} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">맞춤법 검사</p>
-                <p className="text-sm text-muted-foreground">실시간 맞춤법 표시</p>
-              </div>
+            </SettingRow>
+            <SettingRow title="맞춤법 검사" description="실시간 맞춤법 표시">
               <Toggle checked={spellCheck} onChange={setSpellCheck} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">타이핑 사운드</p>
-                <p className="text-sm text-muted-foreground">타자기 효과음</p>
-              </div>
+            </SettingRow>
+            <SettingRow title="타이핑 사운드" description="타자기 효과음">
               <Toggle checked={typingSound} onChange={setTypingSound} />
-            </div>
+            </SettingRow>
           </CardContent>
         </Card>
 
@@ -96,20 +63,24 @@ export default function SettingsPage() {
             <CardDescription>알림 설정을 관리합니다</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">집필 목표 알림</p>
-                <p className="text-sm text-muted-foreground">일일 목표 달성 알림</p>
-              </div>
-              <Toggle checked={goalNotification} onChange={setGoalNotification} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">미회수 복선 알림</p>
-                <p className="text-sm text-muted-foreground">일정 기간 미회수 복선 알림</p>
-              </div>
-              <Toggle checked={foreshadowingNotification} onChange={setForeshadowingNotification} />
-            </div>
+            <SettingRow
+              title="집필 목표 알림"
+              description="일일 목표 달성 알림"
+            >
+              <Toggle
+                checked={goalNotification}
+                onChange={setGoalNotification}
+              />
+            </SettingRow>
+            <SettingRow
+              title="미회수 복선 알림"
+              description="일정 기간 미회수 복선 알림"
+            >
+              <Toggle
+                checked={foreshadowingNotification}
+                onChange={setForeshadowingNotification}
+              />
+            </SettingRow>
           </CardContent>
         </Card>
 
@@ -120,7 +91,9 @@ export default function SettingsPage() {
               <Share2 className="h-5 w-5" />
               공유
             </CardTitle>
-            <CardDescription>읽기 전용 링크를 생성하여 다른 사람과 공유합니다</CardDescription>
+            <CardDescription>
+              읽기 전용 링크를 생성하여 다른 사람과 공유합니다
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-3">
@@ -143,7 +116,9 @@ export default function SettingsPage() {
               <Lock className="h-5 w-5" />
               접근 권한
             </CardTitle>
-            <CardDescription>협업자를 초대하고 권한을 관리합니다</CardDescription>
+            <CardDescription>
+              협업자를 초대하고 권한을 관리합니다
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-6 text-muted-foreground">
@@ -160,7 +135,9 @@ export default function SettingsPage() {
         <Card className="border-red-200">
           <CardHeader>
             <CardTitle className="text-red-500">위험 구역</CardTitle>
-            <CardDescription>주의: 이 작업은 되돌릴 수 없습니다</CardDescription>
+            <CardDescription>
+              주의: 이 작업은 되돌릴 수 없습니다
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive" className="flex items-center gap-2">
@@ -173,4 +150,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

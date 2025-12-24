@@ -54,18 +54,21 @@ export const useSceneStore = create<SceneStore>()(
     scenes: {},
 
     createScene: (input) => {
+      const newOrder = Object.values(get().scenes).filter(
+        (s) => s.chapterId === input.chapterId,
+      ).length;
+
       const newScene: Scene = {
         id: generateId(),
         chapterId: input.chapterId,
         projectId: input.projectId,
         title: input.title,
         content: "",
-        order: Object.values(get().scenes).filter(
-          (s) => s.chapterId === input.chapterId,
-        ).length,
+        order: newOrder,
         metadata: {
           ...createDefaultMetadata(),
           synopsis: input.synopsis || "",
+          targetWordCount: input.targetWordCount || 5000,
         },
         characterIds: input.characterIds || [],
         foreshadowingIds: [],
