@@ -7,6 +7,11 @@ import {
   Minimize2,
   Columns,
   Settings,
+  Layout,
+  List,
+  TableProperties,
+  ChevronRight,
+  BookOpen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +51,8 @@ import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import DemoHeader from "@/components/editor/DemoHeader";
 import SectionStrip from "@/components/editor/SectionStrip";
+import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
+import OutlineView from "@/components/editor/OutlineView";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -61,7 +68,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -116,7 +123,7 @@ function documentTreeToChapterTree(
       type: string;
       children: unknown[];
     }[];
-  }[],
+  }[]
 ): ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -153,17 +160,23 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string>(
-    isDemo ? "chapter-1" : "doc-chapter-1",
+    isDemo ? "chapter-1" : "doc-chapter-1"
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : "doc-sample-1-1",
+    isDemo ? "chapter-1-1" : "doc-sample-1-1"
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Editor Store
-  const { splitView, toggleSplitView, isFocusMode, toggleFocusMode } =
-    useEditorStore();
+  const {
+    splitView,
+    toggleSplitView,
+    isFocusMode,
+    toggleFocusMode,
+    viewMode,
+    setViewMode,
+  } = useEditorStore();
 
   // Project ID
   const projectId = isDemo ? "demo-project" : SAMPLE_PROJECT_ID;
@@ -174,14 +187,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
+    isDemo ? null : selectedSectionId
   );
   const { createDocument } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
   // Get child sections of the selected folder
   const { children: sectionDocuments } = useChildDocuments(
     selectedFolderId,
-    projectId,
+    projectId
   );
 
   // Title editing state
@@ -207,6 +220,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     if (isDemo) return DEMO_CHAPTER_TREE;
     return documentTreeToChapterTree(documentTree);
   }, [isDemo, documentTree]);
+
+  // Current parent folder title
+  const currentFolderTitle = useMemo(() => {
+    if (isDemo) {
+      return DEMO_CHAPTERS.find((c) => c.id === selectedFolderId)?.title || "";
+    }
+    const doc = documents.find((d) => d.id === selectedFolderId);
+    return doc?.title || "";
+  }, [isDemo, selectedFolderId, documents]);
 
   // Current section title
   const currentSectionTitle = useMemo(() => {
@@ -274,7 +296,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Debounced content saving to reduce latency
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
 
   const handleContentChange = useCallback(
@@ -291,7 +313,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         saveContent(content);
       }, 500);
     },
-    [isDemo, saveContent],
+    [isDemo, saveContent]
   );
 
   // Store latest values in refs to prevent callback recreation
@@ -322,7 +344,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         }, 1000);
       }
     },
-    [isDemo], // Minimal dependencies - use refs for changing values
+    [isDemo] // Minimal dependencies - use refs for changing values
   );
 
   // Cleanup timeout on unmount
@@ -397,31 +419,29 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 {!isSidebarVisible && (
                   <button
                     onClick={toggleSidebar}
-                    className="p-1 hover:bg-stone-100 rounded-md text-stone-500 transition-colors"
+                    className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors mr-2"
                     title="사이드바 열기"
                   >
                     <PanelLeft className="w-5 h-5" />
                   </button>
                 )}
 
-                {/* Current Section Title - Editable */}
-                <div className="flex items-center gap-2">
-                  {isEditingTitle ? (
-                    <input
-                      type="text"
-                      value={editedTitle}
-                      onChange={(e) => setEditedTitle(e.target.value)}
-                      onBlur={() => {
-                        if (
-                          editedTitle.trim() &&
-                          editedTitle !== currentSectionTitle
-                        ) {
-                          updateDocument({ title: editedTitle.trim() });
-                        }
-                        setIsEditingTitle(false);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                {/* Breadcrumb Style Title */}
+                <div className="flex items-center gap-2 text-sm overflow-hidden bg-stone-50/50 px-3 py-1.5 rounded-full border border-stone-200/50 shadow-sm">
+                  <div className="flex items-center gap-1.5 text-stone-400">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span className="font-medium truncate max-w-[120px]">
+                      {currentFolderTitle || "챕터"}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {isEditingTitle ? (
+                      <input
+                        type="text"
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                        onBlur={() => {
                           if (
                             editedTitle.trim() &&
                             editedTitle !== currentSectionTitle
@@ -429,66 +449,120 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                             updateDocument({ title: editedTitle.trim() });
                           }
                           setIsEditingTitle(false);
-                        }
-                        if (e.key === "Escape") {
-                          setIsEditingTitle(false);
-                        }
-                      }}
-                      autoFocus
-                      className="text-sm font-medium text-stone-800 bg-stone-50 border border-stone-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-sage-500 max-w-[300px]"
-                    />
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (!isDemo && selectedSectionId) {
-                          setEditedTitle(currentSectionTitle);
-                          setIsEditingTitle(true);
-                        }
-                      }}
-                      className="text-sm font-medium text-stone-800 truncate max-w-[300px] px-2 py-1 rounded-md hover:bg-stone-100 hover:text-sage-700 cursor-pointer transition-colors"
-                      title={isDemo ? "데모 모드" : "클릭하여 제목 편집"}
-                    >
-                      {currentSectionTitle || "섹션을 선택하세요"}
-                    </button>
-                  )}
-                  {characterCount > 0 && (
-                    <span className="text-xs text-stone-400">
-                      ({characterCount.toLocaleString()}자)
-                    </span>
-                  )}
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (
+                              editedTitle.trim() &&
+                              editedTitle !== currentSectionTitle
+                            ) {
+                              updateDocument({ title: editedTitle.trim() });
+                            }
+                            setIsEditingTitle(false);
+                          }
+                          if (e.key === "Escape") {
+                            setIsEditingTitle(false);
+                          }
+                        }}
+                        autoFocus
+                        className="font-bold text-stone-800 bg-transparent focus:outline-none min-w-[150px]"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!isDemo && selectedSectionId) {
+                            setEditedTitle(currentSectionTitle);
+                            setIsEditingTitle(true);
+                          }
+                        }}
+                        className="font-bold text-stone-800 truncate max-w-[200px] hover:text-sage-700 transition-colors"
+                        title={isDemo ? "데모 모드" : "클릭하여 제목 편집"}
+                      >
+                        {currentSectionTitle || "섹션을 선택하세요"}
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {characterCount > 0 && (
+                  <span className="text-xs text-stone-400">
+                    ({characterCount.toLocaleString()}자)
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleSplitView}
-                  className={cn(
-                    "p-1.5 rounded-md transition-colors",
-                    splitView.enabled
-                      ? "bg-sage-100 text-sage-700"
-                      : "hover:bg-stone-100 text-stone-500",
-                  )}
-                  title="분할 화면"
-                >
-                  <Columns className="w-4 h-4" />
-                </button>
+                <div className="flex bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner">
+                  <button
+                    onClick={() => setViewMode("editor")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
+                      viewMode === "editor"
+                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                    )}
+                  >
+                    <Layout className="w-3.5 h-3.5" />
+                    <span>단일</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("scrivenings")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
+                      viewMode === "scrivenings"
+                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                    )}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span>통합</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("outline")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
+                      viewMode === "outline"
+                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                    )}
+                  >
+                    <TableProperties className="w-3.5 h-3.5" />
+                    <span>개요</span>
+                  </button>
+                </div>
 
-                <button
-                  onClick={toggleFocusMode}
-                  className="p-1.5 hover:bg-stone-100 rounded-md text-stone-500 transition-colors"
-                  title="집중 모드"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
+                <div className="h-4 w-px bg-stone-200 mx-1" />
 
-                <div className="h-4 w-px bg-stone-200" />
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={toggleSplitView}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      splitView.enabled
+                        ? "bg-sage-100 text-sage-700"
+                        : "hover:bg-stone-100 text-stone-500"
+                    )}
+                    title="분할 화면"
+                  >
+                    <Columns className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={toggleFocusMode}
+                    className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors"
+                    title="집중 모드"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="h-4 w-px bg-stone-200 mx-1" />
                 <button
                   onClick={toggleRightSidebar}
                   className={cn(
-                    "p-1.5 rounded-md transition-colors",
+                    "p-1.5 rounded-lg transition-colors",
                     rightSidebarOpen
                       ? "bg-sage-100 text-sage-700"
-                      : "hover:bg-stone-100 text-stone-500",
+                      : "hover:bg-stone-100 text-stone-500"
                   )}
                 >
                   <Settings className="w-4 h-4" />
@@ -512,7 +586,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
           {/* Editor Content */}
           <div className="flex-1 overflow-hidden relative">
-            {splitView.enabled ? (
+            {viewMode === "outline" ? (
+              <OutlineView folderId={selectedFolderId} projectId={projectId} />
+            ) : viewMode === "scrivenings" ? (
+              <ScriveningsEditor
+                folderId={selectedFolderId}
+                projectId={projectId}
+                onUpdate={handleCharacterCountChange}
+              />
+            ) : splitView.enabled ? (
               <ResizablePanelGroup direction={splitView.direction}>
                 <ResizablePanel defaultSize={50} minSize={30}>
                   <div className="h-full overflow-y-auto">

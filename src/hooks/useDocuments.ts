@@ -123,6 +123,19 @@ export function useDocumentMutations(projectId: string) {
 }
 
 /**
+ * Hook for bulk document content updates (Scrivenings View)
+ */
+export function useBulkDocumentContent() {
+  const bulkSaveContent = useCallback(async (updates: Record<string, string>) => {
+    await getRepository().bulkUpdateContent(updates);
+  }, []);
+
+  return {
+    bulkSaveContent,
+  };
+}
+
+/**
  * Hook for children documents (for corkboard view)
  */
 export function useChildDocuments(parentId: string | null, projectId: string) {

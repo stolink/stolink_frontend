@@ -4,9 +4,6 @@ import {
   Italic,
   Underline,
   Strikethrough,
-  Heading1,
-  Heading2,
-  Heading3,
   List,
   ListOrdered,
   Quote,
@@ -19,12 +16,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -54,7 +45,7 @@ function ToolbarButton({
       disabled={disabled}
       className={cn(
         "h-8 w-8 p-0 text-stone-600 hover:text-stone-900",
-        isActive && "bg-sage-100 text-sage-800 hover:bg-sage-200",
+        isActive && "bg-sage-100 text-sage-800 hover:bg-sage-200"
       )}
       title={tooltip}
     >
@@ -72,7 +63,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
     <div
       className={cn(
         "flex items-center gap-0.5 px-2 py-1.5 border-b bg-stone-50/80 backdrop-blur sticky top-0 z-10",
-        className,
+        className
       )}
     >
       {/* History */}
@@ -92,55 +83,6 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
-
-      <div className="w-px h-5 bg-stone-200 mx-1" />
-
-      {/* Typography */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-stone-600 gap-1 font-normal"
-          >
-            {editor.isActive("heading", { level: 1 })
-              ? "제목 1"
-              : editor.isActive("heading", { level: 2 })
-                ? "제목 2"
-                : editor.isActive("heading", { level: 3 })
-                  ? "제목 3"
-                  : "본문"}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem
-            onClick={() => editor.chain().focus().setParagraph().run()}
-          >
-            본문
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-          >
-            <Heading1 className="h-4 w-4 mr-2" /> 제목 1
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-          >
-            <Heading2 className="h-4 w-4 mr-2" /> 제목 2
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 3 }).run()
-            }
-          >
-            <Heading3 className="h-4 w-4 mr-2" /> 제목 3
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       <div className="w-px h-5 bg-stone-200 mx-1" />
 

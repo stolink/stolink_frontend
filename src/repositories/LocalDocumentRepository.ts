@@ -34,6 +34,7 @@ interface DocumentStore {
   _update: (id: string, updates: Partial<Document>) => void;
   _delete: (id: string) => void;
   _setContent: (id: string, content: string) => void;
+  _setBulkContent: (updates: Record<string, string>) => void;
 }
 
 export const useDocumentStore = create<DocumentStore>()(
@@ -72,6 +73,18 @@ export const useDocumentStore = create<DocumentStore>()(
             state.documents[id].metadata.wordCount = content.length;
             state.documents[id].updatedAt = new Date().toISOString();
           }
+        });
+      },
+
+      _setBulkContent: (updates) => {
+        set((state) => {
+          Object.entries(updates).forEach(([id, content]) => {
+            if (state.documents[id]) {
+              state.documents[id].content = content;
+              state.documents[id].metadata.wordCount = content.length;
+              state.documents[id].updatedAt = new Date().toISOString();
+            }
+          });
         });
       },
     })),
@@ -199,6 +212,10 @@ export class LocalDocumentRepository implements IDocumentRepository {
 
   async updateContent(id: string, content: string): Promise<void> {
     this.getStore()._setContent(id, content);
+  }
+
+  async bulkUpdateContent(updates: Record<string, string>): Promise<void> {
+    this.getStore()._setBulkContent(updates);
   }
 }
 
