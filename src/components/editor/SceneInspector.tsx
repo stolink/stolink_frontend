@@ -44,9 +44,18 @@ export default function SceneInspector({
   onRemoveCharacter,
   className,
 }: SceneInspectorProps) {
-  const [synopsis, setSynopsis] = useState(scene?.metadata?.synopsis || "");
-  const [notes, setNotes] = useState(scene?.metadata?.notes || "");
+  // 로컬 수정 상태 (편집 모드용)
+  const [localSynopsis, setLocalSynopsis] = useState("");
+  const [localNotes, setLocalNotes] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedCharId, setSelectedCharId] = useState("");
+
+  // 편집 모드 시작 시 현재 값으로 초기화
+  const startEditing = () => {
+    setLocalSynopsis(scene?.metadata?.synopsis || "");
+    setLocalNotes(scene?.metadata?.notes || "");
+    setIsEditing(true);
+  };
 
   if (!scene) {
     return (
@@ -65,8 +74,8 @@ export default function SceneInspector({
     onUpdateScene?.(scene.id, {
       metadata: {
         ...scene.metadata,
-        synopsis,
-        notes,
+        synopsis: localSynopsis,
+        notes: localNotes,
       },
     });
     setIsEditing(false);
@@ -129,7 +138,7 @@ export default function SceneInspector({
             variant="ghost"
             size="sm"
             className="h-6 text-xs"
-            onClick={() => setIsEditing(true)}
+            onClick={startEditing}
           >
             편집
           </Button>
@@ -202,8 +211,8 @@ export default function SceneInspector({
         </label>
         {isEditing ? (
           <Textarea
-            value={synopsis}
-            onChange={(e) => setSynopsis(e.target.value)}
+            value={localSynopsis}
+            onChange={(e) => setLocalSynopsis(e.target.value)}
             placeholder="이 씬의 간단한 요약..."
             className="text-sm min-h-[80px]"
           />
@@ -239,9 +248,13 @@ export default function SceneInspector({
             </span>
           )}
         </div>
-        {availableCharacters.length > 0 && (
+        {availableCharacters.length > 0 && onAddCharacter && (
           <Select
-            onValueChange={(charId) => onAddCharacter?.(scene.id, charId)}
+            value={selectedCharId}
+            onValueChange={(charId: string) => {
+              onAddCharacter(scene.id, charId);
+              setSelectedCharId(""); // 선택 후 초기화
+            }}
           >
             <SelectTrigger className="h-8 text-sm">
               <SelectValue placeholder="캐릭터 추가..." />
@@ -283,8 +296,8 @@ export default function SceneInspector({
         </label>
         {isEditing ? (
           <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            value={localNotes}
+            onChange={(e) => setLocalNotes(e.target.value)}
             placeholder="이 씬에 대한 메모..."
             className="text-sm min-h-[60px]"
           />
