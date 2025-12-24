@@ -26,7 +26,7 @@ description: 변경사항을 분석하여 Conventional Commit 메시지를 자�
     - `git commit -m "생성된_메시지"` 실행
     - 커밋 완료 후 `git log -1 --oneline` 으로 확인
 
-5.  **푸시 (선택)**:
+5.  **푸시**:
     - 현재 브랜치명 확인: `git rev-parse --abbrev-ref HEAD`
     - `git push origin <현재_브랜치>` 실행
 

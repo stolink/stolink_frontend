@@ -58,9 +58,12 @@ export default function CorkboardView({
 
     if (draggedIndex === -1 || targetIndex === -1) return;
 
+    // Fix: adjust target index after splice
     const newIds = [...currentIds];
-    newIds.splice(draggedIndex, 1);
-    newIds.splice(targetIndex, 0, draggedSceneId);
+    const [draggedItem] = newIds.splice(draggedIndex, 1);
+    const adjustedTargetIndex =
+      draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    newIds.splice(adjustedTargetIndex, 0, draggedItem);
 
     onReorderScenes(newIds);
     setDraggedSceneId(null);
@@ -196,6 +199,8 @@ function SceneCard({
     <div
       role="button"
       tabIndex={0}
+      aria-selected={isSelected}
+      aria-label={`씬: ${scene.title}`}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

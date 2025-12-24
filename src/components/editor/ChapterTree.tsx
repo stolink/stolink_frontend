@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -415,8 +415,9 @@ export default function ChapterTree({
   onSelectChapter,
   onAddChapter,
 }: ChapterTreeProps) {
-  // Use prop directly instead of state to avoid infinite loop
-  const chapters = initialChapters;
+  // Use useMemo to stabilize reference - prevents unnecessary re-renders
+  // while still updating when initialChapters actually changes
+  const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
