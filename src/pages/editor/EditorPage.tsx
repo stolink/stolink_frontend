@@ -208,17 +208,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return documentTreeToChapterTree(documentTree);
   }, [isDemo, documentTree]);
 
-  // Current folder title for section strip
-  const currentFolderTitle = useMemo(() => {
-    if (isDemo) {
-      return (
-        DEMO_CHAPTERS.find((c) => c.id === selectedFolderId)?.title || "챕터"
-      );
-    }
-    const doc = documents.find((d) => d.id === selectedFolderId);
-    return doc?.title || "폴더 선택";
-  }, [isDemo, selectedFolderId, documents]);
-
   // Current section title
   const currentSectionTitle = useMemo(() => {
     if (isDemo) {
@@ -235,36 +224,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
     return documentContent;
   }, [isDemo, selectedSectionId, documentContent]);
-
-  // Sections for the strip (text documents under selected folder)
-  const currentSections = useMemo(() => {
-    if (isDemo) {
-      // Get demo sections under selected folder
-      return DEMO_CHAPTERS.filter(
-        (ch) => ch.parentId === selectedFolderId && ch.type === "section",
-      ).map((ch) => ({
-        id: ch.id,
-        projectId: "demo-project",
-        type: "text" as const,
-        title: ch.title,
-        content: DEMO_CHAPTER_CONTENTS[ch.id] || "",
-        synopsis: "",
-        order: ch.order,
-        metadata: {
-          status: "draft" as const,
-          wordCount: ch.characterCount || 0,
-          includeInCompile: true,
-          keywords: [],
-          notes: "",
-        },
-        characterIds: [],
-        foreshadowingIds: [],
-        createdAt: ch.createdAt,
-        updatedAt: ch.updatedAt,
-      }));
-    }
-    return sectionDocuments.filter((doc) => doc.type === "text");
-  }, [isDemo, selectedFolderId, sectionDocuments]);
 
   // ============================================================
   // Handlers
@@ -599,11 +558,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           {/* Section Strip (Bottom) */}
           {!isFocusMode && (
             <SectionStrip
-              sections={currentSections}
-              selectedId={selectedSectionId}
+              selectedFolderId={selectedFolderId}
+              selectedSectionId={selectedSectionId}
               onSelect={handleSelectSection}
               onAdd={handleAddSection}
-              parentTitle={currentFolderTitle}
+              projectId={projectId}
+              isDemo={isDemo}
               liveWordCount={characterCount}
             />
           )}
