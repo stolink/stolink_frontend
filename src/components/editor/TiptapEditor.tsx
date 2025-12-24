@@ -70,9 +70,11 @@ export default function TiptapEditor({
       },
     },
     onUpdate: ({ editor }) => {
+      // Character count is cheap - update immediately
       if (onUpdate) {
         onUpdate(editor.storage.characterCount.characters());
       }
+      // getHTML is expensive - only call if needed
       if (onContentChange) {
         onContentChange(editor.getHTML());
       }
@@ -85,11 +87,16 @@ export default function TiptapEditor({
     }
   }, [editor, readOnly]);
 
+  // Initial character count (only on mount)
   useEffect(() => {
     if (editor && onUpdate) {
-      onUpdate(editor.storage.characterCount.characters());
+      // Use requestAnimationFrame to defer
+      requestAnimationFrame(() => {
+        onUpdate(editor.storage.characterCount.characters());
+      });
     }
-  }, [editor, onUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]); // Intentionally exclude onUpdate to prevent loops
 
   // initialContent 변경 감지하여 에디터 내용 업데이트 (씬 전환 시)
   useEffect(() => {

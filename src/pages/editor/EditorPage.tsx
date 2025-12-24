@@ -335,22 +335,35 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     [isDemo, saveContent],
   );
 
+  // Store latest values in refs to prevent callback recreation
+  const selectedSectionIdRef = useRef(selectedSectionId);
+  const updateDocumentRef = useRef(updateDocument);
+
+  useEffect(() => {
+    selectedSectionIdRef.current = selectedSectionId;
+  }, [selectedSectionId]);
+
+  useEffect(() => {
+    updateDocumentRef.current = updateDocument;
+  }, [updateDocument]);
+
   // Handle character count update and sync to document metadata
+  // Using refs to prevent callback recreation on every section change
   const handleCharacterCountChange = useCallback(
     (count: number) => {
       setCharacterCount(count);
 
       // Update document wordCount with debounce (1s to avoid too many updates)
-      if (!isDemo && selectedSectionId) {
+      if (!isDemo && selectedSectionIdRef.current) {
         if (wordCountTimeoutRef.current) {
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
-          updateDocument({ metadata: { wordCount: count } });
+          updateDocumentRef.current({ metadata: { wordCount: count } });
         }, 1000);
       }
     },
-    [isDemo, selectedSectionId, updateDocument],
+    [isDemo], // Minimal dependencies - use refs for changing values
   );
 
   // Cleanup timeout on unmount
