@@ -17,6 +17,13 @@ interface EditorState {
   chapterTree: ChapterTreeNode[];
   expandedNodes: string[]; // Changed from Set<string> for serialization
 
+  // Split view (Phase 2)
+  splitView: {
+    enabled: boolean;
+    direction: "horizontal" | "vertical";
+    secondaryDocumentId: string | null;
+  };
+
   // Actions
   setCurrentProject: (projectId: string) => void;
   setCurrentChapter: (chapterId: string) => void;
@@ -26,6 +33,11 @@ interface EditorState {
   toggleNodeExpanded: (nodeId: string) => void;
   isNodeExpanded: (nodeId: string) => boolean;
   buildChapterTree: (chapters: Chapter[]) => ChapterTreeNode[];
+
+  // Split view actions
+  toggleSplitView: () => void;
+  setSplitDirection: (direction: "horizontal" | "vertical") => void;
+  setSecondaryDocument: (docId: string | null) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -37,7 +49,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   saveStatus: "saved",
   lastSavedAt: null,
   chapterTree: [],
-  expandedNodes: [], // Changed from new Set<string>()
+  expandedNodes: [],
+
+  // Split view initial state
+  splitView: {
+    enabled: false,
+    direction: "vertical",
+    secondaryDocumentId: null,
+  },
 
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
 
@@ -113,4 +132,29 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
     return sortChildren(roots);
   },
+
+  // Split view actions
+  toggleSplitView: () =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        enabled: !state.splitView.enabled,
+      },
+    })),
+
+  setSplitDirection: (direction) =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        direction,
+      },
+    })),
+
+  setSecondaryDocument: (docId) =>
+    set((state) => ({
+      splitView: {
+        ...state.splitView,
+        secondaryDocumentId: docId,
+      },
+    })),
 }));
