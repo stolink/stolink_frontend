@@ -83,9 +83,9 @@ export const SuggestionList = forwardRef<
           )}
           onClick={() => selectItem(index)}
         >
-          {item.avatar ? (
+          {item.imageUrl ? (
             <img
-              src={item.avatar}
+              src={item.imageUrl}
               alt={item.name}
               className="w-5 h-5 rounded-full object-cover"
             />

@@ -1,28 +1,30 @@
 import Mention from "@tiptap/extension-mention";
-import { ReactRenderer } from "@tiptap/react";
-import tippy, { Instance as TippyInstance } from "tippy.js";
+import { ReactRenderer, ReactNodeViewRenderer } from "@tiptap/react";
+import tippy from "tippy.js";
+import type { Instance as TippyInstance } from "tippy.js";
 import { SuggestionList } from "./SuggestionList";
 import type { SuggestionListRef } from "./SuggestionList";
+import CharacterNodeView from "./CharacterNodeView";
+import { DEMO_CHARACTERS } from "@/data/demoData";
 
-// Mock data - In real app, this would come from a store or API
-const MOCK_CHARACTERS = [
-  { id: "1", name: "주인공", role: "주인공", avatar: null },
-  { id: "2", name: "스승", role: "조력자", avatar: null },
-  { id: "3", name: "악당", role: "반동인물", avatar: null },
-  { id: "4", name: "소녀", role: "조연", avatar: null },
-];
+// Re-export for use in CharacterNodeView and hover cards
+export { DEMO_CHARACTERS };
 
-export const CharacterMention = Mention.configure({
+export const CharacterMention = Mention.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CharacterNodeView);
+  },
+}).configure({
   HTMLAttributes: {
     class: "character-mention",
   },
-  renderLabel({ options, node }) {
-    return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
+  renderLabel({ node }) {
+    return node.attrs.label ?? node.attrs.id;
   },
   suggestion: {
-    char: "[[", // Trigger character
+    char: "@",
     items: ({ query }) => {
-      return MOCK_CHARACTERS.filter((item) =>
+      return DEMO_CHARACTERS.filter((item) =>
         item.name.toLowerCase().includes(query.toLowerCase())
       );
     },

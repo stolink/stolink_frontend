@@ -9,6 +9,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { SectionDivider } from "./extensions/SectionDivider";
 import { CharacterMention } from "./extensions/CharacterMention";
+import { SlashCommandExtension } from "./extensions/SlashCommand";
 import {
   useChildDocuments,
   useBulkDocumentContent,
@@ -52,6 +53,7 @@ export default function ScriveningsEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       CharacterMention,
+      SlashCommandExtension,
     ],
     content: getCombinedContent(),
     editorProps: {

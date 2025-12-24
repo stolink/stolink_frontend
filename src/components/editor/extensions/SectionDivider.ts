@@ -40,14 +40,25 @@ export const SectionDivider = Node.create<SectionDividerOptions>({
     return [
       {
         tag: 'div[data-type="section-divider"]',
+        getAttrs: (dom) => {
+          if (typeof dom === "string") return false;
+          return {
+            documentId: dom.getAttribute("data-document-id"),
+            title: dom.getAttribute("data-title"),
+          };
+        },
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes, node }) {
     return [
       "div",
-      mergeAttributes(HTMLAttributes, { "data-type": "section-divider" }),
+      mergeAttributes(HTMLAttributes, {
+        "data-type": "section-divider",
+        "data-document-id": node.attrs.documentId,
+        "data-title": node.attrs.title,
+      }),
     ];
   },
 

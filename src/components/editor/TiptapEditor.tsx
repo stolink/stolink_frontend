@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
+import { SlashCommandExtension } from "./extensions/SlashCommand";
 
 export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
@@ -64,6 +65,7 @@ export default function TiptapEditor({
       }),
       Underline,
       CharacterMention,
+      SlashCommandExtension,
     ],
     content: initialContent || DEFAULT_CONTENT,
     editorProps: {
