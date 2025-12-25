@@ -32,10 +32,12 @@ interface DocumentStore {
   // Internal actions (called by repository)
   _create: (doc: Document) => void;
   _update: (id: string, updates: Partial<Document>) => void;
+  _updateType: (id: string, type: "folder" | "text") => void;
   _delete: (id: string) => void;
   _setContent: (id: string, content: string) => void;
   _setBulkContent: (updates: Record<string, string>) => void;
   _setAll: (documents: Document[]) => void;
+  _syncProjectDocuments: (projectId: string, documents: Document[]) => void;
 }
 
 export const useDocumentStore = create<DocumentStore>()(
@@ -57,6 +59,15 @@ export const useDocumentStore = create<DocumentStore>()(
               ...updates,
               updatedAt: new Date().toISOString(),
             };
+          }
+        });
+      },
+
+      _updateType: (id: string, type: "folder" | "text") => {
+        set((state) => {
+          if (state.documents[id]) {
+            state.documents[id].type = type;
+            state.documents[id].updatedAt = new Date().toISOString();
           }
         });
       },
@@ -97,6 +108,22 @@ export const useDocumentStore = create<DocumentStore>()(
           });
         });
       },
+
+      _syncProjectDocuments: (projectId, documents) => {
+        set((state) => {
+          // 1. Remove all existing documents for this project
+          Object.keys(state.documents).forEach((key) => {
+            if (state.documents[key].projectId === projectId) {
+              delete state.documents[key];
+            }
+          });
+
+          // 2. Add new documents
+          documents.forEach((doc) => {
+            state.documents[doc.id] = doc;
+          });
+        });
+      },
     })),
     { name: "sto-link-documents" },
   ),
@@ -132,6 +159,44 @@ export class LocalDocumentRepository implements IDocumentRepository {
           doc.parentId === (parentId ?? undefined),
       )
       .sort((a, b) => a.order - b.order);
+  }
+
+  async getAllDescendants(
+    parentId: string,
+    projectId: string,
+  ): Promise<Document[]> {
+    const { documents } = this.getStore();
+    const result: Document[] = [];
+
+    // Recursive function to traversing the tree
+    const traverse = (currentId: string) => {
+      const children = Object.values(documents)
+        .filter(
+          (doc) => doc.projectId === projectId && doc.parentId === currentId,
+        )
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        result.push(child);
+        traverse(child.id);
+      }
+    };
+
+    // First, verify parent exists (optional, but good for safety)
+    const parent = documents[parentId];
+    if (parent) {
+      // Include the parent itself? Scrivenings usually includes the selection + descendants.
+      // But this function is named "Descendants".
+      // Let's stick to descendants. The hook can combine parent + descendants.
+      // Wait, ScriveningsEditor likely wants to show the *selected folder's content* too if it has any?
+      // Usually folders in StoLink were just containers. But now user wants "Section under Section".
+      // So the "Parent Section" definitely has content.
+      // So `ScriveningsEditor` receives `folderId`. It should render `folderId` doc + descendants.
+
+      traverse(parentId);
+    }
+
+    return result;
   }
 
   async create(input: CreateDocumentInput): Promise<Document> {

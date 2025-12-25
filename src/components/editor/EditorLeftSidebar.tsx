@@ -6,10 +6,15 @@ interface EditorLeftSidebarProps {
   chapters: ChapterNode[];
   selectedChapterId: string | null;
   onSelectChapter: (id: string) => void;
-  onAddChapter: (title: string, parentId?: string) => void;
+  onAddChapter: (
+    title: string,
+    parentId?: string,
+    type?: "chapter" | "section",
+  ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
   onDuplicateChapter?: (id: string) => void;
+  onConvertType?: (id: string, type: "chapter" | "section") => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -22,6 +27,7 @@ export default function EditorLeftSidebar({
   onRenameChapter,
   onDeleteChapter,
   onDuplicateChapter,
+  onConvertType,
   isOpen,
   onToggle,
 }: EditorLeftSidebarProps) {
@@ -67,6 +73,7 @@ export default function EditorLeftSidebar({
           onRenameChapter={onRenameChapter}
           onDeleteChapter={onDeleteChapter}
           onDuplicateChapter={onDuplicateChapter}
+          onConvertType={onConvertType}
         />
       </div>
     </aside>
