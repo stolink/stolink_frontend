@@ -57,7 +57,27 @@
 
 ---
 
-## 4. 커밋 컨벤션 (Conventional Commits)
+## 4. 자동화 및 정책 강제 (Automation)
+
+수동으로 지키기 번거로운 규칙들을 시스템적으로 자동화합니다.
+
+### ① Hotfix 자동 반영 (GitHub Actions)
+
+- `hotfix/*` 브랜치가 `main`에 머지(Merge)되면, GitHub Actions가 이를 감지하여 **`develop` 브랜치에 자동으로 머집(Back-port)** 합니다.
+- 파일: `.github/workflows/hotfix-backport.yml`
+
+### ② 브러치 보호 및 머지 정책 설정 (GitHub Settings)
+
+GitHub 저장소 설정(`Settings > Branches > Branch protection rules`)에서 아래와 같이 설정하는 것을 권장합니다.
+
+| 대상 브랜치   | 권장 설정 (Branch Protection)      | 이유                                       |
+| :------------ | :--------------------------------- | :----------------------------------------- |
+| **`develop`** | **Allow squash merging** 만 활성화 | 작업 파편화를 막고 기능 단위 히스토리 유지 |
+| **`main`**    | **Allow merge commits** 만 활성화  | 릴리즈 시점(Merge Point)을 명시적으로 기록 |
+
+---
+
+## 5. 커밋 컨벤션 (Conventional Commits)
 
 문서의 일관성을 위해 `CLAUDE.md`에 명시된 규칙을 따릅니다.
 
