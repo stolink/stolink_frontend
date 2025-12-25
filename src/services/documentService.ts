@@ -37,11 +37,14 @@ export type Document = BackendDocument;
 
 // Convert backend document to frontend document
 export function mapBackendToFrontend(doc: BackendDocument): FrontendDocument {
+  // Normalize type to lowercase (backend may return uppercase)
+  const normalizedType = (doc.type?.toLowerCase() || "text") as DocumentType;
+
   return {
     id: doc.id,
     projectId: doc.projectId,
     parentId: doc.parentId,
-    type: doc.type,
+    type: normalizedType,
     title: doc.title,
     content: doc.content || "",
     synopsis: doc.synopsis || "",

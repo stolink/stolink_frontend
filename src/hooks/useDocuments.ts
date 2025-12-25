@@ -25,12 +25,41 @@ export function useDocumentTree(projectId: string) {
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
     queryKey: ["documents", projectId],
     queryFn: async () => {
+      console.log(
+        "[useDocumentTree] Fetching documents for project:",
+        projectId
+      );
       try {
         const response = await documentService.getTree(projectId);
         const backendDocs = response.data || [];
+
+        // Flatten nested tree structure into a flat array
+        const flattenTree = (docs: any[]): any[] => {
+          const result: any[] = [];
+          for (const doc of docs) {
+            result.push(doc);
+            if (doc.children && doc.children.length > 0) {
+              result.push(...flattenTree(doc.children));
+            }
+          }
+          return result;
+        };
+
+        const flatDocs = flattenTree(backendDocs);
+        console.log(
+          "[useDocumentTree] Fetched documents:",
+          flatDocs.length,
+          flatDocs.map((d: any) => ({
+            id: d.id?.substring(0, 8),
+            title: d.title,
+            type: d.type,
+            parentId: d.parentId?.substring(0, 8),
+          }))
+        );
         // Convert backend documents to frontend format
-        return backendDocs.map(mapBackendToFrontend);
+        return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
+        console.log("[useDocumentTree] Fetch error:", error);
         // 404 means no documents yet - this is normal for new projects
         if ((error as any)?.response?.status === 404) {
           return [];
@@ -53,6 +82,11 @@ export function useDocumentTree(projectId: string) {
   // Sync fetched documents to Zustand store
   useEffect(() => {
     if (fetchedDocuments && fetchedDocuments.length > 0) {
+      console.log(
+        "[useDocumentTree] Syncing to store:",
+        fetchedDocuments.length,
+        "docs"
+      );
       _syncProjectDocuments(projectId, fetchedDocuments);
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
@@ -73,6 +107,15 @@ export function useDocumentTree(projectId: string) {
       : storeDocuments;
 
   const tree = buildTree(documents);
+
+  console.log("[useDocumentTree] Returning:", {
+    projectId,
+    fetchedDocsCount: fetchedDocuments?.length,
+    storeDocsCount: storeDocuments.length,
+    finalDocsCount: documents.length,
+    treeLength: tree.length,
+    isFetching,
+  });
 
   return {
     documents,
@@ -175,6 +218,11 @@ export function useDocumentContent(id: string | null) {
   // Sync fetched content to Zustand store
   useEffect(() => {
     if (id && fetchedContent !== undefined && fetchedContent !== null) {
+      console.log("[useDocumentContent] Syncing fetched content to store:", {
+        id,
+        contentLength: fetchedContent?.length,
+        preview: fetchedContent?.substring(0, 100),
+      });
       _setContent(id, fetchedContent);
     }
   }, [id, fetchedContent, _setContent]);
@@ -184,6 +232,15 @@ export function useDocumentContent(id: string | null) {
     fetchedContent !== undefined && fetchedContent !== null
       ? fetchedContent
       : storeContent;
+
+  console.log("[useDocumentContent] Returning content:", {
+    id,
+    fetchedContent: fetchedContent?.substring(0, 50),
+    storeContent: storeContent?.substring(0, 50),
+    finalContent: content?.substring(0, 50),
+    isLoading,
+    isFetching,
+  });
 
   const saveContent = useCallback(
     async (newContent: string) => {

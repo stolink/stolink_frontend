@@ -180,9 +180,21 @@ export default function TiptapEditor({
   useEffect(() => {
     if (editor && initialContent !== undefined) {
       const currentHTML = editor.getHTML();
+      const isDifferent = currentHTML !== initialContent;
+      const isFocused = editor.isFocused;
+
+      console.log("[TiptapEditor] Content sync check:", {
+        currentHTMLPreview: currentHTML?.substring(0, 100),
+        initialContentPreview: initialContent?.substring(0, 100),
+        isDifferent,
+        isFocused,
+        willUpdate: isDifferent && !isFocused,
+      });
+
       // Only update if content is different AND editor is not focused
       // If focused, we assume the user is typing and we shouldn't overwrite with old server data
-      if (currentHTML !== initialContent && !editor.isFocused) {
+      if (isDifferent && !isFocused) {
+        console.log("[TiptapEditor] Setting new content!");
         editor.commands.setContent(initialContent);
       }
     }

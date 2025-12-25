@@ -216,13 +216,26 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   }, [isDemo, documents.length > 0]); // Only run when documents first load
 
   useLayoutEffect(() => {
-    if (isDemo || !selectedFolderId || documents.length === 0) return;
+    if (isDemo || documents.length === 0) return;
     if (!selectedSectionId) {
-      const firstSection = documents.find(
-        (d) => d.type === "text" && d.parentId === selectedFolderId
-      );
-      if (firstSection) {
-        setSelectedSectionId(firstSection.id);
+      // First try to find a section within the selected folder
+      if (selectedFolderId) {
+        const firstSection = documents.find(
+          (d) => d.type === "text" && d.parentId === selectedFolderId
+        );
+        if (firstSection) {
+          setSelectedSectionId(firstSection.id);
+          return;
+        }
+      }
+      // If no folder selected or no sections in folder, find any text document
+      const anyTextDoc = documents.find((d) => d.type === "text");
+      if (anyTextDoc) {
+        setSelectedSectionId(anyTextDoc.id);
+        // Also set folder if the text doc has a parent folder
+        if (anyTextDoc.parentId && !selectedFolderId) {
+          setSelectedFolderId(anyTextDoc.parentId);
+        }
       }
     }
   }, [isDemo, selectedFolderId, documents.length > 0]);
