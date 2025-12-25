@@ -148,7 +148,6 @@ export function useBulkDocumentContent() {
     bulkSaveContent,
   };
 }
-}
 
 /**
  * Hook for document mutations (create, update, delete, reorder)
@@ -258,5 +257,4 @@ function buildTree(documents: Document[]) {
   });
 
   return roots.sort((a, b) => a.order - b.order);
-}
 }
