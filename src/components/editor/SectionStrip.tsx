@@ -15,7 +15,7 @@ import { useChildDocuments, useDocumentTree } from "@/hooks/useDocuments";
 import { DEMO_CHAPTERS, DEMO_CHAPTER_CONTENTS } from "@/data/demoData";
 
 interface SectionStripProps {
-  selectedFolderId: string;
+  selectedFolderId: string | null;
   selectedSectionId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
@@ -37,14 +37,14 @@ export default function SectionStrip({
   const { documents } = useDocumentTree(projectId);
   const { children: sectionDocuments } = useChildDocuments(
     selectedFolderId,
-    projectId,
+    projectId
   );
 
   // 2. Compute Sections List
   const sections = useMemo(() => {
     if (isDemo) {
       return DEMO_CHAPTERS.filter(
-        (ch) => ch.parentId === selectedFolderId && ch.type === "section",
+        (ch) => ch.parentId === selectedFolderId && ch.type === "section"
       ).map((ch) => ({
         id: ch.id,
         projectId: "demo-project",
@@ -232,7 +232,7 @@ function SectionCard({
         isSelected
           ? "bg-white border-sage-400 shadow-md ring-2 ring-sage-100"
           : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300",
-        isDragging && "opacity-50 scale-95",
+        isDragging && "opacity-50 scale-95"
       )}
     >
       {/* Header: Index + Status */}
@@ -243,7 +243,7 @@ function SectionCard({
               "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
               isSelected
                 ? "bg-sage-600 text-white"
-                : "bg-stone-100 text-stone-600",
+                : "bg-stone-100 text-stone-600"
             )}
           >
             {index}
@@ -256,7 +256,7 @@ function SectionCard({
         <GripVertical
           className={cn(
             "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
-            isDragging && "cursor-grabbing",
+            isDragging && "cursor-grabbing"
           )}
         />
       </div>
@@ -265,7 +265,7 @@ function SectionCard({
       <h4
         className={cn(
           "text-sm font-semibold truncate mb-1",
-          isSelected ? "text-sage-800" : "text-stone-700",
+          isSelected ? "text-sage-800" : "text-stone-700"
         )}
       >
         {section.title}
@@ -288,7 +288,7 @@ function SectionCard({
               ? "bg-green-100 text-green-700"
               : status === "revised"
                 ? "bg-amber-100 text-amber-700"
-                : "bg-stone-100 text-stone-500",
+                : "bg-stone-100 text-stone-500"
           )}
         >
           {config.label}

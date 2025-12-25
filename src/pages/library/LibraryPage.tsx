@@ -26,8 +26,12 @@ import {
   useCreateProject,
 } from "@/hooks/useProjects";
 import { projectService, type Project } from "@/services/projectService";
-import { documentService } from "@/services/documentService";
+import {
+  documentService,
+  mapBackendToFrontend,
+} from "@/services/documentService";
 import type { ApiResponse } from "@/types/api";
+import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 
 import {
   DropdownMenu,
@@ -43,41 +47,115 @@ export default function LibraryPage() {
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: projectsData, isLoading, error } = useProjects();
   const { mutate: deleteProject } = useDeleteProject();
-  const { mutate: createProject, isPending: isCreating } = useCreateProject();
 
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateProject = () => {
-    createProject(
-      {
+  const handleCreateProject = async () => {
+    setIsCreatingProject(true);
+    try {
+      const { _create } = useDocumentStore.getState();
+
+      // 1. Create Project
+      console.log("[LibraryPage] Creating project...");
+      const projectResponse = await projectService.create({
         title: "새 작품",
         genre: "other",
         description: "",
-      },
-      {
-        onSuccess: (response: ApiResponse<Project>) => {
-          const isSuccess =
-            response.success ||
-            response.status === "OK" ||
-            response.status === "CREATED" ||
-            response.code === 200 ||
-            response.code === 201;
+      });
+      console.log("[LibraryPage] Project response:", projectResponse);
 
-          if (isSuccess && response.data) {
-            navigate(`/projects/${response.data.id}/editor`);
-          }
-        },
-      },
-    );
+      const isProjectSuccess =
+        projectResponse.success ||
+        projectResponse.status === "OK" ||
+        projectResponse.status === "CREATED" ||
+        projectResponse.code === 200 ||
+        projectResponse.code === 201;
+
+      if (!isProjectSuccess || !projectResponse.data) {
+        console.error(
+          "[LibraryPage] Project creation failed:",
+          projectResponse
+        );
+        throw new Error("Failed to create project");
+      }
+
+      const projectId = projectResponse.data.id;
+      console.log("[LibraryPage] Project created:", projectId);
+
+      // 2. Create default chapter (folder)
+      console.log("[LibraryPage] Creating default chapter...");
+      const chapterResponse = await documentService.create(projectId, {
+        type: "folder",
+        title: "챕터 1",
+      });
+      console.log("[LibraryPage] Chapter response:", chapterResponse);
+
+      const isChapterSuccess =
+        chapterResponse.success ||
+        chapterResponse.status === "OK" ||
+        chapterResponse.status === "CREATED" ||
+        chapterResponse.code === 200 ||
+        chapterResponse.code === 201;
+
+      if (!isChapterSuccess || !chapterResponse.data) {
+        console.error(
+          "[LibraryPage] Chapter creation failed:",
+          chapterResponse
+        );
+        throw new Error("Failed to create default chapter");
+      }
+
+      const chapterId = chapterResponse.data.id;
+      console.log("[LibraryPage] Chapter created:", chapterId);
+
+      // Add chapter to local store (convert to frontend format)
+      _create(mapBackendToFrontend(chapterResponse.data));
+
+      // 3. Create default section (text document)
+      console.log("[LibraryPage] Creating default section...");
+      const sectionResponse = await documentService.create(projectId, {
+        type: "text",
+        title: "섹션 1",
+        parentId: chapterId,
+      });
+      console.log("[LibraryPage] Section response:", sectionResponse);
+
+      const isSectionSuccess =
+        sectionResponse.success ||
+        sectionResponse.status === "OK" ||
+        sectionResponse.status === "CREATED" ||
+        sectionResponse.code === 200 ||
+        sectionResponse.code === 201;
+
+      if (isSectionSuccess && sectionResponse.data) {
+        console.log("[LibraryPage] Section created:", sectionResponse.data.id);
+        // Add section to local store (convert to frontend format)
+        _create(mapBackendToFrontend(sectionResponse.data));
+      }
+
+      // 4. Navigate to editor
+      console.log("[LibraryPage] Navigating to editor...");
+      navigate(`/projects/${projectId}/editor`);
+    } catch (error) {
+      console.error("[LibraryPage] Create project failed:", error);
+      if (error instanceof Error) {
+        alert(`프로젝트 생성에 실패했습니다: ${error.message}`);
+      } else {
+        alert("프로젝트 생성에 실패했습니다.");
+      }
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   const readFileWithEncoding = async (file: File): Promise<string> => {
@@ -130,6 +208,8 @@ export default function LibraryPage() {
       .join("");
 
     try {
+      const { _create, _setContent } = useDocumentStore.getState();
+
       // 1. Create Project
       const projectResponse = await projectService.create({
         title: title,
@@ -170,8 +250,14 @@ export default function LibraryPage() {
 
       const docId = docResponse.data.id;
 
+      // Add document to local store (convert to frontend format)
+      _create(mapBackendToFrontend(docResponse.data));
+
       // 3. Update Content
       await documentService.updateContent(docId, content);
+
+      // Update content in local store as well
+      _setContent(docId, content);
 
       // 4. Navigate
       navigate(`/projects/${projectId}/editor`);
@@ -300,7 +386,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -311,7 +397,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -384,9 +470,9 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1"
           )}
-          initial="hidden"
+          initial={false}
           animate="visible"
           variants={containerVariants}
         >
@@ -401,7 +487,7 @@ export default function LibraryPage() {
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
             <CreateBookCard
               onClick={handleCreateProject}
-              disabled={isCreating}
+              disabled={isCreatingProject}
             />
           </motion.div>
 
@@ -438,6 +524,7 @@ export default function LibraryPage() {
               <motion.div
                 key={project.id}
                 variants={itemVariants}
+                initial={false}
                 className="h-full min-h-[320px]"
               >
                 <BookCard

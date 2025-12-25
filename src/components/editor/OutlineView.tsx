@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, MoreHorizontal } from "lucide-react";
 
 interface OutlineViewProps {
-  folderId: string;
+  folderId: string | null;
   projectId: string;
 }
 

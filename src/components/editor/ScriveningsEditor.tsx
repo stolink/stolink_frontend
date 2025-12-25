@@ -18,7 +18,7 @@ import {
 import { EditorToolbar } from "./EditorToolbar";
 
 interface ScriveningsEditorProps {
-  folderId: string;
+  folderId: string | null;
   projectId: string;
   onUpdate?: (totalCount: number) => void;
 }
@@ -45,8 +45,9 @@ export default function ScriveningsEditor({
       .join("");
   }, [documents]);
 
-  const editor = useEditor({
-    extensions: [
+  // Memoize extensions to prevent duplicate registration
+  const extensions = useMemo(
+    () => [
       StarterKit,
       SectionDivider,
       Placeholder.configure({
@@ -59,31 +60,38 @@ export default function ScriveningsEditor({
       CharacterMention,
       SlashCommandExtension,
     ],
-    content: getCombinedContent(),
-    editorProps: {
-      attributes: {
-        class: cn(
-          "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
-        ),
-        spellcheck: "false",
+    [] // Empty deps - extensions are static
+  );
+
+  const editor = useEditor(
+    {
+      extensions,
+      content: getCombinedContent(),
+      editorProps: {
+        attributes: {
+          class: cn(
+            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8"
+          ),
+          spellcheck: "false",
+        },
+      },
+      onUpdate: ({ editor }) => {
+        if (onUpdate) {
+          onUpdate(editor.storage.characterCount.characters());
+        }
+
+        // Bulk Save logic
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        saveTimeoutRef.current = setTimeout(saveAll, 1000);
       },
     },
-    onUpdate: ({ editor }) => {
-      if (onUpdate) {
-        onUpdate(editor.storage.characterCount.characters());
-      }
-
-      // Bulk Save logic
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-      saveTimeoutRef.current = setTimeout(saveAll, 1000);
-    },
-  });
+    [extensions] // Add dependency array to prevent recreation
+  );
 
   const saveAll = useCallback(async () => {
     if (!editor) return;
     try {
-      console.log("[ScriveningsEditor] Saving changes...");
       const html = editor.getHTML();
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
@@ -116,7 +124,6 @@ export default function ScriveningsEditor({
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        console.log("[ScriveningsEditor] Manual save triggered (Ctrl+S)");
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveAll();
       }
@@ -130,7 +137,7 @@ export default function ScriveningsEditor({
 
   const documentIds = useMemo(
     () => documents.map((c) => c.id).join(","),
-    [documents],
+    [documents]
   );
 
   useEffect(() => {

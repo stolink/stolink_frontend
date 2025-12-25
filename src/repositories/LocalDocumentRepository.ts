@@ -141,8 +141,8 @@ export const useDocumentStore = create<DocumentStore>()(
         });
       },
     })),
-    { name: "sto-link-documents" },
-  ),
+    { name: "sto-link-documents" }
+  )
 );
 
 // Repository implementation
@@ -165,21 +165,21 @@ export class LocalDocumentRepository implements IDocumentRepository {
 
   async getChildren(
     parentId: string | null,
-    projectId: string,
+    projectId: string
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     return Object.values(documents)
       .filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined),
+          doc.parentId === (parentId ?? undefined)
       )
       .sort((a, b) => a.order - b.order);
   }
 
   async getAllDescendants(
     parentId: string,
-    projectId: string,
+    projectId: string
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     const result: Document[] = [];
@@ -188,7 +188,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     const traverse = (currentId: string) => {
       const children = Object.values(documents)
         .filter(
-          (doc) => doc.projectId === projectId && doc.parentId === currentId,
+          (doc) => doc.projectId === projectId && doc.parentId === currentId
         )
         .sort((a, b) => a.order - b.order);
 
@@ -221,7 +221,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     // Calculate order
     const siblings = Object.values(store.documents).filter(
       (doc) =>
-        doc.projectId === input.projectId && doc.parentId === input.parentId,
+        doc.projectId === input.projectId && doc.parentId === input.parentId
     );
     const order = siblings.length;
 
@@ -252,7 +252,33 @@ export class LocalDocumentRepository implements IDocumentRepository {
   async update(id: string, input: UpdateDocumentInput): Promise<Document> {
     const store = this.getStore();
     const doc = store.documents[id];
-    if (!doc) throw new Error(`Document not found: ${id}`);
+    if (!doc) {
+      // Document not in local store - this happens when backend documents aren't synced locally yet
+      console.warn(
+        `[LocalDocumentRepository] Document not found in local store: ${id}. Skipping local update.`
+      );
+      // Return a minimal document to satisfy the interface
+      return {
+        id,
+        projectId: "",
+        type: "text",
+        title: "",
+        content: "",
+        synopsis: "",
+        order: 0,
+        metadata: {
+          status: "draft",
+          wordCount: 0,
+          includeInCompile: true,
+          keywords: [],
+          notes: "",
+        },
+        characterIds: [],
+        foreshadowingIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
 
     const updates: Partial<Document> = {};
     if (input.title !== undefined) updates.title = input.title;

@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiResponse } from "@/types/api";
 
 import { useNavigate } from "react-router-dom";
-import { authService, type User } from "@/services/authService";
+import {
+  authService,
+  type User,
+  type AuthResponse,
+} from "@/services/authService";
 import { useAuthStore } from "@/stores";
 
 // Query Keys
@@ -24,9 +28,15 @@ export function useRegister() {
       nickname: string;
     }) => authService.register(payload),
     onSuccess: (response) => {
-      if (response.success && response.data) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
+      // Check for success via boolean, string status code, or HTTP numeric code
+      const isSuccess =
+        response.success || response.status === "OK" || response.code === 200;
+
+      if (isSuccess && response.data) {
+        // Response data is the User object directly
+        const user = response.data;
+        // Tokens are handled via cookies, so pass empty strings
+        setAuth(user, "", "");
         navigate("/library");
       }
     },
@@ -115,7 +125,7 @@ export function useUpdateProfile() {
       authService.updateMe(payload),
     onSuccess: (response) => {
       if (response.success && response.data) {
-        setUser(response.data);
+        setUser(response.data, "");
         queryClient.invalidateQueries({ queryKey: authKeys.me });
       }
     },

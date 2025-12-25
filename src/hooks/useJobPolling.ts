@@ -33,7 +33,7 @@ export function useJobPolling<T = unknown>(
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
-  const pollRef = useRef<() => void>();
+  const pollRef = useRef<() => void>(() => {});
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
