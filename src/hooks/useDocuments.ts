@@ -1,6 +1,7 @@
 // useDocumentHooks.ts
 
 import { useCallback, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   useDocumentStore,
   localDocumentRepository,
@@ -15,8 +16,12 @@ import type {
  * Hook to access the entire document tree for a project
  */
 export function useDocumentTree(projectId: string) {
-  const documents = useDocumentStore((state) =>
-    Object.values(state.documents).filter((doc) => doc.projectId === projectId),
+  const documents = useDocumentStore(
+    useShallow((state) =>
+      Object.values(state.documents).filter(
+        (doc) => doc.projectId === projectId,
+      ),
+    ),
   );
 
   const tree = buildTree(documents);
@@ -55,12 +60,15 @@ export function useDocument(id: string | null) {
  * Hook to get child documents of a parent
  */
 export function useChildDocuments(parentId: string | null, projectId: string) {
-  const children = useDocumentStore((state) => {
-    return Object.values(state.documents).filter(
-      (doc) =>
-        doc.projectId === projectId && doc.parentId === (parentId ?? undefined),
-    );
-  });
+  const children = useDocumentStore(
+    useShallow((state) =>
+      Object.values(state.documents).filter(
+        (doc) =>
+          doc.projectId === projectId &&
+          doc.parentId === (parentId ?? undefined),
+      ),
+    ),
+  );
 
   return {
     children: children.sort((a, b) => a.order - b.order),
