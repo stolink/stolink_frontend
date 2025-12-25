@@ -24,7 +24,6 @@ import {
   Users,
   MapPin,
   Sword,
-  Plus,
   X,
   ZoomIn,
   ZoomOut,
@@ -615,9 +614,6 @@ export default function WorldPage() {
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-sm">Direct Links</h4>
-                    <button className="text-xs text-blue-500 hover:underline">
-                      Add New
-                    </button>
                   </div>
                   <ul className="space-y-2">
                     {edges
@@ -758,13 +754,7 @@ export default function WorldPage() {
                   )}
                 </CardContent>
               </Card>
-            ))}
-            <Card className="border-2 border-dashed border-sage-200 flex items-center justify-center cursor-pointer hover:border-sage-400 transition-colors min-h-[150px]">
-              <div className="text-center">
-                <Plus className="h-8 w-8 text-sage-400 mx-auto mb-2" />
-                <p className="text-sage-600">새 캐릭터 추가</p>
-              </div>
-            </Card>
+            ))}{" "}
           </div>
         </TabsContent>
 
