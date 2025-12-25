@@ -1,3 +1,5 @@
+// useDocumentHooks.ts
+
 import { useCallback, useMemo } from "react";
 import {
   useDocumentStore,
@@ -68,7 +70,6 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
 
 /**
  * Hook to get and save document content for a specific document
- * Saves to backend API and syncs wordCount/updatedAt from response
  */
 export function useDocumentContent(id: string | null) {
   const content = useDocumentStore((state) =>
@@ -80,27 +81,21 @@ export function useDocumentContent(id: string | null) {
       if (!id) return;
 
       try {
-        // Optimistic update - immediate UI feedback
         const { _setContent } = useDocumentStore.getState();
         _setContent(id, newContent);
 
-        // Sync to backend
         const { documentService } = await import("@/services/documentService");
         const response = await documentService.updateContent(id, newContent);
 
-        // Update wordCount and updatedAt from backend response
         if (response.success && response.data) {
           const { _update } = useDocumentStore.getState();
           _update(id, {
             metadata: { wordCount: response.data.wordCount },
             updatedAt: response.data.updatedAt,
           });
-          console.log(`✅ Saved to backend: ${response.data.wordCount} words`);
         }
       } catch (error) {
-        console.error("❌ Failed to save content:", error);
-        // TODO: Show error toast to user
-        // Rollback on error
+        console.error("Failed to save content:", error);
         const originalContent = await localDocumentRepository.getContent(id);
         const { _setContent } = useDocumentStore.getState();
         _setContent(id, originalContent);
@@ -123,22 +118,17 @@ export function useBulkDocumentContent() {
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
       try {
-        // Optimistic update - update all documents locally first
         const { _setBulkContent } = useDocumentStore.getState();
         _setBulkContent(updates);
 
-        // Then sync each to backend
         const { documentService } = await import("@/services/documentService");
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
             documentService.updateContent(id, content),
           ),
         );
-
-        console.log(`✅ Bulk saved ${Object.keys(updates).length} documents`);
       } catch (error) {
-        console.error("❌ Bulk save failed:", error);
-        // TODO: Implement rollback for bulk operations
+        console.error("Bulk save failed:", error);
       }
     },
     [],
@@ -191,25 +181,18 @@ export function useDocumentMutations(projectId: string) {
 
 /**
  * Hook for fetching a document and all its descendants (flattened)
- * Used for Scrivenings View
  */
 export function useDescendantDocuments(parentId: string, projectId: string) {
   const documents = useDocumentStore((state) => state.documents);
 
-  // Use useMemo to re-calculate flattened list whenever documents change
-  // Optimization: This might be expensive if many documents change.
-  // Ideally should use a selector that only listens to relevant docs.
-  // For now, simple memoization is fine for local.
   const flatDocuments = useMemo(() => {
     const result: (typeof documents)[string][] = [];
 
-    // Add parent first
     const parent = documents[parentId];
     if (parent && parent.projectId === projectId) {
       result.push(parent);
     }
 
-    // Recursive helper
     const traverse = (currentId: string) => {
       const children = Object.values(documents)
         .filter((d) => d.parentId === currentId && d.projectId === projectId)
@@ -223,7 +206,7 @@ export function useDescendantDocuments(parentId: string, projectId: string) {
 
     traverse(parentId);
     return result;
-  }, [documents, parentId, projectId]); // Re-run when any document changes (simplest trigger)
+  }, [documents, parentId, projectId]);
 
   return {
     documents: flatDocuments,
@@ -236,12 +219,10 @@ function buildTree(documents: Document[]) {
   const map = new Map<string, Document & { children: Document[] }>();
   const roots: (Document & { children: Document[] })[] = [];
 
-  // First pass: create all nodes
   documents.forEach((doc) => {
     map.set(doc.id, { ...doc, children: [] });
   });
 
-  // Second pass: build relationships
   documents.forEach((doc) => {
     const node = map.get(doc.id);
     if (!node) return;
