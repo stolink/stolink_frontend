@@ -24,6 +24,8 @@ interface TreeItemProps {
   isLast?: boolean;
   parentLines?: boolean[];
   onSelect?: (id: string) => void;
+  onRename?: (id: string, newTitle: string) => void;
+  onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
   onConvertType?: (id: string, type: "chapter" | "section") => void;
   onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
@@ -183,7 +185,7 @@ export function TreeItem({
             className="absolute top-0 bottom-0 w-px bg-stone-300"
             style={{ left: `${idx * 16 + 11}px` }}
           />
-        ) : null,
+        ) : null
       )}
 
       {/* Tree lines - 현재 레벨 연결 */}
@@ -223,7 +225,7 @@ export function TreeItem({
         className={cn(
           "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-colors duration-100",
           "hover:bg-stone-50",
-          isSelected && "bg-sage-50",
+          isSelected && "bg-sage-50"
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -242,7 +244,7 @@ export function TreeItem({
           <div
             className={cn(
               "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
-              statusColors[node.status],
+              statusColors[node.status]
             )}
             title={
               node.status === "todo"
@@ -306,7 +308,7 @@ export function TreeItem({
                 className={cn(
                   "text-sm truncate",
                   isSelected ? "font-medium text-sage-900" : "text-stone-700",
-                  node.isPlot && "italic text-stone-500",
+                  node.isPlot && "italic text-stone-500"
                 )}
               >
                 {node.title}

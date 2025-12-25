@@ -47,6 +47,7 @@ import {
   useDocumentMutations,
   useDocument,
 } from "@/hooks/useDocuments";
+import type { DocumentTreeNode } from "@/types/document";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import {
   SAMPLE_PROJECT_ID,
@@ -75,7 +76,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -119,26 +120,14 @@ interface EditorPageProps {
 }
 
 // Convert DocumentTreeNode to ChapterNode for EditorLeftSidebar
-function documentTreeToChapterTree(
-  nodes: {
-    id: string;
-    title: string;
-    type: string;
-    children: {
-      id: string;
-      title: string;
-      type: string;
-      children: unknown[];
-    }[];
-  }[],
-): ChapterNode[] {
+function documentTreeToChapterTree(nodes: DocumentTreeNode[]): ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
     title: node.title,
     type: node.type === "folder" ? "chapter" : "section",
     characterCount: 0,
     isPlot: false,
-    children: documentTreeToChapterTree((node.children || []) as typeof nodes),
+    children: documentTreeToChapterTree(node.children || []),
   }));
 }
 
@@ -167,11 +156,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null,
+    isDemo ? "chapter-1" : null
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -195,7 +184,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
+    isDemo ? null : selectedSectionId
   );
   const { createDocument } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
@@ -230,7 +219,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     if (isDemo || !selectedFolderId || documents.length === 0) return;
     if (!selectedSectionId) {
       const firstSection = documents.find(
-        (d) => d.type === "text" && d.parentId === selectedFolderId,
+        (d) => d.type === "text" && d.parentId === selectedFolderId
       );
       if (firstSection) {
         setSelectedSectionId(firstSection.id);
@@ -282,7 +271,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const handleAddChapter = (
     title: string,
     parentId?: string,
-    type: "chapter" | "section" = "chapter",
+    type: "chapter" | "section" = "chapter"
   ) => {
     if (isDemo) return;
     createDocument({
@@ -297,7 +286,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     const newDoc = await createDocument({
       type: "text",
       title: "새 섹션",
-      parentId: selectedFolderId,
+      parentId: selectedFolderId ?? undefined,
     });
     // Auto-select the new section
     if (newDoc) {
@@ -395,11 +384,17 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Debounced content saving to reduce latency
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
 
   // Track latest content for manual save (Ctrl+S)
   const lastContentRef = useRef<string>("");
+  const saveContentRef = useRef(saveContent);
+
+  // Update saveContent ref when it changes
+  useEffect(() => {
+    saveContentRef.current = saveContent;
+  }, [saveContent]);
 
   const handleContentChange = useCallback(
     (content: string) => {
@@ -413,10 +408,10 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
       // Debounce save by 500ms
       saveTimeoutRef.current = setTimeout(() => {
-        saveContent(content);
+        saveContentRef.current(content);
       }, 500);
     },
-    [isDemo, saveContent],
+    [isDemo]
   );
 
   // Store latest values in refs to prevent callback recreation
@@ -447,7 +442,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         }, 1000);
       }
     },
-    [isDemo], // Minimal dependencies - use refs for changing values
+    [isDemo] // Minimal dependencies - use refs for changing values
   );
 
   // Cleanup timeout on unmount
@@ -478,25 +473,80 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   }, [isDemo, isTourCompleted, isTourActive]);
 
-  // Ctrl+S Save
+  // Ctrl+S / Command+S Save
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         if (!isDemo && selectedSectionId) {
-          console.log("[EditorPage] Manual save triggered (Ctrl+S)");
           // Clear any pending debounced save
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
           }
-          saveContent(lastContentRef.current);
+
+          try {
+            await saveContentRef.current(lastContentRef.current);
+
+            // Show visual feedback
+            const saveIndicator = document.createElement("div");
+            saveIndicator.textContent = "✓ 저장됨";
+            saveIndicator.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #10b981;
+              color: white;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              z-index: 9999;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              opacity: 0;
+              transition: opacity 0.3s ease-out;
+            `;
+            document.body.appendChild(saveIndicator);
+
+            // Trigger fade in
+            requestAnimationFrame(() => {
+              saveIndicator.style.opacity = "1";
+            });
+
+            setTimeout(() => {
+              saveIndicator.style.opacity = "0";
+              setTimeout(() => saveIndicator.remove(), 300);
+            }, 2000);
+          } catch (error) {
+            console.error("[EditorPage] Save failed:", error);
+
+            // Show error feedback
+            const errorIndicator = document.createElement("div");
+            errorIndicator.textContent = "✗ 저장 실패";
+            errorIndicator.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #ef4444;
+              color: white;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              z-index: 9999;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            `;
+            document.body.appendChild(errorIndicator);
+
+            setTimeout(() => errorIndicator.remove(), 3000);
+          }
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDemo, selectedSectionId, saveContent]);
+  }, [isDemo, selectedSectionId]);
 
   // ============================================================
   // Render
@@ -612,7 +662,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "editor"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
                     )}
                   >
                     <Layout className="w-3.5 h-3.5" />
@@ -624,7 +674,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "scrivenings"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
                     )}
                   >
                     <List className="w-3.5 h-3.5" />
@@ -636,7 +686,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "outline"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
                     )}
                   >
                     <TableProperties className="w-3.5 h-3.5" />
@@ -653,7 +703,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "p-1.5 rounded-lg transition-colors",
                       splitView.enabled
                         ? "bg-sage-100 text-sage-700"
-                        : "hover:bg-stone-100 text-stone-500",
+                        : "hover:bg-stone-100 text-stone-500"
                     )}
                     title="분할 화면"
                   >
@@ -676,7 +726,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                     "p-1.5 rounded-lg transition-colors",
                     rightSidebarOpen
                       ? "bg-sage-100 text-sage-700"
-                      : "hover:bg-stone-100 text-stone-500",
+                      : "hover:bg-stone-100 text-stone-500"
                   )}
                 >
                   <Settings className="w-4 h-4" />

@@ -1,10 +1,16 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type {
+  Document as FrontendDocument,
+  CreateDocumentInput as FrontendCreateDocumentInput,
+  UpdateDocumentInput as FrontendUpdateDocumentInput,
+} from "@/types/document";
 
 export type DocumentType = "folder" | "text";
 export type DocumentStatus = "draft" | "revised" | "final";
 
-export interface Document {
+// Backend API response format
+export interface BackendDocument {
   id: string;
   projectId: string;
   parentId?: string;
@@ -23,18 +29,51 @@ export interface Document {
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  children?: Document[];
+  children?: BackendDocument[];
 }
 
-export interface CreateDocumentInput {
+// Alias for backwards compatibility
+export type Document = BackendDocument;
+
+// Convert backend document to frontend document
+export function mapBackendToFrontend(doc: BackendDocument): FrontendDocument {
+  return {
+    id: doc.id,
+    projectId: doc.projectId,
+    parentId: doc.parentId,
+    type: doc.type,
+    title: doc.title,
+    content: doc.content || "",
+    synopsis: doc.synopsis || "",
+    order: doc.order,
+    metadata: {
+      status: doc.status,
+      label: doc.label,
+      labelColor: doc.labelColor,
+      wordCount: doc.wordCount,
+      targetWordCount: doc.targetWordCount,
+      includeInCompile: doc.includeInCompile,
+      keywords: doc.keywords || [],
+      notes: doc.notes || "",
+    },
+    characterIds: [],
+    foreshadowingIds: [],
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+// Backend API request payloads
+export interface BackendCreateDocumentInput {
   type: DocumentType;
   title: string;
+  projectId: string; // Backend expects projectId in body
   parentId?: string;
   synopsis?: string;
   targetWordCount?: number;
 }
 
-export interface UpdateDocumentInput {
+export interface BackendUpdateDocumentInput {
   title?: string;
   content?: string;
   synopsis?: string;
@@ -47,6 +86,10 @@ export interface UpdateDocumentInput {
   keywords?: string[];
   notes?: string;
 }
+
+// Re-export for service layer - includes projectId for backend
+export type CreateDocumentInput = BackendCreateDocumentInput;
+export type UpdateDocumentInput = FrontendUpdateDocumentInput;
 
 export const documentService = {
   // Get document tree for a project
@@ -68,10 +111,13 @@ export const documentService = {
   },
 
   // Create document
-  create: async (projectId: string, payload: CreateDocumentInput) => {
+  create: async (
+    projectId: string,
+    payload: Omit<BackendCreateDocumentInput, "projectId">
+  ) => {
     const response = await api.post<ApiResponse<Document>>(
       `/projects/${projectId}/documents`,
-      payload
+      { ...payload, projectId }
     );
     return response.data;
   },

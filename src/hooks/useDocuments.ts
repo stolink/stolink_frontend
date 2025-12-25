@@ -1,7 +1,5 @@
-// useDocumentHooks.ts
-
 import { useCallback, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import {
   useDocumentStore,
@@ -9,12 +7,14 @@ import {
 } from "@/repositories/LocalDocumentRepository";
 import type {
   Document,
+  DocumentTreeNode,
   CreateDocumentInput,
   UpdateDocumentInput,
-  Document,
-  CreateDocumentInput,
 } from "@/types/document";
-import { documentService } from "@/services/documentService";
+import {
+  documentService,
+  mapBackendToFrontend,
+} from "@/services/documentService";
 
 /**
  * Hook to access the entire document tree for a project
@@ -22,31 +22,55 @@ import { documentService } from "@/services/documentService";
 export function useDocumentTree(projectId: string) {
   const { _syncProjectDocuments } = useDocumentStore();
 
-  // Fetch documents from backend and sync to local store
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
     queryKey: ["documents", projectId],
     queryFn: async () => {
-      const response = await documentService.getTree(projectId);
-      return response.data || [];
+      try {
+        const response = await documentService.getTree(projectId);
+        const backendDocs = response.data || [];
+        // Convert backend documents to frontend format
+        return backendDocs.map(mapBackendToFrontend);
+      } catch (error) {
+        // 404 means no documents yet - this is normal for new projects
+        if ((error as any)?.response?.status === 404) {
+          return [];
+        }
+        throw error;
+      }
     },
     enabled: !!projectId,
-    staleTime: 1000 * 60, // 1 minute stale time to prevent too frequent refetches on re-renders, but ensures fresh data on reload
+    staleTime: 0, // Always refetch to get latest tree from backend
+    refetchOnMount: "always", // Force refetch when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on 404 errors
+      if ((error as any)?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
-  // Sync to store when data is fetched
+  // Sync fetched documents to Zustand store
   useEffect(() => {
-    if (fetchedDocuments) {
+    if (fetchedDocuments && fetchedDocuments.length > 0) {
       _syncProjectDocuments(projectId, fetchedDocuments);
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
 
-  const documents = useDocumentStore(
+  // Zustand store documents as fallback
+  const storeDocuments = useDocumentStore(
     useShallow((state) =>
       Object.values(state.documents).filter(
-        (doc) => doc.projectId === projectId,
-      ),
-    ),
+        (doc) => doc.projectId === projectId
+      )
+    )
   );
+
+  // Use fetched documents if available, otherwise fall back to store
+  const documents =
+    fetchedDocuments && fetchedDocuments.length > 0
+      ? fetchedDocuments
+      : storeDocuments;
 
   const tree = buildTree(documents);
 
@@ -62,7 +86,7 @@ export function useDocumentTree(projectId: string) {
  */
 export function useDocument(id: string | null) {
   const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null,
+    id ? state.documents[id] : null
   );
 
   const updateDocument = useCallback(
@@ -70,7 +94,7 @@ export function useDocument(id: string | null) {
       if (!id) return;
       await localDocumentRepository.update(id, updates);
     },
-    [id],
+    [id]
   );
 
   return {
@@ -89,9 +113,9 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
       Object.values(state.documents).filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined),
-      ),
-    ),
+          doc.parentId === (parentId ?? undefined)
+      )
+    )
   );
 
   return {
@@ -104,44 +128,74 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
  * Hook to get and save document content for a specific document
  */
 export function useDocumentContent(id: string | null) {
+  const queryClient = useQueryClient();
   const { _setContent } = useDocumentStore();
-  const content = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : "",
+
+  // Zustand store content as fallback
+  const storeContent = useDocumentStore((state) =>
+    id ? state.documents[id]?.content || "" : ""
   );
 
-  // Fetch content from backend if it's missing or we want to ensure freshness
-  useQuery({
+  const {
+    data: fetchedContent,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["document-content", id],
     queryFn: async () => {
       if (!id) return null;
-      const response = await documentService.getContent(id);
-      const isSuccess =
-        response.success || response.status === "OK" || response.code === 200;
-      if (isSuccess && response.data) {
-        _setContent(id, response.data.content);
-        return response.data.content;
+      try {
+        const response = await documentService.getContent(id);
+        const isSuccess =
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess && response.data) {
+          return response.data.content;
+        }
+        return null;
+      } catch (error) {
+        // 404 means content not found - use local cache
+        if ((error as any)?.response?.status === 404) {
+          return null;
+        }
+        throw error;
       }
-      return null;
     },
     enabled: !!id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always refetch to get latest content from backend
+    refetchOnMount: "always", // Force refetch when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on 404 errors
+      if ((error as any)?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
+
+  // Sync fetched content to Zustand store
+  useEffect(() => {
+    if (id && fetchedContent !== undefined && fetchedContent !== null) {
+      _setContent(id, fetchedContent);
+    }
+  }, [id, fetchedContent, _setContent]);
+
+  // Use fetched content if available, otherwise fall back to store content
+  const content =
+    fetchedContent !== undefined && fetchedContent !== null
+      ? fetchedContent
+      : storeContent;
 
   const saveContent = useCallback(
     async (newContent: string) => {
       if (!id) return;
 
-      // Capture original content for rollback
       const originalContent =
         useDocumentStore.getState().documents[id]?.content || "";
 
       try {
-        console.log(`[useDocuments] Saving content for ${id}...`);
-        // Optimistic update
         _setContent(id, newContent);
 
         const response = await documentService.updateContent(id, newContent);
-        console.log("[useDocuments] Save response:", response);
 
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
@@ -155,20 +209,21 @@ export function useDocumentContent(id: string | null) {
             },
             updatedAt: response.data.updatedAt,
           });
+          // Update react-query cache with new content to prevent stale data on re-fetch
+          queryClient.setQueryData(["document-content", id], newContent);
         }
       } catch (error) {
         console.error("Failed to save content:", error);
-        // Rollback to captured original content
         _setContent(id, originalContent);
       }
     },
-    [id, _setContent],
+    [id, _setContent, queryClient]
   );
 
   return {
     content,
     saveContent,
-    isLoading: false,
+    isLoading: isLoading || isFetching,
   };
 }
 
@@ -179,23 +234,19 @@ export function useBulkDocumentContent() {
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
       try {
-        console.log(
-          `[useDocuments] Bulk saving ${Object.keys(updates).length} documents...`,
-        );
         const { _setBulkContent } = useDocumentStore.getState();
         _setBulkContent(updates);
 
-        const results = await Promise.all(
+        await Promise.all(
           Object.entries(updates).map(([id, content]) =>
-            documentService.updateContent(id, content),
-          ),
+            documentService.updateContent(id, content)
+          )
         );
-        console.log("[useDocuments] Bulk save completed:", results);
       } catch (error) {
         console.error("Bulk save failed:", error);
       }
     },
-    [],
+    []
   );
 
   return {
@@ -207,32 +258,69 @@ export function useBulkDocumentContent() {
  * Hook for document mutations (create, update, delete, reorder)
  */
 export function useDocumentMutations(projectId: string) {
+  const queryClient = useQueryClient();
   const { _create, _update, _delete } = useDocumentStore();
 
   const createDocument = useCallback(
     async (input: Omit<CreateDocumentInput, "projectId">) => {
       try {
-        const payload: CreateDocumentInput = {
+        // Include projectId in payload - backend expects it in body
+        const payload = {
           ...input,
           projectId,
         };
+
         const response = await documentService.create(projectId, payload);
+
         const isSuccess =
           response.success ||
           response.status === "OK" ||
           response.status === "CREATED" ||
           response.code === 200 ||
           response.code === 201;
+
         if (isSuccess && response.data) {
-          _create(response.data);
-          return response.data;
+          // Convert backend document to frontend format
+          const frontendDoc = mapBackendToFrontend(response.data);
+          _create(frontendDoc);
+          // Invalidate documents query to refetch tree with new document
+          queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+          return frontendDoc;
         }
-      } catch (error) {
-        console.error("Failed to create document:", error);
+      } catch (error: any) {
+        console.error(
+          "[useDocumentMutations] Failed to create document:",
+          error
+        );
+
+        // Fallback to local-only creation if backend fails
+        if (
+          error?.response?.status === 500 ||
+          error?.response?.status === 404
+        ) {
+          const localDocumentRepository =
+            await import("@/repositories/LocalDocumentRepository").then(
+              (m) => m.localDocumentRepository
+            );
+
+          try {
+            const localDoc = await localDocumentRepository.create({
+              projectId,
+              ...input,
+            });
+            _create(localDoc);
+            return localDoc;
+          } catch (localError) {
+            console.error(
+              "[useDocumentMutations] Local fallback failed:",
+              localError
+            );
+          }
+        }
       }
       return null;
     },
-    [projectId, _create],
+    [projectId, _create, queryClient]
   );
 
   const updateDocument = useCallback(
@@ -250,7 +338,7 @@ export function useDocumentMutations(projectId: string) {
       }
       return null;
     },
-    [_update],
+    [_update]
   );
 
   const deleteDocument = useCallback(
@@ -266,24 +354,18 @@ export function useDocumentMutations(projectId: string) {
         console.error("Failed to delete document:", error);
       }
     },
-    [_delete],
+    [_delete]
   );
 
   const reorderDocuments = useCallback(
     async (parentId: string | null, orderedIds: string[]) => {
       try {
-        const response = await documentService.reorder(parentId, orderedIds);
-        const isSuccess =
-          response.success || response.status === "OK" || response.code === 200;
-        if (isSuccess) {
-          // Local update logic for reordering if needed,
-          // but usually we can just invalidate the tree query
-        }
+        await documentService.reorder(parentId, orderedIds);
       } catch (error) {
         console.error("Failed to reorder documents:", error);
       }
     },
-    [],
+    []
   );
 
   return {
@@ -297,10 +379,14 @@ export function useDocumentMutations(projectId: string) {
 /**
  * Hook for fetching a document and all its descendants (flattened)
  */
-export function useDescendantDocuments(parentId: string, projectId: string) {
+export function useDescendantDocuments(
+  parentId: string | null,
+  projectId: string
+) {
   const documents = useDocumentStore((state) => state.documents);
 
   const flatDocuments = useMemo(() => {
+    if (!parentId) return [];
     const result: (typeof documents)[string][] = [];
 
     const parent = documents[parentId];
@@ -329,10 +415,9 @@ export function useDescendantDocuments(parentId: string, projectId: string) {
   };
 }
 
-// Helper function to build tree
-function buildTree(documents: Document[]) {
-  const map = new Map<string, Document & { children: Document[] }>();
-  const roots: (Document & { children: Document[] })[] = [];
+function buildTree(documents: Document[]): DocumentTreeNode[] {
+  const map = new Map<string, DocumentTreeNode>();
+  const roots: DocumentTreeNode[] = [];
 
   documents.forEach((doc) => {
     map.set(doc.id, { ...doc, children: [] });
