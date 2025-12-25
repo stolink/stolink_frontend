@@ -17,8 +17,9 @@ import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
 import { ImportBookCard } from "@/components/library/ImportBookCard";
+<<<<<<< HEAD
 import { useUIStore, useAuthStore } from "@/stores";
-
+import type { Project } from "@/types";
 import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -38,7 +39,7 @@ import {
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 
 export default function LibraryPage() {
-  const { setCreateProjectModalOpen } = useUIStore();
+  const { _create } = useDocumentStore();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -212,6 +213,59 @@ export default function LibraryPage() {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleCreateProject = () => {
+    const now = new Date().toISOString();
+    const newProjectId = `project-${Date.now()}`;
+
+    // 1. 프로젝트(폴더) 생성
+    _create({
+      id: newProjectId,
+      projectId: newProjectId,
+      type: "folder",
+      title: "새 작품",
+      content: "",
+      synopsis: "",
+      order: 0,
+      metadata: {
+        status: "draft",
+        wordCount: 0,
+        includeInCompile: true,
+        keywords: ["auto-genre"],
+        notes: "",
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 2. 초기 챕터(문서) 생성
+    _create({
+      id: `doc-${Date.now()}`,
+      projectId: newProjectId,
+      parentId: newProjectId,
+      type: "text",
+      title: "1화",
+      content: "",
+      synopsis: "",
+      order: 0,
+      metadata: {
+        status: "draft",
+        wordCount: 0,
+        includeInCompile: true,
+        keywords: [],
+        notes: "",
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 3. 에디터로 이동
+    navigate(`/projects/${newProjectId}/editor`);
   };
 
   const containerVariants = {
@@ -527,11 +581,7 @@ export default function LibraryPage() {
               <br />
               복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
             </p>
-            <Button
-              size="lg"
-              className="gap-2"
-              onClick={() => setCreateProjectModalOpen(true)}
-            >
+            <Button size="lg" className="gap-2" onClick={handleCreateProject}>
               <FileText className="w-5 h-5" />새 작품 만들기
             </Button>
           </div>
@@ -540,6 +590,8 @@ export default function LibraryPage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Modals */}
     </div>
   );
 }
