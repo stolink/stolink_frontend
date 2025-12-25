@@ -76,41 +76,55 @@ export default function ScriveningsEditor({
       // Bulk Save logic
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          const html = editor.getHTML();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, "text/html");
-          const dividers = doc.querySelectorAll(
-            'div[data-type="section-divider"]',
-          );
-          const updates: Record<string, string> = {};
-
-          dividers.forEach((divider) => {
-            const docId = divider.getAttribute("data-document-id");
-            if (!docId) return;
-
-            let content = "";
-            let next = divider.nextElementSibling;
-            while (
-              next &&
-              next.getAttribute("data-type") !== "section-divider"
-            ) {
-              content += next.outerHTML;
-              next = next.nextElementSibling;
-            }
-            updates[docId] = content;
-          });
-
-          if (Object.keys(updates).length > 0) {
-            await bulkSaveContent(updates);
-          }
-        } catch (error) {
-          console.error("[ScriveningsEditor] Failed to save content:", error);
-        }
-      }, 1000);
+      saveTimeoutRef.current = setTimeout(saveAll, 1000);
     },
   });
+
+  const saveAll = useCallback(async () => {
+    if (!editor) return;
+    try {
+      console.log("[ScriveningsEditor] Saving changes...");
+      const html = editor.getHTML();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const dividers = doc.querySelectorAll('div[data-type="section-divider"]');
+      const updates: Record<string, string> = {};
+
+      dividers.forEach((divider) => {
+        const docId = divider.getAttribute("data-document-id");
+        if (!docId) return;
+
+        let content = "";
+        let next = divider.nextElementSibling;
+        while (next && next.getAttribute("data-type") !== "section-divider") {
+          content += next.outerHTML;
+          next = next.nextElementSibling;
+        }
+        updates[docId] = content;
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await bulkSaveContent(updates);
+      }
+    } catch (error) {
+      console.error("[ScriveningsEditor] Failed to save content:", error);
+    }
+  }, [editor, bulkSaveContent]);
+
+  // Ctrl+S Manual Save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        console.log("[ScriveningsEditor] Manual save triggered (Ctrl+S)");
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveAll();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [saveAll]);
 
   // Update editor content when hierarchy changes
 
