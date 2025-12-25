@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Search,
   LayoutGrid,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
+import { ImportBookCard } from "@/components/library/ImportBookCard";
 import { useUIStore, useAuthStore } from "@/stores";
 import type { Project } from "@/types";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 
 // Extended Mock data for UI demo
 interface ExtendedProject extends Omit<Project, "status"> {
@@ -144,10 +146,151 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [projects] = useState<ExtendedProject[]>(mockProjects);
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredProjects = projects.filter((project) =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  // Read file with encoding detection (UTF-8 first, then EUC-KR for Korean files)
+  const readFileWithEncoding = async (file: File): Promise<string> => {
+    const buffer = await file.arrayBuffer();
+
+    // Try UTF-8 first
+    try {
+      const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
+      const text = utf8Decoder.decode(buffer);
+      // Check if it looks like valid Korean text (not garbled)
+      if (!text.includes("�")) {
+        return text;
+      }
+    } catch {
+      // UTF-8 decoding failed
+    }
+
+    // Fallback to EUC-KR (common for old Korean files)
+    try {
+      const eucKrDecoder = new TextDecoder("euc-kr");
+      return eucKrDecoder.decode(buffer);
+    } catch {
+      // Last resort: force UTF-8
+      const fallbackDecoder = new TextDecoder("utf-8", { fatal: false });
+      return fallbackDecoder.decode(buffer);
+    }
+  };
+
+  // Import book from TXT/MD file
+  const handleImportBook = async (file: File) => {
+    console.log(
+      "[Library Import] Reading file:",
+      file.name,
+      file.size,
+      "bytes",
+    );
+    const rawText = await readFileWithEncoding(file);
+    const title = file.name.replace(/\.(txt|md)$/i, "");
+
+    // Smart text cleanup: remove hard line breaks within paragraphs
+    // Old TXT files often have fixed-width line breaks (e.g., 80 chars)
+    const cleanText = (text: string): string => {
+      // Normalize line endings
+      let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+      // Detect paragraph breaks (2+ newlines, or newline followed by indent/space)
+      // Replace single newlines within paragraphs with spaces
+      cleaned = cleaned
+        // First, mark real paragraph breaks (2+ newlines)
+        .replace(/\n{2,}/g, "<<<PARA>>>")
+        // Also treat lines ending with period/question/exclamation followed by newline as paragraph
+        .replace(/([.!?。！？])\n(?=[^\s])/g, "$1<<<PARA>>>")
+        // Remove remaining single newlines (hard wraps within paragraphs)
+        .replace(/\n/g, " ")
+        // Restore paragraph breaks
+        .replace(/<<<PARA>>>/g, "\n\n")
+        // Clean up multiple spaces
+        .replace(/  +/g, " ")
+        .trim();
+
+      return cleaned;
+    };
+
+    const text = cleanText(rawText);
+
+    // Convert plain text to HTML paragraphs
+    const content = text
+      .split("\n\n")
+      .filter((p) => p.trim())
+      .map((p) => `<p>${p.trim()}</p>`)
+      .join("");
+
+    const { _create } = useDocumentStore.getState();
+    const now = new Date().toISOString();
+    const newProjectId = `project-import-${Date.now()}`;
+
+    // Create project folder
+    _create({
+      id: newProjectId,
+      projectId: newProjectId,
+      type: "folder",
+      title: title,
+      content: "",
+      synopsis: `${file.name}에서 가져온 책`,
+      order: 0,
+      metadata: {
+        status: "draft",
+        wordCount: 0,
+        includeInCompile: true,
+        keywords: [],
+        notes: "",
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Create the main document
+    _create({
+      id: `doc-${Date.now()}`,
+      projectId: newProjectId,
+      parentId: newProjectId,
+      type: "text",
+      title: "본문",
+      content,
+      synopsis: "",
+      order: 0,
+      metadata: {
+        status: "draft",
+        wordCount: text.length,
+        includeInCompile: true,
+        keywords: [],
+        notes: "",
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    console.log("[Library Import] Created project:", newProjectId);
+
+    // Navigate to the new project's editor
+    navigate(`/projects/${newProjectId}/editor`);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleImportBook(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -354,9 +497,23 @@ export default function LibraryPage() {
           animate="visible"
           variants={containerVariants}
         >
+          {/* Hidden file input for book import */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".txt,.md"
+            className="hidden"
+          />
+
           {/* Create New Book Card */}
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
             <CreateBookCard onClick={() => setCreateProjectModalOpen(true)} />
+          </motion.div>
+
+          {/* Import Book Card */}
+          <motion.div variants={itemVariants} className="h-full min-h-[320px]">
+            <ImportBookCard onClick={handleImportClick} />
           </motion.div>
 
           {/* Project List */}

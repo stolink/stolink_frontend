@@ -20,8 +20,8 @@
 | Character 타입     | ✅ 완료   | `character.ts` - Role, Relationship        |
 | Place/Item 타입    | ✅ 완료   | `character.ts` - 세계관 요소               |
 | ~~Corkboard 뷰~~   | ⚠️ 대체됨 | Section Strip으로 대체 (파일은 존재)       |
-| Scrivenings 뷰     | ❌ 미구현 | grep 검색 결과 없음                        |
-| Outline 뷰         | ❌ 미구현 | grep 검색 결과 없음                        |
+| Scrivenings 뷰     | ✅ 완료   | `ScriveningsEditor.tsx` - 통합 편집 모드   |
+| Outline 뷰         | ✅ 완료   | `OutlineView.tsx` - 테이블 기반 아웃라인   |
 | 버전/스냅샷        | ❌ 미구현 | grep 검색 결과 없음                        |
 | 인라인 링크        | ❌ 미구현 | `[[...]]` 패턴 없음                        |
 
@@ -70,8 +70,8 @@ export interface Document {
 | Editor        | ✅ 완료   | `TiptapEditor.tsx`                  |
 | Section Strip | ✅ 완료   | `SectionStrip.tsx` (하단 카드 네비) |
 | ~~Corkboard~~ | ⚠️ 대체됨 | EditorPage에서 제거됨               |
-| Scrivenings   | ❌ 미구현 | -                                   |
-| Outline       | ❌ 미구현 | -                                   |
+| Scrivenings   | ✅ 완료   | `ScriveningsEditor.tsx`             |
+| Outline       | ✅ 완료   | `OutlineView.tsx`                   |
 
 ---
 
@@ -221,8 +221,8 @@ src/components/editor/
 
 | 우선순위 | 기능                    | 상태 |
 | -------- | ----------------------- | ---- |
-| P1       | Scrivenings 뷰          | ❌   |
-| P2       | Outline 뷰              | ❌   |
+| P1       | Scrivenings 뷰          | ✅   |
+| P1       | Outline 뷰              | ✅   |
 | P2       | 스냅샷/버전 관리        | ❌   |
 | P3       | 인라인 링크 (`[[...]]`) | ❌   |
-| P3       | Compile/출력            | ❌   |
+| P3       | Compile/출력            | ✅   |

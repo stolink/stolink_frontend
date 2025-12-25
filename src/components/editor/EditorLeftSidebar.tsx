@@ -1,12 +1,15 @@
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ChapterTree, { type ChapterNode } from "@/components/editor/ChapterTree";
+import { ChapterTree, type ChapterNode } from "@/components/editor/sidebar";
 
 interface EditorLeftSidebarProps {
   chapters: ChapterNode[];
   selectedChapterId: string | null;
   onSelectChapter: (id: string) => void;
   onAddChapter: (title: string, parentId?: string) => void;
+  onRenameChapter?: (id: string, newTitle: string) => void;
+  onDeleteChapter?: (id: string) => void;
+  onDuplicateChapter?: (id: string) => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -16,6 +19,9 @@ export default function EditorLeftSidebar({
   selectedChapterId,
   onSelectChapter,
   onAddChapter,
+  onRenameChapter,
+  onDeleteChapter,
+  onDuplicateChapter,
   isOpen,
   onToggle,
 }: EditorLeftSidebarProps) {
@@ -58,6 +64,9 @@ export default function EditorLeftSidebar({
           selectedChapterId={selectedChapterId || undefined}
           onSelectChapter={onSelectChapter}
           onAddChapter={onAddChapter}
+          onRenameChapter={onRenameChapter}
+          onDeleteChapter={onDeleteChapter}
+          onDuplicateChapter={onDuplicateChapter}
         />
       </div>
     </aside>

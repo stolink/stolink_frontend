@@ -35,6 +35,7 @@ interface DocumentStore {
   _delete: (id: string) => void;
   _setContent: (id: string, content: string) => void;
   _setBulkContent: (updates: Record<string, string>) => void;
+  _setAll: (documents: Document[]) => void;
 }
 
 export const useDocumentStore = create<DocumentStore>()(
@@ -84,6 +85,15 @@ export const useDocumentStore = create<DocumentStore>()(
               state.documents[id].metadata.wordCount = content.length;
               state.documents[id].updatedAt = new Date().toISOString();
             }
+          });
+        });
+      },
+
+      _setAll: (documents) => {
+        set((state) => {
+          state.documents = {};
+          documents.forEach((doc) => {
+            state.documents[doc.id] = doc;
           });
         });
       },
