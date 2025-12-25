@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ApiResponse } from "@/types/api";
+
 import { useNavigate } from "react-router-dom";
 import { authService, type User } from "@/services/authService";
 import { useAuthStore } from "@/stores";
@@ -41,12 +43,21 @@ export function useLogin() {
   return useMutation({
     mutationFn: (payload: { email: string; password: string }) =>
       authService.login(payload),
-    onSuccess: (response) => {
-      if (response.success && response.data) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
+    onSuccess: (response: ApiResponse<User>) => {
+      // Check for success via boolean, string status code, or HTTP numeric code
+      const isSuccess =
+        response.success || response.status === "OK" || response.code === 200;
+
+      if (isSuccess && response.data) {
+        // Response data is the User object directly
+        const user = response.data;
+        // Tokens are handled via cookies, so pass empty strings or nulls if store allows
+        setAuth(user, "", "");
         navigate("/library");
       }
+    },
+    onError: (error) => {
+      console.error("Login Failed:", error);
     },
   });
 }

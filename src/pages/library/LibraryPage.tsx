@@ -25,8 +25,10 @@ import {
   useDeleteProject,
   useCreateProject,
 } from "@/hooks/useProjects";
-import { projectService } from "@/services/projectService";
+import { projectService, type Project } from "@/services/projectService";
 import { documentService } from "@/services/documentService";
+import type { ApiResponse } from "@/types/api";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,8 +64,15 @@ export default function LibraryPage() {
         description: "",
       },
       {
-        onSuccess: (response) => {
-          if (response.success && response.data) {
+        onSuccess: (response: ApiResponse<Project>) => {
+          const isSuccess =
+            response.success ||
+            response.status === "OK" ||
+            response.status === "CREATED" ||
+            response.code === 200 ||
+            response.code === 201;
+
+          if (isSuccess && response.data) {
             navigate(`/projects/${response.data.id}/editor`);
           }
         },
@@ -128,7 +137,14 @@ export default function LibraryPage() {
         description: `${file.name}에서 가져온 책`,
       });
 
-      if (!projectResponse.success || !projectResponse.data) {
+      const isProjectSuccess =
+        projectResponse.success ||
+        projectResponse.status === "OK" ||
+        projectResponse.status === "CREATED" ||
+        projectResponse.code === 200 ||
+        projectResponse.code === 201;
+
+      if (!isProjectSuccess || !projectResponse.data) {
         throw new Error("Failed to create project");
       }
 
@@ -141,7 +157,14 @@ export default function LibraryPage() {
         targetWordCount: text.length,
       });
 
-      if (!docResponse.success || !docResponse.data) {
+      const isDocSuccess =
+        docResponse.success ||
+        docResponse.status === "OK" ||
+        docResponse.status === "CREATED" ||
+        docResponse.code === 200 ||
+        docResponse.code === 201;
+
+      if (!isDocSuccess || !docResponse.data) {
         throw new Error("Failed to create document");
       }
 
