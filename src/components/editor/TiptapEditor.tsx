@@ -6,14 +6,15 @@ import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { useEffect } from "react";
-import { Bold, Italic, Clapperboard } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Bold, Italic, Clapperboard, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
+import "./editor-prose.css";
 
 export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
@@ -35,6 +36,11 @@ const DEFAULT_CONTENT = `
   <p>"약속했잖아. 꼭 돌아올게."</p>
 `;
 
+const MIN_ZOOM = 50;
+const MAX_ZOOM = 200;
+const DEFAULT_ZOOM = 100;
+const ZOOM_STEP = 10;
+
 export default function TiptapEditor({
   onUpdate,
   onContentChange,
@@ -44,6 +50,10 @@ export default function TiptapEditor({
 }: TiptapEditorProps) {
   const navigate = useNavigate();
   const { id: projectId } = useParams<{ id: string }>();
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [showZoomControls, setShowZoomControls] = useState(false);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   const editor = useEditor({
     editable: !readOnly,
@@ -71,23 +81,76 @@ export default function TiptapEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
-          readOnly && "pointer-events-none opacity-80" // 읽기 전용 스타일
+          // Remove prose class - use direct styling for full width
+          "w-full",
+          "focus:outline-none min-h-[500px] px-6 py-6",
+          readOnly && "pointer-events-none opacity-80",
         ),
         spellcheck: "false",
       },
+      handleDOMEvents: {
+        beforeinput: () => {
+          if (editorContainerRef.current) {
+            scrollPositionRef.current = editorContainerRef.current.scrollTop;
+          }
+          return false;
+        },
+      },
     },
     onUpdate: ({ editor }) => {
-      // Character count is cheap - update immediately
       if (onUpdate) {
         onUpdate(editor.storage.characterCount.characters());
       }
-      // getHTML is expensive - only call if needed
       if (onContentChange) {
         onContentChange(editor.getHTML());
       }
     },
+    onTransaction: () => {
+      requestAnimationFrame(() => {
+        if (editorContainerRef.current && scrollPositionRef.current > 0) {
+          editorContainerRef.current.scrollTop = scrollPositionRef.current;
+        }
+      });
+    },
   });
+
+  // Smooth zoom with bounds
+  const adjustZoom = useCallback((delta: number) => {
+    setZoom((prev) => {
+      const newZoom = Math.round(prev + delta);
+      return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+    });
+    setShowZoomControls(true);
+  }, []);
+
+  const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
+  const handleZoomOut = useCallback(() => adjustZoom(-ZOOM_STEP), [adjustZoom]);
+
+  // Hide zoom controls after inactivity
+  useEffect(() => {
+    if (showZoomControls) {
+      const timer = setTimeout(() => setShowZoomControls(false), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showZoomControls, zoom]);
+
+  // Trackpad pinch-to-zoom & Ctrl+scroll (smooth)
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        // Smooth zoom based on wheel delta
+        const delta = -e.deltaY * 0.5; // Smaller multiplier for smoother zoom
+        adjustZoom(delta);
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [adjustZoom]);
 
   useEffect(() => {
     if (editor) {
@@ -95,18 +158,15 @@ export default function TiptapEditor({
     }
   }, [editor, readOnly]);
 
-  // Initial character count (only on mount)
   useEffect(() => {
     if (editor && onUpdate) {
-      // Use requestAnimationFrame to defer
       requestAnimationFrame(() => {
         onUpdate(editor.storage.characterCount.characters());
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor]); // Intentionally exclude onUpdate to prevent loops
+  }, [editor]);
 
-  // initialContent 변경 감지하여 에디터 내용 업데이트 (씬 전환 시)
   useEffect(() => {
     if (editor && initialContent !== undefined) {
       const currentHTML = editor.getHTML();
@@ -135,8 +195,12 @@ export default function TiptapEditor({
     }
   };
 
+  // Base font size at 100% = 18px (1.125rem)
+  const baseFontSize = 18;
+  const fontSize = (zoom / 100) * baseFontSize;
+
   return (
-    <div className="flex flex-col h-full relative group">
+    <div className="flex flex-col h-full relative">
       {/* Bubble Menu for Selection */}
       {editor && !readOnly && (
         <BubbleMenu
@@ -159,7 +223,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("bold") && "bg-stone-100"
+              editor.isActive("bold") && "bg-stone-100",
             )}
           >
             <Bold className="w-3.5 h-3.5" />
@@ -170,7 +234,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("italic") && "bg-stone-100"
+              editor.isActive("italic") && "bg-stone-100",
             )}
           >
             <Italic className="w-3.5 h-3.5" />
@@ -178,14 +242,68 @@ export default function TiptapEditor({
         </BubbleMenu>
       )}
 
-      {/* Toolbar - Focus Mode 혹은 readOnly일 때 숨김 가능 or readOnly여도 툴바는 볼 수 있음?
-          보통 readOnly는 툴바도 안 보임. */}
+      {/* Toolbar */}
       {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
 
-      {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto w-full">
-        <EditorContent editor={editor} />
+      {/* Editor Content - Full width with font-size based zoom */}
+      <div
+        ref={editorContainerRef}
+        className="flex-1 overflow-y-auto w-full"
+        style={{
+          fontSize: `${fontSize}px`,
+          lineHeight: 1.75,
+        }}
+      >
+        <EditorContent editor={editor} className="w-full" />
       </div>
+
+      {/* Minimal Zoom Indicator - Bottom right */}
+      {!hideToolbar && (
+        <div
+          className={cn(
+            "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
+            showZoomControls
+              ? "opacity-100 px-2 py-1.5"
+              : "opacity-50 hover:opacity-100 px-2 py-1",
+          )}
+          onMouseEnter={() => setShowZoomControls(true)}
+          onMouseLeave={() => setShowZoomControls(false)}
+        >
+          {showZoomControls ? (
+            <>
+              <button
+                onClick={handleZoomOut}
+                disabled={zoom <= MIN_ZOOM}
+                className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                title="축소 (Ctrl + 스크롤)"
+              >
+                <ZoomOut className="w-4 h-4 text-stone-600" />
+              </button>
+              <input
+                type="range"
+                min={MIN_ZOOM}
+                max={MAX_ZOOM}
+                value={zoom}
+                onChange={(e) => setZoom(parseInt(e.target.value))}
+                className="w-16 h-1 accent-sage-500 cursor-pointer"
+              />
+              <button
+                onClick={handleZoomIn}
+                disabled={zoom >= MAX_ZOOM}
+                className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                title="확대 (Ctrl + 스크롤)"
+              >
+                <ZoomIn className="w-4 h-4 text-stone-600" />
+              </button>
+              <span className="text-xs text-stone-500 ml-1 min-w-[36px] text-right">
+                {zoom}%
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-stone-500">{zoom}%</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

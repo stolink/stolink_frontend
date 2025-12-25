@@ -1,0 +1,74 @@
+/* Editor Prose Styles */
+
+.ProseMirror {
+  font-size: inherit;
+  line-height: 1.75;
+  color: #292524;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.ProseMirror p {
+  margin-bottom: 1em;
+  word-break: keep-all;
+}
+
+.ProseMirror h1 {
+  font-size: 1.875em;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: #1c1917;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  color: #292524;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 500;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  color: #44403c;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #86a789;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #57534e;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror mark {
+  background-color: #fef08a;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.125rem;
+}
+
+.ProseMirror ::selection {
+  background-color: #d1fae5;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #a8a29e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

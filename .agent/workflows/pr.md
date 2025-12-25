@@ -19,28 +19,47 @@ description: main 브랜치 대비 모든 커밋을 분석하여 PR을 생성하
     - `gh pr view --json state,title,body` 실행
     - PR 존재 여부 및 상태 확인
 
-4.  **PR 생성 또는 업데이트**:
+4.  **PR 생성 또는 업데이트 (파일 기반 처리)**:
+    _쉘 파싱 오류 방지를 위해 반드시 내용을 임시 파일(`.pr_body_temp.md`)로 먼저 저장한 후 명령어를 실행합니다._
 
-    **새 PR 생성 (PR이 없거나 MERGED/CLOSED인 경우)**:
+    **A. 본문 파일 생성**:
+    먼저 아래 내용을 `.pr_body_temp.md` 파일로 저장합니다:
 
-    ```
-    gh pr create \
-      --title "<종합된 변경 제목>" \
-      --body "## 변경 사항
+    ```markdown
+    ## 변경 사항
 
     <커밋들을 분석하여 주요 변경사항 bullet point로 정리>
 
     ## 변경된 파일
+
     <주요 파일 목록>
 
     ## AI 리뷰
-    AI 코드 리뷰가 자동으로 실행됩니다."
+
+    AI 코드 리뷰가 자동으로 실행됩니다.
+    ```
+
+    **B. 명령어 실행**:
+    **새 PR 생성 (PR이 없거나 MERGED/CLOSED인 경우)**:
+
+    ```bash
+    GH_EDITOR=true gh pr create \
+      --title "<종합된 변경 제목>" \
+      --body-file .pr_body_temp.md
     ```
 
     **기존 PR 업데이트 (OPEN 상태인 경우)**:
 
+    ```bash
+    GH_EDITOR=true gh pr edit \
+      --title "<업데이트된 제목>" \
+      --body-file .pr_body_temp.md
     ```
-    gh pr edit --title "<업데이트된 제목>" --body "<업데이트된 본문>"
+
+    **C. 정리**:
+
+    ```bash
+    rm .pr_body_temp.md
     ```
 
 5.  **결과 안내**:

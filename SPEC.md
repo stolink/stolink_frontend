@@ -2,9 +2,14 @@
 
 > AI 기반 작가용 스토리 관리 플랫폼
 
-**버전:** 1.0
-**작성일:** 2024년 12월
-**상태:** 초안
+**버전:** 1.5
+**작성일:** 2024년 12월 25일
+**상태:** 활성
+
+> 📐 프로젝트 구조 → [ARCHITECTURE.md](./ARCHITECTURE.md)
+> 🔧 기술 스택 → [TECHSTACK.md](./TECHSTACK.md)
+> 🗂️ 데이터 모델 → [DATA_MODEL.md](./DATA_MODEL.md)
+> 📡 API 명세 → [API_SPEC.md](./API_SPEC.md)
 
 ---
 
@@ -94,13 +99,7 @@ StoLink는 작가를 위한 AI 기반 스토리 관리 플랫폼입니다. 복�
 
 ### 3.3 API 엔드포인트
 
-```
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/logout
-POST /api/auth/refresh
-POST /api/auth/forgot-password
-```
+> 📡 상세 API 명세 → [API_SPEC.md](./API_SPEC.md#1-인증-auth)
 
 ---
 
@@ -176,13 +175,7 @@ POST /api/auth/forgot-password
 
 ### 4.4 API 엔드포인트
 
-```
-GET    /api/projects              # 작품 목록
-POST   /api/projects              # 작품 생성
-PATCH  /api/projects/:id          # 작품 수정
-DELETE /api/projects/:id          # 작품 삭제
-POST   /api/projects/:id/duplicate # 작품 복제
-```
+> 📡 상세 API 명세 → [API_SPEC.md](./API_SPEC.md#2-프로젝트-projects)
 
 ---
 
@@ -377,14 +370,7 @@ POST   /api/projects/:id/duplicate # 작품 복제
 
 ### 5.7 API 엔드포인트
 
-```
-GET    /api/chapters/:id                # 챕터 조회
-PATCH  /api/chapters/:id/delta          # 델타 저장
-POST   /api/chapters/:id/analyze        # AI 분석 요청
-GET    /api/projects/:id/foreshadowing  # 복선 목록
-PATCH  /api/foreshadowing/:id           # 복선 상태 변경
-POST   /api/chat                        # AI 챗봇
-```
+> 📡 상세 API 명세 → [API_SPEC.md](./API_SPEC.md#3-문서-documents) (문서), [#6 복선](./API_SPEC.md#6-복선-foreshadowing), [#11 AI](./API_SPEC.md#11-ai-기능-ai)
 
 ---
 
@@ -525,14 +511,7 @@ POST   /api/chat                        # AI 챗봇
 
 ### 6.6 API 엔드포인트
 
-```
-GET    /api/projects/:id/characters      # 캐릭터 목록
-GET    /api/projects/:id/graph           # 관계도 데이터
-PATCH  /api/characters/:id               # 캐릭터 수정
-POST   /api/characters/:id/regenerate    # 이미지 재생성
-GET    /api/projects/:id/places          # 장소 목록
-GET    /api/projects/:id/items           # 아이템 목록
-```
+> 📡 상세 API 명세 → [API_SPEC.md](./API_SPEC.md#4-캐릭터-characters) (캐릭터), [#7 장소](./API_SPEC.md#7-장소-places), [#8 아이템](./API_SPEC.md#8-아이템-items)
 
 ---
 
@@ -606,14 +585,7 @@ GET    /api/projects/:id/items           # 아이템 목록
 
 ### 7.6 API 엔드포인트
 
-```
-PATCH  /api/projects/:id               # 작품 정보 수정
-GET    /api/projects/:id/stats         # 통계 조회
-POST   /api/projects/:id/export        # 내보내기
-POST   /api/projects/:id/share         # 공유 링크 생성
-DELETE /api/projects/:id/share         # 공유 링크 삭제
-DELETE /api/projects/:id               # 작품 삭제
-```
+> 📡 상세 API 명세 → [API_SPEC.md](./API_SPEC.md#2-프로젝트-projects), [#9 내보내기](./API_SPEC.md#9-내보내기가져오기-exportimport), [#10 공유](./API_SPEC.md#10-공유-sharing)
 
 ---
 
@@ -716,11 +688,13 @@ User → React (S3+CloudFront) → Spring API → PostgreSQL
 
 ## 10. 버전 이력
 
-| 버전 | 날짜    | 변경 내용                                                                                     |
-| ---- | ------- | --------------------------------------------------------------------------------------------- |
-| 1.0  | 2024.12 | 최초 작성                                                                                     |
-| 1.1  | 2024.12 | 세계관 그래프 리디자인, 독서 모드 추가                                                        |
-| 1.2  | 2024.12 | 랜딩 페이지 CTA→Stats 섹션 변경, Footer 공통화, 버튼 rounded-full 스타일 적용, CLAUDE.md 연동 |
+| 버전 | 날짜    | 변경 내용                                                                     |
+| ---- | ------- | ----------------------------------------------------------------------------- |
+| 1.0  | 2024.12 | 최초 작성                                                                     |
+| 1.1  | 2024.12 | 세계관 그래프 리디자인, 독서 모드 추가                                        |
+| 1.2  | 2024.12 | 랜딩 페이지 CTA→Stats 섹션 변경, Footer 공통화, 버튼 rounded-full 스타일 적용 |
+| 1.3  | 2024.12 | 에디터 사이드바 분리, 컨텍스트 메뉴, 텍스트 가져오기, 내보내기 서비스 추가    |
+| 1.4  | 2024.12 | 문서 간 상호 참조 추가 (ARCHITECTURE, TECHSTACK, DATA_MODEL)                  |
 
 ---
 

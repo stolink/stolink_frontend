@@ -1,5 +1,12 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   PanelLeft,
   PanelRightOpen,
@@ -26,7 +33,7 @@ import {
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
 import { useEditorStore } from "@/stores";
-import { type ChapterNode } from "@/components/editor/ChapterTree";
+import { type ChapterNode } from "@/components/editor/sidebar";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -41,6 +48,7 @@ import {
   useChildDocuments,
   useDocument,
 } from "@/hooks/useDocuments";
+import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import {
   SAMPLE_PROJECT_ID,
   initializeSampleDocuments,
@@ -68,7 +76,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -123,7 +131,7 @@ function documentTreeToChapterTree(
       type: string;
       children: unknown[];
     }[];
-  }[]
+  }[],
 ): ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -159,12 +167,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [characterCount, setCharacterCount] = useState(0);
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // selectedFolderId = currently selected folder (chapter) in sidebar
-  const [selectedFolderId, setSelectedFolderId] = useState<string>(
-    isDemo ? "chapter-1" : "doc-chapter-1"
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
+    isDemo ? "chapter-1" : null,
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : "doc-sample-1-1"
+    isDemo ? "chapter-1-1" : null,
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -178,8 +186,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setViewMode,
   } = useEditorStore();
 
-  // Project ID
-  const projectId = isDemo ? "demo-project" : SAMPLE_PROJECT_ID;
+  // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
+  const { id: urlProjectId } = useParams<{ id: string }>();
+  const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
 
   // ============================================================
   // Document Hooks (for non-demo mode)
@@ -187,14 +196,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId
+    isDemo ? null : selectedSectionId,
   );
   const { createDocument } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
   // Get child sections of the selected folder
   const { children: sectionDocuments } = useChildDocuments(
     selectedFolderId,
-    projectId
+    projectId,
   );
 
   // Title editing state
@@ -210,6 +219,31 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       initializeSampleDocuments();
     }
   }, [isDemo]);
+
+  // Auto-select first folder when documents load (one-time initialization)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useLayoutEffect(() => {
+    if (isDemo || documents.length === 0) return;
+    if (!selectedFolderId) {
+      const firstFolder = documents.find((d) => d.type === "folder");
+      if (firstFolder) {
+        setSelectedFolderId(firstFolder.id);
+      }
+    }
+  }, [isDemo, documents.length > 0]); // Only run when documents first load
+
+  useLayoutEffect(() => {
+    if (isDemo || !selectedFolderId || documents.length === 0) return;
+    if (!selectedSectionId) {
+      const firstSection = documents.find(
+        (d) => d.type === "text" && d.parentId === selectedFolderId,
+      );
+      if (firstSection) {
+        setSelectedSectionId(firstSection.id);
+      }
+    }
+  }, [isDemo, selectedFolderId, documents.length > 0]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // ============================================================
   // Computed Data
@@ -273,6 +307,41 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   };
 
+  const handleRenameChapter = async (id: string, newTitle: string) => {
+    if (isDemo) return;
+    const { _update } = useDocumentStore.getState();
+    _update(id, { title: newTitle });
+  };
+
+  const handleDeleteChapter = async (id: string) => {
+    if (isDemo) return;
+    const { _delete } = useDocumentStore.getState();
+    _delete(id);
+    // Clear selection if deleted item was selected
+    if (selectedFolderId === id) {
+      setSelectedFolderId(null);
+      setSelectedSectionId(null);
+    } else if (selectedSectionId === id) {
+      setSelectedSectionId(null);
+    }
+  };
+
+  const handleDuplicateChapter = async (id: string) => {
+    if (isDemo) return;
+    const { documents, _create } = useDocumentStore.getState();
+    const original = documents[id];
+    if (!original) return;
+
+    const now = new Date().toISOString();
+    _create({
+      ...original,
+      id: `${original.id}-copy-${Date.now()}`,
+      title: `${original.title} (복사본)`,
+      createdAt: now,
+      updatedAt: now,
+    });
+  };
+
   const handleSelectFolder = (id: string) => {
     // Check if it's a text document (section) - if so, select both folder and section
     const doc = documents.find((d) => d.id === id);
@@ -296,7 +365,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Debounced content saving to reduce latency
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
 
   const handleContentChange = useCallback(
@@ -313,7 +382,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         saveContent(content);
       }, 500);
     },
-    [isDemo, saveContent]
+    [isDemo, saveContent],
   );
 
   // Store latest values in refs to prevent callback recreation
@@ -344,7 +413,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         }, 1000);
       }
     },
-    [isDemo] // Minimal dependencies - use refs for changing values
+    [isDemo], // Minimal dependencies - use refs for changing values
   );
 
   // Cleanup timeout on unmount
@@ -406,6 +475,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           selectedChapterId={selectedSectionId || selectedFolderId}
           onSelectChapter={handleSelectFolder}
           onAddChapter={handleAddChapter}
+          onRenameChapter={handleRenameChapter}
+          onDeleteChapter={handleDeleteChapter}
+          onDuplicateChapter={handleDuplicateChapter}
           isOpen={isSidebarVisible}
           onToggle={toggleSidebar}
         />
@@ -498,7 +570,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "editor"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
                     )}
                   >
                     <Layout className="w-3.5 h-3.5" />
@@ -510,7 +582,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "scrivenings"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
                     )}
                   >
                     <List className="w-3.5 h-3.5" />
@@ -522,7 +594,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
                       viewMode === "outline"
                         ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50",
                     )}
                   >
                     <TableProperties className="w-3.5 h-3.5" />
@@ -539,7 +611,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                       "p-1.5 rounded-lg transition-colors",
                       splitView.enabled
                         ? "bg-sage-100 text-sage-700"
-                        : "hover:bg-stone-100 text-stone-500"
+                        : "hover:bg-stone-100 text-stone-500",
                     )}
                     title="분할 화면"
                   >
@@ -562,7 +634,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                     "p-1.5 rounded-lg transition-colors",
                     rightSidebarOpen
                       ? "bg-sage-100 text-sage-700"
-                      : "hover:bg-stone-100 text-stone-500"
+                      : "hover:bg-stone-100 text-stone-500",
                   )}
                 >
                   <Settings className="w-4 h-4" />
