@@ -126,9 +126,12 @@ export function useDocumentMutations(projectId: string) {
  * Hook for bulk document content updates (Scrivenings View)
  */
 export function useBulkDocumentContent() {
-  const bulkSaveContent = useCallback(async (updates: Record<string, string>) => {
-    await getRepository().bulkUpdateContent(updates);
-  }, []);
+  const bulkSaveContent = useCallback(
+    async (updates: Record<string, string>) => {
+      await getRepository().bulkUpdateContent(updates);
+    },
+    [],
+  );
 
   return {
     bulkSaveContent,
@@ -165,6 +168,48 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
 
   return {
     children,
+    isLoading: false,
+  };
+}
+
+/**
+ * Hook for fetching a document and all its descendants (flattened)
+ * Used for Scrivenings View
+ */
+export function useDescendantDocuments(parentId: string, projectId: string) {
+  const documents = useDocumentStore((state) => state.documents);
+
+  // Use useMemo to re-calculate flattened list whenever documents change
+  // Optimization: This might be expensive if many documents change.
+  // Ideally should use a selector that only listens to relevant docs.
+  // For now, simple memoization is fine for local.
+  const flatDocuments = useMemo(() => {
+    const result: (typeof documents)[string][] = [];
+
+    // Add parent first
+    const parent = documents[parentId];
+    if (parent && parent.projectId === projectId) {
+      result.push(parent);
+    }
+
+    // Recursive helper
+    const traverse = (currentId: string) => {
+      const children = Object.values(documents)
+        .filter((d) => d.parentId === currentId && d.projectId === projectId)
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        result.push(child);
+        traverse(child.id);
+      }
+    };
+
+    traverse(parentId);
+    return result;
+  }, [documents, parentId, projectId]); // Re-run when any document changes (simplest trigger)
+
+  return {
+    documents: flatDocuments,
     isLoading: false,
   };
 }
