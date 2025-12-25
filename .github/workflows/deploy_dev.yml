@@ -1,50 +1,111 @@
-name: Frontend CICD
+name: Frontend CI/CD (Test)
 
 on:
   push:
     branches:
-      - develop
+      - deploytest
+
+permissions:
+  id-token: write # OIDC용
+  contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         run: npm run build
         env:
-          # 프로젝트 내부에서 사용할 API 키
-          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}/media"
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Generate version info
+        id: version
+        run: |
+          VERSION="${{ github.sha }}"
+          SHORT_SHA="${VERSION:0:7}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "version=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "{\"version\":\"${SHORT_SHA}\",\"commit\":\"${{ github.sha }}\",\"timestamp\":\"${TIMESTAMP}\",\"branch\":\"${{ github.ref_name }}\"}" > ./dist/version.json
+          echo "✅ Generated version.json with version: ${SHORT_SHA}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          aws-access-key-id: ${{ secrets.S3_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.S3_AWS_SECRET_ACCESS_KEY }}
+          name: frontend-build
+          path: ./dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_S3FULL_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Deploy Frontend to S3
         run: |
-          # 빌드 결과 폴더가 dist인지 build인지 확인 후 수정하십시오.
-          # 예: ./dist 가 맞다면 아래 명령어를 사용합니다.
           aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME_DEV }} --delete
 
       - name: CloudFront Invalidation
         run: |
           # URL을 통해 Distribution ID를 조회합니다.
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL_DEV }}'].Id | [0]" --output text)
-          
+
           # 캐시 무효화 실행
           aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
+      - name: Health Check
+        run: |
+          URL="https://${{ vars.CLOUDFRONT_URL }}"
+          MAX_RETRIES=5
+          RETRY_INTERVAL=10
+
+          echo "🔍 Starting health check for: $URL"
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed! (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/$MAX_RETRIES: Status $STATUS, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          done
+
+          echo "❌ Health check failed after $MAX_RETRIES attempts"
+          exit 1
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary (Test)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ needs.build.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://${{ vars.CLOUDFRONT_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed At | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
