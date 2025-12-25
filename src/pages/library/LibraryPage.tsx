@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
 import { ImportBookCard } from "@/components/library/ImportBookCard";
-<<<<<<< HEAD
-import { useUIStore, useAuthStore } from "@/stores";
-import type { Project } from "@/types";
+
+import { useAuthStore } from "@/stores";
+
 import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -54,7 +54,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Handle create new project - directly create and navigate
@@ -71,7 +71,7 @@ export default function LibraryPage() {
             navigate(`/projects/${response.data.id}/editor`);
           }
         },
-      }
+      },
     );
   };
 
@@ -108,7 +108,7 @@ export default function LibraryPage() {
       "[Library Import] Reading file:",
       file.name,
       file.size,
-      "bytes"
+      "bytes",
     );
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
@@ -380,7 +380,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -391,7 +391,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -467,7 +467,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
+              : "grid-cols-1",
           )}
           initial="hidden"
           animate="visible"
