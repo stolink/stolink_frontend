@@ -8,24 +8,27 @@ description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 �
 // turbo-all
 
 1.  **현재 상태 및 변경사항 확인**:
-    - 현재 브랜치명 확인: `git rev-parse --abbrev-ref HEAD`
-    - `git status` 실행하여 변경된 파일 확인 후 `git add .` 실행 (필요 시)
-    - `git diff --staged --stat` 실행하여 변경 요약 확인
+    - 현재 브랜치명 확인: `CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)`
+    - `git status` 및 `git add .` (필요 시) 수행
+    - 스테이징된 변경사항이 있는지 확인
 
-2.  **커밋 메시지 생성 및 실행**:
-    - `git diff --staged` 분석 후 Conventional Commit 메시지 생성
-    - 타입: feat, fix, docs, style, refactor, test, chore, **hotfix**
-    - `git commit -m "<생성된_메시지>"` 실행
+2.  **조건부 커밋 및 푸시**:
+    - **변경사항이 있는 경우**:
+      - `git diff --staged` 분석 후 Conventional Commit 메시지 생성 및 실행
+      - `git push origin $CURRENT_BRANCH` 실행
+    - **변경사항이 없는 경우**:
+      - "커밋할 내용이 없습니다. PR 상태 체크로 넘어갑니다." 안내 후 바로 다음 단계 진행
 
-3.  **푸시 및 PR 상태 체크**:
-    - `git push origin <현재_브랜치>` 실행
+3.  **PR 상태 체크 및 타겟 결정**:
+    - **Target Branch 결정**:
+      - `hotfix/*` 브랜치인 경우 -> `main`
+      - 그 외 모든 경우 (`feature/*`, `develop` 본체 등) -> **`develop`** (기본)
     - **PR 존재 확인**: `gh pr view --json url,state --jq 'select(.state == "OPEN") | .url'` 실행
 
-4.  **PR 생성 또는 최신화 (Full Management)**:
-    _PR의 존재 여부와 상관없이 항상 최신 커밋 이력을 반영하여 본문을 업데이트합니다._
-    - **Target Branch 결정**: `hotfix/*`는 `main`, 그 외는 `develop`
-    - **통합 분석**: 기준 브랜치 대비 전체 변경 내용(`git log develop..HEAD` / `git diff develop..HEAD`) 분석
-    - **PR 본문 생성**: `.pr_body_temp.md` 파일에 변경 사항, 파일 목록, 머지 가이드라인(Squash for develop, --no-ff for main) 작성
+4.  **PR 생성 또는 최신화 (Idempotent Management)**:
+    - **로컬 vs 원격 비교**: `git fetch origin` 후 `git log origin/$TARGET_BRANCH..$CURRENT_BRANCH`를 통해 PR에 포함될 전체 변경 내역 분석
+    - **분석 결과가 비어있는 경우**: "원격 기준 브랜치 대비 새로운 커밋이 없습니다." 보고 후 종료 가능 (단, PR 제목/본문 최신화가 필요하다면 진행)
+    - **PR 본문 생성**: `.pr_body_temp.md` 파일에 변경 사항, 파일 목록, 머지 가이드라인 작성
 
     **A. PR이 없는 경우 (신규 생성)**:
 
@@ -47,5 +50,5 @@ description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 �
     - **정리**: `rm .pr_body_temp.md`
 
 5.  **최종 보고**:
-    - 커밋 메시지 안내
-    - PR URL 안내
+    - 수행된 작업 (커밋 여부, 푸시 여부)
+    - PR URL 안내 (신규 생성 또는 기존 PR 확인)
