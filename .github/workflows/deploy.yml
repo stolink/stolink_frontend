@@ -1,0 +1,50 @@
+name: Frontend CICD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+        env:
+          # 프로젝트 내부에서 사용할 API 키
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.S3_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.S3_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy Frontend to S3
+        run: |
+          # 빌드 결과 폴더가 dist인지 build인지 확인 후 수정하십시오.
+          # 예: ./dist 가 맞다면 아래 명령어를 사용합니다.
+          aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME }} --delete
+
+      - name: CloudFront Invalidation
+        run: |
+          # URL을 통해 Distribution ID를 조회합니다.
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL }}'].Id | [0]" --output text)
+          
+          # 캐시 무효화 실행
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
