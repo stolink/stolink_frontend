@@ -41,6 +41,10 @@ Sto-Link는 작가의 창의력을 극대화하기 위해 설계된 올인원 �
 - **Framework**: React 18, TypeScript, Vite
 - **Styling**: Tailwind CSS, shadcn/ui (UI Kit)
 - **State**: Zustand (UI/Global), TanStack Query v5 (Server)
+- [Data Model & Storage Strategy](DATA_MODEL.md)
+- [API Specification](API_SPEC.md)
+- [Editor Deep Dive](EDITOR_SPEC.md)
+- [Git & Branching Strategy](GIT_STRATEGY.md)
 - **Editor**: Tiptap (ProseMirror 기반)
 - **Visualization**: React Flow, Framer Motion
 - **Tooling**: Axios, Zod, React Hook Form
