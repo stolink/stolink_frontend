@@ -25,6 +25,8 @@ import {
   useDeleteProject,
   useCreateProject,
 } from "@/hooks/useProjects";
+import { projectService } from "@/services/projectService";
+import { documentService } from "@/services/documentService";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,10 +36,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 
 export default function LibraryPage() {
-  const { _create } = useDocumentStore();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -51,10 +51,10 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleCreateNewProject = () => {
+  const handleCreateProject = () => {
     createProject(
       {
         title: "새 작품",
@@ -67,7 +67,7 @@ export default function LibraryPage() {
             navigate(`/projects/${response.data.id}/editor`);
           }
         },
-      }
+      },
     );
   };
 
@@ -113,60 +113,49 @@ export default function LibraryPage() {
 
     const text = cleanText(rawText);
 
+    // Convert plain text to HTML paragraphs
     const content = text
       .split("\n\n")
       .filter((p) => p.trim())
       .map((p) => `<p>${p.trim()}</p>`)
       .join("");
 
-    const { _create } = useDocumentStore.getState();
-    const now = new Date().toISOString();
-    const newProjectId = `project-import-${Date.now()}`;
+    try {
+      // 1. Create Project
+      const projectResponse = await projectService.create({
+        title: title,
+        genre: "other",
+        description: `${file.name}에서 가져온 책`,
+      });
 
-    _create({
-      id: newProjectId,
-      projectId: newProjectId,
-      type: "folder",
-      title: title,
-      content: "",
-      synopsis: `${file.name}에서 가져온 책`,
-      order: 0,
-      metadata: {
-        status: "draft",
-        wordCount: 0,
-        includeInCompile: true,
-        keywords: [],
-        notes: "",
-      },
-      characterIds: [],
-      foreshadowingIds: [],
-      createdAt: now,
-      updatedAt: now,
-    });
+      if (!projectResponse.success || !projectResponse.data) {
+        throw new Error("Failed to create project");
+      }
 
-    _create({
-      id: `doc-${Date.now()}`,
-      projectId: newProjectId,
-      parentId: newProjectId,
-      type: "text",
-      title: "본문",
-      content,
-      synopsis: "",
-      order: 0,
-      metadata: {
-        status: "draft",
-        wordCount: text.length,
-        includeInCompile: true,
-        keywords: [],
-        notes: "",
-      },
-      characterIds: [],
-      foreshadowingIds: [],
-      createdAt: now,
-      updatedAt: now,
-    });
+      const projectId = projectResponse.data.id;
 
-    navigate(`/projects/${newProjectId}/editor`);
+      // 2. Create Document (Chapter)
+      const docResponse = await documentService.create(projectId, {
+        type: "text",
+        title: "본문",
+        targetWordCount: text.length,
+      });
+
+      if (!docResponse.success || !docResponse.data) {
+        throw new Error("Failed to create document");
+      }
+
+      const docId = docResponse.data.id;
+
+      // 3. Update Content
+      await documentService.updateContent(docId, content);
+
+      // 4. Navigate
+      navigate(`/projects/${projectId}/editor`);
+    } catch (error) {
+      console.error("Import failed:", error);
+      alert("가져오기에 실패했습니다.");
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,56 +170,6 @@ export default function LibraryPage() {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleCreateProject = () => {
-    const now = new Date().toISOString();
-    const newProjectId = `project-${Date.now()}`;
-
-    _create({
-      id: newProjectId,
-      projectId: newProjectId,
-      type: "folder",
-      title: "새 작품",
-      content: "",
-      synopsis: "",
-      order: 0,
-      metadata: {
-        status: "draft",
-        wordCount: 0,
-        includeInCompile: true,
-        keywords: ["auto-genre"],
-        notes: "",
-      },
-      characterIds: [],
-      foreshadowingIds: [],
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    _create({
-      id: `doc-${Date.now()}`,
-      projectId: newProjectId,
-      parentId: newProjectId,
-      type: "text",
-      title: "1화",
-      content: "",
-      synopsis: "",
-      order: 0,
-      metadata: {
-        status: "draft",
-        wordCount: 0,
-        includeInCompile: true,
-        keywords: [],
-        notes: "",
-      },
-      characterIds: [],
-      foreshadowingIds: [],
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    navigate(`/projects/${newProjectId}/editor`);
   };
 
   const containerVariants = {
@@ -338,7 +277,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -349,7 +288,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -422,7 +361,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
+              : "grid-cols-1",
           )}
           initial="hidden"
           animate="visible"
@@ -438,7 +377,7 @@ export default function LibraryPage() {
 
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
             <CreateBookCard
-              onClick={handleCreateNewProject}
+              onClick={handleCreateProject}
               disabled={isCreating}
             />
           </motion.div>
@@ -468,3 +407,79 @@ export default function LibraryPage() {
               </div>
               <h3 className="text-lg font-semibold text-stone-900">
                 프로젝트를 불러오는데 실패했습니다
+              </h3>
+              <p className="text-stone-500">잠시 후 다시 시도해주세요.</p>
+            </div>
+          ) : (
+            filteredProjects.map((project) => (
+              <motion.div
+                key={project.id}
+                variants={itemVariants}
+                className="h-full min-h-[320px]"
+              >
+                <BookCard
+                  title={project.title}
+                  author={project.author || "Author"}
+                  status={(project.status as ProjectStatus) || "DRAFTING"}
+                  genre={project.genre}
+                  coverImage={project.coverImage}
+                  location={`Chapter ${project.stats?.chapterCount || 0}`}
+                  length={`${project.stats?.totalWords || 0} W`}
+                  progress={0}
+                  lastEdited={new Date(project.updatedAt).toLocaleDateString()}
+                  onClick={() => navigate(`/projects/${project.id}/editor`)}
+                  onAction={(action) => {
+                    if (action === "delete") {
+                      if (
+                        confirm(`"${project.title}"을(를) 삭제하시겠습니까?`)
+                      ) {
+                        deleteProject(project.id);
+                      }
+                    }
+                  }}
+                />
+              </motion.div>
+            ))
+          )}
+        </motion.div>
+
+        {filteredProjects.length === 0 && searchQuery && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4 text-stone-400">
+              <Search className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-stone-900">
+              검색 결과가 없습니다
+            </h3>
+            <p className="text-stone-500">다른 검색어로 시도해보세요.</p>
+          </div>
+        )}
+
+        {/* Empty State - No Projects at all */}
+        {projects.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-24 h-24 bg-sage-50 rounded-full flex items-center justify-center mb-6 text-sage-400">
+              <FileText className="h-12 w-12" />
+            </div>
+            <h3 className="text-2xl font-heading font-bold text-stone-900 mb-2">
+              📚 아직 작품이 없어요
+            </h3>
+            <p className="text-stone-500 mb-6 max-w-md">
+              첫 작품을 만들어 당신만의 이야기를 시작해보세요.
+              <br />
+              복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
+            </p>
+            <Button size="lg" className="gap-2" onClick={handleCreateProject}>
+              <FileText className="w-5 h-5" />새 작품 만들기
+            </Button>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Modals */}
+    </div>
+  );
+}

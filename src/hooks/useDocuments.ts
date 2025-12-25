@@ -1,6 +1,7 @@
 // useDocumentHooks.ts
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import {
   useDocumentStore,
@@ -10,12 +11,34 @@ import type {
   Document,
   CreateDocumentInput,
   UpdateDocumentInput,
+  UpdateDocumentInput,
 } from "@/types/document";
+import { documentService } from "@/services/documentService";
 
 /**
  * Hook to access the entire document tree for a project
  */
 export function useDocumentTree(projectId: string) {
+  const { _syncProjectDocuments } = useDocumentStore();
+
+  // Fetch documents from backend and sync to local store
+  const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
+    queryKey: ["documents", projectId],
+    queryFn: async () => {
+      const response = await documentService.getTree(projectId);
+      return response.data || [];
+    },
+    enabled: !!projectId,
+    staleTime: 1000 * 60, // 1 minute stale time to prevent too frequent refetches on re-renders, but ensures fresh data on reload
+  });
+
+  // Sync to store when data is fetched
+  useEffect(() => {
+    if (fetchedDocuments) {
+      _syncProjectDocuments(projectId, fetchedDocuments);
+    }
+  }, [projectId, fetchedDocuments, _syncProjectDocuments]);
+
   const documents = useDocumentStore(
     useShallow((state) =>
       Object.values(state.documents).filter(
@@ -29,7 +52,7 @@ export function useDocumentTree(projectId: string) {
   return {
     documents,
     tree,
-    isLoading: false,
+    isLoading: isFetching,
   };
 }
 
