@@ -37,6 +37,7 @@ interface DocumentStore {
   _setContent: (id: string, content: string) => void;
   _setBulkContent: (updates: Record<string, string>) => void;
   _setAll: (documents: Document[]) => void;
+  _syncProjectDocuments: (projectId: string, documents: Document[]) => void;
 }
 
 export const useDocumentStore = create<DocumentStore>()(
@@ -102,6 +103,22 @@ export const useDocumentStore = create<DocumentStore>()(
       _setAll: (documents) => {
         set((state) => {
           state.documents = {};
+          documents.forEach((doc) => {
+            state.documents[doc.id] = doc;
+          });
+        });
+      },
+
+      _syncProjectDocuments: (projectId, documents) => {
+        set((state) => {
+          // 1. Remove all existing documents for this project
+          Object.keys(state.documents).forEach((key) => {
+            if (state.documents[key].projectId === projectId) {
+              delete state.documents[key];
+            }
+          });
+
+          // 2. Add new documents
           documents.forEach((doc) => {
             state.documents[doc.id] = doc;
           });

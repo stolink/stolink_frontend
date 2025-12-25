@@ -14,14 +14,14 @@ export const api = axios.create({
 // Request interceptor: Add X-User-Id header
 api.interceptors.request.use(
   (config) => {
-    // Get userId from localStorage (set during login)
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      config.headers["X-User-Id"] = userId;
+    // Get userId from auth store
+    const user = useAuthStore.getState().user;
+    if (user?.id) {
+      config.headers["X-User-Id"] = user.id;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor: Handle 401
@@ -34,7 +34,7 @@ api.interceptors.response.use(
       window.location.href = "/auth";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

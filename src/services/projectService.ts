@@ -12,6 +12,7 @@ export interface Project {
   extras?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+  stats?: ProjectStats;
 }
 
 export interface ProjectStats {
@@ -62,7 +63,7 @@ export const projectService = {
   update: async (id: string, payload: Partial<Project>) => {
     const response = await api.patch<ApiResponse<Project>>(
       `/projects/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
@@ -74,14 +75,14 @@ export const projectService = {
 
   getStats: async (id: string) => {
     const response = await api.get<ApiResponse<ProjectStats>>(
-      `/projects/${id}/stats`
+      `/projects/${id}/stats`,
     );
     return response.data;
   },
 
   duplicate: async (id: string) => {
     const response = await api.post<ApiResponse<Project>>(
-      `/projects/${id}/duplicate`
+      `/projects/${id}/duplicate`,
     );
     return response.data;
   },
