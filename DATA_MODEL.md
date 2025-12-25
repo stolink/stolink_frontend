@@ -1,6 +1,6 @@
 # StoLink 데이터 모델 명세
 
-> **버전**: 1.0
+> **버전**: 1.1
 > **최종 수정**: 2024년 12월 25일
 > **상태**: 현재 구현 기준
 
@@ -34,6 +34,8 @@
 └─────────────┴───────────────────────────────────────┘
 ```
 
+> 📖 API 엔드포인트 상세 → [SPEC.md](./SPEC.md) 각 페이지 섹션 참조
+
 ---
 
 ## 1. 인증 (Auth)
@@ -51,20 +53,17 @@
 ### 1.2 Auth DTOs
 
 ```typescript
-// 로그인 요청
 interface LoginInput {
   email: string;
   password: string;
 }
 
-// 회원가입 요청
 interface RegisterInput {
   email: string;
   password: string;
   nickname: string;
 }
 
-// 인증 응답
 interface AuthResponse {
   user: User;
   accessToken: string;
@@ -101,19 +100,18 @@ type Genre = "fantasy" | "romance" | "sf" | "mystery" | "other";
 type ProjectStatus = "writing" | "completed";
 
 interface ProjectStats {
-  totalCharacters: number; // 총 글자 수
-  totalWords: number; // 총 단어 수
-  chapterCount: number; // 챕터 수
-  characterCount: number; // 캐릭터 수
-  foreshadowingRecoveryRate: number; // 복선 회수율 (0-100)
-  consistencyScore: number; // 일관성 점수 (0-100)
+  totalCharacters: number;
+  totalWords: number;
+  chapterCount: number;
+  characterCount: number;
+  foreshadowingRecoveryRate: number; // 0-100
+  consistencyScore: number; // 0-100
 }
 ```
 
 ### 2.3 Project DTOs
 
 ```typescript
-// 생성 요청
 interface CreateProjectInput {
   title: string;
   genre: Genre;
@@ -121,7 +119,6 @@ interface CreateProjectInput {
   extras?: Record<string, string | number | boolean | string[]>;
 }
 
-// 수정 요청 (모든 필드 선택적)
 interface UpdateProjectInput {
   title?: string;
   genre?: Genre;
@@ -136,9 +133,9 @@ interface UpdateProjectInput {
 
 ## 3. 문서 (Document) ⭐ 핵심
 
-### 3.1 Document Entity
-
 > Scrivener 스타일의 통합 문서 모델. folder와 text 두 타입을 하나의 모델로 통합.
+
+### 3.1 Document Entity
 
 | 필드             | 타입             | 필수 | 설명                     |
 | ---------------- | ---------------- | ---- | ------------------------ |
@@ -161,13 +158,13 @@ interface UpdateProjectInput {
 ```typescript
 interface DocumentMetadata {
   status: DocumentStatus; // "draft" | "revised" | "final"
-  label?: string; // POV 캐릭터, 장소 등
-  labelColor?: string; // 라벨 색상 (#hex)
-  wordCount: number; // 현재 글자 수
-  targetWordCount?: number; // 목표 글자 수
-  includeInCompile: boolean; // 내보내기 포함 여부
-  keywords: string[]; // 키워드 태그
-  notes: string; // 작가 메모
+  label?: string;
+  labelColor?: string;
+  wordCount: number;
+  targetWordCount?: number;
+  includeInCompile: boolean;
+  keywords: string[];
+  notes: string;
 }
 
 type DocumentStatus = "draft" | "revised" | "final";
@@ -176,17 +173,15 @@ type DocumentStatus = "draft" | "revised" | "final";
 ### 3.3 Document DTOs
 
 ```typescript
-// 생성 요청
 interface CreateDocumentInput {
   projectId: string;
-  parentId?: string; // null이면 루트
-  type: DocumentType; // "folder" | "text"
+  parentId?: string;
+  type: DocumentType;
   title: string;
   synopsis?: string;
   targetWordCount?: number;
 }
 
-// 수정 요청
 interface UpdateDocumentInput {
   title?: string;
   content?: string;
@@ -201,7 +196,6 @@ interface UpdateDocumentInput {
 ### 3.4 DocumentTreeNode (트리 구조)
 
 ```typescript
-// Document를 확장한 트리 노드 (UI용)
 interface DocumentTreeNode extends Document {
   children: DocumentTreeNode[];
 }
@@ -226,15 +220,15 @@ interface DocumentTreeNode extends Document {
 
 ```typescript
 type CharacterRole =
-  | "protagonist" // 주인공
-  | "antagonist" // 악역
-  | "supporting" // 조연
-  | "mentor" // 멘토
-  | "sidekick" // 조력자
+  | "protagonist"
+  | "antagonist"
+  | "supporting"
+  | "mentor"
+  | "sidekick"
   | "other";
 ```
 
-### 4.2 CharacterRelationship (관계)
+### 4.2 CharacterRelationship
 
 | 필드     | 타입             | 필수 | 설명           |
 | -------- | ---------------- | ---- | -------------- |
@@ -252,7 +246,6 @@ type RelationshipType = "friendly" | "hostile" | "neutral";
 ### 4.3 React Flow 노드 타입
 
 ```typescript
-// 그래프 노드
 interface CharacterNode {
   id: string;
   type: "character";
@@ -260,7 +253,6 @@ interface CharacterNode {
   data: Character;
 }
 
-// 그래프 엣지 (관계선)
 interface RelationshipEdge {
   id: string;
   source: string;
@@ -295,16 +287,16 @@ type ForeshadowingStatus = "pending" | "recovered" | "ignored";
 type ForeshadowingImportance = "major" | "minor";
 ```
 
-### 5.2 ForeshadowingAppearance (등장 위치)
+### 5.2 ForeshadowingAppearance
 
 ```typescript
 interface ForeshadowingAppearance {
-  sceneId?: string; // 씬 ID (옵션)
-  chapterId: string; // 챕터 ID
-  chapterTitle: string; // 챕터 제목 (표시용)
-  line: number; // 라인 번호
-  context: string; // 주변 텍스트 (미리보기)
-  isRecovery: boolean; // 회수 지점 여부
+  sceneId?: string;
+  chapterId: string;
+  chapterTitle: string;
+  line: number;
+  context: string;
+  isRecovery: boolean;
   extras?: Record<string, unknown>;
 }
 ```
@@ -312,22 +304,17 @@ interface ForeshadowingAppearance {
 ### 5.3 Foreshadowing DTOs
 
 ```typescript
-// 생성 요청
 interface CreateForeshadowingInput {
   projectId: string;
   tag: string;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
 }
 
-// 수정 요청
 interface UpdateForeshadowingInput {
   status?: ForeshadowingStatus;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
 }
 
-// 등장 추가 요청
 interface ForeshadowingAppearanceInput {
   chapterId: string;
   chapterTitle: string;
@@ -390,8 +377,8 @@ interface ChapterNode {
   title: string;
   type: "part" | "chapter" | "section";
   characterCount?: number;
-  isPlot?: boolean; // 플롯 노트 여부
-  isModified?: boolean; // 수정됨 표시
+  isPlot?: boolean;
+  isModified?: boolean;
   status?: "todo" | "inProgress" | "done" | "revised";
   children?: ChapterNode[];
 }
@@ -410,81 +397,20 @@ const statusColors = {
 
 ---
 
-## 8. API 엔드포인트 예상
+## 버전 이력
 
-### 8.1 Auth
-
-| Method | Endpoint           | 설명      |
-| ------ | ------------------ | --------- |
-| POST   | /api/auth/register | 회원가입  |
-| POST   | /api/auth/login    | 로그인    |
-| POST   | /api/auth/logout   | 로그아웃  |
-| POST   | /api/auth/refresh  | 토큰 갱신 |
-
-### 8.2 Projects
-
-| Method | Endpoint                | 설명      |
-| ------ | ----------------------- | --------- |
-| GET    | /api/projects           | 목록 조회 |
-| POST   | /api/projects           | 생성      |
-| GET    | /api/projects/:id       | 상세 조회 |
-| PATCH  | /api/projects/:id       | 수정      |
-| DELETE | /api/projects/:id       | 삭제      |
-| GET    | /api/projects/:id/stats | 통계 조회 |
-
-### 8.3 Documents
-
-| Method | Endpoint                     | 설명        |
-| ------ | ---------------------------- | ----------- |
-| GET    | /api/projects/:pid/documents | 목록 조회   |
-| POST   | /api/projects/:pid/documents | 생성        |
-| GET    | /api/documents/:id           | 상세 조회   |
-| PATCH  | /api/documents/:id           | 수정        |
-| DELETE | /api/documents/:id           | 삭제        |
-| GET    | /api/documents/:id/content   | 본문만 조회 |
-| PATCH  | /api/documents/:id/content   | 본문만 수정 |
-| POST   | /api/documents/reorder       | 순서 변경   |
-
-### 8.4 Characters
-
-| Method | Endpoint                         | 설명      |
-| ------ | -------------------------------- | --------- |
-| GET    | /api/projects/:pid/characters    | 목록 조회 |
-| POST   | /api/projects/:pid/characters    | 생성      |
-| GET    | /api/characters/:id              | 상세 조회 |
-| PATCH  | /api/characters/:id              | 수정      |
-| DELETE | /api/characters/:id              | 삭제      |
-| GET    | /api/projects/:pid/relationships | 관계 목록 |
-| POST   | /api/relationships               | 관계 생성 |
-| DELETE | /api/relationships/:id           | 관계 삭제 |
-
-### 8.5 Foreshadowing
-
-| Method | Endpoint                           | 설명           |
-| ------ | ---------------------------------- | -------------- |
-| GET    | /api/projects/:pid/foreshadowing   | 목록 조회      |
-| POST   | /api/projects/:pid/foreshadowing   | 생성           |
-| GET    | /api/foreshadowing/:id             | 상세 조회      |
-| PATCH  | /api/foreshadowing/:id             | 수정           |
-| DELETE | /api/foreshadowing/:id             | 삭제           |
-| POST   | /api/foreshadowing/:id/appearances | 등장 위치 추가 |
-| PATCH  | /api/foreshadowing/:id/recover     | 회수 처리      |
-
----
-
-## 9. 버전 이력
-
-| 버전 | 날짜       | 변경 내용                |
-| ---- | ---------- | ------------------------ |
-| 1.0  | 2024.12.25 | 현재 구현 기준 최초 작성 |
+| 버전 | 날짜       | 변경 내용                                 |
+| ---- | ---------- | ----------------------------------------- |
+| 1.0  | 2024.12.25 | 현재 구현 기준 최초 작성                  |
+| 1.1  | 2024.12.25 | API 엔드포인트 섹션 제거 (SPEC.md로 통합) |
 
 ---
 
 ## 관련 문서
 
-| 문서              | 설명                      |
-| ----------------- | ------------------------- |
-| `ARCHITECTURE.md` | 프로젝트 아키텍처         |
-| `EDITOR_SPEC.md`  | 에디터 기능 명세          |
-| `SPEC.md`         | 전체 기능 명세            |
-| `src/types/`      | TypeScript 타입 정의 파일 |
+| 문서              | 설명                            |
+| ----------------- | ------------------------------- |
+| `ARCHITECTURE.md` | 프로젝트 아키텍처               |
+| `SPEC.md`         | 전체 기능 명세 + API 엔드포인트 |
+| `TECHSTACK.md`    | 기술 스택 선정 이유             |
+| `src/types/`      | TypeScript 타입 정의 파일       |

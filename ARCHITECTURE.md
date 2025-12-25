@@ -12,6 +12,10 @@
 - 복선 관리, 캐릭터 관계도, 세계관 설정, 일관성 체크
 - 대상: 장편 소설 작가 (방대한 세계관 관리 필요)
 
+> 📖 상세 기술 스택 → [TECHSTACK.md](./TECHSTACK.md)
+> 📋 기능 명세 → [SPEC.md](./SPEC.md)
+> 🗂️ 데이터 모델 → [DATA_MODEL.md](./DATA_MODEL.md)
+
 ---
 
 ## 디렉토리 구조
@@ -27,7 +31,7 @@ src/
 ├── components/           # 컴포넌트
 │   ├── common/           # 공통 (Footer, Modal 등)
 │   ├── editor/           # 에디터 관련
-│   │   ├── sidebar/      # 🆕 사이드바 컴포넌트 (6개)
+│   │   ├── sidebar/      # 사이드바 컴포넌트 (6개)
 │   │   │   ├── ChapterTree.tsx
 │   │   │   ├── TreeItem.tsx
 │   │   │   ├── ContextMenu.tsx
@@ -43,18 +47,18 @@ src/
 │   ├── layouts/          # 레이아웃 (3개)
 │   ├── library/          # 서재 관련
 │   │   ├── BookCard.tsx
-│   │   └── ImportBookCard.tsx  # 🆕 책 가져오기
+│   │   └── ImportBookCard.tsx
 │   └── ui/               # shadcn/ui (15개)
 │
 ├── data/                 # 목 데이터, 상수
 ├── hooks/                # 커스텀 훅
 ├── lib/                  # 유틸리티 (cn, utils)
 ├── pages/                # 페이지 컴포넌트 (9개)
-├── repositories/         # 🆕 Repository 패턴
+├── repositories/         # Repository 패턴
 │   ├── DocumentRepository.ts
 │   └── LocalDocumentRepository.ts
-├── services/             # 🆕 서비스 레이어
-│   └── exportService.ts  # EPUB/PDF/TXT 내보내기
+├── services/             # 서비스 레이어
+│   └── exportService.ts
 ├── stores/               # Zustand 스토어 (5개)
 ├── styles/               # 추가 스타일
 └── types/                # TypeScript 타입 (7개)
@@ -75,7 +79,7 @@ src/
     ├── /studio ── StudioPage
     ├── /world ─── WorldPage
     ├── /stats ─── StatsPage
-    ├── /export ── ExportPage  # 🆕 내보내기 페이지
+    ├── /export ── ExportPage
     └── /settings ─ SettingsPage
 ```
 
@@ -83,128 +87,58 @@ src/
 
 ## 상태 관리 (Zustand)
 
-### 스토어 개요
+| 스토어                  | 역할                         | 미들웨어  |
+| ----------------------- | ---------------------------- | --------- |
+| `useAuthStore`          | 인증 상태, 토큰 관리         | `persist` |
+| `useEditorStore`        | 프로젝트/챕터, 분할화면, 줌  | -         |
+| `useUIStore`            | 사이드바, 모달, 테마         | -         |
+| `useSceneStore`         | Scene CRUD, 캐릭터/복선 연결 | `immer`   |
+| `useDemoStore`          | 데모 모드 데이터             | -         |
+| `useForeshadowingStore` | 복선 CRUD, 등장 위치         | -         |
+| `useChapterStore`       | 챕터 CRUD                    | -         |
 
-| 스토어           | 역할                            | 미들웨어  |
-| ---------------- | ------------------------------- | --------- |
-| `useAuthStore`   | 인증 상태, 토큰 관리            | `persist` |
-| `useEditorStore` | 현재 프로젝트/챕터, 에디터 상태 | -         |
-| `useUIStore`     | 사이드바, 모달, 테마            | -         |
-| `useSceneStore`  | Scene CRUD, 캐릭터/복선 연결    | `immer`   |
-| `useDemoStore`   | 데모 모드 데이터                | -         |
-
-### useEditorStore (업데이트)
+### useEditorStore 상세
 
 ```typescript
 {
   currentProjectId: string | null;
   currentChapterId: string | null;
-  // 🆕 분할 화면
   splitView: {
     enabled: boolean;
     direction: "horizontal" | "vertical";
-  };
-  // 🆕 집중 모드
+  }
   isFocusMode: boolean;
-  // 🆕 줌 레벨
-  zoom: number;  // 50-200%
-  // Actions
-  toggleSplitView();
-  toggleFocusMode();
-  setZoom(level: number);
+  zoom: number; // 50-200%
 }
 ```
 
 ---
 
-## 데이터 타입
-
-### 핵심 엔티티 관계
-
-```
-Project (작품)
-    ├── Document[] (문서, 계층 구조)
-    │       ├── type: "folder" | "text"
-    │       ├── characterIds[] ──────┐
-    │       └── foreshadowingIds[] ──┤
-    │                                │
-    ├── Character[] (캐릭터) ◀───────┘
-    │       └── Relationship[]
-    │
-    ├── Foreshadowing[] (복선)
-    │
-    ├── Place[] (장소)
-    │
-    └── Item[] (아이템)
-            └── currentOwnerId → Character
-```
-
----
-
-## 주요 의존성
-
-### Core
-
-| 패키지         | 버전 | 용도           |
-| -------------- | ---- | -------------- |
-| React          | 19.2 | UI 라이브러리  |
-| TypeScript     | 5.9  | 타입 시스템    |
-| Vite           | 7.3  | 빌드 도구      |
-| Zustand        | 5.0  | 상태 관리      |
-| TanStack Query | 5.90 | 서버 상태 관리 |
-
-### Editor
-
-| 패키지     | 용도                                  |
-| ---------- | ------------------------------------- |
-| Tiptap     | 리치 텍스트 에디터 (ProseMirror 기반) |
-| dnd-kit    | 드래그앤드롭 (챕터 트리)              |
-| React Flow | 캐릭터 관계도 그래프                  |
-
-### 🆕 Export
-
-| 패키지     | 용도             |
-| ---------- | ---------------- |
-| jspdf      | PDF 생성         |
-| epub-gen   | EPUB 생성 (예정) |
-| file-saver | 파일 다운로드    |
-
----
-
 ## 컴포넌트 구조
 
-### 🆕 Editor Sidebar 컴포넌트 (6개)
+### Editor Sidebar (6개)
 
-```
-src/components/editor/sidebar/
-├── index.ts          # Export 모음
-├── types.ts          # ChapterNode, 유틸리티
-├── NodeIcon.tsx      # 타입별 아이콘 (Folder, BookOpen, FileText, Lightbulb)
-├── ContextMenu.tsx   # 재사용 가능한 우클릭 메뉴
-├── TreeItem.tsx      # 트리 아이템 (hover F2, 상태 점)
-└── ChapterTree.tsx   # 메인 컴포넌트
-```
-
-**TreeItem 기능:**
-
-- 싱글 클릭 = 선택
-- 더블 클릭 = 인라인 이름 변경
-- 우클릭 = 객체 컨텍스트 메뉴
-- 빈 공간 우클릭 = 컨테이너 컨텍스트 메뉴
-- F2 키 = hover 상태에서 이름 변경
-- 상태 표시 점 (todo/inProgress/done/revised)
+| 컴포넌트      | 역할                             |
+| ------------- | -------------------------------- |
+| `ChapterTree` | 메인 트리 컨테이너               |
+| `TreeItem`    | 개별 노드 (클릭/더블클릭/우클릭) |
+| `ContextMenu` | 재사용 우클릭 메뉴               |
+| `NodeIcon`    | 타입별 아이콘                    |
+| `types.ts`    | ChapterNode 타입, 유틸리티       |
 
 ### Editor 컴포넌트 (12개)
 
-- `TiptapEditor`: 메인 리치 텍스트 에디터 (줌 50-200%)
-- `SectionStrip`: 하단 섹션 카드 네비게이션
-- `ScriveningsEditor`: 통합 편집 모드
-- `OutlineView`: 테이블 기반 아웃라인
-- `EditorLeftSidebar`: 좌측 챕터 트리 래퍼
-- `EditorRightSidebar`: 우측 패널 (복선, AI, 일관성)
-- `ForeshadowingPanel`: 복선 관리 패널
-- `AIAssistantPanel`: AI 어시스턴트
-- `ConsistencyPanel`: 일관성 체크
+| 컴포넌트             | 역할                      |
+| -------------------- | ------------------------- |
+| `TiptapEditor`       | 메인 에디터 (줌 50-200%)  |
+| `SectionStrip`       | 하단 섹션 카드 네비게이션 |
+| `ScriveningsEditor`  | 통합 편집 모드            |
+| `OutlineView`        | 테이블 기반 아웃라인      |
+| `EditorLeftSidebar`  | 좌측 챕터 트리 래퍼       |
+| `EditorRightSidebar` | 우측 패널                 |
+| `ForeshadowingPanel` | 복선 관리                 |
+| `AIAssistantPanel`   | AI 어시스턴트             |
+| `ConsistencyPanel`   | 일관성 체크               |
 
 ---
 
@@ -247,7 +181,7 @@ fix/* ────── 버그 수정
 - [x] Section Strip 구현
 - [x] Scrivenings 뷰
 
-### Phase 2 (완료) 🆕
+### Phase 2 (완료)
 
 - [x] 사이드바 컴포넌트 분리 (sidebar/)
 - [x] Context-Sensitive Menu 구현
