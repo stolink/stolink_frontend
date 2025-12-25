@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   useDocumentStore,
   localDocumentRepository,
@@ -14,7 +14,7 @@ import type {
  */
 export function useDocumentTree(projectId: string) {
   const documents = useDocumentStore((state) =>
-    Object.values(state.documents).filter((doc) => doc.projectId === projectId)
+    Object.values(state.documents).filter((doc) => doc.projectId === projectId),
   );
 
   const tree = buildTree(documents);
@@ -31,7 +31,7 @@ export function useDocumentTree(projectId: string) {
  */
 export function useDocument(id: string | null) {
   const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null
+    id ? state.documents[id] : null,
   );
 
   const updateDocument = useCallback(
@@ -39,7 +39,7 @@ export function useDocument(id: string | null) {
       if (!id) return;
       await localDocumentRepository.update(id, updates);
     },
-    [id]
+    [id],
   );
 
   return {
@@ -56,7 +56,7 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
   const children = useDocumentStore((state) => {
     return Object.values(state.documents).filter(
       (doc) =>
-        doc.projectId === projectId && doc.parentId === (parentId ?? undefined)
+        doc.projectId === projectId && doc.parentId === (parentId ?? undefined),
     );
   });
 
@@ -72,7 +72,7 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
  */
 export function useDocumentContent(id: string | null) {
   const content = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : ""
+    id ? state.documents[id]?.content || "" : "",
   );
 
   const saveContent = useCallback(
@@ -106,7 +106,7 @@ export function useDocumentContent(id: string | null) {
         _setContent(id, originalContent);
       }
     },
-    [id]
+    [id],
   );
 
   return {
@@ -131,8 +131,8 @@ export function useBulkDocumentContent() {
         const { documentService } = await import("@/services/documentService");
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
-            documentService.updateContent(id, content)
-          )
+            documentService.updateContent(id, content),
+          ),
         );
 
         console.log(`✅ Bulk saved ${Object.keys(updates).length} documents`);
@@ -141,7 +141,7 @@ export function useBulkDocumentContent() {
         // TODO: Implement rollback for bulk operations
       }
     },
-    []
+    [],
   );
 
   return {
@@ -160,14 +160,14 @@ export function useDocumentMutations(projectId: string) {
         projectId,
       });
     },
-    [projectId]
+    [projectId],
   );
 
   const updateDocument = useCallback(
     async (id: string, input: UpdateDocumentInput) => {
       return await localDocumentRepository.update(id, input);
     },
-    []
+    [],
   );
 
   const deleteDocument = useCallback(async (id: string) => {
@@ -178,7 +178,7 @@ export function useDocumentMutations(projectId: string) {
     async (parentId: string | null, orderedIds: string[]) => {
       await localDocumentRepository.reorder(parentId, orderedIds);
     },
-    []
+    [],
   );
 
   return {
@@ -186,6 +186,48 @@ export function useDocumentMutations(projectId: string) {
     updateDocument,
     deleteDocument,
     reorderDocuments,
+  };
+}
+
+/**
+ * Hook for fetching a document and all its descendants (flattened)
+ * Used for Scrivenings View
+ */
+export function useDescendantDocuments(parentId: string, projectId: string) {
+  const documents = useDocumentStore((state) => state.documents);
+
+  // Use useMemo to re-calculate flattened list whenever documents change
+  // Optimization: This might be expensive if many documents change.
+  // Ideally should use a selector that only listens to relevant docs.
+  // For now, simple memoization is fine for local.
+  const flatDocuments = useMemo(() => {
+    const result: (typeof documents)[string][] = [];
+
+    // Add parent first
+    const parent = documents[parentId];
+    if (parent && parent.projectId === projectId) {
+      result.push(parent);
+    }
+
+    // Recursive helper
+    const traverse = (currentId: string) => {
+      const children = Object.values(documents)
+        .filter((d) => d.parentId === currentId && d.projectId === projectId)
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        result.push(child);
+        traverse(child.id);
+      }
+    };
+
+    traverse(parentId);
+    return result;
+  }, [documents, parentId, projectId]); // Re-run when any document changes (simplest trigger)
+
+  return {
+    documents: flatDocuments,
+    isLoading: false,
   };
 }
 
