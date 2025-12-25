@@ -12,7 +12,7 @@ import { SectionDivider } from "./extensions/SectionDivider";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
 import {
-  useChildDocuments,
+  useDescendantDocuments,
   useBulkDocumentContent,
 } from "@/hooks/useDocuments";
 import { EditorToolbar } from "./EditorToolbar";
@@ -28,19 +28,22 @@ export default function ScriveningsEditor({
   projectId,
   onUpdate,
 }: ScriveningsEditorProps) {
-  const { children, isLoading } = useChildDocuments(folderId, projectId);
+  // Use new hook to get parent + all descendants
+  const { documents, isLoading } = useDescendantDocuments(folderId, projectId);
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Combine children content for initial editor state
+  // Combine content for initial editor state
   const getCombinedContent = useCallback(() => {
-    return children
+    return documents
       .map((doc) => {
+        // Divider now includes indentation level or hierarchy info?
+        // For now, keep it simple. Maybe add a visual indicator if it's nested?
         const divider = `<div data-type="section-divider" data-document-id="${doc.id}" data-title="${doc.title}"></div>`;
         return `${divider}${doc.content || "<p></p>"}`;
       })
       .join("");
-  }, [children]);
+  }, [documents]);
 
   const editor = useEditor({
     extensions: [
@@ -60,7 +63,7 @@ export default function ScriveningsEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8"
+          "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
         ),
         spellcheck: "false",
       },
@@ -79,7 +82,7 @@ export default function ScriveningsEditor({
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, "text/html");
           const dividers = doc.querySelectorAll(
-            'div[data-type="section-divider"]'
+            'div[data-type="section-divider"]',
           );
           const updates: Record<string, string> = {};
 
@@ -109,21 +112,22 @@ export default function ScriveningsEditor({
     },
   });
 
-  // Update editor content when folder changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const childrenIds = useMemo(
-    () => children.map((c) => c.id).join(","),
-    [children]
+  // Update editor content when hierarchy changes
+
+  const documentIds = useMemo(
+    () => documents.map((c) => c.id).join(","),
+    [documents],
   );
 
   useEffect(() => {
-    if (editor && folderId && children.length > 0) {
+    if (editor && folderId && documents.length > 0) {
       const newContent = getCombinedContent();
+      // Only set content if it's different to prevent resetting cursor/state
       if (editor.getHTML() !== newContent) {
         editor.commands.setContent(newContent);
       }
     }
-  }, [editor, folderId, childrenIds]);
+  }, [editor, folderId, documentIds]);
 
   if (isLoading || !editor) {
     return (
@@ -133,7 +137,7 @@ export default function ScriveningsEditor({
     );
   }
 
-  if (children.length === 0) {
+  if (documents.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-stone-50/30">
         <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
