@@ -17,9 +17,7 @@ import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
 import { ImportBookCard } from "@/components/library/ImportBookCard";
-<<<<<<< HEAD
-import { useUIStore, useAuthStore } from "@/stores";
-import type { Project } from "@/types";
+import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -46,7 +44,6 @@ export default function LibraryPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch projects from backend
   const { data: projectsData, isLoading, error } = useProjects();
   const { mutate: deleteProject } = useDeleteProject();
   const { mutate: createProject, isPending: isCreating } = useCreateProject();
@@ -57,7 +54,6 @@ export default function LibraryPage() {
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle create new project - directly create and navigate
   const handleCreateNewProject = () => {
     createProject(
       {
@@ -75,15 +71,12 @@ export default function LibraryPage() {
     );
   };
 
-  // Read file with encoding detection (UTF-8 first, then EUC-KR for Korean files)
   const readFileWithEncoding = async (file: File): Promise<string> => {
     const buffer = await file.arrayBuffer();
 
-    // Try UTF-8 first
     try {
       const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
       const text = utf8Decoder.decode(buffer);
-      // Check if it looks like valid Korean text (not garbled)
       if (!text.includes("�")) {
         return text;
       }
@@ -91,46 +84,27 @@ export default function LibraryPage() {
       // UTF-8 decoding failed
     }
 
-    // Fallback to EUC-KR (common for old Korean files)
     try {
       const eucKrDecoder = new TextDecoder("euc-kr");
       return eucKrDecoder.decode(buffer);
     } catch {
-      // Last resort: force UTF-8
       const fallbackDecoder = new TextDecoder("utf-8", { fatal: false });
       return fallbackDecoder.decode(buffer);
     }
   };
 
-  // Import book from TXT/MD file
   const handleImportBook = async (file: File) => {
-    console.log(
-      "[Library Import] Reading file:",
-      file.name,
-      file.size,
-      "bytes"
-    );
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
 
-    // Smart text cleanup: remove hard line breaks within paragraphs
-    // Old TXT files often have fixed-width line breaks (e.g., 80 chars)
     const cleanText = (text: string): string => {
-      // Normalize line endings
       let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-      // Detect paragraph breaks (2+ newlines, or newline followed by indent/space)
-      // Replace single newlines within paragraphs with spaces
       cleaned = cleaned
-        // First, mark real paragraph breaks (2+ newlines)
         .replace(/\n{2,}/g, "<<<PARA>>>")
-        // Also treat lines ending with period/question/exclamation followed by newline as paragraph
         .replace(/([.!?。！？])\n(?=[^\s])/g, "$1<<<PARA>>>")
-        // Remove remaining single newlines (hard wraps within paragraphs)
         .replace(/\n/g, " ")
-        // Restore paragraph breaks
         .replace(/<<<PARA>>>/g, "\n\n")
-        // Clean up multiple spaces
         .replace(/  +/g, " ")
         .trim();
 
@@ -139,7 +113,6 @@ export default function LibraryPage() {
 
     const text = cleanText(rawText);
 
-    // Convert plain text to HTML paragraphs
     const content = text
       .split("\n\n")
       .filter((p) => p.trim())
@@ -150,7 +123,6 @@ export default function LibraryPage() {
     const now = new Date().toISOString();
     const newProjectId = `project-import-${Date.now()}`;
 
-    // Create project folder
     _create({
       id: newProjectId,
       projectId: newProjectId,
@@ -172,7 +144,6 @@ export default function LibraryPage() {
       updatedAt: now,
     });
 
-    // Create the main document
     _create({
       id: `doc-${Date.now()}`,
       projectId: newProjectId,
@@ -195,9 +166,6 @@ export default function LibraryPage() {
       updatedAt: now,
     });
 
-    console.log("[Library Import] Created project:", newProjectId);
-
-    // Navigate to the new project's editor
     navigate(`/projects/${newProjectId}/editor`);
   };
 
@@ -219,7 +187,6 @@ export default function LibraryPage() {
     const now = new Date().toISOString();
     const newProjectId = `project-${Date.now()}`;
 
-    // 1. 프로젝트(폴더) 생성
     _create({
       id: newProjectId,
       projectId: newProjectId,
@@ -241,7 +208,6 @@ export default function LibraryPage() {
       updatedAt: now,
     });
 
-    // 2. 초기 챕터(문서) 생성
     _create({
       id: `doc-${Date.now()}`,
       projectId: newProjectId,
@@ -264,7 +230,6 @@ export default function LibraryPage() {
       updatedAt: now,
     });
 
-    // 3. 에디터로 이동
     navigate(`/projects/${newProjectId}/editor`);
   };
 
@@ -285,11 +250,9 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      {/* Header Section */}
       <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-sage-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex flex-col gap-6">
-            {/* Top Row: Brand & Mobile Menu */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Link
@@ -304,9 +267,7 @@ export default function LibraryPage() {
                 </Link>
               </div>
 
-              {/* Desktop Toolbar */}
               <div className="flex items-center gap-3">
-                {/* Search */}
                 <div className="relative hidden lg:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -317,7 +278,6 @@ export default function LibraryPage() {
                   />
                 </div>
 
-                {/* Filter Button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -351,7 +311,6 @@ export default function LibraryPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Sort Button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -372,7 +331,6 @@ export default function LibraryPage() {
 
                 <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
 
-                {/* View Toggle */}
                 <div className="flex items-center rounded-full border border-stone-200 bg-white p-1">
                   <button
                     onClick={() => setViewMode("grid")}
@@ -400,7 +358,6 @@ export default function LibraryPage() {
 
                 <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
 
-                {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -436,7 +393,6 @@ export default function LibraryPage() {
               </div>
             </div>
 
-            {/* Mobile Search - Row 2 */}
             <div className="relative w-full lg:hidden">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -451,7 +407,6 @@ export default function LibraryPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-10 pb-32">
-        {/* Page Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -473,7 +428,6 @@ export default function LibraryPage() {
           animate="visible"
           variants={containerVariants}
         >
-          {/* Hidden file input for book import */}
           <input
             type="file"
             ref={fileInputRef}
@@ -482,7 +436,6 @@ export default function LibraryPage() {
             className="hidden"
           />
 
-          {/* Create New Book Card */}
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
             <CreateBookCard
               onClick={handleCreateNewProject}
@@ -490,14 +443,11 @@ export default function LibraryPage() {
             />
           </motion.div>
 
-          {/* Import Book Card */}
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
             <ImportBookCard onClick={handleImportClick} />
           </motion.div>
 
-          {/* Project List */}
           {isLoading ? (
-            // Loading skeleton
             Array.from({ length: 4 }).map((_, i) => (
               <motion.div
                 key={`skeleton-${i}`}
@@ -512,86 +462,9 @@ export default function LibraryPage() {
               </motion.div>
             ))
           ) : error ? (
-            // Error state
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-400">
                 <FileText className="h-8 w-8" />
               </div>
               <h3 className="text-lg font-semibold text-stone-900">
                 프로젝트를 불러오는데 실패했습니다
-              </h3>
-              <p className="text-stone-500">잠시 후 다시 시도해주세요.</p>
-            </div>
-          ) : (
-            filteredProjects.map((project) => (
-              <motion.div
-                key={project.id}
-                variants={itemVariants}
-                className="h-full min-h-[320px]"
-              >
-                <BookCard
-                  title={project.title}
-                  author={project.author || "Author"}
-                  status={(project.status as ProjectStatus) || "DRAFTING"}
-                  genre={project.genre}
-                  coverImage={project.coverImage}
-                  location={`Chapter ${project.stats?.chapterCount || 0}`}
-                  length={`${project.stats?.totalWords || 0} W`}
-                  progress={0}
-                  lastEdited={new Date(project.updatedAt).toLocaleDateString()}
-                  onClick={() => navigate(`/projects/${project.id}/editor`)}
-                  onAction={(action) => {
-                    if (action === "delete") {
-                      if (
-                        confirm(`"${project.title}"을(를) 삭제하시겠습니까?`)
-                      ) {
-                        deleteProject(project.id);
-                      }
-                    }
-                  }}
-                />
-              </motion.div>
-            ))
-          )}
-        </motion.div>
-
-        {filteredProjects.length === 0 && searchQuery && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4 text-stone-400">
-              <Search className="h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-semibold text-stone-900">
-              검색 결과가 없습니다
-            </h3>
-            <p className="text-stone-500">다른 검색어로 시도해보세요.</p>
-          </div>
-        )}
-
-        {/* Empty State - No Projects at all */}
-        {projects.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-24 h-24 bg-sage-50 rounded-full flex items-center justify-center mb-6 text-sage-400">
-              <FileText className="h-12 w-12" />
-            </div>
-            <h3 className="text-2xl font-heading font-bold text-stone-900 mb-2">
-              📚 아직 작품이 없어요
-            </h3>
-            <p className="text-stone-500 mb-6 max-w-md">
-              첫 작품을 만들어 당신만의 이야기를 시작해보세요.
-              <br />
-              복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
-            </p>
-            <Button size="lg" className="gap-2" onClick={handleCreateProject}>
-              <FileText className="w-5 h-5" />새 작품 만들기
-            </Button>
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Modals */}
-    </div>
-  );
-}
