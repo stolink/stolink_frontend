@@ -1,53 +1,33 @@
-// Document Hooks - Abstraction layer for components
-// Components use these hooks instead of directly accessing repository
-
-import { useMemo, useCallback } from "react";
-import { useShallow } from "zustand/react/shallow";
+import { useCallback, useMemo } from "react";
 import {
   useDocumentStore,
   localDocumentRepository,
 } from "@/repositories/LocalDocumentRepository";
-import { buildDocumentTree } from "@/repositories/DocumentRepository";
 import type {
+  Document,
   CreateDocumentInput,
   UpdateDocumentInput,
 } from "@/types/document";
 
-// Get the repository (can be swapped for API version later)
-const getRepository = () => localDocumentRepository;
-
 /**
- * Hook for document tree data
- * Returns tree structure for sidebar and sync state
+ * Hook to access the entire document tree for a project
  */
 export function useDocumentTree(projectId: string) {
-  // Use shallow comparison to prevent unnecessary re-renders
-  const documentIds = useDocumentStore(
-    useShallow((state) =>
-      Object.keys(state.documents).filter(
-        (id) => state.documents[id].projectId === projectId,
-      ),
-    ),
+  const documents = useDocumentStore((state) =>
+    Object.values(state.documents).filter((doc) => doc.projectId === projectId),
   );
 
-  const allDocuments = useDocumentStore((state) => state.documents);
-
-  const documents = useMemo(
-    () => documentIds.map((id) => allDocuments[id]).filter(Boolean),
-    [documentIds, allDocuments],
-  );
-
-  const tree = useMemo(() => buildDocumentTree(documents), [documents]);
+  const tree = buildTree(documents);
 
   return {
-    tree,
     documents,
+    tree,
     isLoading: false,
   };
 }
 
 /**
- * Hook for single document data and mutations
+ * Hook to get a single document by ID
  */
 export function useDocument(id: string | null) {
   const document = useDocumentStore((state) =>
@@ -57,26 +37,38 @@ export function useDocument(id: string | null) {
   const updateDocument = useCallback(
     async (updates: UpdateDocumentInput) => {
       if (!id) return;
-      await getRepository().update(id, updates);
+      await localDocumentRepository.update(id, updates);
     },
     [id],
   );
 
-  const deleteDocument = useCallback(async () => {
-    if (!id) return;
-    await getRepository().delete(id);
-  }, [id]);
-
   return {
     document,
     updateDocument,
-    deleteDocument,
     isLoading: false,
   };
 }
 
 /**
- * Hook for document content (separate for editor optimization)
+ * Hook to get child documents of a parent
+ */
+export function useChildDocuments(parentId: string | null, projectId: string) {
+  const children = useDocumentStore((state) => {
+    return Object.values(state.documents).filter(
+      (doc) =>
+        doc.projectId === projectId && doc.parentId === (parentId ?? undefined),
+    );
+  });
+
+  return {
+    children: children.sort((a, b) => a.order - b.order),
+    isLoading: false,
+  };
+}
+
+/**
+ * Hook to get and save document content for a specific document
+ * Saves to backend API and syncs wordCount/updatedAt from response
  */
 export function useDocumentContent(id: string | null) {
   const content = useDocumentStore((state) =>
@@ -86,7 +78,33 @@ export function useDocumentContent(id: string | null) {
   const saveContent = useCallback(
     async (newContent: string) => {
       if (!id) return;
-      await getRepository().updateContent(id, newContent);
+
+      try {
+        // Optimistic update - immediate UI feedback
+        const { _setContent } = useDocumentStore.getState();
+        _setContent(id, newContent);
+
+        // Sync to backend
+        const { documentService } = await import("@/services/documentService");
+        const response = await documentService.updateContent(id, newContent);
+
+        // Update wordCount and updatedAt from backend response
+        if (response.success && response.data) {
+          const { _update } = useDocumentStore.getState();
+          _update(id, {
+            metadata: { wordCount: response.data.wordCount },
+            updatedAt: response.data.updatedAt,
+          });
+          console.log(`✅ Saved to backend: ${response.data.wordCount} words`);
+        }
+      } catch (error) {
+        console.error("❌ Failed to save content:", error);
+        // TODO: Show error toast to user
+        // Rollback on error
+        const originalContent = await localDocumentRepository.getContent(id);
+        const { _setContent } = useDocumentStore.getState();
+        _setContent(id, originalContent);
+      }
     },
     [id],
   );
@@ -99,36 +117,29 @@ export function useDocumentContent(id: string | null) {
 }
 
 /**
- * Hook for document mutations (create, reorder)
- */
-export function useDocumentMutations(projectId: string) {
-  const createDocument = useCallback(
-    async (input: Omit<CreateDocumentInput, "projectId">) => {
-      return await getRepository().create({ ...input, projectId });
-    },
-    [projectId],
-  );
-
-  const reorderDocuments = useCallback(
-    async (parentId: string | null, orderedIds: string[]) => {
-      await getRepository().reorder(parentId, orderedIds);
-    },
-    [],
-  );
-
-  return {
-    createDocument,
-    reorderDocuments,
-  };
-}
-
-/**
- * Hook for bulk document content updates (Scrivenings View)
+ * Hook for bulk document content operations (Scrivenings view)
  */
 export function useBulkDocumentContent() {
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
-      await getRepository().bulkUpdateContent(updates);
+      try {
+        // Optimistic update - update all documents locally first
+        const { _setBulkContent } = useDocumentStore.getState();
+        _setBulkContent(updates);
+
+        // Then sync each to backend
+        const { documentService } = await import("@/services/documentService");
+        await Promise.all(
+          Object.entries(updates).map(([id, content]) =>
+            documentService.updateContent(id, content),
+          ),
+        );
+
+        console.log(`✅ Bulk saved ${Object.keys(updates).length} documents`);
+      } catch (error) {
+        console.error("❌ Bulk save failed:", error);
+        // TODO: Implement rollback for bulk operations
+      }
     },
     [],
   );
@@ -137,38 +148,45 @@ export function useBulkDocumentContent() {
     bulkSaveContent,
   };
 }
+}
 
 /**
- * Hook for children documents (for corkboard view)
+ * Hook for document mutations (create, update, delete, reorder)
  */
-export function useChildDocuments(parentId: string | null, projectId: string) {
-  // Use shallow comparison for the IDs array
-  const childIds = useDocumentStore(
-    useShallow((state) =>
-      Object.keys(state.documents).filter((id) => {
-        const doc = state.documents[id];
-        return (
-          doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined)
-        );
-      }),
-    ),
+export function useDocumentMutations(projectId: string) {
+  const createDocument = useCallback(
+    async (input: CreateDocumentInput) => {
+      return await localDocumentRepository.create({
+        ...input,
+        projectId,
+      });
+    },
+    [projectId],
   );
 
-  const allDocuments = useDocumentStore((state) => state.documents);
+  const updateDocument = useCallback(
+    async (id: string, input: UpdateDocumentInput) => {
+      return await localDocumentRepository.update(id, input);
+    },
+    [],
+  );
 
-  const children = useMemo(
-    () =>
-      childIds
-        .map((id) => allDocuments[id])
-        .filter(Boolean)
-        .sort((a, b) => a.order - b.order),
-    [childIds, allDocuments],
+  const deleteDocument = useCallback(async (id: string) => {
+    await localDocumentRepository.delete(id);
+  }, []);
+
+  const reorderDocuments = useCallback(
+    async (parentId: string | null, orderedIds: string[]) => {
+      await localDocumentRepository.reorder(parentId, orderedIds);
+    },
+    [],
   );
 
   return {
-    children,
-    isLoading: false,
+    createDocument,
+    updateDocument,
+    deleteDocument,
+    reorderDocuments,
   };
 }
 
@@ -212,4 +230,33 @@ export function useDescendantDocuments(parentId: string, projectId: string) {
     documents: flatDocuments,
     isLoading: false,
   };
+}
+
+// Helper function to build tree
+function buildTree(documents: Document[]) {
+  const map = new Map<string, Document & { children: Document[] }>();
+  const roots: (Document & { children: Document[] })[] = [];
+
+  // First pass: create all nodes
+  documents.forEach((doc) => {
+    map.set(doc.id, { ...doc, children: [] });
+  });
+
+  // Second pass: build relationships
+  documents.forEach((doc) => {
+    const node = map.get(doc.id);
+    if (!node) return;
+
+    if (doc.parentId) {
+      const parent = map.get(doc.parentId);
+      if (parent) {
+        parent.children.push(node);
+      }
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots.sort((a, b) => a.order - b.order);
+}
 }

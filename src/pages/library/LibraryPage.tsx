@@ -17,11 +17,16 @@ import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
 import { CreateBookCard } from "@/components/library/CreateBookCard";
 import { ImportBookCard } from "@/components/library/ImportBookCard";
-
-import { useAuthStore } from "@/stores";
+<<<<<<< HEAD
+import { useUIStore, useAuthStore } from "@/stores";
 import type { Project } from "@/types";
 import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
+import {
+  useProjects,
+  useDeleteProject,
+  useCreateProject,
+} from "@/hooks/useProjects";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,125 +38,42 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 
-// Extended Mock data for UI demo
-interface ExtendedProject extends Omit<Project, "status"> {
-  status: ProjectStatus;
-  coverImage?: string;
-  location?: string;
-  length?: string;
-  progress: number;
-  lastEditedText: string;
-}
-
-const mockProjects: ExtendedProject[] = [
-  {
-    id: "1",
-    title: "The Midnight Echo",
-    userId: "1",
-    description: "",
-    createdAt: "",
-    updatedAt: "",
-    genre: "mystery",
-    author: "J.K. WRITER",
-    status: "DRAFTING",
-    location: "Chapter 12",
-    length: "24,500 W",
-    progress: 45,
-    lastEditedText: "2 hours ago",
-    stats: {
-      totalCharacters: 0,
-      totalWords: 24500,
-      chapterCount: 12,
-      characterCount: 5,
-      foreshadowingRecoveryRate: 0,
-      consistencyScore: 0,
-    },
-  },
-  {
-    id: "2",
-    title: "Project: Titan",
-    userId: "1",
-    description: "",
-    createdAt: "",
-    updatedAt: "",
-    genre: "sf",
-    author: "J.K. WRITER",
-    status: "OUTLINE",
-    location: "15 Beats",
-    length: "Scenecard",
-    progress: 15,
-    lastEditedText: "yesterday",
-    stats: {
-      totalCharacters: 0,
-      totalWords: 0,
-      chapterCount: 0,
-      characterCount: 0,
-      foreshadowingRecoveryRate: 0,
-      consistencyScore: 0,
-    },
-  },
-  {
-    id: "3",
-    title: "The Last Algorithm",
-    userId: "1",
-    description: "",
-    createdAt: "",
-    updatedAt: "",
-    genre: "sf",
-    author: "J.K. WRITER",
-    status: "EDITING",
-    location: "Chapter 28",
-    length: "85k W",
-    progress: 92,
-    lastEditedText: "3 days ago",
-    coverImage:
-      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop",
-    stats: {
-      totalCharacters: 0,
-      totalWords: 85000,
-      chapterCount: 28,
-      characterCount: 0,
-      foreshadowingRecoveryRate: 0,
-      consistencyScore: 0,
-    },
-  },
-  {
-    id: "4",
-    title: "Untitled Story Idea",
-    userId: "1",
-    description: "",
-    createdAt: "",
-    updatedAt: "",
-    genre: "other",
-    author: "NO AUTHOR",
-    status: "IDEA",
-    location: "3 Items",
-    length: "0 W",
-    progress: 0,
-    lastEditedText: "1 week ago",
-    stats: {
-      totalCharacters: 0,
-      totalWords: 0,
-      chapterCount: 0,
-      characterCount: 0,
-      foreshadowingRecoveryRate: 0,
-      consistencyScore: 0,
-    },
-  },
-];
-
 export default function LibraryPage() {
   const { _create } = useDocumentStore();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [projects] = useState<ExtendedProject[]>(mockProjects);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch projects from backend
+  const { data: projectsData, isLoading, error } = useProjects();
+  const { mutate: deleteProject } = useDeleteProject();
+  const { mutate: createProject, isPending: isCreating } = useCreateProject();
+
+  const projects = projectsData?.projects || [];
+
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Handle create new project - directly create and navigate
+  const handleCreateNewProject = () => {
+    createProject(
+      {
+        title: "새 작품",
+        genre: "other",
+        description: "",
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success && response.data) {
+            navigate(`/projects/${response.data.id}/editor`);
+          }
+        },
+      }
+    );
+  };
 
   // Read file with encoding detection (UTF-8 first, then EUC-KR for Korean files)
   const readFileWithEncoding = async (file: File): Promise<string> => {
@@ -186,7 +108,7 @@ export default function LibraryPage() {
       "[Library Import] Reading file:",
       file.name,
       file.size,
-      "bytes",
+      "bytes"
     );
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
@@ -458,7 +380,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -469,7 +391,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -545,7 +467,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1"
           )}
           initial="hidden"
           animate="visible"
@@ -562,7 +484,10 @@ export default function LibraryPage() {
 
           {/* Create New Book Card */}
           <motion.div variants={itemVariants} className="h-full min-h-[320px]">
-            <CreateBookCard onClick={handleCreateProject} />
+            <CreateBookCard
+              onClick={handleCreateNewProject}
+              disabled={isCreating}
+            />
           </motion.div>
 
           {/* Import Book Card */}
@@ -571,27 +496,63 @@ export default function LibraryPage() {
           </motion.div>
 
           {/* Project List */}
-          {filteredProjects.map((project) => (
-            <motion.div
-              key={project.id}
-              variants={itemVariants}
-              className="h-full min-h-[320px]"
-            >
-              <BookCard
-                title={project.title}
-                author={project.author || "Author"}
-                status={project.status}
-                genre={project.genre}
-                coverImage={project.coverImage}
-                location={project.location}
-                length={project.length}
-                progress={project.progress}
-                lastEdited={project.lastEditedText}
-                onClick={() => navigate(`/projects/${project.id}/editor`)}
-                onAction={(action) => console.log(action, project.title)}
-              />
-            </motion.div>
-          ))}
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 4 }).map((_, i) => (
+              <motion.div
+                key={`skeleton-${i}`}
+                variants={itemVariants}
+                className="h-full min-h-[320px]"
+              >
+                <div className="bg-white rounded-xl border border-stone-200 p-6 h-full animate-pulse">
+                  <div className="h-32 bg-stone-200 rounded mb-4"></div>
+                  <div className="h-4 bg-stone-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-stone-200 rounded w-1/2"></div>
+                </div>
+              </motion.div>
+            ))
+          ) : error ? (
+            // Error state
+            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-400">
+                <FileText className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold text-stone-900">
+                프로젝트를 불러오는데 실패했습니다
+              </h3>
+              <p className="text-stone-500">잠시 후 다시 시도해주세요.</p>
+            </div>
+          ) : (
+            filteredProjects.map((project) => (
+              <motion.div
+                key={project.id}
+                variants={itemVariants}
+                className="h-full min-h-[320px]"
+              >
+                <BookCard
+                  title={project.title}
+                  author={project.author || "Author"}
+                  status={(project.status as ProjectStatus) || "DRAFTING"}
+                  genre={project.genre}
+                  coverImage={project.coverImage}
+                  location={`Chapter ${project.stats?.chapterCount || 0}`}
+                  length={`${project.stats?.totalWords || 0} W`}
+                  progress={0}
+                  lastEdited={new Date(project.updatedAt).toLocaleDateString()}
+                  onClick={() => navigate(`/projects/${project.id}/editor`)}
+                  onAction={(action) => {
+                    if (action === "delete") {
+                      if (
+                        confirm(`"${project.title}"을(를) 삭제하시겠습니까?`)
+                      ) {
+                        deleteProject(project.id);
+                      }
+                    }
+                  }}
+                />
+              </motion.div>
+            ))
+          )}
         </motion.div>
 
         {filteredProjects.length === 0 && searchQuery && (

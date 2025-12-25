@@ -1,22 +1,23 @@
-import axios from 'axios';
-import { useAuthStore } from '@/stores';
+import axios from "axios";
+import { useAuthStore } from "@/stores";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Request interceptor: Add auth token
+// Request interceptor: Add X-User-Id header
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Get userId from localStorage (set during login)
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      config.headers["X-User-Id"] = userId;
     }
     return config;
   },
@@ -30,7 +31,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired, logout user
       useAuthStore.getState().logout();
-      window.location.href = '/auth';
+      window.location.href = "/auth";
     }
     return Promise.reject(error);
   }

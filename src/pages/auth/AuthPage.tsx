@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuthStore } from "@/stores";
+import { useLogin, useRegister } from "@/hooks/useAuth";
 
 // Validation schemas
 const loginSchema = z.object({
@@ -38,10 +38,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const navigate = useNavigate();
-  const { setUser } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string>("");
+
+  // React Query hooks
+  const { mutate: login, isPending: isLoginPending } = useLogin();
+  const { mutate: register, isPending: isRegisterPending } = useRegister();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -59,50 +61,44 @@ export default function AuthPage() {
     },
   });
 
-  const onLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      // Mock login - replace with actual API call
-      console.log("Login:", data);
-
-      // Simulate API response
-      const mockUser = {
-        id: "1",
-        email: data.email,
-        nickname: "작가님",
-        createdAt: new Date().toISOString(),
-      };
-
-      setUser(mockUser, "mock-access-token");
-      navigate("/library");
-    } catch (error) {
-      console.error("Login failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const onLogin = (data: LoginFormData) => {
+    setApiError("");
+    login(
+      { email: data.email, password: data.password },
+      {
+        onError: (error: Error) => {
+          const errorMsg =
+            (
+              error as {
+                response?: { data?: { error?: { message?: string } } };
+              }
+            )?.response?.data?.error?.message || "로그인에 실패했습니다";
+          setApiError(errorMsg);
+        },
+      }
+    );
   };
 
-  const onRegister = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    try {
-      // Mock register - replace with actual API call
-      console.log("Register:", data);
-
-      // Simulate API response
-      const mockUser = {
-        id: "1",
+  const onRegister = (data: RegisterFormData) => {
+    setApiError("");
+    register(
+      {
         email: data.email,
+        password: data.password,
         nickname: data.nickname,
-        createdAt: new Date().toISOString(),
-      };
-
-      setUser(mockUser, "mock-access-token");
-      navigate("/library");
-    } catch (error) {
-      console.error("Register failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      {
+        onError: (error: Error) => {
+          const errorMsg =
+            (
+              error as {
+                response?: { data?: { error?: { message?: string } } };
+              }
+            )?.response?.data?.error?.message || "회원가입에 실패했습니다";
+          setApiError(errorMsg);
+        },
+      }
+    );
   };
 
   return (
@@ -176,9 +172,19 @@ export default function AuthPage() {
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "로그인 중..." : "로그인"}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoginPending}
+                  >
+                    {isLoginPending ? "로그인 중..." : "로그인"}
                   </Button>
+
+                  {apiError && (
+                    <p className="text-sm text-status-error text-center">
+                      {apiError}
+                    </p>
+                  )}
 
                   <p className="text-center text-sm text-muted-foreground">
                     <a href="#" className="hover:text-sage-500">
@@ -280,9 +286,19 @@ export default function AuthPage() {
                     </p>
                   )}
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "가입 중..." : "회원가입"}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isRegisterPending}
+                  >
+                    {isRegisterPending ? "가입 중..." : "회원가입"}
                   </Button>
+
+                  {apiError && (
+                    <p className="text-sm text-status-error text-center">
+                      {apiError}
+                    </p>
+                  )}
                 </form>
               </TabsContent>
             </CardContent>
