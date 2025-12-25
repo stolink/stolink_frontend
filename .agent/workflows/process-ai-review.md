@@ -11,7 +11,7 @@ description: AI 코드 리뷰 결과를 처리하고 트러블슈팅 로그를 �
 ## 워크플로우
 
 1. **리뷰 가져오기** (입력 없을 시):
-   - `gh pr view --json number --jq .number`로 PR 번호 확인
+   - `gh pr view --json number,baseRefName --jq '{"number": .number, "base": .baseRefName}'`로 PR 번호 및 **타겟 브랜치** 확인
    - `gh pr view [PR번호] --comments --json comments`로 코멘트 가져오기
    - "## 🤖 AI 코드 리뷰"로 시작하는 최신 코멘트 추출
 
@@ -19,10 +19,11 @@ description: AI 코드 리뷰 결과를 처리하고 트러블슈팅 로그를 �
    - "✅ 코드 리뷰 통과" 포함 시 → **수정 없이 완료 보고**
    - 🔴, ⚠️ 발견 시 → 코드 수정 진행
    - 💡만 있을 시 → 제안 내용만 사용자에게 안내 (자동 수정 X)
+   - **Target Branch 확인**: `main` 타겟인 경우 더욱 엄격한 검증(`npm run build` 필수) 적용
 
 3. **수정** (🔴, ⚠️만):
    - `view_file`로 확인 후 수정
-   - `npm run build`로 검증
+   - `npm run build`로 검증 (특히 `main` 타겟 PR인 경우 필수)
 
 4. **트러블슈팅 문서화** (필수):
 
