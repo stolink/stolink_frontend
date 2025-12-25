@@ -5,3 +5,5 @@ export * from "./chapter";
 export * from "./scene";
 export * from "./character"; // includes Place, Item
 export * from "./foreshadowing";
+export * from "./api"; // API response types
+export * from "./document";
