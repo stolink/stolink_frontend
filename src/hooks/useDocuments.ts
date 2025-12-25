@@ -11,7 +11,8 @@ import type {
   Document,
   CreateDocumentInput,
   UpdateDocumentInput,
-  UpdateDocumentInput,
+  Document,
+  CreateDocumentInput,
 } from "@/types/document";
 import { documentService } from "@/services/documentService";
 
@@ -103,36 +104,65 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
  * Hook to get and save document content for a specific document
  */
 export function useDocumentContent(id: string | null) {
+  const { _setContent } = useDocumentStore();
   const content = useDocumentStore((state) =>
     id ? state.documents[id]?.content || "" : "",
   );
+
+  // Fetch content from backend if it's missing or we want to ensure freshness
+  useQuery({
+    queryKey: ["document-content", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const response = await documentService.getContent(id);
+      const isSuccess =
+        response.success || response.status === "OK" || response.code === 200;
+      if (isSuccess && response.data) {
+        _setContent(id, response.data.content);
+        return response.data.content;
+      }
+      return null;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const saveContent = useCallback(
     async (newContent: string) => {
       if (!id) return;
 
+      // Capture original content for rollback
+      const originalContent =
+        useDocumentStore.getState().documents[id]?.content || "";
+
       try {
-        const { _setContent } = useDocumentStore.getState();
+        console.log(`[useDocuments] Saving content for ${id}...`);
+        // Optimistic update
         _setContent(id, newContent);
 
-        const { documentService } = await import("@/services/documentService");
         const response = await documentService.updateContent(id, newContent);
+        console.log("[useDocuments] Save response:", response);
 
-        if (response.success && response.data) {
+        const isSuccess =
+          response.success || response.status === "OK" || response.code === 200;
+
+        if (isSuccess && response.data) {
           const { _update } = useDocumentStore.getState();
           _update(id, {
-            metadata: { wordCount: response.data.wordCount },
+            metadata: {
+              ...useDocumentStore.getState().documents[id]?.metadata,
+              wordCount: response.data.wordCount,
+            },
             updatedAt: response.data.updatedAt,
           });
         }
       } catch (error) {
         console.error("Failed to save content:", error);
-        const originalContent = await localDocumentRepository.getContent(id);
-        const { _setContent } = useDocumentStore.getState();
+        // Rollback to captured original content
         _setContent(id, originalContent);
       }
     },
-    [id],
+    [id, _setContent],
   );
 
   return {
@@ -149,15 +179,18 @@ export function useBulkDocumentContent() {
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
       try {
+        console.log(
+          `[useDocuments] Bulk saving ${Object.keys(updates).length} documents...`,
+        );
         const { _setBulkContent } = useDocumentStore.getState();
         _setBulkContent(updates);
 
-        const { documentService } = await import("@/services/documentService");
-        await Promise.all(
+        const results = await Promise.all(
           Object.entries(updates).map(([id, content]) =>
             documentService.updateContent(id, content),
           ),
         );
+        console.log("[useDocuments] Bulk save completed:", results);
       } catch (error) {
         console.error("Bulk save failed:", error);
       }
@@ -174,30 +207,81 @@ export function useBulkDocumentContent() {
  * Hook for document mutations (create, update, delete, reorder)
  */
 export function useDocumentMutations(projectId: string) {
+  const { _create, _update, _delete } = useDocumentStore();
+
   const createDocument = useCallback(
-    async (input: CreateDocumentInput) => {
-      return await localDocumentRepository.create({
-        ...input,
-        projectId,
-      });
+    async (input: Omit<CreateDocumentInput, "projectId">) => {
+      try {
+        const payload: CreateDocumentInput = {
+          ...input,
+          projectId,
+        };
+        const response = await documentService.create(projectId, payload);
+        const isSuccess =
+          response.success ||
+          response.status === "OK" ||
+          response.status === "CREATED" ||
+          response.code === 200 ||
+          response.code === 201;
+        if (isSuccess && response.data) {
+          _create(response.data);
+          return response.data;
+        }
+      } catch (error) {
+        console.error("Failed to create document:", error);
+      }
+      return null;
     },
-    [projectId],
+    [projectId, _create],
   );
 
   const updateDocument = useCallback(
     async (id: string, input: UpdateDocumentInput) => {
-      return await localDocumentRepository.update(id, input);
+      try {
+        const response = await documentService.update(id, input);
+        const isSuccess =
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess && response.data) {
+          _update(id, response.data);
+          return response.data;
+        }
+      } catch (error) {
+        console.error("Failed to update document:", error);
+      }
+      return null;
     },
-    [],
+    [_update],
   );
 
-  const deleteDocument = useCallback(async (id: string) => {
-    await localDocumentRepository.delete(id);
-  }, []);
+  const deleteDocument = useCallback(
+    async (id: string) => {
+      try {
+        const response = await documentService.delete(id);
+        const isSuccess =
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess) {
+          _delete(id);
+        }
+      } catch (error) {
+        console.error("Failed to delete document:", error);
+      }
+    },
+    [_delete],
+  );
 
   const reorderDocuments = useCallback(
     async (parentId: string | null, orderedIds: string[]) => {
-      await localDocumentRepository.reorder(parentId, orderedIds);
+      try {
+        const response = await documentService.reorder(parentId, orderedIds);
+        const isSuccess =
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess) {
+          // Local update logic for reordering if needed,
+          // but usually we can just invalidate the tree query
+        }
+      } catch (error) {
+        console.error("Failed to reorder documents:", error);
+      }
     },
     [],
   );

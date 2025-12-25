@@ -111,16 +111,32 @@ export const useDocumentStore = create<DocumentStore>()(
 
       _syncProjectDocuments: (projectId, documents) => {
         set((state) => {
-          // 1. Remove all existing documents for this project
-          Object.keys(state.documents).forEach((key) => {
-            if (state.documents[key].projectId === projectId) {
-              delete state.documents[key];
+          // 1. Identify IDs of documents being synced
+          const incomingIds = new Set(documents.map((d) => d.id));
+
+          // 2. Remove documents for this project that are NO LONGER in the project tree
+          Object.keys(state.documents).forEach((id) => {
+            if (
+              state.documents[id].projectId === projectId &&
+              !incomingIds.has(id)
+            ) {
+              delete state.documents[id];
             }
           });
 
-          // 2. Add new documents
+          // 3. Update or add documents, preserving content/metadata if missing in fetch
           documents.forEach((doc) => {
-            state.documents[doc.id] = doc;
+            const existing = state.documents[doc.id];
+            state.documents[doc.id] = {
+              ...existing,
+              ...doc,
+              // Critical: fetch from tree often lacks content. Preserve it if we have it locally.
+              content: doc.content || existing?.content || "",
+              metadata: {
+                ...existing?.metadata,
+                ...doc.metadata,
+              },
+            };
           });
         });
       },

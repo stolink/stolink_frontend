@@ -398,8 +398,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     null,
   );
 
+  // Track latest content for manual save (Ctrl+S)
+  const lastContentRef = useRef<string>("");
+
   const handleContentChange = useCallback(
     (content: string) => {
+      lastContentRef.current = content;
       if (isDemo) return;
 
       // Clear previous timeout
@@ -479,13 +483,20 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        console.log("저장됨 (Ctrl+S)");
+        if (!isDemo && selectedSectionId) {
+          console.log("[EditorPage] Manual save triggered (Ctrl+S)");
+          // Clear any pending debounced save
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+          }
+          saveContent(lastContentRef.current);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isDemo, selectedSectionId, saveContent]);
 
   // ============================================================
   // Render
