@@ -1,7 +1,7 @@
 # StoLink 프로젝트 아키텍처
 
-> **최종 수정**: 2024년 12월
-> **기술 스택**: React 19 + TypeScript + Vite + Zustand
+> **최종 수정**: 2024년 12월 25일
+> **기술 스택**: React 19 + TypeScript + Vite 7 + Zustand 5
 
 ---
 
@@ -26,16 +26,35 @@ src/
 ├── assets/               # 정적 리소스
 ├── components/           # 컴포넌트
 │   ├── common/           # 공통 (Footer, Modal 등)
-│   ├── editor/           # 에디터 관련 (8개)
+│   ├── editor/           # 에디터 관련
+│   │   ├── sidebar/      # 🆕 사이드바 컴포넌트 (6개)
+│   │   │   ├── ChapterTree.tsx
+│   │   │   ├── TreeItem.tsx
+│   │   │   ├── ContextMenu.tsx
+│   │   │   ├── NodeIcon.tsx
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
+│   │   ├── TiptapEditor.tsx
+│   │   ├── SectionStrip.tsx
+│   │   ├── ScriveningsEditor.tsx
+│   │   ├── OutlineView.tsx
+│   │   └── ...
 │   ├── graph/            # 관계도 (React Flow)
 │   ├── layouts/          # 레이아웃 (3개)
-│   ├── library/          # 서재 관련 (2개)
+│   ├── library/          # 서재 관련
+│   │   ├── BookCard.tsx
+│   │   └── ImportBookCard.tsx  # 🆕 책 가져오기
 │   └── ui/               # shadcn/ui (15개)
 │
 ├── data/                 # 목 데이터, 상수
 ├── hooks/                # 커스텀 훅
 ├── lib/                  # 유틸리티 (cn, utils)
 ├── pages/                # 페이지 컴포넌트 (9개)
+├── repositories/         # 🆕 Repository 패턴
+│   ├── DocumentRepository.ts
+│   └── LocalDocumentRepository.ts
+├── services/             # 🆕 서비스 레이어
+│   └── exportService.ts  # EPUB/PDF/TXT 내보내기
 ├── stores/               # Zustand 스토어 (5개)
 ├── styles/               # 추가 스타일
 └── types/                # TypeScript 타입 (7개)
@@ -48,7 +67,7 @@ src/
 ```
 / ─────────────── LandingPage (공개)
 /auth ─────────── AuthPage (공개)
-/demo ─────────── EditorPage (데모, 인증 불필요)
+/editor/demo ──── EditorPage (데모, 인증 불필요)
 
 /library ──────── LibraryPage ─── ProtectedLayout
 /projects/:id ─── ProjectLayout
@@ -56,7 +75,7 @@ src/
     ├── /studio ── StudioPage
     ├── /world ─── WorldPage
     ├── /stats ─── StatsPage
-    ├── /export ── ExportPage
+    ├── /export ── ExportPage  # 🆕 내보내기 페이지
     └── /settings ─ SettingsPage
 ```
 
@@ -74,73 +93,25 @@ src/
 | `useSceneStore`  | Scene CRUD, 캐릭터/복선 연결    | `immer`   |
 | `useDemoStore`   | 데모 모드 데이터                | -         |
 
-### useAuthStore
-
-```typescript
-{
-  user: User | null;
-  accessToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  // Actions
-  setUser(user, token);
-  logout();
-  setLoading(loading);
-}
-// persist: localStorage에 인증 정보 저장
-```
-
-### useEditorStore
+### useEditorStore (업데이트)
 
 ```typescript
 {
   currentProjectId: string | null;
   currentChapterId: string | null;
-  chapters: Chapter[];
-  content: string;
-  saveStatus: "saved" | "saving" | "unsaved";
-  chapterTree: ChapterTreeNode[];
-  expandedNodes: string[];
+  // 🆕 분할 화면
+  splitView: {
+    enabled: boolean;
+    direction: "horizontal" | "vertical";
+  };
+  // 🆕 집중 모드
+  isFocusMode: boolean;
+  // 🆕 줌 레벨
+  zoom: number;  // 50-200%
   // Actions
-  setCurrentProject(id);
-  setCurrentChapter(id);
-  setChapters(chapters);
-  setContent(content);
-  buildChapterTree(chapters);
-}
-```
-
-### useUIStore
-
-```typescript
-{
-  leftSidebarOpen: boolean;
-  rightSidebarOpen: boolean;
-  rightSidebarTab: "foreshadowing" | "ai" | "consistency";
-  createProjectModalOpen: boolean;
-  theme: "light" | "dark";
-  // Actions
-  toggleLeftSidebar();
-  toggleRightSidebar();
-  setTheme(theme);
-}
-```
-
-### useSceneStore (신규)
-
-```typescript
-{
-  scenes: Record<string, Scene>;
-  // CRUD
-  createScene(input);
-  updateScene(id, updates);
-  deleteScene(id);
-  // 조회
-  getScenesByChapter(chapterId);
-  getScenesWithCharacter(charId);
-  // 연결
-  addCharacterToScene(sceneId, charId);
-  addForeshadowingToScene(sceneId, fsId);
+  toggleSplitView();
+  toggleFocusMode();
+  setZoom(level: number);
 }
 ```
 
@@ -152,12 +123,12 @@ src/
 
 ```
 Project (작품)
-    ├── Chapter[] (챕터, 계층 구조)
-    │       └── Scene[] (씬, 실제 집필 단위)
-    │               ├── characterIds[] ──────┐
-    │               └── foreshadowingIds[] ──┤
-    │                                        │
-    ├── Character[] (캐릭터) ◀───────────────┘
+    ├── Document[] (문서, 계층 구조)
+    │       ├── type: "folder" | "text"
+    │       ├── characterIds[] ──────┐
+    │       └── foreshadowingIds[] ──┤
+    │                                │
+    ├── Character[] (캐릭터) ◀───────┘
     │       └── Relationship[]
     │
     ├── Foreshadowing[] (복선)
@@ -167,17 +138,6 @@ Project (작품)
     └── Item[] (아이템)
             └── currentOwnerId → Character
 ```
-
-### 주요 타입
-
-| 파일               | 타입                                                        |
-| ------------------ | ----------------------------------------------------------- |
-| `project.ts`       | Project, Genre, ProjectStatus, ProjectStats                 |
-| `chapter.ts`       | Chapter, ChapterType, ChapterTreeNode                       |
-| `scene.ts`         | Scene, SceneMetadata, SceneStatus                           |
-| `character.ts`     | Character, CharacterRole, Relationship, Place, Item         |
-| `foreshadowing.ts` | Foreshadowing, ForeshadowingStatus, ForeshadowingAppearance |
-| `auth.ts`          | User, LoginInput, RegisterInput                             |
 
 ---
 
@@ -189,18 +149,9 @@ Project (작품)
 | -------------- | ---- | -------------- |
 | React          | 19.2 | UI 라이브러리  |
 | TypeScript     | 5.9  | 타입 시스템    |
-| Vite           | 7.2  | 빌드 도구      |
+| Vite           | 7.3  | 빌드 도구      |
 | Zustand        | 5.0  | 상태 관리      |
 | TanStack Query | 5.90 | 서버 상태 관리 |
-
-### UI
-
-| 패키지        | 용도                                  |
-| ------------- | ------------------------------------- |
-| Tailwind CSS  | 스타일링                              |
-| Radix UI      | Headless 컴포넌트 (Dialog, Select 등) |
-| Lucide React  | 아이콘                                |
-| Framer Motion | 애니메이션                            |
 
 ### Editor
 
@@ -210,35 +161,50 @@ Project (작품)
 | dnd-kit    | 드래그앤드롭 (챕터 트리)              |
 | React Flow | 캐릭터 관계도 그래프                  |
 
-### Form & Validation
+### 🆕 Export
 
-| 패키지          | 용도        |
-| --------------- | ----------- |
-| React Hook Form | 폼 관리     |
-| Zod             | 스키마 검증 |
+| 패키지     | 용도             |
+| ---------- | ---------------- |
+| jspdf      | PDF 생성         |
+| epub-gen   | EPUB 생성 (예정) |
+| file-saver | 파일 다운로드    |
 
 ---
 
 ## 컴포넌트 구조
 
-### Layouts (3개)
+### 🆕 Editor Sidebar 컴포넌트 (6개)
 
-- `ProtectedLayout`: 인증 필요 라우트 래퍼
-- `ProjectLayout`: 프로젝트 내비게이션 (에디터, 설정집, 통계...)
-- `MainLayout`: 기본 레이아웃
+```
+src/components/editor/sidebar/
+├── index.ts          # Export 모음
+├── types.ts          # ChapterNode, 유틸리티
+├── NodeIcon.tsx      # 타입별 아이콘 (Folder, BookOpen, FileText, Lightbulb)
+├── ContextMenu.tsx   # 재사용 가능한 우클릭 메뉴
+├── TreeItem.tsx      # 트리 아이템 (hover F2, 상태 점)
+└── ChapterTree.tsx   # 메인 컴포넌트
+```
 
-### Editor 컴포넌트 (8개)
+**TreeItem 기능:**
 
-- `TiptapEditor`: 메인 리치 텍스트 에디터
-- `ChapterTree`: 좌측 폴더/문서 트리
-- `SceneInspector`: 우측 씬 메타데이터 패널
+- 싱글 클릭 = 선택
+- 더블 클릭 = 인라인 이름 변경
+- 우클릭 = 객체 컨텍스트 메뉴
+- 빈 공간 우클릭 = 컨테이너 컨텍스트 메뉴
+- F2 키 = hover 상태에서 이름 변경
+- 상태 표시 점 (todo/inProgress/done/revised)
+
+### Editor 컴포넌트 (12개)
+
+- `TiptapEditor`: 메인 리치 텍스트 에디터 (줌 50-200%)
+- `SectionStrip`: 하단 섹션 카드 네비게이션
+- `ScriveningsEditor`: 통합 편집 모드
+- `OutlineView`: 테이블 기반 아웃라인
+- `EditorLeftSidebar`: 좌측 챕터 트리 래퍼
+- `EditorRightSidebar`: 우측 패널 (복선, AI, 일관성)
 - `ForeshadowingPanel`: 복선 관리 패널
 - `AIAssistantPanel`: AI 어시스턴트
-
-### UI 컴포넌트 (15개)
-
-- shadcn/ui 기반 (Button, Dialog, Input, Select...)
-- Radix UI primitives 래핑
+- `ConsistencyPanel`: 일관성 체크
 
 ---
 
@@ -278,14 +244,19 @@ fix/* ────── 버그 수정
 - [x] Scene 타입 정의
 - [x] useSceneStore 생성
 - [x] SceneInspector 패널
+- [x] Section Strip 구현
+- [x] Scrivenings 뷰
 
-### Phase 2 (예정)
+### Phase 2 (완료) 🆕
 
-- [ ] 복선 추적 시스템 개선
-- [ ] 분할 화면
-- [ ] Corkboard 뷰
+- [x] 사이드바 컴포넌트 분리 (sidebar/)
+- [x] Context-Sensitive Menu 구현
+- [x] 에디터 줌 기능 (50-200%)
+- [x] 텍스트 가져오기 (TXT/MD) + 스마트 정리
+- [x] 내보내기 서비스 (PDF/EPUB/TXT)
 
 ### Phase 3 (예정)
 
 - [ ] 스냅샷/버전 관리
 - [ ] 통계 대시보드
+- [ ] 드래그 앤 드롭 순서 변경
