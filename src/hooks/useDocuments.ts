@@ -193,8 +193,13 @@ export function useDocumentMutations(projectId: string) {
  * Hook for fetching a document and all its descendants (flattened)
  * Used for Scrivenings View
  */
-export function useDescendantDocuments(parentId: string, projectId: string) {
-  const documents = useDocumentStore((state) => state.documents);
+export function useBulkDocumentContent() {
+  const bulkSaveContent = useCallback(
+    async (updates: Record<string, string>) => {
+      await getRepository().bulkUpdateContent(updates);
+    },
+    [],
+  );
 
   // Use useMemo to re-calculate flattened list whenever documents change
   // Optimization: This might be expensive if many documents change.
@@ -231,30 +236,44 @@ export function useDescendantDocuments(parentId: string, projectId: string) {
   };
 }
 
-// Helper function to build tree
-function buildTree(documents: Document[]) {
-  const map = new Map<string, Document & { children: Document[] }>();
-  const roots: (Document & { children: Document[] })[] = [];
+/**
+ * Hook for fetching a document and all its descendants (flattened)
+ * Used for Scrivenings View
+ */
+export function useDescendantDocuments(parentId: string, projectId: string) {
+  const documents = useDocumentStore((state) => state.documents);
 
-  // First pass: create all nodes
-  documents.forEach((doc) => {
-    map.set(doc.id, { ...doc, children: [] });
-  });
+  // Use useMemo to re-calculate flattened list whenever documents change
+  // Optimization: This might be expensive if many documents change.
+  // Ideally should use a selector that only listens to relevant docs.
+  // For now, simple memoization is fine for local.
+  const flatDocuments = useMemo(() => {
+    const result: (typeof documents)[string][] = [];
 
-  // Second pass: build relationships
-  documents.forEach((doc) => {
-    const node = map.get(doc.id);
-    if (!node) return;
-
-    if (doc.parentId) {
-      const parent = map.get(doc.parentId);
-      if (parent) {
-        parent.children.push(node);
-      }
-    } else {
-      roots.push(node);
+    // Add parent first
+    const parent = documents[parentId];
+    if (parent && parent.projectId === projectId) {
+      result.push(parent);
     }
-  });
 
-  return roots.sort((a, b) => a.order - b.order);
+    // Recursive helper
+    const traverse = (currentId: string) => {
+      const children = Object.values(documents)
+        .filter((d) => d.parentId === currentId && d.projectId === projectId)
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        result.push(child);
+        traverse(child.id);
+      }
+    };
+
+    traverse(parentId);
+    return result;
+  }, [documents, parentId, projectId]); // Re-run when any document changes (simplest trigger)
+
+  return {
+    documents: flatDocuments,
+    isLoading: false,
+  };
 }

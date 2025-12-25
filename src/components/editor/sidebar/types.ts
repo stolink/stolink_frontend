@@ -15,10 +15,15 @@ export interface ChapterTreeProps {
   chapters?: ChapterNode[];
   selectedChapterId?: string;
   onSelectChapter?: (chapterId: string) => void;
-  onAddChapter?: (title: string, parentId?: string) => void;
+  onAddChapter?: (
+    title: string,
+    parentId?: string,
+    type?: "chapter" | "section",
+  ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
   onDuplicateChapter?: (id: string) => void;
+  onConvertType?: (id: string, type: "chapter" | "section") => void;
 }
 
 // Status colors mapping

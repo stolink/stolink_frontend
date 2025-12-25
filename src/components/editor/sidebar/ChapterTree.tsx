@@ -69,9 +69,13 @@ export function ChapterTree({
   onRenameChapter,
   onDeleteChapter,
   onDuplicateChapter,
+  onConvertType,
 }: ChapterTreeProps) {
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
+  const [addingType, setAddingType] = useState<"chapter" | "section">(
+    "chapter",
+  );
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
   const [showContainerMenu, setShowContainerMenu] = useState(false);
@@ -89,14 +93,22 @@ export function ChapterTree({
 
   const handleAddChapter = () => {
     if (!newChapterTitle.trim()) return;
-    onAddChapter?.(newChapterTitle.trim(), addingToParent || undefined);
+    onAddChapter?.(
+      newChapterTitle.trim(),
+      addingToParent || undefined,
+      addingType,
+    );
     setNewChapterTitle("");
     setIsAdding(false);
     setAddingToParent(null);
   };
 
-  const handleStartAddChild = (parentId: string) => {
+  const handleStartAddChild = (
+    parentId: string,
+    type: "chapter" | "section" = "chapter",
+  ) => {
     setAddingToParent(parentId);
+    setAddingType(type);
     setIsAdding(true);
   };
 
@@ -122,12 +134,18 @@ export function ChapterTree({
     {
       icon: FilePlus,
       label: "새 문서",
-      onClick: () => setIsAdding(true),
+      onClick: () => {
+        setAddingType("section");
+        setIsAdding(true);
+      },
     },
     {
       icon: FolderPlus,
       label: "새 폴더",
-      onClick: () => setIsAdding(true),
+      onClick: () => {
+        setAddingType("chapter");
+        setIsAdding(true);
+      },
     },
     { type: "divider" },
     {
@@ -178,6 +196,7 @@ export function ChapterTree({
                 onRename={onRenameChapter}
                 onDelete={onDeleteChapter}
                 onDuplicate={onDuplicateChapter}
+                onConvertType={onConvertType}
               />
             </div>
           ))}
@@ -196,7 +215,9 @@ export function ChapterTree({
               if (e.key === "Enter") handleAddChapter();
               if (e.key === "Escape") handleCancel();
             }}
-            placeholder="새 챕터 제목..."
+            placeholder={
+              addingType === "chapter" ? "새 폴더 이름..." : "새 섹션 이름..."
+            }
             className="h-7 text-sm border-0 bg-transparent focus-visible:ring-0 px-0"
           />
           <Button

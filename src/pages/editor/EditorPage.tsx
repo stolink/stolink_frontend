@@ -45,7 +45,6 @@ import {
   useDocumentTree,
   useDocumentContent,
   useDocumentMutations,
-  useChildDocuments,
   useDocument,
 } from "@/hooks/useDocuments";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
@@ -139,7 +138,7 @@ function documentTreeToChapterTree(
     type: node.type === "folder" ? "chapter" : "section",
     characterCount: 0,
     isPlot: false,
-    children: documentTreeToChapterTree(node.children as typeof nodes),
+    children: documentTreeToChapterTree((node.children || []) as typeof nodes),
   }));
 }
 
@@ -200,11 +199,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   );
   const { createDocument } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
-  // Get child sections of the selected folder
-  const { children: sectionDocuments } = useChildDocuments(
-    selectedFolderId,
-    projectId,
-  );
 
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -285,10 +279,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Handlers
   // ============================================================
 
-  const handleAddChapter = (title: string, parentId?: string) => {
+  const handleAddChapter = (
+    title: string,
+    parentId?: string,
+    type: "chapter" | "section" = "chapter",
+  ) => {
     if (isDemo) return;
     createDocument({
-      type: "folder",
+      type: type === "chapter" ? "folder" : "text",
       title,
       parentId,
     });
@@ -342,18 +340,50 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     });
   };
 
+  const handleConvertType = async (id: string, type: "chapter" | "section") => {
+    if (isDemo) return;
+    const { _updateType } = useDocumentStore.getState();
+    _updateType(id, type === "chapter" ? "folder" : "text");
+  };
+
   const handleSelectFolder = (id: string) => {
-    // Check if it's a text document (section) - if so, select both folder and section
+    // Find the document
     const doc = documents.find((d) => d.id === id);
-    if (doc?.type === "text" && doc.parentId) {
-      setSelectedFolderId(doc.parentId);
-      setSelectedSectionId(id);
-    } else {
+    if (!doc) {
+      // Demo fallback
+      if (isDemo) {
+        setSelectedFolderId(id);
+        setSelectedSectionId(id);
+      }
+      return;
+    }
+
+    // Check if node has children (is it a container?)
+    const hasChildren = documents.some((d) => d.parentId === id);
+    const isContainer = hasChildren || doc.type === "folder";
+
+    if (isContainer) {
+      // It's a container (Folder or Parent Section)
       setSelectedFolderId(id);
-      // Auto-select first section if available
-      const firstSection = sectionDocuments.find((s) => s.type === "text");
-      if (firstSection) {
-        setSelectedSectionId(firstSection.id);
+      setSelectedSectionId(id); // Select itself so we can edit its title/content if in Single Mode
+
+      // Auto-switch to Scrivenings if appropriate
+      if (hasChildren && viewMode !== "outline") {
+        setViewMode("scrivenings");
+      }
+    } else {
+      // It's a leaf node
+      // Set context to parent (so Strip shows siblings)
+      if (doc.parentId) {
+        setSelectedFolderId(doc.parentId);
+      } else {
+        setSelectedFolderId(id);
+      }
+      setSelectedSectionId(id);
+
+      // Auto-switch to Single Editor
+      if (viewMode !== "outline") {
+        setViewMode("editor");
       }
     }
   };
@@ -478,6 +508,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           onRenameChapter={handleRenameChapter}
           onDeleteChapter={handleDeleteChapter}
           onDuplicateChapter={handleDuplicateChapter}
+          onConvertType={handleConvertType}
           isOpen={isSidebarVisible}
           onToggle={toggleSidebar}
         />

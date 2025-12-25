@@ -7,6 +7,10 @@ import {
   Pencil,
   Copy,
   Trash2,
+  FolderPlus,
+  FileText,
+  Folder,
+  FilePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NodeIcon } from "./NodeIcon";
@@ -20,10 +24,9 @@ interface TreeItemProps {
   isLast?: boolean;
   parentLines?: boolean[];
   onSelect?: (id: string) => void;
-  onAddChild?: (parentId: string) => void;
-  onRename?: (id: string, newTitle: string) => void;
-  onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
+  onConvertType?: (id: string, type: "chapter" | "section") => void;
+  onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
 }
 
 export function TreeItem({
@@ -37,6 +40,7 @@ export function TreeItem({
   onRename,
   onDelete,
   onDuplicate,
+  onConvertType,
 }: TreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
@@ -113,6 +117,17 @@ export function TreeItem({
   // 객체 컨텍스트 메뉴 (파일 위 우클릭)
   const objectMenuItems: MenuItemType[] = [
     {
+      icon: FolderPlus,
+      label: "새 폴더 만들기",
+      onClick: () => onAddChild?.(node.id, "chapter"), // chapter = folder
+    },
+    {
+      icon: FilePlus,
+      label: "새 섹션 만들기",
+      onClick: () => onAddChild?.(node.id, "section"), // section = file
+    },
+    { type: "divider" },
+    {
       icon: Pencil,
       label: "이름 변경",
       shortcut: "F2",
@@ -124,6 +139,31 @@ export function TreeItem({
       shortcut: "⌘D",
       onClick: () => onDuplicate?.(node.id),
     },
+    // 타입 변환 로직
+    ...(node.type === "section"
+      ? [
+          {
+            icon: Folder,
+            label: "폴더로 변환",
+            onClick: () => onConvertType?.(node.id, "chapter"),
+          },
+        ]
+      : []),
+    ...(node.type === "chapter" || node.type === "part"
+      ? [
+          {
+            icon: FileText,
+            label: "파일로 변환",
+            onClick: () => {
+              if (hasChildren) {
+                alert("하위 항목이 있는 폴더는 파일로 변환할 수 없습니다.");
+                return;
+              }
+              onConvertType?.(node.id, "section");
+            },
+          },
+        ]
+      : []),
     { type: "divider" },
     {
       icon: Trash2,
@@ -329,6 +369,7 @@ export function TreeItem({
               onRename={onRename}
               onDelete={onDelete}
               onDuplicate={onDuplicate}
+              onConvertType={onConvertType}
             />
           ))}
         </div>
