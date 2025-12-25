@@ -28,23 +28,30 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            # 코멘트 트리거 시에도 PR 상세 정보를 가져와 base branch 확인
+            BASE_BRANCH=$(gh pr view ${{ github.event.issue.number }} --json baseRefName --jq '.baseRefName')
+            echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
           else
             echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Get changed files and diff
         id: diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch origin main
+          BASE_BRANCH="${{ steps.pr.outputs.base_branch }}"
+          git fetch origin $BASE_BRANCH
 
-          # 변경된 파일 목록
-          FILES=$(git diff origin/main...HEAD --name-only -- '*.ts' '*.tsx' | head -30)
+          # 변경된 파일 목록 (Base Branch 기준)
+          FILES=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | head -30)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          # 실제 코드 변경 내용 (최대 300줄)
-          DIFF=$(git diff origin/main...HEAD -- '*.ts' '*.tsx' | head -500)
+          # 실제 코드 변경 내용 (Base Branch 기준, 최대 300줄)
+          DIFF=$(git diff origin/$BASE_BRANCH...HEAD -- '*.ts' '*.tsx' | head -500)
           echo "$DIFF" > diff_content.txt
 
       - name: Prepare prompt
