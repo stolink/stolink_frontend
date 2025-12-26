@@ -32,6 +32,7 @@ import {
 } from "@/services/documentService";
 import type { ApiResponse } from "@/types/api";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { getApiData } from "@/utils/apiUtils";
 
 import {
   DropdownMenu,
@@ -72,24 +73,11 @@ export default function LibraryPage() {
         genre: "other",
         description: "",
       });
-      console.log("[LibraryPage] Project response:", projectResponse);
-
-      const isProjectSuccess =
-        projectResponse.success ||
-        projectResponse.status === "OK" ||
-        projectResponse.status === "CREATED" ||
-        projectResponse.code === 200 ||
-        projectResponse.code === 201;
-
-      if (!isProjectSuccess || !projectResponse.data) {
-        console.error(
-          "[LibraryPage] Project creation failed:",
-          projectResponse
-        );
-        throw new Error("Failed to create project");
-      }
-
-      const projectId = projectResponse.data.id;
+      const projectData = getApiData(
+        projectResponse,
+        "Failed to create project"
+      );
+      const projectId = projectData.id;
       console.log("[LibraryPage] Project created:", projectId);
 
       // 2. Create default chapter (folder)
@@ -98,28 +86,15 @@ export default function LibraryPage() {
         type: "folder",
         title: "챕터 1",
       });
-      console.log("[LibraryPage] Chapter response:", chapterResponse);
-
-      const isChapterSuccess =
-        chapterResponse.success ||
-        chapterResponse.status === "OK" ||
-        chapterResponse.status === "CREATED" ||
-        chapterResponse.code === 200 ||
-        chapterResponse.code === 201;
-
-      if (!isChapterSuccess || !chapterResponse.data) {
-        console.error(
-          "[LibraryPage] Chapter creation failed:",
-          chapterResponse
-        );
-        throw new Error("Failed to create default chapter");
-      }
-
-      const chapterId = chapterResponse.data.id;
+      const chapterData = getApiData(
+        chapterResponse,
+        "Failed to create default chapter"
+      );
+      const chapterId = chapterData.id;
       console.log("[LibraryPage] Chapter created:", chapterId);
 
-      // Add chapter to local store (convert to frontend format)
-      _create(mapBackendToFrontend(chapterResponse.data));
+      // Add chapter to local store
+      _create(mapBackendToFrontend(chapterData));
 
       // 3. Create default section (text document)
       console.log("[LibraryPage] Creating default section...");
@@ -128,19 +103,17 @@ export default function LibraryPage() {
         title: "섹션 1",
         parentId: chapterId,
       });
-      console.log("[LibraryPage] Section response:", sectionResponse);
 
-      const isSectionSuccess =
-        sectionResponse.success ||
-        sectionResponse.status === "OK" ||
-        sectionResponse.status === "CREATED" ||
-        sectionResponse.code === 200 ||
-        sectionResponse.code === 201;
-
-      if (isSectionSuccess && sectionResponse.data) {
-        console.log("[LibraryPage] Section created:", sectionResponse.data.id);
-        // Add section to local store (convert to frontend format)
-        _create(mapBackendToFrontend(sectionResponse.data));
+      try {
+        const sectionData = getApiData(
+          sectionResponse,
+          "Failed to create section"
+        );
+        console.log("[LibraryPage] Section created:", sectionData.id);
+        _create(mapBackendToFrontend(sectionData));
+      } catch {
+        // Section creation failure is not critical
+        console.warn("[LibraryPage] Section creation failed, continuing...");
       }
 
       // 4. Navigate to editor
@@ -148,11 +121,11 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
-      if (error instanceof Error) {
-        alert(`프로젝트 생성에 실패했습니다: ${error.message}`);
-      } else {
-        alert("프로젝트 생성에 실패했습니다.");
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "프로젝트 생성에 실패했습니다.";
+      alert(message);
     } finally {
       setIsCreatingProject(false);
     }
