@@ -71,10 +71,12 @@ venv/
 .venv/
 
 # Personal/Development Files - Not for Team Repo
-CLAUDE.md
 reference/
 smart_split_logo.py
 *.personal.*
 
-# Gemini/AI artifacts
+# Gemini/AI artifacts (local agent state)
 .gemini/
+
+# Temporary files
+.pr_body_temp.md

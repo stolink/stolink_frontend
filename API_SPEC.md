@@ -1,7 +1,7 @@
 # StoLink API 명세
 
-> **버전**: 1.0
-> **최종 수정**: 2024년 12월 25일
+> **버전**: 1.1
+> **최종 수정**: 2025년 12월 26일
 > **Base URL**: `https://api.stolink.com` (Production) / `http://localhost:8080` (Development)
 
 ---
@@ -16,9 +16,16 @@
 ### 공통 응답 형식
 
 ```json
-// 성공
+// 성공 (표준)
 {
   "success": true,
+  "data": { ... }
+}
+
+// 성공 (대안 - 일부 API)
+{
+  "status": "OK",
+  "code": 200,
   "data": { ... }
 }
 
@@ -36,6 +43,7 @@
 
 ```
 Authorization: Bearer {accessToken}
+X-User-Id: {userId}  // 일부 API에서 사용
 ```
 
 ---
@@ -145,14 +153,15 @@ Authorization: Bearer {accessToken}
 ### 2.1 GET /api/projects
 
 **Query Parameters:**
-| 파라미터 | 타입 | 기본값 | 설명 |
-| -------- | ------ | ------------ | --------------------- |
-| status | string | all | writing, completed |
-| genre | string | all | fantasy, romance, ... |
-| sort | string | updatedAt | updatedAt, createdAt, title |
-| order | string | desc | asc, desc |
-| page | number | 1 | 페이지 번호 |
-| limit | number | 20 | 페이지 크기 |
+
+| 파라미터 | 타입   | 기본값    | 설명                        |
+| -------- | ------ | --------- | --------------------------- |
+| status   | string | all       | writing, completed          |
+| genre    | string | all       | fantasy, romance, ...       |
+| sort     | string | updatedAt | updatedAt, createdAt, title |
+| order    | string | desc      | asc, desc                   |
+| page     | number | 1         | 페이지 번호                 |
+| limit    | number | 20        | 페이지 크기                 |
 
 **Response:** `200 OK`
 
@@ -199,17 +208,6 @@ Authorization: Bearer {accessToken}
 
 **Response:** `201 Created`
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "title": "새 작품 제목",
-    ...
-  }
-}
-```
-
 ### 2.3 GET /api/projects/:id/stats
 
 **Response:** `200 OK`
@@ -249,10 +247,11 @@ Authorization: Bearer {accessToken}
 ### 3.1 GET /api/projects/:pid/documents
 
 **Query Parameters:**
-| 파라미터 | 타입 | 기본값 | 설명 |
-| -------- | ------- | ------ | -------------------- |
-| tree | boolean | true | 트리 구조로 반환 |
-| type | string | all | folder, text |
+
+| 파라미터 | 타입    | 기본값 | 설명             |
+| -------- | ------- | ------ | ---------------- |
+| tree     | boolean | true   | 트리 구조로 반환 |
+| type     | string  | all    | folder, text     |
 
 **Response:** `200 OK` (tree=true)
 
@@ -271,10 +270,8 @@ Authorization: Bearer {accessToken}
           "type": "text",
           "title": "1장",
           "order": 0,
-          "metadata": {
-            "status": "draft",
-            "wordCount": 2340
-          },
+          "status": "draft",
+          "wordCount": 2340,
           "children": []
         }
       ]
@@ -282,6 +279,8 @@ Authorization: Bearer {accessToken}
   ]
 }
 ```
+
+> ⚠️ **Note**: 백엔드는 `type`을 대문자로 반환할 수 있음 (`FOLDER`, `TEXT`). 프론트엔드에서 lowercase 변환 필요.
 
 ### 3.2 POST /api/projects/:pid/documents
 
@@ -321,6 +320,8 @@ Authorization: Bearer {accessToken}
   }
 }
 ```
+
+> ⚠️ **Note**: `wordCount`는 백엔드에서 content 저장 시 자동 계산됨. 프론트엔드에서 직접 업데이트하면 **실패함**.
 
 ### 3.4 POST /api/documents/reorder
 
@@ -417,19 +418,6 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-### 5.2 POST /api/relationships
-
-**Request:**
-
-```json
-{
-  "sourceId": "char1",
-  "targetId": "char2",
-  "type": "hostile",
-  "strength": 7
-}
-```
-
 ---
 
 ## 6. 복선 (Foreshadowing)
@@ -448,10 +436,11 @@ Authorization: Bearer {accessToken}
 ### 6.1 GET /api/projects/:pid/foreshadowing
 
 **Query Parameters:**
-| 파라미터 | 타입 | 기본값 | 설명 |
-| -------- | ------ | ------ | ------------------------- |
-| status | string | all | pending, recovered, ignored |
-| importance | string | all | major, minor |
+
+| 파라미터   | 타입   | 기본값 | 설명                        |
+| ---------- | ------ | ------ | --------------------------- |
+| status     | string | all    | pending, recovered, ignored |
+| importance | string | all    | major, minor                |
 
 **Response:** `200 OK`
 
@@ -479,20 +468,6 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-### 6.2 PATCH /api/foreshadowing/:id/recover
-
-**Request:**
-
-```json
-{
-  "sceneId": "uuid",
-  "chapterId": "uuid",
-  "chapterTitle": "5장",
-  "line": 156,
-  "context": "드디어 검의 진정한 힘이 깨어났다."
-}
-```
-
 ---
 
 ## 7. 장소 (Places)
@@ -515,16 +490,6 @@ Authorization: Bearer {accessToken}
 | PATCH  | `/api/items/:id`           | ✅   | 아이템 수정 |
 | DELETE | `/api/items/:id`           | ✅   | 아이템 삭제 |
 | PATCH  | `/api/items/:id/transfer`  | ✅   | 소유자 변경 |
-
-### 8.1 PATCH /api/items/:id/transfer
-
-**Request:**
-
-```json
-{
-  "newOwnerId": "character-uuid"
-}
-```
 
 ---
 
@@ -565,7 +530,7 @@ Authorization: Bearer {accessToken}
 }
 ```
 
-### 9.2 GET /api/exports/:jobId
+### 9.2 GET /api/exports/:jobId (Job Polling)
 
 **Response:** `200 OK`
 
@@ -575,11 +540,21 @@ Authorization: Bearer {accessToken}
   "data": {
     "jobId": "uuid",
     "status": "completed",
+    "progress": 100,
     "downloadUrl": "https://...",
     "expiresAt": "2024-12-25T01:00:00Z"
   }
 }
 ```
+
+**Job Status 값:**
+
+| Status       | 설명    |
+| ------------ | ------- |
+| `pending`    | 대기 중 |
+| `processing` | 처리 중 |
+| `completed`  | 완료    |
+| `failed`     | 실패    |
 
 ---
 
@@ -591,30 +566,6 @@ Authorization: Bearer {accessToken}
 | GET    | `/api/projects/:id/share` | ✅   | 공유 설정 조회 |
 | DELETE | `/api/projects/:id/share` | ✅   | 공유 비활성화  |
 | GET    | `/api/share/:shareId`     | ❌   | 공유 작품 조회 |
-
-### 10.1 POST /api/projects/:id/share
-
-**Request:**
-
-```json
-{
-  "expiresIn": "7d",
-  "password": "optional-password"
-}
-```
-
-**Response:** `201 Created`
-
-```json
-{
-  "success": true,
-  "data": {
-    "shareId": "abc123",
-    "shareUrl": "https://stolink.com/share/abc123",
-    "expiresAt": "2025-01-01T00:00:00Z"
-  }
-}
-```
 
 ---
 
@@ -709,9 +660,10 @@ Authorization: Bearer {accessToken}
 
 ## 버전 이력
 
-| 버전 | 날짜       | 변경 내용                     |
-| ---- | ---------- | ----------------------------- |
-| 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의 |
+| 버전 | 날짜       | 변경 내용                                                                  |
+| ---- | ---------- | -------------------------------------------------------------------------- |
+| 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의                                              |
+| 1.1  | 2025.12.26 | Job Polling 상태값 문서화, wordCount 백엔드 계산 명시, 응답 형식 대안 추가 |
 
 ---
 

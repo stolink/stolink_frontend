@@ -308,7 +308,7 @@ export default function LibraryPage() {
                   className="flex items-center hover:opacity-80 transition-opacity"
                 >
                   <img
-                    src="/src/assets/main_logo.png"
+                    src="/assets/main_logo.png"
                     alt="Sto-Link"
                     className="h-16 w-auto"
                   />
