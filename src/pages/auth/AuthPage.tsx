@@ -107,7 +107,7 @@ export default function AuthPage() {
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center mb-8">
           <img
-            src="/src/assets/main_logo.png"
+            src="/assets/main_logo.png"
             alt="Sto-Link"
             className="h-24 w-auto"
           />

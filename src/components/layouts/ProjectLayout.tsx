@@ -139,7 +139,7 @@ export function ProjectLayout() {
               </button>
               <div className="h-6 w-px bg-stone-200" />
               <img
-                src="/src/assets/main_logo.png"
+                src="/assets/main_logo.png"
                 alt="Sto-Link"
                 className="h-12 w-auto"
               />
