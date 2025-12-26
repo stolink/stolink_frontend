@@ -14,6 +14,7 @@ import type {
 import {
   documentService,
   mapBackendToFrontend,
+  type BackendDocument,
 } from "@/services/documentService";
 
 /**
@@ -25,17 +26,13 @@ export function useDocumentTree(projectId: string) {
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
     queryKey: ["documents", projectId],
     queryFn: async () => {
-      console.log(
-        "[useDocumentTree] Fetching documents for project:",
-        projectId
-      );
       try {
         const response = await documentService.getTree(projectId);
         const backendDocs = response.data || [];
 
         // Flatten nested tree structure into a flat array
-        const flattenTree = (docs: any[]): any[] => {
-          const result: any[] = [];
+        const flattenTree = (docs: BackendDocument[]): BackendDocument[] => {
+          const result: BackendDocument[] = [];
           for (const doc of docs) {
             result.push(doc);
             if (doc.children && doc.children.length > 0) {
@@ -46,22 +43,15 @@ export function useDocumentTree(projectId: string) {
         };
 
         const flatDocs = flattenTree(backendDocs);
-        console.log(
-          "[useDocumentTree] Fetched documents:",
-          flatDocs.length,
-          flatDocs.map((d: any) => ({
-            id: d.id?.substring(0, 8),
-            title: d.title,
-            type: d.type,
-            parentId: d.parentId?.substring(0, 8),
-          }))
-        );
+
         // Convert backend documents to frontend format
         return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
-        console.log("[useDocumentTree] Fetch error:", error);
         // 404 means no documents yet - this is normal for new projects
-        if ((error as any)?.response?.status === 404) {
+        if (
+          (error as { response?: { status?: number } })?.response?.status ===
+          404
+        ) {
           return [];
         }
         throw error;
@@ -72,7 +62,9 @@ export function useDocumentTree(projectId: string) {
     refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
-      if ((error as any)?.response?.status === 404) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 404
+      ) {
         return false;
       }
       return failureCount < 3;
@@ -82,11 +74,6 @@ export function useDocumentTree(projectId: string) {
   // Sync fetched documents to Zustand store
   useEffect(() => {
     if (fetchedDocuments && fetchedDocuments.length > 0) {
-      console.log(
-        "[useDocumentTree] Syncing to store:",
-        fetchedDocuments.length,
-        "docs"
-      );
       _syncProjectDocuments(projectId, fetchedDocuments);
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
@@ -107,15 +94,6 @@ export function useDocumentTree(projectId: string) {
       : storeDocuments;
 
   const tree = buildTree(documents);
-
-  console.log("[useDocumentTree] Returning:", {
-    projectId,
-    fetchedDocsCount: fetchedDocuments?.length,
-    storeDocsCount: storeDocuments.length,
-    finalDocsCount: documents.length,
-    treeLength: tree.length,
-    isFetching,
-  });
 
   return {
     documents,
@@ -197,7 +175,10 @@ export function useDocumentContent(id: string | null) {
         return null;
       } catch (error) {
         // 404 means content not found - use local cache
-        if ((error as any)?.response?.status === 404) {
+        if (
+          (error as { response?: { status?: number } })?.response?.status ===
+          404
+        ) {
           return null;
         }
         throw error;
@@ -208,7 +189,9 @@ export function useDocumentContent(id: string | null) {
     refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
-      if ((error as any)?.response?.status === 404) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 404
+      ) {
         return false;
       }
       return failureCount < 3;
@@ -218,11 +201,6 @@ export function useDocumentContent(id: string | null) {
   // Sync fetched content to Zustand store
   useEffect(() => {
     if (id && fetchedContent !== undefined && fetchedContent !== null) {
-      console.log("[useDocumentContent] Syncing fetched content to store:", {
-        id,
-        contentLength: fetchedContent?.length,
-        preview: fetchedContent?.substring(0, 100),
-      });
       _setContent(id, fetchedContent);
     }
   }, [id, fetchedContent, _setContent]);
@@ -232,15 +210,6 @@ export function useDocumentContent(id: string | null) {
     fetchedContent !== undefined && fetchedContent !== null
       ? fetchedContent
       : storeContent;
-
-  console.log("[useDocumentContent] Returning content:", {
-    id,
-    fetchedContent: fetchedContent?.substring(0, 50),
-    storeContent: storeContent?.substring(0, 50),
-    finalContent: content?.substring(0, 50),
-    isLoading,
-    isFetching,
-  });
 
   const saveContent = useCallback(
     async (newContent: string) => {
@@ -344,17 +313,15 @@ export function useDocumentMutations(projectId: string) {
           queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
           return frontendDoc;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(
           "[useDocumentMutations] Failed to create document:",
           error
         );
 
         // Fallback to local-only creation if backend fails
-        if (
-          error?.response?.status === 500 ||
-          error?.response?.status === 404
-        ) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 500 || err?.response?.status === 404) {
           const localDocumentRepository =
             await import("@/repositories/LocalDocumentRepository").then(
               (m) => m.localDocumentRepository

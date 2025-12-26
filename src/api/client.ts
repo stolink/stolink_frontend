@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -21,7 +21,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor: Handle 401
@@ -34,7 +34,7 @@ api.interceptors.response.use(
       window.location.href = "/auth";
     }
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

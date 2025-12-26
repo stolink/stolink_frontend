@@ -205,6 +205,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Auto-select first folder when documents load (one-time initialization)
   /* eslint-disable react-hooks/set-state-in-effect */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (isDemo || documents.length === 0) return;
     if (!selectedFolderId) {
@@ -215,6 +216,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   }, [isDemo, documents.length > 0]); // Only run when documents first load
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (isDemo || documents.length === 0) return;
     if (!selectedSectionId) {
@@ -239,6 +241,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       }
     }
   }, [isDemo, selectedFolderId, documents.length > 0]);
+
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // ============================================================
@@ -348,7 +351,33 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     _updateType(id, type === "chapter" ? "folder" : "text");
   };
 
-  const handleSelectFolder = (id: string) => {
+  // Force save current content immediately
+  const forceSave = async () => {
+    if (isDemo || !selectedSectionIdRef.current) return;
+
+    // Clear pending debounce
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    // Save if we have content
+    if (lastContentRef.current && saveContentRef.current) {
+      console.log("[EditorPage] Force saving before switch/unmount");
+      try {
+        await saveContentRef.current(lastContentRef.current);
+        // Reset content ref after save to prevent double saving (optional, but safer)
+        // lastContentRef.current = "";
+      } catch (error) {
+        console.error("[EditorPage] Force save failed:", error);
+      }
+    }
+  };
+
+  const handleSelectFolder = async (id: string) => {
+    // Force save before switching context
+    await forceSave();
+
     // Find the document
     const doc = documents.find((d) => d.id === id);
     if (!doc) {
@@ -390,7 +419,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   };
 
-  const handleSelectSection = (id: string) => {
+  const handleSelectSection = async (id: string) => {
+    // Force save before switching section
+    if (selectedSectionId !== id) {
+      await forceSave();
+    }
     setSelectedSectionId(id);
   };
 
@@ -624,7 +657,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                             editedTitle !== currentSectionTitle
                           ) {
                             if (selectedSectionId) {
-                              updateDocument(selectedSectionId, {
+                              updateDocument({
                                 title: editedTitle.trim(),
                               });
                             }
@@ -638,7 +671,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                               editedTitle !== currentSectionTitle
                             ) {
                               if (selectedSectionId) {
-                                updateDocument(selectedSectionId, {
+                                updateDocument({
                                   title: editedTitle.trim(),
                                 });
                               }
