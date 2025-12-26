@@ -18,7 +18,7 @@ import {
 import { EditorToolbar } from "./EditorToolbar";
 
 interface ScriveningsEditorProps {
-  folderId: string;
+  folderId: string | null;
   projectId: string;
   onUpdate?: (totalCount: number) => void;
 }
@@ -45,8 +45,9 @@ export default function ScriveningsEditor({
       .join("");
   }, [documents]);
 
-  const editor = useEditor({
-    extensions: [
+  // Memoize extensions to prevent duplicate registration
+  const extensions = useMemo(
+    () => [
       StarterKit,
       SectionDivider,
       Placeholder.configure({
@@ -59,64 +60,84 @@ export default function ScriveningsEditor({
       CharacterMention,
       SlashCommandExtension,
     ],
-    content: getCombinedContent(),
-    editorProps: {
-      attributes: {
-        class: cn(
-          "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
-        ),
-        spellcheck: "false",
+    [] // Empty deps - extensions are static
+  );
+
+  const editor = useEditor(
+    {
+      extensions,
+      content: getCombinedContent(),
+      editorProps: {
+        attributes: {
+          class: cn(
+            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8"
+          ),
+          spellcheck: "false",
+        },
+      },
+      onUpdate: ({ editor }) => {
+        if (onUpdate) {
+          onUpdate(editor.storage.characterCount.characters());
+        }
+
+        // Bulk Save logic
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        saveTimeoutRef.current = setTimeout(saveAll, 1000);
       },
     },
-    onUpdate: ({ editor }) => {
-      if (onUpdate) {
-        onUpdate(editor.storage.characterCount.characters());
-      }
+    [extensions] // Add dependency array to prevent recreation
+  );
 
-      // Bulk Save logic
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+  const saveAll = useCallback(async () => {
+    if (!editor) return;
+    try {
+      const html = editor.getHTML();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const dividers = doc.querySelectorAll('div[data-type="section-divider"]');
+      const updates: Record<string, string> = {};
 
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          const html = editor.getHTML();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, "text/html");
-          const dividers = doc.querySelectorAll(
-            'div[data-type="section-divider"]',
-          );
-          const updates: Record<string, string> = {};
+      dividers.forEach((divider) => {
+        const docId = divider.getAttribute("data-document-id");
+        if (!docId) return;
 
-          dividers.forEach((divider) => {
-            const docId = divider.getAttribute("data-document-id");
-            if (!docId) return;
-
-            let content = "";
-            let next = divider.nextElementSibling;
-            while (
-              next &&
-              next.getAttribute("data-type") !== "section-divider"
-            ) {
-              content += next.outerHTML;
-              next = next.nextElementSibling;
-            }
-            updates[docId] = content;
-          });
-
-          if (Object.keys(updates).length > 0) {
-            await bulkSaveContent(updates);
-          }
-        } catch (error) {
-          console.error("[ScriveningsEditor] Failed to save content:", error);
+        let content = "";
+        let next = divider.nextElementSibling;
+        while (next && next.getAttribute("data-type") !== "section-divider") {
+          content += next.outerHTML;
+          next = next.nextElementSibling;
         }
-      }, 1000);
-    },
-  });
+        updates[docId] = content;
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await bulkSaveContent(updates);
+      }
+    } catch (error) {
+      console.error("[ScriveningsEditor] Failed to save content:", error);
+    }
+  }, [editor, bulkSaveContent, onUpdate]);
+
+  // Ctrl+S Manual Save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveAll();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [saveAll]);
 
   // Update editor content when hierarchy changes
 
   const documentIds = useMemo(
     () => documents.map((c) => c.id).join(","),
-    [documents],
+    [documents]
   );
 
   useEffect(() => {

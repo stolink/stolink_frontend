@@ -111,22 +111,38 @@ export const useDocumentStore = create<DocumentStore>()(
 
       _syncProjectDocuments: (projectId, documents) => {
         set((state) => {
-          // 1. Remove all existing documents for this project
-          Object.keys(state.documents).forEach((key) => {
-            if (state.documents[key].projectId === projectId) {
-              delete state.documents[key];
+          // 1. Identify IDs of documents being synced
+          const incomingIds = new Set(documents.map((d) => d.id));
+
+          // 2. Remove documents for this project that are NO LONGER in the project tree
+          Object.keys(state.documents).forEach((id) => {
+            if (
+              state.documents[id].projectId === projectId &&
+              !incomingIds.has(id)
+            ) {
+              delete state.documents[id];
             }
           });
 
-          // 2. Add new documents
+          // 3. Update or add documents, preserving content/metadata if missing in fetch
           documents.forEach((doc) => {
-            state.documents[doc.id] = doc;
+            const existing = state.documents[doc.id];
+            state.documents[doc.id] = {
+              ...existing,
+              ...doc,
+              // Critical: fetch from tree often lacks content. Preserve it if we have it locally.
+              content: doc.content || existing?.content || "",
+              metadata: {
+                ...existing?.metadata,
+                ...doc.metadata,
+              },
+            };
           });
         });
       },
     })),
-    { name: "sto-link-documents" },
-  ),
+    { name: "sto-link-documents" }
+  )
 );
 
 // Repository implementation
@@ -149,21 +165,21 @@ export class LocalDocumentRepository implements IDocumentRepository {
 
   async getChildren(
     parentId: string | null,
-    projectId: string,
+    projectId: string
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     return Object.values(documents)
       .filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined),
+          doc.parentId === (parentId ?? undefined)
       )
       .sort((a, b) => a.order - b.order);
   }
 
   async getAllDescendants(
     parentId: string,
-    projectId: string,
+    projectId: string
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     const result: Document[] = [];
@@ -172,7 +188,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     const traverse = (currentId: string) => {
       const children = Object.values(documents)
         .filter(
-          (doc) => doc.projectId === projectId && doc.parentId === currentId,
+          (doc) => doc.projectId === projectId && doc.parentId === currentId
         )
         .sort((a, b) => a.order - b.order);
 
@@ -200,43 +216,41 @@ export class LocalDocumentRepository implements IDocumentRepository {
   }
 
   async create(input: CreateDocumentInput): Promise<Document> {
-    const store = this.getStore();
-
-    // Calculate order
-    const siblings = Object.values(store.documents).filter(
-      (doc) =>
-        doc.projectId === input.projectId && doc.parentId === input.parentId,
+    throw new Error(
+      "Local document creation is not supported. Use backend mutation."
     );
-    const order = siblings.length;
-
-    const now = new Date().toISOString();
-    const newDoc: Document = {
-      id: generateId(),
-      projectId: input.projectId,
-      parentId: input.parentId,
-      type: input.type,
-      title: input.title,
-      content: "",
-      synopsis: input.synopsis || "",
-      order,
-      metadata: {
-        ...createDefaultMetadata(),
-        targetWordCount: input.targetWordCount,
-      },
-      characterIds: [],
-      foreshadowingIds: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    store._create(newDoc);
-    return newDoc;
   }
 
   async update(id: string, input: UpdateDocumentInput): Promise<Document> {
     const store = this.getStore();
     const doc = store.documents[id];
-    if (!doc) throw new Error(`Document not found: ${id}`);
+    if (!doc) {
+      // Document not in local store - this happens when backend documents aren't synced locally yet
+      console.warn(
+        `[LocalDocumentRepository] Document not found in local store: ${id}. Skipping local update.`
+      );
+      // Return a minimal document to satisfy the interface
+      return {
+        id,
+        projectId: "",
+        type: "text",
+        title: "",
+        content: "",
+        synopsis: "",
+        order: 0,
+        metadata: {
+          status: "draft",
+          wordCount: 0,
+          includeInCompile: true,
+          keywords: [],
+          notes: "",
+        },
+        characterIds: [],
+        foreshadowingIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
 
     const updates: Partial<Document> = {};
     if (input.title !== undefined) updates.title = input.title;

@@ -15,54 +15,10 @@ import { ContextMenu, type MenuItemType } from "./ContextMenu";
 import { type ChapterNode, type ChapterTreeProps } from "./types";
 
 // 기본 Mock 데이터
-const defaultChapters: ChapterNode[] = [
-  {
-    id: "part-1",
-    title: "1부: 여정의 시작",
-    type: "part",
-    children: [
-      {
-        id: "chapter-1-1",
-        title: "1.1 운명의 밤",
-        type: "chapter",
-        characterCount: 2340,
-        status: "done",
-      },
-      {
-        id: "chapter-1-2",
-        title: "1.2 첫 만남",
-        type: "chapter",
-        characterCount: 1890,
-        status: "inProgress",
-      },
-      {
-        id: "chapter-1-3",
-        title: "1.3 시련",
-        type: "chapter",
-        characterCount: 0,
-        isPlot: true,
-        status: "todo",
-      },
-    ],
-  },
-  {
-    id: "part-2",
-    title: "2부: 성장",
-    type: "part",
-    children: [
-      {
-        id: "chapter-2-1",
-        title: "2.1 수련",
-        type: "chapter",
-        characterCount: 3200,
-        status: "revised",
-      },
-    ],
-  },
-];
+// defaultChapters removed
 
 export function ChapterTree({
-  chapters: initialChapters = defaultChapters,
+  chapters: initialChapters = [],
   selectedChapterId,
   onSelectChapter,
   onAddChapter,
@@ -74,7 +30,7 @@ export function ChapterTree({
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"chapter" | "section">(
-    "chapter",
+    "chapter"
   );
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
@@ -96,7 +52,7 @@ export function ChapterTree({
     onAddChapter?.(
       newChapterTitle.trim(),
       addingToParent || undefined,
-      addingType,
+      addingType
     );
     setNewChapterTitle("");
     setIsAdding(false);
@@ -105,7 +61,7 @@ export function ChapterTree({
 
   const handleStartAddChild = (
     parentId: string,
-    type: "chapter" | "section" = "chapter",
+    type: "chapter" | "section" = "chapter"
   ) => {
     setAddingToParent(parentId);
     setAddingType(type);

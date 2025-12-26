@@ -4,6 +4,7 @@ import {
   type Project,
   type ProjectListParams,
 } from "@/services/projectService";
+import { useAuthStore } from "@/stores";
 
 // Query Keys
 export const projectKeys = {
@@ -20,12 +21,16 @@ export const projectKeys = {
  * Hook for fetching project list with filters
  */
 export function useProjects(params?: ProjectListParams) {
+  const { user, isAuthenticated, hasHydrated } = useAuthStore();
+
   return useQuery({
     queryKey: projectKeys.list(params),
     queryFn: async () => {
       const response = await projectService.getAll(params);
       return response.data;
     },
+    // Only fetch after hydration is complete and user is authenticated
+    enabled: hasHydrated && isAuthenticated && !!user?.id,
   });
 }
 

@@ -6,7 +6,7 @@ import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Bold, Italic, Clapperboard, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -55,9 +55,9 @@ export default function TiptapEditor({
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
 
-  const editor = useEditor({
-    editable: !readOnly,
-    extensions: [
+  // Memoize extensions to prevent duplicate registration
+  const extensions = useMemo(() => {
+    const exts = [
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3],
@@ -76,43 +76,53 @@ export default function TiptapEditor({
       Underline,
       CharacterMention,
       SlashCommandExtension,
-    ],
-    content: initialContent || DEFAULT_CONTENT,
-    editorProps: {
-      attributes: {
-        class: cn(
-          // Remove prose class - use direct styling for full width
-          "w-full",
-          "focus:outline-none min-h-[500px] px-6 py-6",
-          readOnly && "pointer-events-none opacity-80",
-        ),
-        spellcheck: "false",
-      },
-      handleDOMEvents: {
-        beforeinput: () => {
-          if (editorContainerRef.current) {
-            scrollPositionRef.current = editorContainerRef.current.scrollTop;
-          }
-          return false;
+    ];
+
+    return exts;
+  }, []); // Empty deps - extensions are static
+
+  const editor = useEditor(
+    {
+      editable: !readOnly,
+      extensions,
+      content: initialContent || DEFAULT_CONTENT,
+      editorProps: {
+        attributes: {
+          class: cn(
+            // Remove prose class - use direct styling for full width
+            "w-full",
+            "focus:outline-none min-h-[500px] px-6 py-6",
+            readOnly && "pointer-events-none opacity-80"
+          ),
+          spellcheck: "false",
+        },
+        handleDOMEvents: {
+          beforeinput: () => {
+            if (editorContainerRef.current) {
+              scrollPositionRef.current = editorContainerRef.current.scrollTop;
+            }
+            return false;
+          },
         },
       },
-    },
-    onUpdate: ({ editor }) => {
-      if (onUpdate) {
-        onUpdate(editor.storage.characterCount.characters());
-      }
-      if (onContentChange) {
-        onContentChange(editor.getHTML());
-      }
-    },
-    onTransaction: () => {
-      requestAnimationFrame(() => {
-        if (editorContainerRef.current && scrollPositionRef.current > 0) {
-          editorContainerRef.current.scrollTop = scrollPositionRef.current;
+      onUpdate: ({ editor }) => {
+        if (onUpdate) {
+          onUpdate(editor.storage.characterCount.characters());
         }
-      });
+        if (onContentChange) {
+          onContentChange(editor.getHTML());
+        }
+      },
+      onTransaction: () => {
+        requestAnimationFrame(() => {
+          if (editorContainerRef.current && scrollPositionRef.current > 0) {
+            editorContainerRef.current.scrollTop = scrollPositionRef.current;
+          }
+        });
+      },
     },
-  });
+    [extensions] // Add dependency array to prevent recreation
+  );
 
   // Smooth zoom with bounds
   const adjustZoom = useCallback((delta: number) => {
@@ -170,7 +180,12 @@ export default function TiptapEditor({
   useEffect(() => {
     if (editor && initialContent !== undefined) {
       const currentHTML = editor.getHTML();
-      if (currentHTML !== initialContent) {
+      const isDifferent = currentHTML !== initialContent;
+      const isFocused = editor.isFocused;
+
+      // Only update if content is different AND editor is not focused
+      // If focused, we assume the user is typing and we shouldn't overwrite with old server data
+      if (isDifferent && !isFocused) {
         editor.commands.setContent(initialContent);
       }
     }
@@ -223,7 +238,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("bold") && "bg-stone-100",
+              editor.isActive("bold") && "bg-stone-100"
             )}
           >
             <Bold className="w-3.5 h-3.5" />
@@ -234,7 +249,7 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("italic") && "bg-stone-100",
+              editor.isActive("italic") && "bg-stone-100"
             )}
           >
             <Italic className="w-3.5 h-3.5" />
@@ -264,7 +279,7 @@ export default function TiptapEditor({
             "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
             showZoomControls
               ? "opacity-100 px-2 py-1.5"
-              : "opacity-50 hover:opacity-100 px-2 py-1",
+              : "opacity-50 hover:opacity-100 px-2 py-1"
           )}
           onMouseEnter={() => setShowZoomControls(true)}
           onMouseLeave={() => setShowZoomControls(false)}

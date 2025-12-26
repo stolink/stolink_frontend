@@ -34,7 +34,7 @@ function htmlToText(html: string): string {
  */
 export function exportToTxt(
   documents: Document[],
-  projectTitle: string = "작품",
+  projectTitle: string = "작품"
 ): void {
   const content = documents
     .filter((doc) => doc.type === "text")
@@ -53,7 +53,7 @@ export function exportToTxt(
  */
 export function exportToMarkdown(
   documents: Document[],
-  projectTitle: string = "작품",
+  projectTitle: string = "작품"
 ): void {
   const content = documents
     .filter((doc) => doc.type === "text")
@@ -92,7 +92,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_1,
-            }),
+            })
           );
           break;
         case "h2":
@@ -100,7 +100,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_2,
-            }),
+            })
           );
           break;
         case "h3":
@@ -108,21 +108,21 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_3,
-            }),
+            })
           );
           break;
         case "p":
           paragraphs.push(
             new Paragraph({
               children: parseInlineFormatting(el),
-            }),
+            })
           );
           break;
         case "blockquote":
           paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text, italics: true })],
-            }),
+            })
           );
           break;
         case "ul":
@@ -131,7 +131,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             paragraphs.push(
               new Paragraph({
                 children: [new TextRun(`• ${li.textContent || ""}`)],
-              }),
+              })
             );
           });
           break;
@@ -190,7 +190,7 @@ function parseInlineFormatting(el: HTMLElement): TextRun[] {
  */
 export async function exportToDocx(
   documents: Document[],
-  projectTitle: string = "작품",
+  projectTitle: string = "작품"
 ): Promise<void> {
   const sections: Paragraph[] = [];
 
@@ -200,7 +200,7 @@ export async function exportToDocx(
       text: projectTitle,
       heading: HeadingLevel.TITLE,
       spacing: { after: 400 },
-    }),
+    })
   );
 
   // 각 문서를 섹션으로 추가
@@ -211,7 +211,7 @@ export async function exportToDocx(
       if (index > 0) {
         sections.push(new Paragraph({ text: "" }));
         sections.push(
-          new Paragraph({ text: "* * *", alignment: "center" as const }),
+          new Paragraph({ text: "* * *", alignment: "center" as const })
         );
         sections.push(new Paragraph({ text: "" }));
       }
@@ -222,7 +222,7 @@ export async function exportToDocx(
           text: doc.title,
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 200, after: 200 },
-        }),
+        })
       );
 
       // 본문
@@ -247,7 +247,7 @@ export async function exportToDocx(
  */
 export function exportToJson(
   data: Record<string, unknown>,
-  projectTitle: string = "작품",
+  projectTitle: string = "작품"
 ): void {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: "application/json;charset=utf-8" });
@@ -258,7 +258,7 @@ export function exportToJson(
  * JSON 백업 파일 가져오기
  */
 export async function importFromJson(
-  file: File,
+  file: File
 ): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -287,7 +287,7 @@ export async function importFromJson(
 export async function exportToEpub(
   documents: Document[],
   projectTitle: string = "작품",
-  author: string = "작가",
+  author: string = "작가"
 ): Promise<void> {
   // Dynamic import for browser compatibility
   const epub = (await import("epub-gen-memory/bundle")).default;
@@ -302,10 +302,9 @@ export async function exportToEpub(
   const options = {
     title: projectTitle,
     author: author,
-    content: chapters,
   };
 
-  const epubBlob = await epub(options);
+  const epubBlob = await epub(options, chapters);
   saveAs(epubBlob, `${projectTitle}.epub`);
 }
 
@@ -314,7 +313,7 @@ export async function exportToEpub(
  */
 export async function exportToPdf(
   documents: Document[],
-  projectTitle: string = "작품",
+  projectTitle: string = "작품"
 ): Promise<void> {
   // Dynamic import for html2pdf
   const html2pdf = (await import("html2pdf.js")).default;
@@ -331,7 +330,7 @@ export async function exportToPdf(
         ${index > 0 ? '<div style="page-break-before: always;"></div>' : ""}
         <h2 style="font-size: 20px; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">${doc.title}</h2>
         <div style="font-size: 14px; line-height: 1.8;">${doc.content}</div>
-      `,
+      `
         )
         .join("")}
     </div>
@@ -345,9 +344,13 @@ export async function exportToPdf(
   const options = {
     margin: 15,
     filename: `${projectTitle}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
+    image: { type: "jpeg" as const, quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    jsPDF: {
+      unit: "mm" as const,
+      format: "a4" as const,
+      orientation: "portrait" as const,
+    },
   };
 
   try {
