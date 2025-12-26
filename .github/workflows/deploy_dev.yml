@@ -72,10 +72,7 @@ jobs:
 
       - name: CloudFront Invalidation
         run: |
-          # URL을 통해 Distribution ID를 조회합니다.
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL_DEV }}'].Id | [0]" --output text)
-
-          # 캐시 무효화 실행
           aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
 
       - name: Health Check
