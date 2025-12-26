@@ -32,6 +32,7 @@ import {
 } from "@/services/documentService";
 import type { ApiResponse } from "@/types/api";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { getApiData } from "@/utils/apiUtils";
 
 import {
   DropdownMenu,
@@ -72,24 +73,11 @@ export default function LibraryPage() {
         genre: "other",
         description: "",
       });
-      console.log("[LibraryPage] Project response:", projectResponse);
-
-      const isProjectSuccess =
-        projectResponse.success ||
-        projectResponse.status === "OK" ||
-        projectResponse.status === "CREATED" ||
-        projectResponse.code === 200 ||
-        projectResponse.code === 201;
-
-      if (!isProjectSuccess || !projectResponse.data) {
-        console.error(
-          "[LibraryPage] Project creation failed:",
-          projectResponse
-        );
-        throw new Error("Failed to create project");
-      }
-
-      const projectId = projectResponse.data.id;
+      const projectData = getApiData(
+        projectResponse,
+        "Failed to create project"
+      );
+      const projectId = projectData.id;
       console.log("[LibraryPage] Project created:", projectId);
 
       // 2. Create default chapter (folder)
@@ -98,28 +86,15 @@ export default function LibraryPage() {
         type: "folder",
         title: "챕터 1",
       });
-      console.log("[LibraryPage] Chapter response:", chapterResponse);
-
-      const isChapterSuccess =
-        chapterResponse.success ||
-        chapterResponse.status === "OK" ||
-        chapterResponse.status === "CREATED" ||
-        chapterResponse.code === 200 ||
-        chapterResponse.code === 201;
-
-      if (!isChapterSuccess || !chapterResponse.data) {
-        console.error(
-          "[LibraryPage] Chapter creation failed:",
-          chapterResponse
-        );
-        throw new Error("Failed to create default chapter");
-      }
-
-      const chapterId = chapterResponse.data.id;
+      const chapterData = getApiData(
+        chapterResponse,
+        "Failed to create default chapter"
+      );
+      const chapterId = chapterData.id;
       console.log("[LibraryPage] Chapter created:", chapterId);
 
-      // Add chapter to local store (convert to frontend format)
-      _create(mapBackendToFrontend(chapterResponse.data));
+      // Add chapter to local store
+      _create(mapBackendToFrontend(chapterData));
 
       // 3. Create default section (text document)
       console.log("[LibraryPage] Creating default section...");
@@ -128,19 +103,17 @@ export default function LibraryPage() {
         title: "섹션 1",
         parentId: chapterId,
       });
-      console.log("[LibraryPage] Section response:", sectionResponse);
 
-      const isSectionSuccess =
-        sectionResponse.success ||
-        sectionResponse.status === "OK" ||
-        sectionResponse.status === "CREATED" ||
-        sectionResponse.code === 200 ||
-        sectionResponse.code === 201;
-
-      if (isSectionSuccess && sectionResponse.data) {
-        console.log("[LibraryPage] Section created:", sectionResponse.data.id);
-        // Add section to local store (convert to frontend format)
-        _create(mapBackendToFrontend(sectionResponse.data));
+      try {
+        const sectionData = getApiData(
+          sectionResponse,
+          "Failed to create section"
+        );
+        console.log("[LibraryPage] Section created:", sectionData.id);
+        _create(mapBackendToFrontend(sectionData));
+      } catch {
+        // Section creation failure is not critical
+        console.warn("[LibraryPage] Section creation failed, continuing...");
       }
 
       // 4. Navigate to editor
@@ -148,11 +121,11 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
-      if (error instanceof Error) {
-        alert(`프로젝트 생성에 실패했습니다: ${error.message}`);
-      } else {
-        alert("프로젝트 생성에 실패했습니다.");
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "프로젝트 생성에 실패했습니다.";
+      alert(message);
     } finally {
       setIsCreatingProject(false);
     }
@@ -180,32 +153,159 @@ export default function LibraryPage() {
     }
   };
 
-  const handleImportBook = async (file: File) => {
-    const rawText = await readFileWithEncoding(file);
-    const title = file.name.replace(/\.(txt|md)$/i, "");
+  // Helper: Recursive Character Text Splitter approach
+  // Splits text into chunks respecting separators to keep semantic meaning
+  const splitContentRecursively = (
+    text: string,
+    chunkSize: number = 10000,
+    overlap: number = 200
+  ): { title: string; content: string }[] => {
+    const separators = ["\n\n", "\n", ". ", " "];
+    const chunks: string[] = [];
 
-    const cleanText = (text: string): string => {
-      let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const splitText = (currentText: string) => {
+      // Base case: if text fits in chunk, just return it
+      if (currentText.length <= chunkSize) {
+        chunks.push(currentText);
+        return;
+      }
 
-      cleaned = cleaned
-        .replace(/\n{2,}/g, "<<<PARA>>>")
-        .replace(/([.!?。！？])\n(?=[^\s])/g, "$1<<<PARA>>>")
-        .replace(/\n/g, " ")
-        .replace(/<<<PARA>>>/g, "\n\n")
-        .replace(/  +/g, " ")
-        .trim();
+      // Try separators in order
+      let bestSplitIndex = -1;
+      let separatorUsed = "";
 
-      return cleaned;
+      for (const separator of separators) {
+        // Find the last occurrence of separator within the limit
+        // We want to maximize the chunk size while staying under the limit
+        const limit = chunkSize;
+        const lastIndex = currentText.lastIndexOf(separator, limit);
+
+        if (lastIndex !== -1 && lastIndex > chunkSize * 0.3) {
+          // Found a good split point (at least 30% filled)
+          bestSplitIndex = lastIndex;
+          separatorUsed = separator;
+          break;
+        }
+      }
+
+      // If no good separator found (rare, huge block of text), force split
+      if (bestSplitIndex === -1) {
+        bestSplitIndex = chunkSize;
+      }
+
+      // Add the chunk
+      const chunk = currentText.substring(
+        0,
+        bestSplitIndex + separatorUsed.length
+      );
+      chunks.push(chunk);
+
+      // Recurse on the rest
+      const remaining = currentText.substring(
+        bestSplitIndex + separatorUsed.length
+      );
+      if (remaining.trim().length > 0) {
+        splitText(remaining);
+      }
     };
 
-    const text = cleanText(rawText);
+    splitText(text);
 
-    // Convert plain text to HTML paragraphs
-    const content = text
+    return chunks.map((content, index) => ({
+      title: `Part ${index + 1}`,
+      content: content.trim(),
+    }));
+  };
+
+  // Helper: Split text into chapters based on patterns
+  const splitContentByChapters = (text: string) => {
+    // 1. Try to find explicit chapter headers
+    // Patterns: "제1장", "제 1 장", "Chapter 1", "Prologue", "프롤로그"
+    // Regex logic:
+    // (?:^|\n) matches start of file or new line
+    // \s* matches optional whitespace
+    // (Chapter\s*\d+|제\s*\d+\s*장|Prologue|Epilogue|프롤로그|에필로그) matches the chapter title
+    // .* matches rest of the title line
+    const pattern =
+      /(?:^|\n)\s*((?:Chapter|제|Section|Part)\s*\d+[^(\n)]*|Prologue|Epilogue|프롤로그|에필로그|Episode\s*\d+).*/gi;
+
+    // Check if we have enough matches to warrant splitting (at least 2, or 1 if it starts with it)
+    const matches = [...text.matchAll(pattern)];
+
+    if (matches.length < 2) {
+      return null;
+    }
+
+    const segments: { title: string; content: string }[] = [];
+    let lastIndex = 0;
+
+    matches.forEach((match, i) => {
+      const matchIndex = match.index!;
+      const matchLength = match[0].length;
+      const title = match[1].trim();
+
+      // Content before the first chapter (e.g. title page, intro)
+      if (i === 0 && matchIndex > 0) {
+        const introContent = text.substring(0, matchIndex).trim();
+        if (introContent) {
+          segments.push({ title: "Intro", content: introContent });
+        }
+      }
+
+      // Content for the current chapter
+      // It goes from end of this match line to start of next match line
+      const contentStart = matchIndex + matchLength;
+      const nextMatch = matches[i + 1];
+      const contentEnd = nextMatch ? nextMatch.index! : text.length;
+
+      const content = text.substring(contentStart, contentEnd).trim();
+      segments.push({ title, content });
+
+      lastIndex = contentEnd;
+    });
+
+    return segments;
+  };
+
+  const cleanText = (text: string): string => {
+    let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    cleaned = cleaned
+      .replace(/\n{2,}/g, "<<<PARA>>>")
+      .replace(/([.!?。！？])\n(?=[^\s])/g, "$1<<<PARA>>>")
+      .replace(/\n/g, " ")
+      .replace(/<<<PARA>>>/g, "\n\n")
+      .replace(/  +/g, " ")
+      .trim();
+
+    return cleaned;
+  };
+
+  const processContentToHtml = (text: string) => {
+    const cleaned = cleanText(text);
+    return cleaned
       .split("\n\n")
       .filter((p) => p.trim())
       .map((p) => `<p>${p.trim()}</p>`)
       .join("");
+  };
+
+  const handleImportBook = async (file: File) => {
+    const rawText = await readFileWithEncoding(file);
+    const title = file.name.replace(/\.(txt|md)$/i, "");
+
+    // 1. Try Chapter Splitting
+    let segments = splitContentByChapters(rawText);
+
+    // 2. If no chapters, try Recursive Semantic Splitting if text is large (>30k chars)
+    if (!segments && rawText.length > 30000) {
+      console.log(
+        "[Import] No explicit chapters found. Using semantic splitter."
+      );
+      segments = splitContentRecursively(rawText);
+    }
+
+    const hasSegments = segments && segments.length > 0;
 
     try {
       const { _create, _setContent } = useDocumentStore.getState();
@@ -217,53 +317,81 @@ export default function LibraryPage() {
         description: `${file.name}에서 가져온 책`,
       });
 
-      const isProjectSuccess =
-        projectResponse.success ||
-        projectResponse.status === "OK" ||
-        projectResponse.status === "CREATED" ||
-        projectResponse.code === 200 ||
-        projectResponse.code === 201;
+      const projectId = projectResponse.data?.id;
+      if (!projectId) throw new Error("Failed to create project");
 
-      if (!isProjectSuccess || !projectResponse.data) {
-        throw new Error("Failed to create project");
+      // 2. Import Logic
+      if (hasSegments) {
+        console.log(`[Import] Imported as ${segments!.length} segments.`);
+
+        // Use sequential execution to preserve order and prevent race conditions
+        for (const [index, segment] of segments!.entries()) {
+          // A. Create Folder (Chapter/Part)
+          const folderRes = await documentService.create(projectId, {
+            type: "folder",
+            title: segment.title,
+          });
+          const folderId = folderRes.data?.id;
+          if (!folderId) continue;
+
+          _create(mapBackendToFrontend(folderRes.data!));
+
+          // B. Create Document (Content) inside Folder
+          const chunkHtml = processContentToHtml(segment.content);
+
+          const docRes = await documentService.create(projectId, {
+            type: "text",
+            title: "본문", // Standard name for section inside chapter
+            parentId: folderId,
+            targetWordCount: segment.content.length,
+          });
+
+          const docId = docRes.data?.id;
+          if (docId) {
+            _create(mapBackendToFrontend(docRes.data!));
+            await documentService.updateContent(docId, chunkHtml);
+            _setContent(docId, chunkHtml);
+          }
+        }
+      } else {
+        // Fallback: Single Document Import
+        console.log("[Import] Importing as single file.");
+        const fullContent = processContentToHtml(rawText);
+
+        const docResponse = await documentService.create(projectId, {
+          type: "text",
+          title: "본문",
+          targetWordCount: rawText.length,
+        });
+
+        const docId = docResponse.data?.id;
+        if (!docId) throw new Error("Failed to create document");
+
+        _create(mapBackendToFrontend(docResponse.data!));
+        await documentService.updateContent(docId, fullContent);
+        _setContent(docId, fullContent);
       }
 
-      const projectId = projectResponse.data.id;
-
-      // 2. Create Document (Chapter)
-      const docResponse = await documentService.create(projectId, {
-        type: "text",
-        title: "본문",
-        targetWordCount: text.length,
-      });
-
-      const isDocSuccess =
-        docResponse.success ||
-        docResponse.status === "OK" ||
-        docResponse.status === "CREATED" ||
-        docResponse.code === 200 ||
-        docResponse.code === 201;
-
-      if (!isDocSuccess || !docResponse.data) {
-        throw new Error("Failed to create document");
-      }
-
-      const docId = docResponse.data.id;
-
-      // Add document to local store (convert to frontend format)
-      _create(mapBackendToFrontend(docResponse.data));
-
-      // 3. Update Content
-      await documentService.updateContent(docId, content);
-
-      // Update content in local store as well
-      _setContent(docId, content);
-
-      // 4. Navigate
+      // 3. Navigate
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("Import failed:", error);
-      alert("가져오기에 실패했습니다.");
+
+      // Handle QuotaExceededError specifically
+      if (
+        error instanceof DOMException &&
+        (error.name === "QuotaExceededError" ||
+          error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+      ) {
+        alert(
+          "저장 용량이 부족합니다. 파일이 너무 크거나 브라우저 저장 공간이 가득 찼습니다."
+        );
+      } else {
+        alert(
+          "가져오기에 실패했습니다: " +
+            (error instanceof Error ? error.message : "알 수 없는 오류")
+        );
+      }
     }
   };
 
