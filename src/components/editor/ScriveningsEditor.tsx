@@ -117,7 +117,7 @@ export default function ScriveningsEditor({
     } catch (error) {
       console.error("[ScriveningsEditor] Failed to save content:", error);
     }
-  }, [editor, bulkSaveContent]);
+  }, [editor, bulkSaveContent, onUpdate]);
 
   // Ctrl+S Manual Save
   useEffect(() => {

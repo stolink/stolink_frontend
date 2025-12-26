@@ -136,9 +136,10 @@ export const documentService = {
       ...(payload.metadata?.labelColor && {
         labelColor: payload.metadata.labelColor,
       }),
-      ...(payload.metadata?.wordCount !== undefined && {
-        wordCount: payload.metadata.wordCount,
+      ...(payload.metadata?.labelColor && {
+        labelColor: payload.metadata.labelColor,
       }),
+      // Remove wordCount override - it should be calculated by backend or updateContent only
       ...(payload.metadata?.targetWordCount !== undefined && {
         targetWordCount: payload.metadata.targetWordCount,
       }),

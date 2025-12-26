@@ -38,8 +38,9 @@ export default function SectionStrip({
 }: SectionStripProps) {
   // 1. Fetch data based on mode
   const { documents } = useDocumentTree(projectId);
-  const { children: sectionDocuments } = useChildDocuments(
-    selectedFolderId,
+  // Fetch sections (child documents) for the selected folder
+  const { children: sectionDocuments, isLoading } = useChildDocuments(
+    selectedFolderId ?? undefined, // Handle null by passing undefined
     projectId
   );
 
@@ -122,7 +123,11 @@ export default function SectionStrip({
         ref={scrollRef}
         className="flex items-stretch gap-3 px-4 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300"
       >
-        {sections.length === 0 ? (
+        {!selectedFolderId ? (
+          <div className="w-full h-24 flex items-center justify-center text-stone-400 text-sm">
+            폴더를 선택해주세요
+          </div>
+        ) : sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-4 text-center">
             <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-2">
               <FileText className="w-5 h-5 text-stone-300" />

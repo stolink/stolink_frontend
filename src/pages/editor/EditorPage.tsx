@@ -427,24 +427,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     updateDocumentRef.current = updateDocument;
   }, [updateDocument]);
 
-  // Handle character count update and sync to document metadata
-  // Using refs to prevent callback recreation on every section change
+  // Handle character count update for UI display only
+  // wordCount is calculated by backend when content is saved, so we don't need to update it manually
   const handleCharacterCountChange = useCallback((count: number) => {
     setCharacterCount(count);
-
-    // Update document wordCount with debounce (1s to avoid too many updates)
-    if (selectedSectionIdRef.current) {
-      if (wordCountTimeoutRef.current) {
-        clearTimeout(wordCountTimeoutRef.current);
-      }
-      wordCountTimeoutRef.current = setTimeout(() => {
-        if (selectedSectionIdRef.current) {
-          updateDocumentRef.current(selectedSectionIdRef.current, {
-            metadata: { wordCount: count },
-          });
-        }
-      }, 1000);
-    }
+    // Note: wordCount is automatically calculated by backend on content save
+    // No need to manually update document metadata here
   }, []);
 
   // Cleanup timeout on unmount
