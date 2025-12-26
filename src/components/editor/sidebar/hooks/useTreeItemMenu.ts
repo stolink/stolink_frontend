@@ -1,4 +1,4 @@
-import { useState, MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import {
   FolderPlus,
   FilePlus,

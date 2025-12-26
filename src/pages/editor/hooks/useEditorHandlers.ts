@@ -9,7 +9,7 @@ interface UseEditorHandlersOptions {
   selectedSectionId: string | null;
   setSelectedFolderId: (id: string | null) => void;
   setSelectedSectionId: (id: string | null) => void;
-  viewMode: "editor" | "scrivenings" | "outline";
+  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
   saveContent: (content: string) => Promise<void>;
   updateDocument: (updates: Partial<Document>) => void;
@@ -168,7 +168,7 @@ export function useEditorHandlers({
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
-          updateDocumentRef.current({ metadata: { wordCount: count } });
+          updateDocumentRef.current({ metadata: { wordCount: count } as any });
         }, 1000);
       }
     },

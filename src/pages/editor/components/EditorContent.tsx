@@ -10,7 +10,7 @@ import EmptyState from "@/components/editor/EmptyState";
 import type { Document } from "@/types/document";
 
 interface EditorContentProps {
-  viewMode: "editor" | "scrivenings" | "outline";
+  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   selectedFolderId: string | null;
   projectId: string;
   splitView: { enabled: boolean; direction: "horizontal" | "vertical" };

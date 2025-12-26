@@ -32,8 +32,10 @@ interface EditorToolbarProps {
   characterCount: number;
 
   // View mode
-  viewMode: "editor" | "scrivenings" | "outline";
-  onViewModeChange: (mode: "editor" | "scrivenings" | "outline") => void;
+  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  onViewModeChange: (
+    mode: "editor" | "scrivenings" | "outline" | "corkboard"
+  ) => void;
 
   // Split view
   splitViewEnabled: boolean;
@@ -230,8 +232,10 @@ function TitleBreadcrumb({
 }
 
 interface ViewModeButtonsProps {
-  viewMode: "editor" | "scrivenings" | "outline";
-  onViewModeChange: (mode: "editor" | "scrivenings" | "outline") => void;
+  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  onViewModeChange: (
+    mode: "editor" | "scrivenings" | "outline" | "corkboard"
+  ) => void;
 }
 
 function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
