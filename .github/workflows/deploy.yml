@@ -30,6 +30,7 @@ jobs:
       - name: Build project
         run: npm run build
         env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
 
       - name: Generate version info

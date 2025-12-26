@@ -27,8 +27,7 @@ jobs:
       - name: Build project
         run: npm run build
         env:
-          # 프로젝트 내부에서 사용할 API 키
-          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VITE_API_URL: ${{ vars.VITE_API_URL_DEV }}
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}/media"
 
       - name: Configure AWS credentials
