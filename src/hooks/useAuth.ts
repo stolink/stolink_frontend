@@ -85,13 +85,13 @@ export function useLogout() {
     onSuccess: () => {
       logout();
       queryClient.clear(); // Clear all cached data
-      navigate("/auth");
+      navigate("/");
     },
     onError: () => {
       // Even if API call fails, clear local auth state
       logout();
       queryClient.clear();
-      navigate("/auth");
+      navigate("/");
     },
   });
 }
