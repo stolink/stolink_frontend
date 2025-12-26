@@ -256,10 +256,10 @@ npm run format       # Prettier
 
 ```
 main ─────── 프로덕션 (직접 push 금지)
-develop ──── 개발 통합, 스테이징 (직접 push 금지)
-feature/* ── 기능 개발 → develop PR
-fix/* ────── 버그 수정 → develop PR
-hotfix/* ─── 긴급 수정 → main PR (자동 backport to develop)
+dev ──── 개발 통합, 스테이징 (직접 push 금지)
+feature/* ── 기능 개발 → dev PR
+fix/* ────── 버그 수정 → dev PR
+hotfix/* ─── 긴급 수정 → main PR (자동 backport to dev)
 ```
 
 > 상세 가이드: [GIT_STRATEGY.md](./GIT_STRATEGY.md)
@@ -272,7 +272,7 @@ hotfix/* ─── 긴급 수정 → main PR (자동 backport to develop)
 | --------------------- | ---------------- | ---------------------- |
 | `ai-review.yml`       | PR 생성/업데이트 | Claude API로 코드 리뷰 |
 | `deploy.yml`          | main push        | S3 + CloudFront 배포   |
-| `deploy_dev.yml`      | develop push     | 개발 환경 배포         |
+| `deploy_dev.yml`      | dev push         | 개발 환경 배포         |
 | `hotfix-backport.yml` | hotfix→main 머지 | develop에 자동 체리픽  |
 
 ---

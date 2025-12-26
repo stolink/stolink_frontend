@@ -21,10 +21,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge Hotfix into develop
+      - name: Merge Hotfix into dev
         run: |
-          git checkout develop
-          git merge --no-ff origin/${{ github.event.pull_request.head.ref }} -m "chore(hotfix): back-port ${{ github.event.pull_request.head.ref }} to develop"
-          git push origin develop
+          git checkout dev
+          git merge --no-ff origin/${{ github.event.pull_request.head.ref }} -m "chore(hotfix): back-port ${{ github.event.pull_request.head.ref }} to dev"
+          git push origin dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

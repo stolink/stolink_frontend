@@ -3,7 +3,7 @@ name: Frontend CICD
 on:
   push:
     branches:
-      - develop
+      - dev
 
 permissions:
   id-token: write # OIDC용
