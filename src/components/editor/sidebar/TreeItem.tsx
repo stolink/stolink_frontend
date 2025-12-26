@@ -1,21 +1,11 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  ChevronRight,
-  ChevronDown,
-  MoreHorizontal,
-  Plus,
-  Pencil,
-  Copy,
-  Trash2,
-  FolderPlus,
-  FileText,
-  Folder,
-  FilePlus,
-} from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NodeIcon } from "./NodeIcon";
-import { ContextMenu, type MenuItemType } from "./ContextMenu";
+import { ContextMenu } from "./ContextMenu";
 import { type ChapterNode, statusColors, formatCharCount } from "./types";
+import { useTreeItem } from "./hooks/useTreeItem";
+import { useTreeItemMenu } from "./hooks/useTreeItemMenu";
+import { TreeLines } from "./TreeLines";
 
 interface TreeItemProps {
   node: ChapterNode;
@@ -44,180 +34,57 @@ export function TreeItem({
   onDuplicate,
   onConvertType,
 }: TreeItemProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(node.title);
-  const [isHovered, setIsHovered] = useState(false);
-  const renameInputRef = useRef<HTMLInputElement>(null);
-  const itemRef = useRef<HTMLDivElement>(null);
-
   const hasChildren = (node.children?.length || 0) > 0;
   const isPart = node.type === "part";
   const isSelected = node.id === selectedId;
 
-  useEffect(() => {
-    if (isRenaming && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [isRenaming]);
+  // 1. 기본 상태 및 동작 훅
+  const {
+    isExpanded,
+    setIsExpanded,
+    isRenaming,
+    setIsRenaming,
+    renameValue,
+    setRenameValue,
+    isHovered,
+    setIsHovered,
+    renameInputRef,
+    itemRef,
+    handleClick,
+    handleDoubleClick,
+    handleRenameSubmit,
+    handleRenameKeyDown,
+    toggleExpand,
+  } = useTreeItem({
+    initialTitle: node.title,
+    nodeId: node.id,
+    isPart,
+    onSelect,
+    onRename,
+  });
 
-  // F2 단축키 = 커서가 올라간(hover) 항목에서 이름 변경
-  useEffect(() => {
-    if (!isHovered) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "F2" && !isRenaming) {
-        e.preventDefault();
-        setIsRenaming(true);
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isHovered, isRenaming]);
-
-  // 싱글 클릭 = 선택 (Part는 펼치기/접기)
-  const handleClick = () => {
-    if (isRenaming) return;
-    if (isPart) {
-      setIsExpanded(!isExpanded);
-    } else {
-      onSelect?.(node.id);
-    }
-  };
-
-  // 더블 클릭 = 이름 변경
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsRenaming(true);
-  };
-
-  // 우클릭 = 객체 컨텍스트 메뉴
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setMenuPosition({ x: e.clientX, y: e.clientY });
-    setShowMenu(true);
-  };
-
-  // ... 버튼 클릭
-  const handleMenuButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMenuPosition({ x: rect.right, y: rect.top });
-    setShowMenu(true);
-  };
-
-  const handleRenameSubmit = () => {
-    if (renameValue.trim() && renameValue !== node.title) {
-      onRename?.(node.id, renameValue.trim());
-    }
-    setIsRenaming(false);
-  };
-
-  // 객체 컨텍스트 메뉴 (파일 위 우클릭)
-  const objectMenuItems: MenuItemType[] = [
-    {
-      icon: FolderPlus,
-      label: "새 폴더 만들기",
-      onClick: () => onAddChild?.(node.id, "chapter"), // chapter = folder
-    },
-    {
-      icon: FilePlus,
-      label: "새 섹션 만들기",
-      onClick: () => onAddChild?.(node.id, "section"), // section = file
-    },
-    { type: "divider" },
-    {
-      icon: Pencil,
-      label: "이름 변경",
-      shortcut: "F2",
-      onClick: () => setIsRenaming(true),
-    },
-    {
-      icon: Copy,
-      label: "복제",
-      shortcut: "⌘D",
-      onClick: () => onDuplicate?.(node.id),
-    },
-    // 타입 변환 로직
-    ...(node.type === "section"
-      ? [
-          {
-            icon: Folder,
-            label: "폴더로 변환",
-            onClick: () => onConvertType?.(node.id, "chapter"),
-          },
-        ]
-      : []),
-    ...(node.type === "chapter" || node.type === "part"
-      ? [
-          {
-            icon: FileText,
-            label: "파일로 변환",
-            onClick: () => {
-              if (hasChildren) {
-                alert("하위 항목이 있는 폴더는 파일로 변환할 수 없습니다.");
-                return;
-              }
-              onConvertType?.(node.id, "section");
-            },
-          },
-        ]
-      : []),
-    { type: "divider" },
-    {
-      icon: Trash2,
-      label: "휴지통으로 이동",
-      danger: true,
-      onClick: () => onDelete?.(node.id),
-    },
-  ];
+  // 2. 컨텍스트 메뉴 훅
+  const {
+    showMenu,
+    setShowMenu,
+    menuPosition,
+    menuItems,
+    handleContextMenu,
+    handleMenuButtonClick,
+  } = useTreeItemMenu({
+    node,
+    hasChildren,
+    onAddChild,
+    onDuplicate,
+    onConvertType,
+    onDelete,
+    setIsRenaming,
+  });
 
   return (
     <div className="relative">
-      {/* Tree lines - 세로선 (부모 레벨들) */}
-      {parentLines.map((showLine, idx) =>
-        showLine ? (
-          <div
-            key={idx}
-            className="absolute top-0 bottom-0 w-px bg-stone-300"
-            style={{ left: `${idx * 16 + 11}px` }}
-          />
-        ) : null
-      )}
-
-      {/* Tree lines - 현재 레벨 연결 */}
-      {level > 0 && (
-        <>
-          {/* 세로선 (현재) */}
-          {!isLast && (
-            <div
-              className="absolute top-0 bottom-0 w-px bg-stone-300"
-              style={{ left: `${(level - 1) * 16 + 11}px` }}
-            />
-          )}
-          {/* 가로선 */}
-          <div
-            className="absolute w-3 border-t border-stone-300"
-            style={{
-              left: `${(level - 1) * 16 + 11}px`,
-              top: "14px",
-            }}
-          />
-          {isLast && (
-            <div
-              className="absolute w-px bg-stone-300"
-              style={{
-                left: `${(level - 1) * 16 + 11}px`,
-                top: "0",
-                height: "14px",
-              }}
-            />
-          )}
-        </>
-      )}
+      {/* 트리 연결선 컴포넌트 */}
+      <TreeLines level={level} isLast={isLast} parentLines={parentLines} />
 
       {/* Item row */}
       <div
@@ -239,34 +106,21 @@ export function TreeItem({
           <div className="absolute left-0 top-1 bottom-1 w-[3px] bg-sage-500 rounded-r" />
         )}
 
-        {/* Status indicator - 상태 점 */}
+        {/* Status indicator */}
         {node.status && (
           <div
             className={cn(
               "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
               statusColors[node.status]
             )}
-            title={
-              node.status === "todo"
-                ? "구상 중"
-                : node.status === "inProgress"
-                  ? "집필 중"
-                  : node.status === "done"
-                    ? "탈고 완료"
-                    : node.status === "revised"
-                      ? "퇴고 완료"
-                      : ""
-            }
+            title={getStatusTitle(node.status)}
           />
         )}
 
         {/* Expand/Collapse */}
         {hasChildren ? (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
+            onClick={toggleExpand}
             className="p-0.5 hover:bg-stone-200 rounded transition-colors shrink-0"
           >
             {isExpanded ? (
@@ -292,13 +146,7 @@ export function TreeItem({
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={handleRenameSubmit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameSubmit();
-                if (e.key === "Escape") {
-                  setIsRenaming(false);
-                  setRenameValue(node.title);
-                }
-              }}
+              onKeyDown={handleRenameKeyDown}
               className="w-full text-sm bg-white border border-sage-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-sage-500"
               onClick={(e) => e.stopPropagation()}
             />
@@ -349,7 +197,7 @@ export function TreeItem({
       {/* Object Context Menu */}
       {showMenu && (
         <ContextMenu
-          items={objectMenuItems}
+          items={menuItems}
           position={menuPosition}
           onClose={() => setShowMenu(false)}
         />
@@ -378,4 +226,20 @@ export function TreeItem({
       )}
     </div>
   );
+}
+
+// 헬퍼 함수
+function getStatusTitle(status: string) {
+  switch (status) {
+    case "todo":
+      return "구상 중";
+    case "inProgress":
+      return "집필 중";
+    case "done":
+      return "탈고 완료";
+    case "revised":
+      return "퇴고 완료";
+    default:
+      return "";
+  }
 }
