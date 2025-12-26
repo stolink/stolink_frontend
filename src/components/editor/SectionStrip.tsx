@@ -7,7 +7,6 @@ import {
   BookOpen,
   PenLine,
   CheckCircle2,
-  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document";
@@ -20,9 +19,8 @@ interface SectionStripProps {
   selectedSectionId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
-  onDelete: (id: string) => void;
   projectId: string;
-  isDemo?: boolean;
+  isDemo: boolean;
   liveWordCount?: number; // Real-time word count for selected section
 }
 
@@ -31,16 +29,14 @@ export default function SectionStrip({
   selectedSectionId,
   onSelect,
   onAdd,
-  onDelete,
   projectId,
-  isDemo = false,
+  isDemo,
   liveWordCount,
 }: SectionStripProps) {
   // 1. Fetch data based on mode
   const { documents } = useDocumentTree(projectId);
-  // Fetch sections (child documents) for the selected folder
-  const { children: sectionDocuments, isLoading } = useChildDocuments(
-    selectedFolderId, // null is accepted by useChildDocuments
+  const { children: sectionDocuments } = useChildDocuments(
+    selectedFolderId,
     projectId
   );
 
@@ -123,11 +119,7 @@ export default function SectionStrip({
         ref={scrollRef}
         className="flex items-stretch gap-3 px-4 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300"
       >
-        {!selectedFolderId ? (
-          <div className="w-full h-24 flex items-center justify-center text-stone-400 text-sm">
-            폴더를 선택해주세요
-          </div>
-        ) : sections.length === 0 ? (
+        {sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-4 text-center">
             <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-2">
               <FileText className="w-5 h-5 text-stone-300" />
@@ -157,7 +149,6 @@ export default function SectionStrip({
                 onClick={() => onSelect(section.id)}
                 onDragStart={(e) => handleDragStart(e, section.id)}
                 onDragEnd={handleDragEnd}
-                onDelete={() => onDelete && onDelete(section.id)}
                 liveWordCount={
                   section.id === selectedSectionId ? liveWordCount : undefined
                 }
@@ -189,7 +180,6 @@ interface SectionCardProps {
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onDelete: () => void;
   liveWordCount?: number; // Real-time count for selected section
 }
 
@@ -201,7 +191,6 @@ function SectionCard({
   onClick,
   onDragStart,
   onDragEnd,
-  onDelete,
   liveWordCount,
 }: SectionCardProps) {
   const statusConfig = {
@@ -232,25 +221,11 @@ function SectionCard({
   const synopsis = section.synopsis || "";
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          onClick();
-        }
-      }}
+    <button
       onClick={onClick}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        // Simple confirmation via browser native menu not possible, so we use the prop
-        //Ideally we should have a custom context menu here too, but for now we can just trigger the parent deletion flow which has confirmation
-        // But we need a UI hint. Let's add a small delete button that appears on hover, or just context menu.
-        // Let's rely on a delete button on hover for clarity as context menus can be hidden.
-      }}
       className={cn(
         "group relative flex flex-col min-w-[160px] max-w-[200px] p-3 rounded-xl border-2 transition-all text-left",
         "hover:shadow-md hover:-translate-y-1",
@@ -278,26 +253,12 @@ function SectionCard({
             title={config.label}
           />
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onDelete) {
-                onDelete();
-              }
-            }}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-full transition-opacity text-stone-400 hover:text-red-500"
-            title="삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-          <GripVertical
-            className={cn(
-              "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
-              isDragging && "cursor-grabbing"
-            )}
-          />
-        </div>
+        <GripVertical
+          className={cn(
+            "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
+            isDragging && "cursor-grabbing"
+          )}
+        />
       </div>
 
       {/* Title */}
@@ -333,6 +294,6 @@ function SectionCard({
           {config.label}
         </span>
       </div>
-    </div>
+    </button>
   );
 }

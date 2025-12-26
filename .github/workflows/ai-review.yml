@@ -60,27 +60,18 @@ jobs:
           DIFF_CONTENT=$(head -n 500 diff_content.txt)
           FILES="${{ steps.diff.outputs.files }}"
 
-          # Create template file
+          # Extract ai_code_review section from CLAUDE.md
+          if [ -f "CLAUDE.md" ]; then
+            # Extract content between <ai_code_review> and </ai_code_review>
+            REVIEW_CONTEXT=$(sed -n '/<ai_code_review>/,/<\/ai_code_review>/p' CLAUDE.md | sed '1d;$d')
+          else
+            # Fallback if CLAUDE.md doesn't exist
+            REVIEW_CONTEXT="StoLink 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다."
+          fi
+
+          # Create template file with CLAUDE.md context
           cat << 'EOF' > prompt_template.txt
-          ## 역할
-          Sto-Link 프로젝트의 시니어 개발자이자 UI/UX 전문가로서 코드 리뷰를 수행합니다.
-
-          ## 프로젝트 컨텍스트
-          - 스토리, 복선, 캐릭터 관계를 관리하는 작가용 웹앱
-          - 기술 스택: React, TypeScript, Zustand, TanStack Query, Tiptap
-          - 핵심 타입: Project, Chapter, Character, Foreshadowing
-
-          ## 리뷰 기준
-          1. **치명적**: 런타임 에러, 타입 오류, 보안 취약점
-          2. **경고**: 성능 이슈, 안티패턴, Zustand 상태 관리 문제
-          3. **제안**: 코드 스타일, 리팩토링 기회
-
-          ## 중점 검토 항목
-          - TypeScript 타입 안전성 (any 사용, non-null assertion 남용)
-          - Zustand 스토어 설계 (직렬화 가능 여부, 상태 분리)
-          - React 훅 의존성 배열
-          - 기존 데이터 구조와의 호환성
-          - UI/UX 사용성 및 심미성 (사용자 경험, 디자인 일관성)
+          REVIEW_CONTEXT_PLACEHOLDER
 
           ## 변경된 파일
           FILES_PLACEHOLDER
@@ -90,33 +81,14 @@ jobs:
           DIFF_PLACEHOLDER
           ```
 
-          ## 출력 규칙
-          1. 🔴 치명적, ⚠️ 경고가 하나라도 있으면 해당 섹션 출력
-          2. 🔴, ⚠️가 없으면 반드시 '✅ 코드 리뷰 통과 - 수정 필요 사항 없음' 출력 후 종료
-          3. 💡 제안은 선택사항이므로 '수정 필요'로 취급하지 않음
-
-          ## 출력 형식 (이 형식만 출력)
-
-          ### 🔴 치명적 (N건)
-          **파일:라인** - 이슈 제목
-          - 문제: 설명
-          - 개선: 코드 예시
-
-          ### ⚠️ 경고 (N건)
-          **파일:라인** - 이슈 제목
-          > 설명
-
-          ---
-          💡 **참고 제안** (선택사항, 수정 불필요)
-          - 제안 내용
-
-          (🔴, ⚠️가 없으면: '✅ 코드 리뷰 통과 - 수정 필요 사항 없음' 만 출력)
+          위 코드 변경에 대해 리뷰해주세요. 출력 형식을 정확히 따라주세요.
           EOF
 
           # Use jq to generate JSON safely
           jq -n \
             --arg model "claude-haiku-4-5-20251001" \
             --rawfile template prompt_template.txt \
+            --arg context "$REVIEW_CONTEXT" \
             --arg files "$FILES" \
             --arg diff "$DIFF_CONTENT" \
             '{
@@ -124,7 +96,7 @@ jobs:
               max_tokens: 2048,
               messages: [{
                 role: "user",
-                content: ($template | sub("FILES_PLACEHOLDER"; $files) | sub("DIFF_PLACEHOLDER"; $diff))
+                content: ($template | sub("REVIEW_CONTEXT_PLACEHOLDER"; $context) | sub("FILES_PLACEHOLDER"; $files) | sub("DIFF_PLACEHOLDER"; $diff))
               }]
             }' > prompt.json
 

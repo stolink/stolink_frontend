@@ -14,6 +14,7 @@ import type {
 import {
   documentService,
   mapBackendToFrontend,
+  type BackendDocument,
 } from "@/services/documentService";
 
 /**
@@ -30,8 +31,8 @@ export function useDocumentTree(projectId: string) {
         const backendDocs = response.data || [];
 
         // Flatten nested tree structure into a flat array
-        const flattenTree = (docs: any[]): any[] => {
-          const result: any[] = [];
+        const flattenTree = (docs: BackendDocument[]): BackendDocument[] => {
+          const result: BackendDocument[] = [];
           for (const doc of docs) {
             result.push(doc);
             if (doc.children && doc.children.length > 0) {
@@ -42,22 +43,28 @@ export function useDocumentTree(projectId: string) {
         };
 
         const flatDocs = flattenTree(backendDocs);
+
         // Convert backend documents to frontend format
         return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
         // 404 means no documents yet - this is normal for new projects
-        if ((error as any)?.response?.status === 404) {
+        if (
+          (error as { response?: { status?: number } })?.response?.status ===
+          404
+        ) {
           return [];
         }
         throw error;
       }
     },
     enabled: !!projectId,
-    staleTime: 5000,
-    refetchOnMount: true, // Refetch on mount but respect staleTime
+    staleTime: 0, // Always refetch to get latest tree from backend
+    refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
-      if ((error as any)?.response?.status === 404) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 404
+      ) {
         return false;
       }
       return failureCount < 3;
@@ -86,7 +93,7 @@ export function useDocumentTree(projectId: string) {
       ? fetchedDocuments
       : storeDocuments;
 
-  const tree = useMemo(() => buildTree(documents), [documents]);
+  const tree = buildTree(documents);
 
   return {
     documents,
@@ -133,7 +140,7 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
   );
 
   return {
-    children: [...children].sort((a, b) => a.order - b.order),
+    children: children.sort((a, b) => a.order - b.order),
     isLoading: false,
   };
 }
@@ -168,18 +175,23 @@ export function useDocumentContent(id: string | null) {
         return null;
       } catch (error) {
         // 404 means content not found - use local cache
-        if ((error as any)?.response?.status === 404) {
+        if (
+          (error as { response?: { status?: number } })?.response?.status ===
+          404
+        ) {
           return null;
         }
         throw error;
       }
     },
     enabled: !!id,
-    staleTime: 5000,
-    refetchOnMount: true,
+    staleTime: 0, // Always refetch to get latest content from backend
+    refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
-      if ((error as any)?.response?.status === 404) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 404
+      ) {
         return false;
       }
       return failureCount < 3;
@@ -301,11 +313,34 @@ export function useDocumentMutations(projectId: string) {
           queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
           return frontendDoc;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(
           "[useDocumentMutations] Failed to create document:",
           error
         );
+
+        // Fallback to local-only creation if backend fails
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 500 || err?.response?.status === 404) {
+          const localDocumentRepository =
+            await import("@/repositories/LocalDocumentRepository").then(
+              (m) => m.localDocumentRepository
+            );
+
+          try {
+            const localDoc = await localDocumentRepository.create({
+              projectId,
+              ...input,
+            });
+            _create(localDoc);
+            return localDoc;
+          } catch (localError) {
+            console.error(
+              "[useDocumentMutations] Local fallback failed:",
+              localError
+            );
+          }
+        }
       }
       return null;
     },
@@ -335,23 +370,15 @@ export function useDocumentMutations(projectId: string) {
       try {
         const response = await documentService.delete(id);
         const isSuccess =
-          // Check for 204 No Content as well, combined with other success codes
-          response.success ||
-          response.status === "OK" ||
-          response.code === 200 ||
-          response.code === 204;
-
-        // Since API might return empty body for delete, relax the check
-        if (isSuccess || !response.error) {
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess) {
           _delete(id);
-          // Invalidate documents query to refetch tree with deleted document removed
-          queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
         }
       } catch (error) {
         console.error("Failed to delete document:", error);
       }
     },
-    [projectId, _delete, queryClient]
+    [_delete]
   );
 
   const reorderDocuments = useCallback(
@@ -412,7 +439,7 @@ export function useDescendantDocuments(
   };
 }
 
-export function buildTree(documents: Document[]): DocumentTreeNode[] {
+function buildTree(documents: Document[]): DocumentTreeNode[] {
   const map = new Map<string, DocumentTreeNode>();
   const roots: DocumentTreeNode[] = [];
 

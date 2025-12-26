@@ -9,6 +9,10 @@ import tippy from "tippy.js";
 import type { Instance as TippyInstance } from "tippy.js";
 import { CommandList } from "./CommandList";
 import type { CommandListRef } from "./CommandList";
+import type {
+  SlashCommandItem,
+  SlashCommandParams,
+} from "./slashCommand.types";
 import {
   Heading1,
   Heading2,
@@ -27,7 +31,15 @@ export const SlashCommand = Extension.create({
     return {
       suggestion: {
         char: "/",
-        command: ({ editor, range, props }: any) => {
+        command: ({
+          editor,
+          range,
+          props,
+        }: {
+          editor: SlashCommandParams["editor"];
+          range: SlashCommandParams["range"];
+          props: SlashCommandItem;
+        }) => {
           props.command({ editor, range });
         },
       },
@@ -44,12 +56,16 @@ export const SlashCommand = Extension.create({
   },
 });
 
-const getSuggestionItems = ({ query }: { query: string }) => {
+const getSuggestionItems = ({
+  query,
+}: {
+  query: string;
+}): SlashCommandItem[] => {
   return [
     {
       title: "제목 1",
       icon: <Heading1 className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor
           .chain()
           .focus()
@@ -61,7 +77,7 @@ const getSuggestionItems = ({ query }: { query: string }) => {
     {
       title: "제목 2",
       icon: <Heading2 className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor
           .chain()
           .focus()
@@ -73,7 +89,7 @@ const getSuggestionItems = ({ query }: { query: string }) => {
     {
       title: "제목 3",
       icon: <Heading3 className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor
           .chain()
           .focus()
@@ -85,35 +101,35 @@ const getSuggestionItems = ({ query }: { query: string }) => {
     {
       title: "목록",
       icon: <List className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).toggleBulletList().run();
       },
     },
     {
       title: "번호 매기기",
       icon: <ListOrdered className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).toggleOrderedList().run();
       },
     },
     {
       title: "인용구",
       icon: <Quote className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).toggleBlockquote().run();
       },
     },
     {
       title: "구분선",
       icon: <Minus className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).setHorizontalRule().run();
       },
     },
     {
       title: "캐릭터 멘션",
       icon: <User className="w-4 h-4" />,
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).insertContent("@").run();
       },
     },

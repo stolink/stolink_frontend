@@ -9,7 +9,7 @@
 ### Layer 1: 영구 브랜치 (Permanent)
 
 - **`main`**: 상용(Production) 서버에 배포되는 최상위 신뢰 브랜치입니다.
-- **`develop`**: 모든 개발 작업이 통합되는 기준 브랜치입니다. 스테이징 환경 배포의 기준이 됩니다.
+- **`dev`**: 모든 개발 작업이 통합되는 기준 브랜치입니다. 스테이징 환경 배포의 기준이 됩니다.
 
 ### Layer 2: 카테고리 (Category)
 
@@ -30,20 +30,20 @@
 
 프로젝트의 역사를 깔끔하게 유지하기 위해 아래 원칙을 반드시 준수합니다.
 
-### ① Squash and Merge (`feature` → `develop`)
+### ① Squash and Merge (`feature` → `dev`)
 
-- 자잘한 커밋 이력들을 하나로 뭉쳐서 `develop`에 병합합니다.
-- 목적: `develop`의 히스토리를 기능 단위로 깔끔하게 유지.
+- 자잘한 커밋 이력들을 하나로 뭉쳐서 `dev`에 병합합니다.
+- 목적: `dev`의 히스토리를 기능 단위로 깔끔하게 유지.
 
-### ② Non-Fast-Forward (`develop` → `main`)
+### ② Non-Fast-Forward (`dev` → `main`)
 
-- 릴리즈 시 반드시 `git merge develop --no-ff`를 사용합니다.
+- 릴리즈 시 반드시 `git merge dev --no-ff`를 사용합니다.
 - 목적: "이 시점에 특정 버전이 배포되었다"는 병합 지점(Merge Point)을 명시적으로 기록.
 
 ### ③ Hotfix Back-porting (`hotfix` → both)
 
-- 운영 서버(`main`) 수정을 리포팅한 후, 해당 내용을 반드시 `develop`에도 즉시 병합해야 합니다.
-- 목적: `main`과 `develop` 사이의 코드 괴리 방지 및 향후 머지 충돌 예방.
+- 운영 서버(`main`) 수정을 리포팅한 후, 해당 내용을 반드시 `dev`에도 즉시 병합해야 합니다.
+- 목적: `main`과 `dev` 사이의 코드 괴리 방지 및 향후 머지 충돌 예방.
 
 ---
 
@@ -53,7 +53,7 @@
 
 - **`/smart-commit`**: 현재 작업을 분석하여 커밋하고, 원격에 푸시하며, 필요 시 PR을 자동으로 생성하거나 최신화합니다.
   - `hotfix/*` 브랜치는 자동으로 `main`을 타겟팅합니다.
-  - 그 외는 `develop`을 타겟으로 PR을 생성합니다.
+  - 그 외는 `dev`을 타겟으로 PR을 생성합니다.
 
 ---
 
@@ -63,17 +63,17 @@
 
 ### ① Hotfix 자동 반영 (GitHub Actions)
 
-- `hotfix/*` 브랜치가 `main`에 머지(Merge)되면, GitHub Actions가 이를 감지하여 **`develop` 브랜치에 자동으로 머집(Back-port)** 합니다.
+- `hotfix/*` 브랜치가 `main`에 머지(Merge)되면, GitHub Actions가 이를 감지하여 **`dev` 브랜치에 자동으로 머집(Back-port)** 합니다.
 - 파일: `.github/workflows/hotfix-backport.yml`
 
 ### ② 브러치 보호 및 머지 정책 설정 (GitHub Settings)
 
 GitHub 저장소 설정(`Settings > Branches > Branch protection rules`)에서 아래와 같이 설정하는 것을 권장합니다.
 
-| 대상 브랜치   | 권장 설정 (Branch Protection)      | 이유                                       |
-| :------------ | :--------------------------------- | :----------------------------------------- |
-| **`develop`** | **Allow squash merging** 만 활성화 | 작업 파편화를 막고 기능 단위 히스토리 유지 |
-| **`main`**    | **Allow merge commits** 만 활성화  | 릴리즈 시점(Merge Point)을 명시적으로 기록 |
+| 대상 브랜치 | 권장 설정 (Branch Protection)      | 이유                                       |
+| :---------- | :--------------------------------- | :----------------------------------------- |
+| **`dev`**   | **Allow squash merging** 만 활성화 | 작업 파편화를 막고 기능 단위 히스토리 유지 |
+| **`main`**  | **Allow merge commits** 만 활성화  | 릴리즈 시점(Merge Point)을 명시적으로 기록 |
 
 ---
 

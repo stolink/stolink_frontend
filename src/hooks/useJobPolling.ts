@@ -46,6 +46,33 @@ export function useJobPolling<T = unknown>(
     };
   }, []);
 
+  // 폴링 응답 처리 (복잡도 분산)
+  const handlePollResponse = useCallback(
+    (response: JobResponse<T>): boolean => {
+      setJobStatus(response.status);
+      setProgress(response.progress || 0);
+
+      if (response.status === "completed") {
+        const resultData = response.result as T;
+        setResult(resultData);
+        setIsPolling(false);
+        onComplete?.(resultData);
+        return true; // Stop polling
+      }
+
+      if (response.status === "failed") {
+        const errorMsg = response.error || "Job failed";
+        setError(errorMsg);
+        setIsPolling(false);
+        onError?.(errorMsg);
+        return true; // Stop polling
+      }
+
+      return false; // Continue polling
+    },
+    [onComplete, onError]
+  );
+
   const poll = useCallback(async () => {
     if (!jobId || !enabled || unmountedRef.current) return;
 
@@ -55,7 +82,7 @@ export function useJobPolling<T = unknown>(
       if (elapsed > maxPollingTime) {
         setError("Polling timeout exceeded");
         setIsPolling(false);
-        if (onTimeout) onTimeout();
+        onTimeout?.();
         return;
       }
     }
@@ -66,24 +93,8 @@ export function useJobPolling<T = unknown>(
 
       if (unmountedRef.current) return;
 
-      setJobStatus(response.status);
-      setProgress(response.progress || 0);
-
-      if (response.status === "completed") {
-        const resultData = response.result as T;
-        setResult(resultData);
-        setIsPolling(false);
-        if (onComplete) onComplete(resultData);
-        return; // Stop polling
-      }
-
-      if (response.status === "failed") {
-        const errorMsg = response.error || "Job failed";
-        setError(errorMsg);
-        setIsPolling(false);
-        if (onError) onError(errorMsg);
-        return; // Stop polling
-      }
+      const shouldStop = handlePollResponse(response);
+      if (shouldStop) return;
 
       // Continue polling - use ref to avoid stale closure
       timeoutRef.current = setTimeout(
@@ -96,7 +107,7 @@ export function useJobPolling<T = unknown>(
       const errorMsg = err instanceof Error ? err.message : "Polling failed";
       setError(errorMsg);
       setIsPolling(false);
-      if (onError) onError(errorMsg);
+      onError?.(errorMsg);
     }
   }, [
     jobId,
@@ -104,9 +115,9 @@ export function useJobPolling<T = unknown>(
     maxPollingTime,
     pollingInterval,
     checkStatusFn,
-    onComplete,
-    onError,
+    handlePollResponse,
     onTimeout,
+    onError,
   ]);
 
   // Keep pollRef in sync
