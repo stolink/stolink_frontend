@@ -111,8 +111,14 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => projectService.delete(id),
+    mutationFn: async (id: string) => {
+      console.log("[useDeleteProject] Deleting project:", id);
+      const result = await projectService.delete(id);
+      console.log("[useDeleteProject] Delete result:", result);
+      return result;
+    },
     onMutate: async (id) => {
+      console.log("[useDeleteProject] onMutate - id:", id);
       // Cancel queries
       await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
 
@@ -126,6 +132,7 @@ export function useDeleteProject() {
         { queryKey: projectKeys.lists() },
         (old: { projects?: Project[] } | undefined) => {
           if (!old?.projects) return old;
+          console.log("[useDeleteProject] Removing from cache:", id);
           return {
             ...old,
             projects: old.projects.filter((p: Project) => p.id !== id),
@@ -135,13 +142,17 @@ export function useDeleteProject() {
 
       return { previousLists };
     },
-    onError: (_err, _id, context) => {
+    onError: (err, id, context) => {
+      console.error("[useDeleteProject] Error deleting project:", id, err);
       // Rollback
       if (context?.previousLists) {
         context.previousLists.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
+    },
+    onSuccess: (_data, id) => {
+      console.log("[useDeleteProject] Successfully deleted:", id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
