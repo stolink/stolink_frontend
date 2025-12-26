@@ -66,6 +66,9 @@ import OutlineView from "@/components/editor/OutlineView";
 import { useEditorHandlers } from "./hooks/useEditorHandlers";
 import { useKeyboardSave } from "./hooks/useKeyboardSave";
 
+// Refactored Components
+import { EditorToolbar } from "./components/EditorToolbar";
+
 // ============================================================
 // Demo Data Utilities (for demo mode only)
 // ============================================================
@@ -382,170 +385,44 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col min-w-0 bg-white">
           {/* Toolbar */}
+          {/* Toolbar */}
           {!isFocusMode && (
-            <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-white z-10">
-              <div className="flex items-center gap-3">
-                {!isSidebarVisible && (
-                  <button
-                    onClick={toggleSidebar}
-                    className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors mr-2"
-                    title="사이드바 열기"
-                  >
-                    <PanelLeft className="w-5 h-5" />
-                  </button>
-                )}
-
-                {/* Breadcrumb Style Title */}
-                <div className="flex items-center gap-2 text-sm overflow-hidden bg-stone-50/50 px-3 py-1.5 rounded-full border border-stone-200/50 shadow-sm">
-                  <div className="flex items-center gap-1.5 text-stone-400">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span className="font-medium truncate max-w-[120px]">
-                      {currentFolderTitle || "챕터"}
-                    </span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-stone-300 shrink-0" />
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    {isEditingTitle ? (
-                      <input
-                        type="text"
-                        value={editedTitle}
-                        onChange={(e) => setEditedTitle(e.target.value)}
-                        onBlur={() => {
-                          if (
-                            editedTitle.trim() &&
-                            editedTitle !== currentSectionTitle
-                          ) {
-                            if (selectedSectionId) {
-                              updateDocument({
-                                title: editedTitle.trim(),
-                              });
-                            }
-                          }
-                          setIsEditingTitle(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            if (
-                              editedTitle.trim() &&
-                              editedTitle !== currentSectionTitle
-                            ) {
-                              if (selectedSectionId) {
-                                updateDocument({
-                                  title: editedTitle.trim(),
-                                });
-                              }
-                            }
-                            setIsEditingTitle(false);
-                          }
-                          if (e.key === "Escape") {
-                            setIsEditingTitle(false);
-                          }
-                        }}
-                        autoFocus
-                        className="font-bold text-stone-800 bg-transparent focus:outline-none min-w-[150px]"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (!isDemo && selectedSectionId) {
-                            setEditedTitle(currentSectionTitle);
-                            setIsEditingTitle(true);
-                          }
-                        }}
-                        className="font-bold text-stone-800 truncate max-w-[200px] hover:text-sage-700 transition-colors"
-                        title={isDemo ? "데모 모드" : "클릭하여 제목 편집"}
-                      >
-                        {currentSectionTitle || "섹션을 선택하세요"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {characterCount > 0 && (
-                  <span className="text-xs text-stone-400">
-                    ({characterCount.toLocaleString()}자)
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="flex bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner">
-                  <button
-                    onClick={() => setViewMode("editor")}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
-                      viewMode === "editor"
-                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
-                    )}
-                  >
-                    <Layout className="w-3.5 h-3.5" />
-                    <span>단일</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("scrivenings")}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
-                      viewMode === "scrivenings"
-                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
-                    )}
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    <span>통합</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("outline")}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
-                      viewMode === "outline"
-                        ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-                        : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
-                    )}
-                  >
-                    <TableProperties className="w-3.5 h-3.5" />
-                    <span>개요</span>
-                  </button>
-                </div>
-
-                <div className="h-4 w-px bg-stone-200 mx-1" />
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={toggleSplitView}
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      splitView.enabled
-                        ? "bg-sage-100 text-sage-700"
-                        : "hover:bg-stone-100 text-stone-500"
-                    )}
-                    title="분할 화면"
-                  >
-                    <Columns className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={toggleFocusMode}
-                    className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors"
-                    title="집중 모드"
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="h-4 w-px bg-stone-200 mx-1" />
-                <button
-                  onClick={toggleRightSidebar}
-                  className={cn(
-                    "p-1.5 rounded-lg transition-colors",
-                    rightSidebarOpen
-                      ? "bg-sage-100 text-sage-700"
-                      : "hover:bg-stone-100 text-stone-500"
-                  )}
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <EditorToolbar
+              isSidebarVisible={isSidebarVisible}
+              onToggleSidebar={toggleSidebar}
+              currentFolderTitle={currentFolderTitle}
+              currentSectionTitle={currentSectionTitle}
+              isEditingTitle={isEditingTitle}
+              editedTitle={editedTitle}
+              onEditedTitleChange={setEditedTitle}
+              onStartEditTitle={() => {
+                if (!isDemo && selectedSectionId) {
+                  setEditedTitle(currentSectionTitle);
+                  setIsEditingTitle(true);
+                }
+              }}
+              onSaveTitle={() => {
+                if (editedTitle.trim() && editedTitle !== currentSectionTitle) {
+                  if (selectedSectionId) {
+                    updateDocument({
+                      title: editedTitle.trim(),
+                    });
+                  }
+                }
+                setIsEditingTitle(false);
+              }}
+              onCancelEditTitle={() => setIsEditingTitle(false)}
+              isDemo={isDemo}
+              selectedSectionId={selectedSectionId}
+              characterCount={characterCount}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              splitViewEnabled={splitView.enabled}
+              onToggleSplitView={toggleSplitView}
+              onToggleFocusMode={toggleFocusMode}
+              rightSidebarOpen={rightSidebarOpen}
+              onToggleRightSidebar={toggleRightSidebar}
+            />
           )}
 
           {/* Focus Mode Exit Button */}
