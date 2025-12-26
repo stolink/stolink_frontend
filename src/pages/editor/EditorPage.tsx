@@ -623,7 +623,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                             editedTitle.trim() &&
                             editedTitle !== currentSectionTitle
                           ) {
-                            updateDocument({ title: editedTitle.trim() });
+                            if (selectedSectionId) {
+                              updateDocument(selectedSectionId, {
+                                title: editedTitle.trim(),
+                              });
+                            }
                           }
                           setIsEditingTitle(false);
                         }}
@@ -633,7 +637,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                               editedTitle.trim() &&
                               editedTitle !== currentSectionTitle
                             ) {
-                              updateDocument({ title: editedTitle.trim() });
+                              if (selectedSectionId) {
+                                updateDocument(selectedSectionId, {
+                                  title: editedTitle.trim(),
+                                });
+                              }
                             }
                             setIsEditingTitle(false);
                           }
