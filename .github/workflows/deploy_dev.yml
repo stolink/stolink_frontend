@@ -5,6 +5,10 @@ on:
     branches:
       - develop
 
+permissions:
+  id-token: write # OIDC required
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,22 +31,16 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL_DEV }}
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}/media"
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.S3_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.S3_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_S3FULL_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Deploy Frontend to S3
         run: |
-          # 빌드 결과 폴더가 dist인지 build인지 확인 후 수정하십시오.
-          # 예: ./dist 가 맞다면 아래 명령어를 사용합니다.
           aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME_DEV }} --delete
       - name: CloudFront Invalidation
         run: |
-          # URL을 통해 Distribution ID를 조회합니다.
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL_DEV }}'].Id | [0]" --output text)
-
-          # 캐시 무효화 실행
           aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
