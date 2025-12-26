@@ -51,3 +51,114 @@ jobs:
 
           # 캐시 무효화 실행
           aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write # OIDC용
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
+
+      - name: Generate version info
+        id: version
+        run: |
+          VERSION="${{ github.sha }}"
+          SHORT_SHA="${VERSION:0:7}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "version=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "{\"version\":\"${SHORT_SHA}\",\"commit\":\"${{ github.sha }}\",\"timestamp\":\"${TIMESTAMP}\",\"branch\":\"${{ github.ref_name }}\"}" > ./dist/version.json
+          echo "✅ Generated version.json with version: ${SHORT_SHA}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_S3FULL_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy Frontend to S3
+        run: |
+          aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME }} --delete
+
+      - name: CloudFront Invalidation
+        run: |
+          # URL을 통해 Distribution ID를 조회합니다.
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL }}'].Id | [0]" --output text)
+
+          # 캐시 무효화 실행
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+
+      - name: Health Check
+        run: |
+          URL="https://${{ vars.CLOUDFRONT_URL }}"
+          MAX_RETRIES=5
+          RETRY_INTERVAL=10
+
+          echo "🔍 Starting health check for: $URL"
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed! (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/$MAX_RETRIES: Status $STATUS, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          done
+
+          echo "❌ Health check failed after $MAX_RETRIES attempts"
+          exit 1
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ needs.build.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://${{ vars.CLOUDFRONT_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed At | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY

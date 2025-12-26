@@ -71,7 +71,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <img
-                src="/src/assets/main_logo.png"
+                src="/assets/main_logo.png"
                 alt="Sto-Link"
                 className="h-[60px] w-auto"
               />
@@ -103,7 +103,7 @@ export default function LandingPage() {
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-sage-200 to-sage-100 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
               <img
-                src="/src/assets/main_logo.png"
+                src="/assets/main_logo.png"
                 alt="Sto-Link Logo"
                 className="relative h-60 sm:h-60 w-auto drop-shadow-md transition-transform duration-500 hover:scale-105"
               />
