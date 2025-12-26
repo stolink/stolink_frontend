@@ -1,76 +1,68 @@
 # 리팩토링 현황 (2024-12-26 업데이트)
 
 > **14,828 라인(TypeScript 97%)**의 견고한 MVP 단계
+> ESLint `complexity` 규칙 기준: **CC >= 15**
 
 ---
 
-## 1. 최우선 리팩토링 대상: "복잡도 괴물" (Complexity > 30)
+## 📊 복잡도 분석 결과 (ESLint)
 
-### ✅ 완료: `BookReaderModal.tsx` (CC: 34 → <10)
+```bash
+npx eslint "src/**/*.{ts,tsx}" --rule '{"complexity": ["warn", 15]}'
+```
 
-**리팩토링 완료!** 466라인 단일 파일을 8개 파일로 분리:
+### CC >= 15 대상 목록
 
-| 파일                                           | 역할                  | 예상 CC |
-| ---------------------------------------------- | --------------------- | ------- |
-| `src/components/reader/theme.ts`               | 테마 상수 룩업 테이블 | 0       |
-| `src/components/reader/hooks/useBookReader.ts` | 상태 관리 커스텀 훅   | 6-8     |
-| `src/components/reader/BookReaderModal.tsx`    | 최상위 Container      | 3-4     |
-| `src/components/reader/ReaderHeader.tsx`       | 설정 UI               | 5-6     |
-| `src/components/reader/ReaderFooter.tsx`       | 네비게이션 컨트롤     | 3-4     |
-| `src/components/reader/ReaderContent.tsx`      | 본문 렌더링           | 6-8     |
-| `src/components/reader/TableOfContents.tsx`    | 목차 사이드바         | 3-4     |
-| `src/components/reader/index.ts`               | Barrel export         | 0       |
-
-**적용된 패턴:**
-
-- SRP (단일 책임 원칙) - UI 섹션별 컴포넌트 분리
-- Custom Hook 패턴 - `useBookReader`로 모든 상태/이펙트 캡슐화
-- 테마 룩업 테이블 - 15개 이상의 `theme === 'dark'` 조건 분기 제거
+| #   | 파일                              | 함수/컴포넌트        | CC     | 상태    |
+| --- | --------------------------------- | -------------------- | ------ | ------- |
+| 1   | `sidebar/TreeItem.tsx`            | TreeItem             | **33** | 🚨 대기 |
+| 2   | `pages/EditorPage.tsx`            | EditorPage           | **31** | 🚨 대기 |
+| 3   | `extensions/CharacterNode.tsx`    | async arrow function | **21** | 🚨 대기 |
+| 4   | `common/CharacterDetailModal.tsx` | CharacterDetailModal | **20** | 🚨 대기 |
+| 5   | `extensions/SlashCommand.tsx`     | async arrow function | **19** | 🚨 대기 |
+| 6   | `extensions/CharacterNode.tsx`    | CharacterNode        | **17** | 🚨 대기 |
 
 ---
 
-### 🚨 남은 대상: `TreeItem.tsx` (CC: 33)
+## ✅ 완료된 리팩토링
 
-- **진단:** 트리 구조 특성상 재귀 로직과 상태(펼침/접힘, 선택, 드래그 앤 드롭 등) 처리가 뒤엉켜 있음
-- **해결 방안:**
-  - `useTreeItem` 커스텀 훅으로 로직 추출
-  - 뷰(View)는 렌더링만 담당
+### BookReaderModal.tsx (CC: 34 → <10)
 
-### 🚨 남은 대상: `EditorPage.tsx` (CC: 31)
+466라인 단일 파일 → 8개 모듈로 분리:
 
-- **진단:** 페이지 컴포넌트가 비즈니스 로직(데이터 페칭, 상태 동기화)과 라우팅 로직을 모두 처리
-- **해결 방안:**
-  - 데이터 페칭 로직을 커스텀 훅으로 분리
-  - Container/Presenter 패턴 적용
-
----
-
-## 2. 성능 킬러: `setState` in `useEffect`
-
-> `/src/components/editor/extensions/CommandList.tsx:56:7`
-> `Calling setState synchronously within an effect can trigger cascading renders`
-
-- **상황:** `useEffect` 안에서 `setSelectedIndex(0)` 호출
-- **문제:** Cascading Render - 사용자 타이핑마다 불필요한 리렌더링
-- **해결:** Derived State 또는 `useRef` 사용
+| 파일                            | 역할                  |
+| ------------------------------- | --------------------- |
+| `reader/theme.ts`               | 테마 상수 룩업 테이블 |
+| `reader/hooks/useBookReader.ts` | 상태 관리 커스텀 훅   |
+| `reader/BookReaderModal.tsx`    | Container             |
+| `reader/ReaderHeader.tsx`       | 설정 UI               |
+| `reader/ReaderFooter.tsx`       | 네비게이션            |
+| `reader/ReaderContent.tsx`      | 본문                  |
+| `reader/TableOfContents.tsx`    | 목차                  |
 
 ---
 
-## 3. 타입 안정성 붕괴: `any` 남발
+## 🔧 리팩토링 전략 (공통 패턴)
 
-> `/src/components/editor/extensions/SlashCommand.tsx`
-
-- **진단:** `SlashCommand` 관련 파일에서 `any` 10회 이상 발견
-- **해결:** `interface`/`type` 정의, 제네릭 활용
+1. **Custom Hook 추출** - 상태/이펙트 로직 캡슐화
+2. **컴포넌트 분리** - UI 섹션별 분리 (SRP)
+3. **상수 테이블** - 조건 분기를 룩업 테이블로 대체
+4. **Early Return** - 중첩 조건문 평탄화
 
 ---
 
-## � 진행 상황
+## 📋 우선순위 로드맵
 
-| 항목                     | 상태    | 비고                  |
-| ------------------------ | ------- | --------------------- |
-| BookReaderModal 리팩토링 | ✅ 완료 | CC: 34 → <10          |
-| TreeItem 리팩토링        | ⏳ 대기 | CC: 33                |
-| EditorPage 리팩토링      | ⏳ 대기 | CC: 31                |
-| CommandList 성능 개선    | ⏳ 대기 | setState in useEffect |
-| SlashCommand 타입 정의   | ⏳ 대기 | any 제거              |
+### Phase 1: 가장 높은 복잡도 (CC >= 30)
+
+- [ ] `TreeItem.tsx` (CC: 33) → `useTreeItem` 훅 추출
+- [ ] `EditorPage.tsx` (CC: 31) → Container/Presenter 분리
+
+### Phase 2: 중간 복잡도 (CC 20-29)
+
+- [ ] `CharacterNode.tsx` (CC: 21+17) → 로직 분리
+- [ ] `CharacterDetailModal.tsx` (CC: 20) → 탭별 컴포넌트 분리
+
+### Phase 3: 낮은 복잡도 (CC 15-19)
+
+- [ ] `SlashCommand.tsx` (CC: 19) → 타입 정의 + 로직 분리
