@@ -7,6 +7,7 @@ import {
   BookOpen,
   PenLine,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document";
@@ -19,8 +20,9 @@ interface SectionStripProps {
   selectedSectionId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
+  onDelete: (id: string) => void;
   projectId: string;
-  isDemo: boolean;
+  isDemo?: boolean;
   liveWordCount?: number; // Real-time word count for selected section
 }
 
@@ -29,8 +31,9 @@ export default function SectionStrip({
   selectedSectionId,
   onSelect,
   onAdd,
+  onDelete,
   projectId,
-  isDemo,
+  isDemo = false,
   liveWordCount,
 }: SectionStripProps) {
   // 1. Fetch data based on mode
@@ -149,6 +152,7 @@ export default function SectionStrip({
                 onClick={() => onSelect(section.id)}
                 onDragStart={(e) => handleDragStart(e, section.id)}
                 onDragEnd={handleDragEnd}
+                onDelete={() => onDelete && onDelete(section.id)}
                 liveWordCount={
                   section.id === selectedSectionId ? liveWordCount : undefined
                 }
@@ -180,6 +184,7 @@ interface SectionCardProps {
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
+  onDelete: () => void;
   liveWordCount?: number; // Real-time count for selected section
 }
 
@@ -191,6 +196,7 @@ function SectionCard({
   onClick,
   onDragStart,
   onDragEnd,
+  onDelete,
   liveWordCount,
 }: SectionCardProps) {
   const statusConfig = {
@@ -221,11 +227,25 @@ function SectionCard({
   const synopsis = section.synopsis || "";
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onClick();
+        }
+      }}
       onClick={onClick}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        // Simple confirmation via browser native menu not possible, so we use the prop
+        //Ideally we should have a custom context menu here too, but for now we can just trigger the parent deletion flow which has confirmation
+        // But we need a UI hint. Let's add a small delete button that appears on hover, or just context menu.
+        // Let's rely on a delete button on hover for clarity as context menus can be hidden.
+      }}
       className={cn(
         "group relative flex flex-col min-w-[160px] max-w-[200px] p-3 rounded-xl border-2 transition-all text-left",
         "hover:shadow-md hover:-translate-y-1",
@@ -253,12 +273,26 @@ function SectionCard({
             title={config.label}
           />
         </div>
-        <GripVertical
-          className={cn(
-            "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
-            isDragging && "cursor-grabbing"
-          )}
-        />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onDelete) {
+                onDelete();
+              }
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-full transition-opacity text-stone-400 hover:text-red-500"
+            title="삭제"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+          <GripVertical
+            className={cn(
+              "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
+              isDragging && "cursor-grabbing"
+            )}
+          />
+        </div>
       </div>
 
       {/* Title */}
@@ -294,6 +328,6 @@ function SectionCard({
           {config.label}
         </span>
       </div>
-    </button>
+    </div>
   );
 }

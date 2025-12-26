@@ -127,9 +127,36 @@ export const documentService = {
 
   // Update document metadata
   update: async (id: string, payload: UpdateDocumentInput) => {
+    // Map frontend UpdateDocumentInput (nested metadata) to BackendUpdateDocumentInput (flat)
+    const backendPayload: BackendUpdateDocumentInput = {
+      ...payload,
+      // Flatten metadata if present
+      ...(payload.metadata?.status && { status: payload.metadata.status }),
+      ...(payload.metadata?.label && { label: payload.metadata.label }),
+      ...(payload.metadata?.labelColor && {
+        labelColor: payload.metadata.labelColor,
+      }),
+      ...(payload.metadata?.wordCount !== undefined && {
+        wordCount: payload.metadata.wordCount,
+      }),
+      ...(payload.metadata?.targetWordCount !== undefined && {
+        targetWordCount: payload.metadata.targetWordCount,
+      }),
+      ...(payload.metadata?.includeInCompile !== undefined && {
+        includeInCompile: payload.metadata.includeInCompile,
+      }),
+      ...(payload.metadata?.keywords && {
+        keywords: payload.metadata.keywords,
+      }),
+      ...(payload.metadata?.notes && { notes: payload.metadata.notes }),
+    };
+
+    // Remove metadata object from payload to avoid sending it to backend
+    delete (backendPayload as any).metadata;
+
     const response = await api.patch<ApiResponse<Document>>(
       `/documents/${id}`,
-      payload
+      backendPayload
     );
     return response.data;
   },
