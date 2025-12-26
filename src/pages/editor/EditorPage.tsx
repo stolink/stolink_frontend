@@ -64,6 +64,7 @@ import OutlineView from "@/components/editor/OutlineView";
 
 // Refactored Hooks
 import { useEditorHandlers } from "./hooks/useEditorHandlers";
+import { useKeyboardSave } from "./hooks/useKeyboardSave";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -343,80 +344,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   }, [isDemo, isTourCompleted, isTourActive]);
 
-  // Ctrl+S / Command+S Save
-  useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        if (!isDemo && selectedSectionId) {
-          // Clear any pending debounced save
-          if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-            saveTimeoutRef.current = null;
-          }
-
-          try {
-            await saveContentRef.current(lastContentRef.current);
-
-            // Show visual feedback
-            const saveIndicator = document.createElement("div");
-            saveIndicator.textContent = "✓ 저장됨";
-            saveIndicator.style.cssText = `
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              background: #10b981;
-              color: white;
-              padding: 12px 20px;
-              border-radius: 8px;
-              font-size: 14px;
-              font-weight: 600;
-              z-index: 9999;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-              opacity: 0;
-              transition: opacity 0.3s ease-out;
-            `;
-            document.body.appendChild(saveIndicator);
-
-            // Trigger fade in
-            requestAnimationFrame(() => {
-              saveIndicator.style.opacity = "1";
-            });
-
-            setTimeout(() => {
-              saveIndicator.style.opacity = "0";
-              setTimeout(() => saveIndicator.remove(), 300);
-            }, 2000);
-          } catch (error) {
-            console.error("[EditorPage] Save failed:", error);
-
-            // Show error feedback
-            const errorIndicator = document.createElement("div");
-            errorIndicator.textContent = "✗ 저장 실패";
-            errorIndicator.style.cssText = `
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              background: #ef4444;
-              color: white;
-              padding: 12px 20px;
-              border-radius: 8px;
-              font-size: 14px;
-              font-weight: 600;
-              z-index: 9999;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            `;
-            document.body.appendChild(errorIndicator);
-
-            setTimeout(() => errorIndicator.remove(), 3000);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDemo, selectedSectionId]);
+  // Ctrl+S / Command+S Save (extracted to hook)
+  useKeyboardSave({
+    isDemo,
+    selectedSectionId,
+    saveContentRef,
+    lastContentRef,
+    saveTimeoutRef,
+  });
 
   // ============================================================
   // Render
