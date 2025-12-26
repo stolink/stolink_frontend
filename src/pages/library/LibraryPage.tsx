@@ -236,7 +236,22 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("Import failed:", error);
-      alert("가져오기에 실패했습니다.");
+
+      // Handle QuotaExceededError specifically
+      if (
+        error instanceof DOMException &&
+        (error.name === "QuotaExceededError" ||
+          error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+      ) {
+        alert(
+          "저장 용량이 부족합니다. 파일이 너무 크거나 브라우저 저장 공간이 가득 찼습니다."
+        );
+      } else {
+        alert(
+          "가져오기에 실패했습니다: " +
+            (error instanceof Error ? error.message : "알 수 없는 오류")
+        );
+      }
     }
   };
 

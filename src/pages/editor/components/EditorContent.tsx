@@ -3,7 +3,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { TiptapEditor } from "@/components/editor/TiptapEditor";
+import TiptapEditor from "@/components/editor/TiptapEditor";
 import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
 import OutlineView from "@/components/editor/OutlineView";
 import EmptyState from "@/components/editor/EmptyState";

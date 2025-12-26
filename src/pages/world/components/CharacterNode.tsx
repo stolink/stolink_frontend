@@ -1,4 +1,4 @@
-import { Handle, Position, NodeProps } from "reactflow";
+import { Handle, Position, type NodeProps } from "reactflow";
 import { cn } from "@/lib/utils";
 
 // Custom Character Node - reference 디자인 반영
