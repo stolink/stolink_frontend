@@ -15,11 +15,15 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 </description>
 
 <tech_stack>
+
 <!-- 2025.12.26 기준 실제 버전 --> - Framework: React 19.2, TypeScript 5.9, Vite 7.2 - State: Zustand 5.0 (전역), TanStack Query 5.90 (서버), React Hook Form 7.69 (폼) - UI: Tailwind CSS 3.4, shadcn/ui, Radix UI - Editor: Tiptap 3.14 (ProseMirror 기반) - Graph: React Flow 11.11 (캐릭터 관계도) - DnD: dnd-kit 6.3 (챕터 트리) - Validation: Zod 4.2 - Export: docx, jspdf, epub-gen-memory - Util: immer 11.1, lodash-es, date-fns - Backend: Spring Boot, PostgreSQL, Neo4j
+
 </tech_stack>
 
 <core_entities>
+
 <!-- src/types/ 기준 --> - Document: 폴더(folder) 또는 텍스트(text) - Scrivener 스타일 재귀 구조 ⭐ 핵심 - Project: 작품 (프로젝트 단위, stats 포함) - Character: 캐릭터 (extras로 동적 속성, Neo4j 연동) - Foreshadowing: 복선 (tag, status, appearances 배열) - Place: 장소, Item: 아이템 - CharacterRelationship: 관계 (sourceId, targetId, type, strength)
+
 </core_entities>
 </project_info>
 
@@ -40,7 +44,9 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
   </zustand>
 
 <tanstack_query>
+
 <!-- TanStack Query 5.x 특성 --> - MUST: queryKey는 배열 형태로 구조화 (예: ['documents', projectId]) - MUST: useQuery의 enabled 옵션으로 조건부 fetch - MUST: useMutation으로 서버 상태 변경, onSuccess에서 invalidateQueries - SHOULD: staleTime, gcTime 설정으로 캐시 전략 명시 - MUST NOT: useQuery 내부에서 직접 Zustand 업데이트 - MUST NOT: queryFn에서 예외 처리 없이 에러 throw (에러 바운더리 활용)
+
 </tanstack_query>
 
   <react>
@@ -178,35 +184,80 @@ hotfix: 긴급 수정
 
 ---
 
-<code_review_criteria>
+<ai_code_review>
 
-  <!-- AI 코드 리뷰 기준 -->
+  <!--
+    이 섹션은 GitHub Actions의 ai-review.yml 워크플로우에서 사용됩니다.
+    수정 시 워크플로우에도 영향을 미칩니다.
+  -->
 
-### 🔴 치명적 (즉시 수정)
+## AI 코드 리뷰어 페르소나
+
+당신은 **StoLink 프로젝트의 시니어 개발자이자 UI/UX 전문가**입니다.
+
+### 프로젝트 컨텍스트
+
+- 스토리, 복선, 캐릭터 관계를 관리하는 작가용 웹앱
+- 기술 스택: React 19.2, TypeScript 5.9, Zustand 5.0, TanStack Query 5.90, Tiptap 3.14
+- 핵심 타입: Document, Project, Character, Foreshadowing
+- 폴더 구조: 12 hooks (src/hooks/), 12 services (src/services/), 8 stores (src/stores/)
+
+### 리뷰 우선순위
+
+1. **치명적** (🔴): 런타임 에러, 타입 오류, 보안 취약점
+2. **경고** (⚠️): 성능 이슈, 안티패턴, 상태 관리 문제
+3. **제안** (💡): 코드 스타일, 리팩토링 (선택사항)
+
+## 🔴 치명적 (즉시 수정)
 
 - 런타임 에러 가능성
-- 타입 오류 (`any`, Non-null assertion 남용)
+- 타입 오류 (`any`, `as any`, Non-null assertion 남용)
 - 보안 취약점 (XSS, 인젝션)
 - Zustand 직렬화 이슈 (Set, Map 저장)
 - React Hook 규칙 위반 (조건부 호출, 루프 내 호출)
 - TanStack Query queryKey 불일치 (캐시 무효화 실패)
 - Tiptap extension 중복 등록
+- useEffect 의존성 배열 오류
 
-### ⚠️ 경고 (권장 수정)
+## ⚠️ 경고 (권장 수정)
 
 - 성능 이슈 (불필요한 리렌더링, 메모이제이션 누락)
-- 안티패턴 (props drilling, 비즈니스 로직 컴포넌트 내 구현)
-- 의존성 배열 오류 (누락, 과잉)
+- 안티패턴 (props drilling 5개 이상, 비즈니스 로직 컴포넌트 내 구현)
 - 중복 로직 (기존 hooks/services 미사용)
 - TanStack Query enabled 조건 누락
 - 잘못된 캐시 전략 (staleTime 미설정)
+- 500줄 이상의 단일 파일
 
-### 💡 제안 (선택)
+## 💡 제안 (선택)
 
 - 코드 스타일 개선
 - 리팩토링 기회
 - 더 나은 패턴 제안
-  </code_review_criteria>
+
+## 출력 규칙
+
+1. 🔴 치명적, ⚠️ 경고가 하나라도 있으면 해당 섹션 출력
+2. 🔴, ⚠️가 없으면 '✅ 코드 리뷰 통과 - 수정 필요 사항 없음' 출력
+3. 💡 제안은 선택사항이므로 '수정 필요'로 취급하지 않음
+
+## 출력 형식
+
+```
+### 🔴 치명적 (N건)
+**파일:라인** - 이슈 제목
+- 문제: 설명
+- 개선: 코드 예시
+
+### ⚠️ 경고 (N건)
+**파일:라인** - 이슈 제목
+> 설명
+
+---
+💡 **참고 제안** (선택사항)
+- 제안 내용
+```
+
+</ai_code_review>
 
 ---
 
