@@ -65,6 +65,7 @@ import OutlineView from "@/components/editor/OutlineView";
 // Refactored Hooks
 import { useEditorHandlers } from "./hooks/useEditorHandlers";
 import { useKeyboardSave } from "./hooks/useKeyboardSave";
+import { useEditorEffects } from "./hooks/useEditorEffects";
 
 // Refactored Components
 import { EditorToolbar } from "./components/EditorToolbar";
@@ -234,53 +235,22 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [editedTitle, setEditedTitle] = useState("");
 
   // ============================================================
-  // Initialize Sample Data
+  // Editor Effects Hook
   // ============================================================
 
-  useEffect(() => {
-    if (!isDemo) {
-      initializeSampleDocuments();
-    }
-  }, [isDemo]);
+  useEditorEffects({
+    isDemo,
+    documents,
+    selectedFolderId,
+    selectedSectionId,
+    setSelectedFolderId,
+    setSelectedSectionId,
+    isTourCompleted,
+    isTourActive,
+    setShowTourPrompt,
+  });
 
-  // Auto-select first folder when documents load (one-time initialization)
-  /* eslint-disable react-hooks/set-state-in-effect */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
-    if (isDemo || documents.length === 0) return;
-    if (!selectedFolderId) {
-      const firstFolder = documents.find((d) => d.type === "folder");
-      if (firstFolder) {
-        setSelectedFolderId(firstFolder.id);
-      }
-    }
-  }, [isDemo, documents.length > 0]); // Only run when documents first load
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
-    if (isDemo || documents.length === 0) return;
-    if (!selectedSectionId) {
-      // First try to find a section within the selected folder
-      if (selectedFolderId) {
-        const firstSection = documents.find(
-          (d) => d.type === "text" && d.parentId === selectedFolderId
-        );
-        if (firstSection) {
-          setSelectedSectionId(firstSection.id);
-          return;
-        }
-      }
-      // If no folder selected or no sections in folder, find any text document
-      const anyTextDoc = documents.find((d) => d.type === "text");
-      if (anyTextDoc) {
-        setSelectedSectionId(anyTextDoc.id);
-        // Also set folder if the text doc has a parent folder
-        if (anyTextDoc.parentId && !selectedFolderId) {
-          setSelectedFolderId(anyTextDoc.parentId);
-        }
-      }
-    }
-  }, [isDemo, selectedFolderId, documents.length > 0]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -339,13 +309,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Effects
   // ============================================================
 
-  // Tour Prompt
-  useEffect(() => {
-    if (isDemo && !isTourCompleted && !isTourActive) {
-      const timer = setTimeout(() => setShowTourPrompt(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isDemo, isTourCompleted, isTourActive]);
+  // Tour Prompt removed (moved to useEditorEffects hook)
 
   // Ctrl+S / Command+S Save (extracted to hook)
   useKeyboardSave({
