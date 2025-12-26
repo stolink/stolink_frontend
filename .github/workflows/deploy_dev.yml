@@ -8,9 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write # AWS 인증을 위한 OIDC 토큰 발행 권한
-      contents: read
 
     steps:
       - name: Checkout code
@@ -19,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
@@ -48,6 +45,6 @@ jobs:
         run: |
           # URL을 통해 Distribution ID를 조회합니다.
           DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL_DEV }}'].Id | [0]" --output text)
-
+          
           # 캐시 무효화 실행
           aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"

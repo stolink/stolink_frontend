@@ -216,9 +216,37 @@ export class LocalDocumentRepository implements IDocumentRepository {
   }
 
   async create(input: CreateDocumentInput): Promise<Document> {
-    throw new Error(
-      "Local document creation is not supported. Use backend mutation."
+    const store = this.getStore();
+
+    // Calculate order
+    const siblings = Object.values(store.documents).filter(
+      (doc) =>
+        doc.projectId === input.projectId && doc.parentId === input.parentId
     );
+    const order = siblings.length;
+
+    const now = new Date().toISOString();
+    const newDoc: Document = {
+      id: generateId(),
+      projectId: input.projectId,
+      parentId: input.parentId,
+      type: input.type,
+      title: input.title,
+      content: "",
+      synopsis: input.synopsis || "",
+      order,
+      metadata: {
+        ...createDefaultMetadata(),
+        targetWordCount: input.targetWordCount,
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    store._create(newDoc);
+    return newDoc;
   }
 
   async update(id: string, input: UpdateDocumentInput): Promise<Document> {

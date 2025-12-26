@@ -25,6 +25,10 @@ export function useDocumentTree(projectId: string) {
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
     queryKey: ["documents", projectId],
     queryFn: async () => {
+      console.log(
+        "[useDocumentTree] Fetching documents for project:",
+        projectId
+      );
       try {
         const response = await documentService.getTree(projectId);
         const backendDocs = response.data || [];
@@ -42,9 +46,20 @@ export function useDocumentTree(projectId: string) {
         };
 
         const flatDocs = flattenTree(backendDocs);
+        console.log(
+          "[useDocumentTree] Fetched documents:",
+          flatDocs.length,
+          flatDocs.map((d: any) => ({
+            id: d.id?.substring(0, 8),
+            title: d.title,
+            type: d.type,
+            parentId: d.parentId?.substring(0, 8),
+          }))
+        );
         // Convert backend documents to frontend format
         return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
+        console.log("[useDocumentTree] Fetch error:", error);
         // 404 means no documents yet - this is normal for new projects
         if ((error as any)?.response?.status === 404) {
           return [];
@@ -53,8 +68,8 @@ export function useDocumentTree(projectId: string) {
       }
     },
     enabled: !!projectId,
-    staleTime: 5000,
-    refetchOnMount: true, // Refetch on mount but respect staleTime
+    staleTime: 0, // Always refetch to get latest tree from backend
+    refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
       if ((error as any)?.response?.status === 404) {
@@ -67,6 +82,11 @@ export function useDocumentTree(projectId: string) {
   // Sync fetched documents to Zustand store
   useEffect(() => {
     if (fetchedDocuments && fetchedDocuments.length > 0) {
+      console.log(
+        "[useDocumentTree] Syncing to store:",
+        fetchedDocuments.length,
+        "docs"
+      );
       _syncProjectDocuments(projectId, fetchedDocuments);
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
@@ -86,7 +106,16 @@ export function useDocumentTree(projectId: string) {
       ? fetchedDocuments
       : storeDocuments;
 
-  const tree = useMemo(() => buildTree(documents), [documents]);
+  const tree = buildTree(documents);
+
+  console.log("[useDocumentTree] Returning:", {
+    projectId,
+    fetchedDocsCount: fetchedDocuments?.length,
+    storeDocsCount: storeDocuments.length,
+    finalDocsCount: documents.length,
+    treeLength: tree.length,
+    isFetching,
+  });
 
   return {
     documents,
@@ -133,7 +162,7 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
   );
 
   return {
-    children: [...children].sort((a, b) => a.order - b.order),
+    children: children.sort((a, b) => a.order - b.order),
     isLoading: false,
   };
 }
@@ -175,8 +204,8 @@ export function useDocumentContent(id: string | null) {
       }
     },
     enabled: !!id,
-    staleTime: 5000,
-    refetchOnMount: true,
+    staleTime: 0, // Always refetch to get latest content from backend
+    refetchOnMount: "always", // Force refetch when component mounts
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
       if ((error as any)?.response?.status === 404) {
@@ -189,6 +218,11 @@ export function useDocumentContent(id: string | null) {
   // Sync fetched content to Zustand store
   useEffect(() => {
     if (id && fetchedContent !== undefined && fetchedContent !== null) {
+      console.log("[useDocumentContent] Syncing fetched content to store:", {
+        id,
+        contentLength: fetchedContent?.length,
+        preview: fetchedContent?.substring(0, 100),
+      });
       _setContent(id, fetchedContent);
     }
   }, [id, fetchedContent, _setContent]);
@@ -198,6 +232,15 @@ export function useDocumentContent(id: string | null) {
     fetchedContent !== undefined && fetchedContent !== null
       ? fetchedContent
       : storeContent;
+
+  console.log("[useDocumentContent] Returning content:", {
+    id,
+    fetchedContent: fetchedContent?.substring(0, 50),
+    storeContent: storeContent?.substring(0, 50),
+    finalContent: content?.substring(0, 50),
+    isLoading,
+    isFetching,
+  });
 
   const saveContent = useCallback(
     async (newContent: string) => {
@@ -306,6 +349,31 @@ export function useDocumentMutations(projectId: string) {
           "[useDocumentMutations] Failed to create document:",
           error
         );
+
+        // Fallback to local-only creation if backend fails
+        if (
+          error?.response?.status === 500 ||
+          error?.response?.status === 404
+        ) {
+          const localDocumentRepository =
+            await import("@/repositories/LocalDocumentRepository").then(
+              (m) => m.localDocumentRepository
+            );
+
+          try {
+            const localDoc = await localDocumentRepository.create({
+              projectId,
+              ...input,
+            });
+            _create(localDoc);
+            return localDoc;
+          } catch (localError) {
+            console.error(
+              "[useDocumentMutations] Local fallback failed:",
+              localError
+            );
+          }
+        }
       }
       return null;
     },
@@ -335,23 +403,15 @@ export function useDocumentMutations(projectId: string) {
       try {
         const response = await documentService.delete(id);
         const isSuccess =
-          // Check for 204 No Content as well, combined with other success codes
-          response.success ||
-          response.status === "OK" ||
-          response.code === 200 ||
-          response.code === 204;
-
-        // Since API might return empty body for delete, relax the check
-        if (isSuccess || !response.error) {
+          response.success || response.status === "OK" || response.code === 200;
+        if (isSuccess) {
           _delete(id);
-          // Invalidate documents query to refetch tree with deleted document removed
-          queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
         }
       } catch (error) {
         console.error("Failed to delete document:", error);
       }
     },
-    [projectId, _delete, queryClient]
+    [_delete]
   );
 
   const reorderDocuments = useCallback(
@@ -412,7 +472,7 @@ export function useDescendantDocuments(
   };
 }
 
-export function buildTree(documents: Document[]): DocumentTreeNode[] {
+function buildTree(documents: Document[]): DocumentTreeNode[] {
   const map = new Map<string, DocumentTreeNode>();
   const roots: DocumentTreeNode[] = [];
 
