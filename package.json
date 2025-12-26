@@ -61,6 +61,7 @@
     "framer-motion": "^12.23.26",
     "html2pdf.js": "^0.12.1",
     "iconv-lite": "^0.7.1",
+    "idb-keyval": "^6.2.2",
     "immer": "^11.1.0",
     "jspdf": "^3.0.4",
     "lodash-es": "^4.17.22",

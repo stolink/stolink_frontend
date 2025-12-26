@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { PanelRightOpen } from "lucide-react";
+import { PanelRightOpen, Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores";

@@ -40,6 +40,22 @@ interface DocumentStore {
   _syncProjectDocuments: (projectId: string, documents: Document[]) => void;
 }
 
+import { get, set, del } from "idb-keyval";
+import { createJSONStorage, type StateStorage } from "zustand/middleware";
+
+// Custom storage adapter for IndexedDB
+const storage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await set(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await del(name);
+  },
+};
+
 export const useDocumentStore = create<DocumentStore>()(
   persist(
     immer((set) => ({
@@ -141,7 +157,10 @@ export const useDocumentStore = create<DocumentStore>()(
         });
       },
     })),
-    { name: "sto-link-documents" }
+    {
+      name: "sto-link-documents",
+      storage: createJSONStorage(() => storage),
+    }
   )
 );
 
