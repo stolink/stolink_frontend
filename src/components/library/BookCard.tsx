@@ -9,15 +9,13 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
 
-// 레거시 호환용 타입 (기존 코드와의 호환성 유지)
+// ✅ API 형식 통일 - 대문자만 사용
 export type ProjectStatus =
   | "DRAFTING"
   | "OUTLINE"
   | "EDITING"
   | "COMPLETED"
-  | "IDEA"
-  | "writing"
-  | "completed";
+  | "IDEA";
 
 interface BookCardProps {
   // 프로젝트 ID (상태 변경 및 편집 모드용)
@@ -45,17 +43,17 @@ interface BookCardProps {
 
 /**
  * 프로젝트 상태를 StatusChip에서 사용하는 타입으로 변환
+ * 변환은 함수에서만 수행 - API 대문자 형식을 UI 소문자 형식으로
  */
-function normalizeStatus(status: ProjectStatus): ProjectStatusType {
-  switch (status) {
+function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
+  const upperStatus = typeof status === "string" ? status.toUpperCase() : status;
+  switch (upperStatus) {
     case "COMPLETED":
-    case "completed":
       return "completed";
     case "DRAFTING":
     case "EDITING":
     case "OUTLINE":
     case "IDEA":
-    case "writing":
     default:
       return "writing";
   }
@@ -79,6 +77,11 @@ export function BookCard({
 }: BookCardProps) {
   // 정규화된 상태 값
   const normalizedStatus = normalizeStatus(status);
+
+  // 편집 모드에서 onSelect 필수 체크
+  if (isEditMode && !onSelect) {
+    console.warn("BookCard: onSelect is required when isEditMode=true");
+  }
 
   // 카드 클릭 핸들러 (편집 모드일 때는 선택 동작)
   const handleCardClick = () => {
