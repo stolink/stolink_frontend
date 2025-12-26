@@ -43,19 +43,19 @@ interface BookCardProps {
 
 /**
  * 프로젝트 상태를 StatusChip에서 사용하는 타입으로 변환
- * 변환은 함수에서만 수행 - API 대문자 형식을 UI 소문자 형식으로
+ * API 상태값을 UI에서 사용하는 EDITING/COMPLETED로 정규화
  */
 function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
   const upperStatus = typeof status === "string" ? status.toUpperCase() : status;
   switch (upperStatus) {
     case "COMPLETED":
-      return "completed";
+      return "COMPLETED";
     case "DRAFTING":
     case "EDITING":
     case "OUTLINE":
     case "IDEA":
     default:
-      return "writing";
+      return "EDITING";
   }
 }
 
@@ -227,11 +227,11 @@ export function BookCard({
               <span
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  normalizedStatus === "completed" ? "bg-green-500" : "bg-sage-500"
+                  normalizedStatus === "COMPLETED" ? "bg-green-500" : "bg-sage-500"
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">
-                {normalizedStatus === "completed" ? "Complete" : "Writing"}
+                {normalizedStatus === "COMPLETED" ? "Complete" : "Writing"}
               </span>
             </div>
           )}

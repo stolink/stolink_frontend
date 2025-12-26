@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-// 프로젝트 상태 타입 정의
-export type ProjectStatusType = "writing" | "completed";
+// ✅ API 형식 통일 - 대문자만 사용
+export type ProjectStatusType = "EDITING" | "COMPLETED";
 
 interface StatusChipProps {
     // 현재 상태
@@ -22,14 +22,14 @@ interface StatusChipProps {
 
 // 상태별 라벨 정의
 const STATUS_LABELS: Record<ProjectStatusType, string> = {
-    writing: "Writing",
-    completed: "Complete",
+    EDITING: "Writing",
+    COMPLETED: "Complete",
 };
 
 /**
  * 상태 변경 드롭다운 칩 컴포넌트
  * - 클릭 시 드롭다운 메뉴 표시
- * - Writing/Complete 상태 선택 가능
+ * - Writing(EDITING)/Complete(COMPLETED) 상태 선택 가능
  * - Complete 상태 시 초록색 배경으로 시각적 피드백
  */
 export function StatusChip({
@@ -40,7 +40,7 @@ export function StatusChip({
     const [isOpen, setIsOpen] = useState(false);
 
     // 상태에 따른 스타일 결정
-    const isCompleted = status === "completed";
+    const isCompleted = status === "COMPLETED";
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -84,10 +84,10 @@ export function StatusChip({
                 className="min-w-[120px]"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Writing 옵션 */}
+                {/* Writing(EDITING) 옵션 */}
                 <DropdownMenuItem
                     onClick={() => {
-                        onStatusChange("writing");
+                        onStatusChange("EDITING");
                         setIsOpen(false);
                     }}
                     className="flex items-center justify-between gap-2"
@@ -96,13 +96,13 @@ export function StatusChip({
                         <span className="h-2 w-2 rounded-full bg-sage-500" />
                         <span>Writing</span>
                     </div>
-                    {status === "writing" && <Check className="h-4 w-4 text-sage-600" />}
+                    {status === "EDITING" && <Check className="h-4 w-4 text-sage-600" />}
                 </DropdownMenuItem>
 
-                {/* Complete 옵션 */}
+                {/* Complete(COMPLETED) 옵션 */}
                 <DropdownMenuItem
                     onClick={() => {
-                        onStatusChange("completed");
+                        onStatusChange("COMPLETED");
                         setIsOpen(false);
                     }}
                     className="flex items-center justify-between gap-2"
@@ -111,7 +111,7 @@ export function StatusChip({
                         <span className="h-2 w-2 rounded-full bg-green-500" />
                         <span>Complete</span>
                     </div>
-                    {status === "completed" && (
+                    {status === "COMPLETED" && (
                         <Check className="h-4 w-4 text-green-600" />
                     )}
                 </DropdownMenuItem>
