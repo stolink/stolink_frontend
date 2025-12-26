@@ -22,8 +22,9 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore, useEditorStore } from "@/stores";
 import { BookReaderModal } from "@/components/common/BookReaderModal";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
-import { useShallow } from "zustand/react/shallow";
 import type { Document } from "@/types/document";
+// 로고 이미지를 import하여 번들링 호환성 확보
+import mainLogo from "@/assets/main_logo.png";
 
 export function ProjectLayout() {
   const { id } = useParams<{ id: string }>();
@@ -42,12 +43,10 @@ export function ProjectLayout() {
   // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
   // useDocumentStore를 사용하여 Ctrl+S 없이도 편집 중인 내용 표시
   // ============================================================
-  const localDocuments = useDocumentStore(
-    useShallow((state) =>
-      Object.values(state.documents).filter(
-        (doc) => doc.projectId === id
-      )
-    )
+  const allDocuments = useDocumentStore((state) => state.documents);
+  const localDocuments = useMemo(
+    () => Object.values(allDocuments).filter((doc) => doc.projectId === id),
+    [allDocuments, id]
   );
 
   /**
@@ -57,17 +56,13 @@ export function ProjectLayout() {
    * - id, title, content 필드만 추출
    */
   const previewChapters = useMemo(() => {
-    if (!localDocuments || localDocuments.length === 0) {
-      return [];
-    }
-
-    return localDocuments
-      .filter((doc: Document) => doc.type === "text")
-      .sort((a: Document, b: Document) => a.order - b.order)
-      .map((doc: Document) => ({
+    return (localDocuments ?? [])
+      .filter((doc): doc is Document => doc?.type === "text")
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((doc) => ({
         id: doc.id,
         title: doc.title,
-        content: doc.content || "",
+        content: doc.content ?? "",
       }));
   }, [localDocuments]);
 
@@ -120,7 +115,7 @@ export function ProjectLayout() {
               </button>
               <div className="h-6 w-px bg-stone-200" />
               <img
-                src="/src/assets/main_logo.png"
+                src={mainLogo}
                 alt="Sto-Link"
                 className="h-12 w-auto"
               />
