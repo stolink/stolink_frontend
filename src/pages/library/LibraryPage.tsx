@@ -431,16 +431,11 @@ export default function LibraryPage() {
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Link
-                  to="/"
-                  className="flex items-center hover:opacity-80 transition-opacity"
-                >
-                  <img
-                    src="/assets/main_logo.png"
-                    alt="Sto-Link"
-                    className="h-16 w-auto"
-                  />
-                </Link>
+                <img
+                  src="/assets/main_logo.png"
+                  alt="Sto-Link"
+                  className="h-16 w-auto"
+                />
               </div>
 
               <div className="flex items-center gap-3">
