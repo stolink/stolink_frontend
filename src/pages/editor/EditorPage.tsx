@@ -62,6 +62,9 @@ import SectionStrip from "@/components/editor/SectionStrip";
 import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
 import OutlineView from "@/components/editor/OutlineView";
 
+// Refactored Hooks
+import { useEditorHandlers } from "./hooks/useEditorHandlers";
+
 // ============================================================
 // Demo Data Utilities (for demo mode only)
 // ============================================================
@@ -189,6 +192,39 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const { createDocument } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
+  // ============================================================
+  // Editor Handlers Hook
+  // ============================================================
+
+  const {
+    lastContentRef,
+    saveContentRef,
+    saveTimeoutRef,
+    forceSave,
+    handleSelectFolder,
+    handleSelectSection,
+    handleContentChange,
+    handleCharacterCountChange,
+    handleAddChapter,
+    handleAddSection,
+    handleRenameChapter,
+    handleDeleteChapter,
+    handleDuplicateChapter,
+    handleConvertType,
+  } = useEditorHandlers({
+    isDemo,
+    documents,
+    selectedFolderId,
+    selectedSectionId,
+    setSelectedFolderId,
+    setSelectedSectionId,
+    viewMode,
+    setViewMode,
+    saveContent,
+    updateDocument,
+    createDocument,
+  });
+
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -281,231 +317,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   }, [isDemo, selectedSectionId, documentContent]);
 
   // ============================================================
-  // Handlers
+  // Local Helpers (not in hook)
   // ============================================================
 
-  const handleAddChapter = (
-    title: string,
-    parentId?: string,
-    type: "chapter" | "section" = "chapter"
-  ) => {
-    if (isDemo) return;
-    createDocument({
-      type: type === "chapter" ? "folder" : "text",
-      title,
-      parentId,
-    });
-  };
-
-  const handleAddSection = async () => {
-    if (isDemo) return;
-    const newDoc = await createDocument({
-      type: "text",
-      title: "새 섹션",
-      parentId: selectedFolderId ?? undefined,
-    });
-    // Auto-select the new section
-    if (newDoc) {
-      setSelectedSectionId(newDoc.id);
-    }
-  };
-
-  const handleRenameChapter = async (id: string, newTitle: string) => {
-    if (isDemo) return;
-    const { _update } = useDocumentStore.getState();
-    _update(id, { title: newTitle });
-  };
-
-  const handleDeleteChapter = async (id: string) => {
-    if (isDemo) return;
-    const { _delete } = useDocumentStore.getState();
-    _delete(id);
-    // Clear selection if deleted item was selected
-    if (selectedFolderId === id) {
-      setSelectedFolderId(null);
-      setSelectedSectionId(null);
-    } else if (selectedSectionId === id) {
-      setSelectedSectionId(null);
-    }
-  };
-
-  const handleDuplicateChapter = async (id: string) => {
-    if (isDemo) return;
-    const { documents, _create } = useDocumentStore.getState();
-    const original = documents[id];
-    if (!original) return;
-
-    const now = new Date().toISOString();
-    _create({
-      ...original,
-      id: `${original.id}-copy-${Date.now()}`,
-      title: `${original.title} (복사본)`,
-      createdAt: now,
-      updatedAt: now,
-    });
-  };
-
-  const handleConvertType = async (id: string, type: "chapter" | "section") => {
-    if (isDemo) return;
-    const { _updateType } = useDocumentStore.getState();
-    _updateType(id, type === "chapter" ? "folder" : "text");
-  };
-
-  // Force save current content immediately
-  const forceSave = async () => {
-    if (isDemo || !selectedSectionIdRef.current) return;
-
-    // Clear pending debounce
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-
-    // Save if we have content
-    if (lastContentRef.current && saveContentRef.current) {
-      console.log("[EditorPage] Force saving before switch/unmount");
-      try {
-        await saveContentRef.current(lastContentRef.current);
-        // Reset content ref after save to prevent double saving (optional, but safer)
-        // lastContentRef.current = "";
-      } catch (error) {
-        console.error("[EditorPage] Force save failed:", error);
-      }
-    }
-  };
-
-  const handleSelectFolder = async (id: string) => {
-    // Force save before switching context
-    await forceSave();
-
-    // Find the document
-    const doc = documents.find((d) => d.id === id);
-    if (!doc) {
-      // Demo fallback
-      if (isDemo) {
-        setSelectedFolderId(id);
-        setSelectedSectionId(id);
-      }
-      return;
-    }
-
-    // Check if node has children (is it a container?)
-    const hasChildren = documents.some((d) => d.parentId === id);
-    const isContainer = hasChildren || doc.type === "folder";
-
-    if (isContainer) {
-      // It's a container (Folder or Parent Section)
-      setSelectedFolderId(id);
-      setSelectedSectionId(id); // Select itself so we can edit its title/content if in Single Mode
-
-      // Auto-switch to Scrivenings if appropriate
-      if (hasChildren && viewMode !== "outline") {
-        setViewMode("scrivenings");
-      }
-    } else {
-      // It's a leaf node
-      // Set context to parent (so Strip shows siblings)
-      if (doc.parentId) {
-        setSelectedFolderId(doc.parentId);
-      } else {
-        setSelectedFolderId(id);
-      }
-      setSelectedSectionId(id);
-
-      // Auto-switch to Single Editor
-      if (viewMode !== "outline") {
-        setViewMode("editor");
-      }
-    }
-  };
-
-  const handleSelectSection = async (id: string) => {
-    // Force save before switching section
-    if (selectedSectionId !== id) {
-      await forceSave();
-    }
-    setSelectedSectionId(id);
-  };
-
-  // Debounced content saving to reduce latency
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-
-  // Track latest content for manual save (Ctrl+S)
-  const lastContentRef = useRef<string>("");
-  const saveContentRef = useRef(saveContent);
-
-  // Update saveContent ref when it changes
-  useEffect(() => {
-    saveContentRef.current = saveContent;
-  }, [saveContent]);
-
-  const handleContentChange = useCallback(
-    (content: string) => {
-      lastContentRef.current = content;
-      if (isDemo) return;
-
-      // Clear previous timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      // Debounce save by 500ms
-      saveTimeoutRef.current = setTimeout(() => {
-        saveContentRef.current(content);
-      }, 500);
-    },
-    [isDemo]
-  );
-
-  // Store latest values in refs to prevent callback recreation
-  const selectedSectionIdRef = useRef(selectedSectionId);
-  const updateDocumentRef = useRef(updateDocument);
-
-  useEffect(() => {
-    selectedSectionIdRef.current = selectedSectionId;
-  }, [selectedSectionId]);
-
-  useEffect(() => {
-    updateDocumentRef.current = updateDocument;
-  }, [updateDocument]);
-
-  // Handle character count update and sync to document metadata
-  // Using refs to prevent callback recreation on every section change
-  const handleCharacterCountChange = useCallback(
-    (count: number) => {
-      setCharacterCount(count);
-
-      // Update document wordCount with debounce (1s to avoid too many updates)
-      if (!isDemo && selectedSectionIdRef.current) {
-        if (wordCountTimeoutRef.current) {
-          clearTimeout(wordCountTimeoutRef.current);
-        }
-        wordCountTimeoutRef.current = setTimeout(() => {
-          updateDocumentRef.current({ metadata: { wordCount: count } });
-        }, 1000);
-      }
-    },
-    [isDemo] // Minimal dependencies - use refs for changing values
-  );
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      if (wordCountTimeoutRef.current) {
-        clearTimeout(wordCountTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
   const isSidebarVisible = isSidebarOpen && !isFocusMode;
+
+  // Wrapper for handleCharacterCountChange to include setCharacterCount
+  const onCharacterCountChange = useCallback(
+    (count: number) => {
+      handleCharacterCountChange(count, setCharacterCount);
+    },
+    [handleCharacterCountChange]
+  );
 
   // ============================================================
   // Effects
