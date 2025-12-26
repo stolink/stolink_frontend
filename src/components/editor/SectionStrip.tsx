@@ -40,7 +40,7 @@ export default function SectionStrip({
   const { documents } = useDocumentTree(projectId);
   // Fetch sections (child documents) for the selected folder
   const { children: sectionDocuments, isLoading } = useChildDocuments(
-    selectedFolderId ?? undefined, // Handle null by passing undefined
+    selectedFolderId, // null is accepted by useChildDocuments
     projectId
   );
 

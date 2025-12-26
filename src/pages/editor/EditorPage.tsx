@@ -157,7 +157,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Demo Data Logic
   const demoDocuments = useMemo(() => {
-    return isDemo ? (DEMO_CHAPTERS as Document[]) : [];
+    return isDemo ? (DEMO_CHAPTERS as unknown as Document[]) : [];
   }, [isDemo]);
 
   const demoTree = useMemo(() => {
@@ -600,7 +600,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                             editedTitle.trim() &&
                             editedTitle !== currentSectionTitle
                           ) {
-                            updateDocument({ title: editedTitle.trim() });
+                            if (selectedSectionId) {
+                              updateDocument(selectedSectionId, {
+                                title: editedTitle.trim(),
+                              });
+                            }
                           }
                           setIsEditingTitle(false);
                         }}
@@ -610,7 +614,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                               editedTitle.trim() &&
                               editedTitle !== currentSectionTitle
                             ) {
-                              updateDocument({ title: editedTitle.trim() });
+                              if (selectedSectionId) {
+                                updateDocument(selectedSectionId, {
+                                  title: editedTitle.trim(),
+                                });
+                              }
                             }
                             setIsEditingTitle(false);
                           }
