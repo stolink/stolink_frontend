@@ -1,31 +1,11 @@
-import {
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  PanelLeft,
-  PanelRightOpen,
-  Maximize2,
-  Minimize2,
-  Columns,
-  Settings,
-  Layout,
-  List,
-  TableProperties,
-  ChevronRight,
-  BookOpen,
-} from "lucide-react";
+import { PanelRightOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores";
 import { useDemoStore } from "@/stores/useDemoStore";
 import { cn } from "@/lib/utils";
-import TiptapEditor from "@/components/editor/TiptapEditor";
 import GuidedTour from "@/components/common/GuidedTour";
 import {
   DEMO_TOUR_STEPS,
@@ -34,11 +14,6 @@ import {
 } from "@/data/demoData";
 import { useEditorStore } from "@/stores";
 import { type ChapterNode } from "@/components/editor/sidebar";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 
 // New Document-based imports
 import {
@@ -49,18 +24,14 @@ import {
 } from "@/hooks/useDocuments";
 import type { DocumentTreeNode } from "@/types/document";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
-import {
-  SAMPLE_PROJECT_ID,
-  initializeSampleDocuments,
-} from "@/data/sampleDocuments";
+import { SAMPLE_PROJECT_ID } from "@/data/sampleDocuments";
 
 // Refactored Components
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import DemoHeader from "@/components/editor/DemoHeader";
 import SectionStrip from "@/components/editor/SectionStrip";
-import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
-import OutlineView from "@/components/editor/OutlineView";
+// ScriveningsEditor & OutlineView removed (moved to EditorContent)
 
 // Refactored Hooks
 import { useEditorHandlers } from "./hooks/useEditorHandlers";
@@ -69,6 +40,7 @@ import { useEditorEffects } from "./hooks/useEditorEffects";
 
 // Refactored Components
 import { EditorToolbar } from "./components/EditorToolbar";
+import { EditorContent } from "./components/EditorContent";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -403,56 +375,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           )}
 
           {/* Editor Content */}
+          {/* Editor Content */}
           <div className="flex-1 overflow-hidden relative">
-            {viewMode === "outline" ? (
-              <OutlineView folderId={selectedFolderId} projectId={projectId} />
-            ) : viewMode === "scrivenings" ? (
-              <ScriveningsEditor
-                folderId={selectedFolderId}
-                projectId={projectId}
-                onUpdate={handleCharacterCountChange}
-              />
-            ) : splitView.enabled ? (
-              <ResizablePanelGroup direction={splitView.direction}>
-                <ResizablePanel defaultSize={50} minSize={30}>
-                  <div className="h-full overflow-y-auto">
-                    <TiptapEditor
-                      onUpdate={handleCharacterCountChange}
-                      onContentChange={handleContentChange}
-                      initialContent={currentContent}
-                      hideToolbar={isFocusMode}
-                    />
-                  </div>
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={50} minSize={30}>
-                  <div className="h-full overflow-y-auto bg-stone-50/50 border-l border-stone-100 flex flex-col">
-                    <div className="h-10 border-b flex items-center px-4 bg-stone-50 text-xs text-muted-foreground shrink-0">
-                      <span className="font-medium mr-2">참조 화면</span>
-                      <span className="text-stone-400">|</span>
-                      <span className="ml-2 truncate">
-                        {currentSectionTitle}
-                      </span>
-                    </div>
-                    <TiptapEditor
-                      initialContent={currentContent}
-                      onUpdate={() => {}}
-                      readOnly
-                      hideToolbar
-                    />
-                  </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            ) : (
-              <div className="h-full overflow-y-auto">
-                <TiptapEditor
-                  onUpdate={handleCharacterCountChange}
-                  onContentChange={handleContentChange}
-                  initialContent={currentContent}
-                  hideToolbar={isFocusMode}
-                />
-              </div>
-            )}
+            <EditorContent
+              viewMode={viewMode}
+              selectedFolderId={selectedFolderId}
+              projectId={projectId}
+              splitView={splitView}
+              isFocusMode={isFocusMode}
+              currentContent={currentContent}
+              currentSectionTitle={currentSectionTitle}
+              onCharacterCountChange={onCharacterCountChange}
+              onContentChange={handleContentChange}
+              documents={documents}
+              isDemo={isDemo}
+            />
           </div>
 
           {/* Section Strip (Bottom) */}
