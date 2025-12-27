@@ -33,13 +33,13 @@ export const NodeRenderer = memo(function NodeRenderer({
   const elementRef = useRef<SVGGElement>(null);
 
   // Data Binding & Drag Attachment
-  // Combined to ensure order: Data must be bound before drag behavior uses it.
+  // node 자체를 의존성으로 사용하여 시뮬레이션과 동기화 유지
   useEffect(() => {
     if (elementRef.current) {
-      // 1. Bind Data
+      // D3 selection에 node 데이터 바인딩 (시뮬레이션과 동기화)
       const selection = d3.select(elementRef.current).data([node]);
 
-      // 2. Attach Drag (only if behavior exists)
+      // Attach Drag (only if behavior exists)
       if (dragBehavior) {
         selection.call(dragBehavior);
       }
