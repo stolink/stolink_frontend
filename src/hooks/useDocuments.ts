@@ -391,8 +391,9 @@ export function useDocumentMutations(projectId: string) {
   const reorderDocuments = useCallback(
     async (parentId: string | null, orderedIds: string[]) => {
       // 1. Snapshot previous order for rollback
-      // We need to know the previous order of these specific siblings
+      // We explicitly capture state here to avoid closure staleness, though getState() is generally safe.
       const { documents, _reorder } = useDocumentStore.getState();
+
       const previousSiblingIds = Object.values(documents)
         .filter(
           (doc) =>
@@ -408,15 +409,17 @@ export function useDocumentMutations(projectId: string) {
       // 3. Sync with Backend
       try {
         await documentService.reorder(parentId, orderedIds);
+        // 4. Ensure data consistency by invalidating queries
+        queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
       } catch (error) {
         console.error("Failed to reorder documents:", error);
-        // 4. Rollback on failure
+        // 5. Rollback on failure
         if (previousSiblingIds.length > 0) {
           _reorder(parentId, previousSiblingIds);
         }
       }
     },
-    [projectId],
+    [projectId, queryClient],
   );
 
   return {

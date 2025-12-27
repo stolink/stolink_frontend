@@ -300,6 +300,7 @@ function SectionCard({
         }}
         role="button"
         tabIndex={0}
+        aria-pressed={isSelected}
       />
 
       {/* Header: Index + Status */}
@@ -320,10 +321,10 @@ function SectionCard({
             title={config.label}
           />
         </div>
-        {/* Drag Handle Icon - now we make the whole card draggable, but we can make just this handle draggable by moving listeners here */}
+        {/* Drag Handle Icon - needs pointer-events-auto to override parent's none */}
         <div
           {...listeners}
-          className="p-1 -mr-2 cursor-grab active:cursor-grabbing hover:bg-stone-100 rounded-md transition-colors"
+          className="p-1 -mr-2 cursor-grab active:cursor-grabbing hover:bg-stone-100 rounded-md transition-colors pointer-events-auto"
         >
           <GripVertical className="w-4 h-4 text-stone-300 group-hover:text-stone-400" />
         </div>
