@@ -345,7 +345,7 @@ src/
 | 스마트 커밋     | `.agent/workflows/smart-commit.md`      | `/smart-commit` 명령               | 커밋, 푸시, PR 관리    |
 | 프로덕션 배포   | `.github/workflows/deploy.yml`          | main push                          | S3 + CloudFront        |
 | 개발 배포       | `.github/workflows/deploy_dev.yml`      | dev push                           | 개발 환경 배포         |
-| Hotfix Backport | `.github/workflows/hotfix-backport.yml` | hotfix/\* → main 머지              | develop에 자동 체리픽  |
+| Hotfix Backport | `.github/workflows/hotfix-backport.yml` | hotfix/\* → main 머지              | dev에 자동 체리픽      |
 
 </workflow_integration>
 
