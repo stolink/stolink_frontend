@@ -1,7 +1,7 @@
 # StoLink 데이터 모델 명세
 
-> **버전**: 1.3
-> **최종 수정**: 2024년 12월 26일
+> **버전**: 1.4
+> **최종 수정**: 2025년 12월 28일
 > **상태**: 현재 구현 기준
 
 ---
@@ -296,42 +296,90 @@ type CharacterRole =
   | "other";
 
 interface Character {
+  // === 필수 필드 ===
   id: string;
   projectId: string;
   name: string;
+
+  // === 주요 선택 필드 (UI에서 별도 표시) ===
   role?: CharacterRole;
+  faction?: string | null; // 소속/세력 (그룹화 기준)
   imageUrl?: string;
+
+  // === 관계 정보 (백엔드에서 항상 포함) ===
+  relationships: BackendRelationship[];
+
+  // === 동적 추가 정보 ===
   extras?: Record<string, string | number | boolean | string[]>;
+
+  // === 메타 정보 ===
   createdAt: string;
   updatedAt: string;
 }
 
-// === 관계 타입 ===
-type RelationshipType = "friendly" | "hostile" | "neutral";
+// === 백엔드 관계 타입 (5종 - Neo4j) ===
+type BackendRelationshipType =
+  | "friendly"
+  | "hostile"
+  | "neutral"
+  | "romantic"
+  | "family";
 
+interface BackendRelationship {
+  id: number; // Neo4j internal ID
+  target: string; // Target character ID
+  type: BackendRelationshipType;
+  strength: number; // 1-10
+  label?: string | null;
+  since?: string | null;
+}
+
+// === 기존 타입 호환성 유지 ===
+/**
+ * @deprecated Use Character.relationships instead
+ * 이 타입은 하위 호환성을 위해 유지되며, 향후 제거될 예정입니다.
+ */
 interface CharacterRelationship {
   id: string;
   sourceId: string;
   targetId: string;
-  type: RelationshipType;
+  type: BackendRelationshipType;
   strength: number; // 1-10
   extras?: Record<string, string | number | boolean>;
 }
 
-// === React Flow 노드 타입 ===
-interface CharacterNode {
+// === D3.js Force Simulation 노드 타입 ===
+// 파일: `src/types/characterGraph.ts`
+
+type RelationType = "friend" | "lover" | "enemy"; // 단순화된 3종
+
+interface CharacterNode extends d3.SimulationNodeDatum {
   id: string;
-  type: "character";
-  position: { x: number; y: number };
-  data: Character;
+  name: string;
+  role?: CharacterRole;
+  group?: string;
+  imageUrl?: string;
+  // D3 런타임 필드 (시뮬레이션이 자동 추가)
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
-interface RelationshipEdge {
+interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> {
   id: string;
-  source: string;
-  target: string;
-  type: "relationship";
-  data: CharacterRelationship;
+  source: string | CharacterNode;
+  target: string | CharacterNode;
+  type: RelationType;
+  strength: number; // 1-10
+  label?: string;
+}
+
+interface GraphData {
+  nodes: CharacterNode[];
+  links: RelationshipLink[];
 }
 ```
 
@@ -559,12 +607,13 @@ interface AiAnalysisResult {
 
 ## 버전 이력
 
-| 버전 | 날짜       | 변경 내용                                     |
-| ---- | ---------- | --------------------------------------------- |
-| 1.0  | 2024.12.25 | 현재 구현 기준 최초 작성                      |
-| 1.1  | 2024.12.25 | API 엔드포인트 섹션 제거 (API_SPEC.md로 통합) |
-| 1.2  | 2024.12.25 | PostgreSQL/Neo4j 저장소 분리 명시             |
-| 1.3  | 2024.12.26 | 프론트엔드 TypeScript 타입 기준으로 전면 갱신 |
+| 버전 | 날짜       | 변경 내용                                                |
+| ---- | ---------- | -------------------------------------------------------- |
+| 1.0  | 2024.12.25 | 현재 구현 기준 최초 작성                                 |
+| 1.1  | 2024.12.25 | API 엔드포인트 섹션 제거 (API_SPEC.md로 통합)            |
+| 1.2  | 2024.12.25 | PostgreSQL/Neo4j 저장소 분리 명시                        |
+| 1.3  | 2024.12.26 | 프론트엔드 TypeScript 타입 기준으로 전면 갱신            |
+| 1.4  | 2025.12.28 | BackendRelationshipType 5종 추가, D3.js 그래프 타입 반영 |
 
 ---
 

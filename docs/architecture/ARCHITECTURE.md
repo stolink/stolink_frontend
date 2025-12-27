@@ -1,7 +1,7 @@
 # StoLink 프로젝트 아키텍처
 
-> **최종 수정**: 2025년 12월 26일
-> **기술 스택**: React 19.2 + TypeScript 5.9 + Vite 7.2 + Zustand 5.0 + TanStack Query 5.90
+> **최종 수정**: 2025년 12월 28일
+> **기술 스택**: React 19.2 + TypeScript 5.9 + Vite 7.2 + Zustand 5.0 + TanStack Query 5.90 + D3.js 7.x
 
 ---
 
@@ -52,7 +52,7 @@ src/
 │   │   ├── AIAssistantPanel.tsx
 │   │   ├── ConsistencyPanel.tsx
 │   │   └── ...
-│   ├── graph/            # 관계도 (React Flow)
+│   ├── CharacterGraph/   # 관계도 (D3.js Force Simulation)
 │   ├── layouts/          # 레이아웃 (3개)
 │   ├── library/          # 서재 관련 (3개)
 │   │   ├── BookCard.tsx
@@ -63,19 +63,26 @@ src/
 ├── data/                 # 목 데이터, 상수 (3개)
 │   └── demoData.ts       # 데모 모드 목 데이터
 │
-├── hooks/                # 커스텀 훅 (12개) ⭐
+├── hooks/                # 커스텀 훅 (19개) ⭐
 │   ├── useDocuments.ts   # 문서 CRUD (TanStack Query)
 │   ├── useProjects.ts    # 프로젝트 관리
 │   ├── useCharacters.ts  # 캐릭터 관리
 │   ├── useForeshadowing.ts # 복선 관리
 │   ├── useRelationships.ts # 관계 관리
+│   ├── useRelationshipLinks.ts # 관계 링크 변환
 │   ├── usePlaces.ts      # 장소 관리
 │   ├── useItems.ts       # 아이템 관리
 │   ├── useAuth.ts        # 인증
 │   ├── useAI.ts          # AI 기능
 │   ├── useExport.ts      # 내보내기
 │   ├── useShare.ts       # 공유
-│   └── useJobPolling.ts  # 비동기 작업 폴링
+│   ├── useJobPolling.ts  # 비동기 작업 폴링
+│   ├── useCharacterGraphSimulation.ts # D3 Force 시뮬레이션
+│   ├── useCharacterGraphDrag.ts   # 그래프 드래그
+│   ├── useCharacterGraphZoom.ts   # 그래프 줌/팬
+│   ├── useCharacterGraphResize.ts # 그래프 리사이즈
+│   ├── useNetworkSimulation.ts    # 네트워크 시뮬레이션
+│   └── useUpdateProjectStatus.ts  # 프로젝트 상태 업데이트
 │
 ├── lib/                  # 유틸리티 (1개)
 │   └── utils.ts          # cn 함수 등
@@ -117,15 +124,17 @@ src/
 │
 ├── styles/               # 추가 스타일
 │
-└── types/                # TypeScript 타입 (9개)
+└── types/                # TypeScript 타입 (11개)
     ├── document.ts       # Document, DocumentMetadata
     ├── project.ts        # Project, ProjectStats
-    ├── character.ts      # Character, Place, Item
+    ├── character.ts      # Character, Place, Item, BackendRelationship
+    ├── characterGraph.ts # CharacterNode, RelationshipLink (D3.js)
     ├── foreshadowing.ts
     ├── auth.ts
     ├── api.ts            # ApiResponse, JobResponse
     ├── chapter.ts
     ├── scene.ts
+    ├── network.ts        # 네트워크 관련 타입
     └── index.ts
 ```
 
@@ -178,7 +187,7 @@ src/
 | `useForeshadowingStore` | 복선 CRUD, 등장 위치         | -         |
 | `useChapterStore`       | 챕터 CRUD                    | -         |
 
-### TanStack Query 훅 (12개)
+### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (2개)
 
 | 훅                 | 역할                | Query Key 패턴                 |
 | ------------------ | ------------------- | ------------------------------ |
@@ -194,6 +203,16 @@ src/
 | `useExport`        | 내보내기            | -                              |
 | `useShare`         | 공유                | -                              |
 | `useJobPolling`    | 비동기 작업 폴링    | `['job', jobId]`               |
+
+### D3 그래프 훅 (5개)
+
+| 훅                            | 역할                     |
+| ----------------------------- | ------------------------ |
+| `useCharacterGraphSimulation` | D3 Force 물리 시뮬레이션 |
+| `useCharacterGraphDrag`       | 노드 드래그 인터랙션     |
+| `useCharacterGraphZoom`       | SVG 줌/팬 제어           |
+| `useCharacterGraphResize`     | 컨테이너 리사이즈 감지   |
+| `useRelationshipLinks`        | 관계→링크 데이터 변환    |
 
 ---
 
@@ -397,3 +416,4 @@ queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
 | ---- | ---------- | ----------------------------------------------------------------------------------- |
 | 1.0  | 2024.12.25 | 최초 작성                                                                           |
 | 2.0  | 2025.12.26 | TanStack Query 도입, 12 hooks / 12 services 반영, 브랜치 전략 3-Layer, Phase 3 완료 |
+| 2.1  | 2025.12.28 | D3.js Force Simulation 도입, 그래프 훅 5개 추가, 총 19개 훅 반영                    |

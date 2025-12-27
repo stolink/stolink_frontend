@@ -1,6 +1,6 @@
 # StoLink 프론트엔드 기술 스택
 
-> **최종 수정**: 2025년 12월 26일
+> **최종 수정**: 2025년 12월 28일
 > 작가용 웹 에디터 플랫폼을 위한 기술 스택 정의
 
 ---
@@ -132,14 +132,27 @@ useMutation({
 
 ## 6. 데이터 시각화 (캐릭터 관계도)
 
-| 기술           | 버전  | 선정 이유                               |
-| -------------- | ----- | --------------------------------------- |
-| **React Flow** | 11.11 | React 네이티브, 인터랙티브, 커스텀 노드 |
+| 기술      | 버전 | 선정 이유                            |
+| --------- | ---- | ------------------------------------ |
+| **D3.js** | 7.x  | Force Simulation, 완전한 시각화 제어 |
 
-### React Flow 선정 이유
+### D3.js Force Simulation 선정 이유
 
-- React 통합, 커스텀 노드 쉬움, 드래그/줌 내장
-- Force-Directed 레이아웃, 옵시디언 스타일 디자인
+- **물리 기반 레이아웃**: Force-Directed 그래프로 캐릭터 관계를 자연스럽게 시각화
+- **Obsidian 스타일**: 얇은 간선, 부드러운 애니메이션, 직관적인 노드 디자인
+- **커스텀 훅 아키텍처**: React와의 원활한 통합을 위한 5개 전용 훅
+- **성능 최적화**: `useSyncExternalStore`로 불필요한 리렌더링 방지
+
+### D3 그래프 훅 아키텍처
+
+```typescript
+// 훅 분리 구조
+useCharacterGraphSimulation; // Force 시뮬레이션 코어
+useCharacterGraphDrag; // 노드 드래그 인터랙션
+useCharacterGraphZoom; // SVG 줌/팬 제어
+useCharacterGraphResize; // 컨테이너 리사이즈 감지
+useRelationshipLinks; // 관계→링크 데이터 변환
+```
 
 ---
 
@@ -251,6 +264,7 @@ build: {
 | 1.2  | 2024.12    | React 19, Vite 7 업데이트, Repository 패턴 추가, Export 서비스 추가  |
 | 1.3  | 2024.12    | 문서 정리 - 디렉토리/라우팅 섹션은 ARCHITECTURE.md로 이동            |
 | 1.4  | 2025.12.26 | 실제 버전 반영 (TS 5.9, Vite 7.2, TanStack Query 5.90 등), 패턴 추가 |
+| 1.5  | 2025.12.28 | React Flow → D3.js Force Simulation 전환, 그래프 훅 아키텍처 문서화  |
 
 ---
 
