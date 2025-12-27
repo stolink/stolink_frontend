@@ -2,7 +2,7 @@ import Mention from "@tiptap/extension-mention";
 import { ReactRenderer, ReactNodeViewRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
 import type { Instance as TippyInstance } from "tippy.js";
-import { SuggestionList } from "./SuggestionList";
+import { SuggestionList, type SuggestionListProps } from "./SuggestionList";
 import type { SuggestionListRef } from "./SuggestionList";
 import CharacterNodeView from "./CharacterNodeView";
 import { DEMO_CHARACTERS } from "@/data/demoData";
@@ -25,11 +25,11 @@ export const CharacterMention = Mention.extend({
     char: "@",
     items: ({ query }) => {
       return DEMO_CHARACTERS.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
+        item.name.toLowerCase().includes(query.toLowerCase()),
       );
     },
     render: () => {
-      let component: ReactRenderer<SuggestionListRef, any>;
+      let component: ReactRenderer<SuggestionListRef, SuggestionListProps>;
       let popup: TippyInstance[];
 
       return {
@@ -44,6 +44,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup = tippy("body", {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getReferenceClientRect: props.clientRect as any,
             appendTo: () => document.body,
             content: component.element,
@@ -62,6 +63,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup[0].setProps({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getReferenceClientRect: props.clientRect as any,
           });
         },

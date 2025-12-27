@@ -9,65 +9,86 @@ import { projectKeys } from "./useProjects";
  * - 성공 시 자동으로 프로젝트 목록 리프레시
  */
 export function useUpdateProjectStatus() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        // 상태 업데이트 요청
-        mutationFn: async ({
+  return useMutation({
+    // 상태 업데이트 요청
+    mutationFn: async ({
+      projectId,
+      status,
+    }: {
+      projectId: string;
+      status: ProjectStatusType;
+    }) => {
+      console.log(
+        "[useUpdateProjectStatus] Updating project:",
+        projectId,
+        "to status:",
+        status,
+      );
+      const apiStatus = status === "EDITING" ? "writing" : "completed";
+      return projectService.update(projectId, { status: apiStatus });
+    },
+
+    // 낙관적 업데이트: API 응답 전에 UI 먼저 업데이트
+    onMutate: async ({ projectId, status }) => {
+      console.log("[useUpdateProjectStatus] onMutate - projectId:", projectId);
+
+      // 진행 중인 리페치 취소 (모든 프로젝트 관련 쿼리)
+      await queryClient.cancelQueries({ queryKey: projectKeys.all });
+
+      // 이전 상태 스냅샷 - lists() 쿼리키 사용
+      const previousData = queryClient.getQueriesData({
+        queryKey: projectKeys.lists(),
+      });
+
+      // 낙관적으로 UI 업데이트 - 모든 리스트 쿼리에 대해 업데이트
+      queryClient.setQueriesData(
+        { queryKey: projectKeys.lists() },
+        (old: { projects?: Project[] } | undefined) => {
+          if (!old?.projects) return old;
+          console.log(
+            "[useUpdateProjectStatus] Updating cache for project:",
             projectId,
-            status,
-        }: {
-            projectId: string;
-            status: ProjectStatusType;
-        }) => {
-            console.log("[useUpdateProjectStatus] Updating project:", projectId, "to status:", status);
-            return projectService.update(projectId, { status });
+          );
+          return {
+            ...old,
+            projects: old.projects.map((p: Project) =>
+              p.id === projectId
+                ? {
+                    ...p,
+                    status: status === "EDITING" ? "writing" : "completed",
+                  }
+                : p,
+            ),
+          };
         },
+      );
 
-        // 낙관적 업데이트: API 응답 전에 UI 먼저 업데이트
-        onMutate: async ({ projectId, status }) => {
-            console.log("[useUpdateProjectStatus] onMutate - projectId:", projectId);
+      // 롤백용 컨텍스트 반환
+      return { previousData };
+    },
 
-            // 진행 중인 리페치 취소 (모든 프로젝트 관련 쿼리)
-            await queryClient.cancelQueries({ queryKey: projectKeys.all });
+    // 에러 시 롤백
+    onError: (error, _variables, context) => {
+      console.error("[useUpdateProjectStatus] Failed to update status:", error);
+      // 이전 데이터로 롤백
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      alert("상태 변경에 실패했습니다.");
+    },
 
-            // 이전 상태 스냅샷 - lists() 쿼리키 사용
-            const previousData = queryClient.getQueriesData({ queryKey: projectKeys.lists() });
-
-            // 낙관적으로 UI 업데이트 - 모든 리스트 쿼리에 대해 업데이트
-            queryClient.setQueriesData(
-                { queryKey: projectKeys.lists() },
-                (old: { projects?: Project[] } | undefined) => {
-                    if (!old?.projects) return old;
-                    console.log("[useUpdateProjectStatus] Updating cache for project:", projectId);
-                    return {
-                        ...old,
-                        projects: old.projects.map((p: Project) =>
-                            p.id === projectId ? { ...p, status } : p
-                        ),
-                    };
-                }
-            );
-
-            // 롤백용 컨텍스트 반환
-            return { previousData };
-        },
-
-        // 에러 시 롤백
-        onError: (error, _variables, context) => {
-            console.error("[useUpdateProjectStatus] Failed to update status:", error);
-            // 이전 데이터로 롤백
-            if (context?.previousData) {
-                context.previousData.forEach(([queryKey, data]) => {
-                    queryClient.setQueryData(queryKey, data);
-                });
-            }
-            alert("상태 변경에 실패했습니다.");
-        },
-
-        // 성공 시 로그
-        onSuccess: (data, variables) => {
-            console.log("[useUpdateProjectStatus] Success - projectId:", variables.projectId, "response:", data);
-        }
-    });
+    // 성공 시 로그
+    onSuccess: (data, variables) => {
+      console.log(
+        "[useUpdateProjectStatus] Success - projectId:",
+        variables.projectId,
+        "response:",
+        data,
+      );
+    },
+  });
 }

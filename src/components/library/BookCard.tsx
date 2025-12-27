@@ -1,4 +1,12 @@
-import { Clock, MoreVertical, Edit, Copy, Trash, BookOpen, Check } from "lucide-react";
+import {
+  Clock,
+  MoreVertical,
+  Edit,
+  Copy,
+  Trash,
+  BookOpen,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,7 +54,8 @@ interface BookCardProps {
  * API 상태값을 UI에서 사용하는 EDITING/COMPLETED로 정규화
  */
 function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
-  const upperStatus = typeof status === "string" ? status.toUpperCase() : status;
+  const upperStatus =
+    typeof status === "string" ? status.toUpperCase() : status;
   switch (upperStatus) {
     case "COMPLETED":
       return "COMPLETED";
@@ -60,7 +69,6 @@ function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
 }
 
 export function BookCard({
-  projectId,
   title,
   author,
   status,
@@ -97,11 +105,12 @@ export function BookCard({
       className={cn(
         "group relative flex flex-col h-full bg-white rounded-lg border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer",
         // 기본 상태
-        !isEditMode && "border-stone-200 hover:shadow-md hover:border-primary/30",
+        !isEditMode &&
+          "border-stone-200 hover:shadow-md hover:border-primary/30",
         // 편집 모드 스타일
         isEditMode && "border-sage-200 scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary"
+        isSelected && "ring-2 ring-primary border-primary",
       )}
       onClick={handleCardClick}
     >
@@ -120,7 +129,7 @@ export function BookCard({
               "border-2 shadow-sm transition-all duration-200",
               isSelected
                 ? "border-green-500 bg-green-500"
-                : "bg-white border-stone-400 hover:border-green-500"
+                : "bg-white border-stone-400 hover:border-green-500",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -136,7 +145,7 @@ export function BookCard({
             alt={title}
             className={cn(
               "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105"
+              !isEditMode && "group-hover:scale-105",
             )}
           />
         ) : (
@@ -227,7 +236,9 @@ export function BookCard({
               <span
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  normalizedStatus === "COMPLETED" ? "bg-green-500" : "bg-sage-500"
+                  normalizedStatus === "COMPLETED"
+                    ? "bg-green-500"
+                    : "bg-sage-500",
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">

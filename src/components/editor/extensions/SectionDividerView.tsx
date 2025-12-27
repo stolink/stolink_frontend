@@ -1,6 +1,6 @@
-import { NodeViewWrapper } from "@tiptap/react";
+import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 
-export default function SectionDividerView({ node }: any) {
+export default function SectionDividerView({ node }: NodeViewProps) {
   const { title } = node.attrs;
 
   return (

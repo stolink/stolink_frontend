@@ -2,7 +2,6 @@ import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
 import type {
   Document as FrontendDocument,
-  CreateDocumentInput as FrontendCreateDocumentInput,
   UpdateDocumentInput as FrontendUpdateDocumentInput,
 } from "@/types/document";
 
@@ -98,11 +97,11 @@ export const documentService = {
   // Get document tree for a project
   getTree: async (
     projectId: string,
-    params?: { tree?: boolean; type?: DocumentType }
+    params?: { tree?: boolean; type?: DocumentType },
   ) => {
     const response = await api.get<ApiResponse<Document[]>>(
       `/projects/${projectId}/documents`,
-      { params: { tree: true, ...params } }
+      { params: { tree: true, ...params } },
     );
     return response.data;
   },
@@ -116,11 +115,11 @@ export const documentService = {
   // Create document
   create: async (
     projectId: string,
-    payload: Omit<BackendCreateDocumentInput, "projectId">
+    payload: Omit<BackendCreateDocumentInput, "projectId">,
   ) => {
     const response = await api.post<ApiResponse<Document>>(
       `/projects/${projectId}/documents`,
-      { ...payload, projectId }
+      { ...payload, projectId },
     );
     return response.data;
   },
@@ -129,7 +128,7 @@ export const documentService = {
   update: async (id: string, payload: UpdateDocumentInput) => {
     const response = await api.patch<ApiResponse<Document>>(
       `/documents/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
@@ -143,7 +142,7 @@ export const documentService = {
   // Get content only
   getContent: async (id: string) => {
     const response = await api.get<ApiResponse<{ content: string }>>(
-      `/documents/${id}/content`
+      `/documents/${id}/content`,
     );
     return response.data;
   },
@@ -167,11 +166,11 @@ export const documentService = {
 
   // Bulk update
   bulkUpdate: async (
-    updates: { id: string; changes: UpdateDocumentInput }[]
+    updates: { id: string; changes: UpdateDocumentInput }[],
   ) => {
     const response = await api.post<ApiResponse<null>>(
       "/documents/bulk-update",
-      { updates }
+      { updates },
     );
     return response.data;
   },

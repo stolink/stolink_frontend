@@ -2,11 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiResponse } from "@/types/api";
 
 import { useNavigate } from "react-router-dom";
-import {
-  authService,
-  type User,
-  type AuthResponse,
-} from "@/services/authService";
+import { authService, type User } from "@/services/authService";
 import { useAuthStore } from "@/stores";
 
 // Query Keys
