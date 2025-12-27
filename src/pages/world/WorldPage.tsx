@@ -34,7 +34,7 @@ export default function WorldPage() {
   const [characters, setCharacters] = useState<Character[]>(DEMO_CHARACTERS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
@@ -63,15 +63,26 @@ export default function WorldPage() {
     });
   }, []);
 
+  // ESC 키로 선택 해제
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedCharacter) {
+        setSelectedCharacter(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedCharacter]);
+
   // 링크 데이터 생성
   const links = useMemo(
     () => generateLinksFromCharacters(characters),
-    [characters]
+    [characters],
   );
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character
+      prev?.id === character.id ? null : character,
     );
   };
 

@@ -54,26 +54,14 @@ export const LinkRenderer = memo(function LinkRenderer({
   // 강도에 따른 기본 투명도
   const baseOpacity = 0.3 + (link.strength / 10) * 0.4;
 
-  // 필터링된 링크는 거의 보이지 않게 (하이라이트보다 우선 적용)
-  const finalOpacity = isFiltered
-    ? 0.03
-    : isDimmed
-      ? ANIMATION.dimOpacity * 0.5
-      : isHighlighted
-        ? 0.9
-        : baseOpacity;
-
-  // Ref for D3 Data Binding
-  const groupRef = useRef<SVGGElement>(null);
-
-  // Bind data to children lines for Imperative D3 Updates
-  useEffect(() => {
-    if (groupRef.current) {
-      // Just bind the single link data to ALL link-line elements
-      // We let React handle the lifecycle (enter/exit), we just tag the data.
-      d3.select(groupRef.current).selectAll(".link-line").datum(link);
-    }
-  }, [link]);
+  // 투명도 계산 (가독성 개선)
+  const getOpacity = () => {
+    if (isFiltered) return 0.03;
+    if (isDimmed) return ANIMATION.dimOpacity * 0.5;
+    if (isHighlighted) return 0.9;
+    return baseOpacity;
+  };
+  const finalOpacity = getOpacity();
 
   return (
     <g ref={groupRef}>
