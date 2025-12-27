@@ -140,7 +140,7 @@ export const SlashCommandExtension = SlashCommand.configure({
   suggestion: {
     items: getSuggestionItems,
     render: () => {
-      let component: ReactRenderer<CommandListRef, Record<string, unknown>>;
+      let component: ReactRenderer<CommandListRef>;
       let popup: TippyInstance[];
 
       return {
