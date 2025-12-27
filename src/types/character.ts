@@ -19,12 +19,12 @@ export interface Character {
 }
 
 export type CharacterRole =
-  | 'protagonist'
-  | 'antagonist'
-  | 'supporting'
-  | 'mentor'
-  | 'sidekick'
-  | 'other';
+  | "protagonist"
+  | "antagonist"
+  | "supporting"
+  | "mentor"
+  | "sidekick"
+  | "other";
 
 export interface CharacterRelationship {
   id: string;
@@ -37,23 +37,7 @@ export interface CharacterRelationship {
   extras?: Record<string, string | number | boolean>;
 }
 
-export type RelationshipType = 'friendly' | 'hostile' | 'neutral';
-
-// For React Flow
-export interface CharacterNode {
-  id: string;
-  type: 'character';
-  position: { x: number; y: number };
-  data: Character;
-}
-
-export interface RelationshipEdge {
-  id: string;
-  source: string;
-  target: string;
-  type: 'relationship';
-  data: CharacterRelationship;
-}
+export type RelationshipType = "friendly" | "hostile" | "neutral";
 
 // =====================================================
 // 📍 장소 타입 (새로 추가)
@@ -74,7 +58,7 @@ export interface Place {
   updatedAt: string;
 }
 
-export type PlaceType = 'region' | 'building' | 'special' | 'other';
+export type PlaceType = "region" | "building" | "special" | "other";
 
 // =====================================================
 // ⚔️ 아이템 타입 (새로 추가)
@@ -96,4 +80,9 @@ export interface Item {
   updatedAt: string;
 }
 
-export type ItemType = 'weapon' | 'accessory' | 'document' | 'consumable' | 'other';
+export type ItemType =
+  | "weapon"
+  | "accessory"
+  | "document"
+  | "consumable"
+  | "other";

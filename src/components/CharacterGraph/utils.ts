@@ -1,5 +1,4 @@
-import type { Character } from "@/types";
-import type { RelationshipLink, RelationType } from "./types";
+import type { Character, RelationshipLink, RelationType } from "@/types";
 
 /**
  * Character extras['관계']에서 RelationshipLink 배열 생성

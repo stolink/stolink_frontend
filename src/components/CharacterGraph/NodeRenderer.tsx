@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { CharacterNode } from "./types";
+import type { CharacterNode } from "@/types";
 import { NODE_SIZES, ANIMATION } from "./constants";
 
 interface NodeRendererProps {

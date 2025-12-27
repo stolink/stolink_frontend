@@ -4,14 +4,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, Sword } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
-import type { Character } from "@/types";
+import type { Character, RelationType } from "@/types";
 import { DEMO_CHARACTERS } from "@/data/demoData";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
 import { CharacterGraph } from "@/components/CharacterGraph";
 import { generateLinksFromCharacters } from "@/components/CharacterGraph/utils";
-import type { RelationType } from "@/components/CharacterGraph/types";
 
 // Components
 import { NetworkControlsD3 } from "./components/NetworkControlsD3";

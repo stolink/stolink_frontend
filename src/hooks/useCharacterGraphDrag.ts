@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import * as d3 from "d3";
-import type { CharacterNode } from "./types";
+import type { CharacterNode } from "@/types";
 
 interface UseDragOptions {
   onDragStart?: (node: CharacterNode) => void;

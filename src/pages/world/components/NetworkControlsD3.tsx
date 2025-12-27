@@ -7,7 +7,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RelationType } from "@/components/CharacterGraph/types";
+import type { RelationType } from "@/types";
 import {
   RELATION_LABELS,
   RELATION_COLORS,

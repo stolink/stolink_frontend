@@ -1,5 +1,9 @@
 import type * as d3 from "d3";
-import type { CharacterRole } from "@/types";
+import type { CharacterRole } from "./character";
+
+// =====================================================
+// 📊 캐릭터 그래프 (D3.js Force Simulation) 타입
+// =====================================================
 
 // 관계 타입 (단순화: 3종)
 export type RelationType = "friend" | "lover" | "enemy";

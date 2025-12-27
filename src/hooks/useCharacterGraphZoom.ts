@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import * as d3 from "d3";
-import type { ZoomState } from "./types";
-import { ZOOM_CONFIG } from "./constants";
+import type { ZoomState } from "@/types";
+import { ZOOM_CONFIG } from "@/components/CharacterGraph/constants";
 
 interface UseZoomOptions {
   onZoomChange?: (state: ZoomState) => void;

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import * as d3 from "d3";
-import type { CharacterNode, RelationshipLink } from "./types";
-import { FORCE_CONFIG, NODE_SIZES } from "./constants";
+import type { CharacterNode, RelationshipLink } from "@/types";
+import {
+  FORCE_CONFIG,
+  NODE_SIZES,
+} from "@/components/CharacterGraph/constants";
 
 interface UseForceSimulationOptions {
   width: number;

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { RelationshipLink, CharacterNode } from "./types";
+import type { RelationshipLink, CharacterNode } from "@/types";
 import { RELATION_COLORS, ANIMATION } from "./constants";
 
 interface LinkRendererProps {

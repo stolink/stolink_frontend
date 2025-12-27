@@ -1,12 +1,16 @@
 import { useRef, useCallback, useState, useMemo, useEffect } from "react";
 import * as d3 from "d3";
 import { cn } from "@/lib/utils";
-import type { Character } from "@/types";
-import type { CharacterNode, RelationshipLink, RelationType } from "./types";
-import { useForceSimulation } from "./useForceSimulation";
-import { useZoom } from "./useZoom";
-import { useDrag } from "./useDrag";
-import { useResize } from "./useResize";
+import type {
+  Character,
+  CharacterNode,
+  RelationshipLink,
+  RelationType,
+} from "@/types";
+import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
+import { useZoom } from "@/hooks/useCharacterGraphZoom";
+import { useDrag } from "@/hooks/useCharacterGraphDrag";
+import { useResize } from "@/hooks/useCharacterGraphResize";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
 

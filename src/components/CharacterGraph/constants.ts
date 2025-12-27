@@ -1,5 +1,4 @@
-import type { RelationType } from "./types";
-import type { CharacterRole } from "@/types";
+import type { RelationType, CharacterRole } from "@/types";
 
 // 관계 타입별 색상
 export const RELATION_COLORS: Record<RelationType, string> = {

@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Character } from "@/types";
-import type { RelationshipLink } from "@/components/CharacterGraph/types";
+import type { Character, RelationshipLink } from "@/types";
 import {
   RELATION_LABELS,
   RELATION_COLORS,
