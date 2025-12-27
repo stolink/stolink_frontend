@@ -6,6 +6,9 @@ export const shareKeys = {
   all: ["share"] as const,
   settings: (projectId: string) =>
     [...shareKeys.all, "settings", projectId] as const,
+  publics: () => [...shareKeys.all, "public"] as const,
+  public: (shareId: string, password?: string) =>
+    [...shareKeys.publics(), shareId, password] as const,
 };
 
 /**
@@ -13,7 +16,7 @@ export const shareKeys = {
  */
 export function useShareSettings(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: shareKeys.settings(projectId),
@@ -70,10 +73,10 @@ export function useDeleteShareLink() {
 export function useSharedProject(
   shareId: string,
   password?: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
-    queryKey: [...shareKeys.all, "public", shareId, password] as const,
+    queryKey: shareKeys.public(shareId, password),
     queryFn: async () => {
       const response = await shareService.getShared(shareId, password);
       return response.data;

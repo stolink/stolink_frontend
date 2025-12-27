@@ -14,6 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
+import { sanitizeEditorContent } from "@/lib/sanitize";
 import "./editor-prose.css";
 
 export interface TiptapEditorProps {
@@ -51,6 +52,19 @@ export default function TiptapEditor({
   const navigate = useNavigate();
   const { id: projectId } = useParams<{ id: string }>();
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+
+  // Use refs for callbacks to avoid dependency issues
+  const onUpdateRef = useRef(onUpdate);
+  const onContentChangeRef = useRef(onContentChange);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  useEffect(() => {
+    onContentChangeRef.current = onContentChange;
+  }, [onContentChange]);
   const [showZoomControls, setShowZoomControls] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
@@ -85,14 +99,14 @@ export default function TiptapEditor({
     {
       editable: !readOnly,
       extensions,
-      content: initialContent || DEFAULT_CONTENT,
+      content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
       editorProps: {
         attributes: {
           class: cn(
             // Remove prose class - use direct styling for full width
             "w-full",
             "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80"
+            readOnly && "pointer-events-none opacity-80",
           ),
           spellcheck: "false",
         },
@@ -106,11 +120,11 @@ export default function TiptapEditor({
         },
       },
       onUpdate: ({ editor }) => {
-        if (onUpdate) {
-          onUpdate(editor.storage.characterCount.characters());
+        if (onUpdateRef.current) {
+          onUpdateRef.current(editor.storage.characterCount.characters());
         }
-        if (onContentChange) {
-          onContentChange(editor.getHTML());
+        if (onContentChangeRef.current) {
+          onContentChangeRef.current(editor.getHTML());
         }
       },
       onTransaction: () => {
@@ -121,7 +135,7 @@ export default function TiptapEditor({
         });
       },
     },
-    [extensions] // Add dependency array to prevent recreation
+    [extensions], // Add dependency array to prevent recreation
   );
 
   // Smooth zoom with bounds
@@ -169,24 +183,24 @@ export default function TiptapEditor({
   }, [editor, readOnly]);
 
   useEffect(() => {
-    if (editor && onUpdate) {
+    if (editor && onUpdateRef.current) {
       requestAnimationFrame(() => {
-        onUpdate(editor.storage.characterCount.characters());
+        onUpdateRef.current?.(editor.storage.characterCount.characters());
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
 
   useEffect(() => {
     if (editor && initialContent !== undefined) {
       const currentHTML = editor.getHTML();
-      const isDifferent = currentHTML !== initialContent;
+      const sanitizedContent = sanitizeEditorContent(initialContent);
+      const isDifferent = currentHTML !== sanitizedContent;
       const isFocused = editor.isFocused;
 
       // Only update if content is different AND editor is not focused
       // If focused, we assume the user is typing and we shouldn't overwrite with old server data
       if (isDifferent && !isFocused) {
-        editor.commands.setContent(initialContent);
+        editor.commands.setContent(sanitizedContent);
       }
     }
   }, [editor, initialContent]);
@@ -226,6 +240,7 @@ export default function TiptapEditor({
             variant="ghost"
             size="sm"
             onClick={handleSendToStudio}
+            aria-label="Studio로 보내기"
             className="flex items-center gap-1.5 h-8 px-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
           >
             <Clapperboard className="w-3.5 h-3.5" />
@@ -236,9 +251,11 @@ export default function TiptapEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
+            aria-label="굵게"
+            aria-pressed={editor.isActive("bold")}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("bold") && "bg-stone-100"
+              editor.isActive("bold") && "bg-stone-100",
             )}
           >
             <Bold className="w-3.5 h-3.5" />
@@ -247,9 +264,11 @@ export default function TiptapEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
+            aria-label="기울임"
+            aria-pressed={editor.isActive("italic")}
             className={cn(
               "h-8 w-8 p-0",
-              editor.isActive("italic") && "bg-stone-100"
+              editor.isActive("italic") && "bg-stone-100",
             )}
           >
             <Italic className="w-3.5 h-3.5" />
@@ -263,6 +282,8 @@ export default function TiptapEditor({
       {/* Editor Content - Full width with font-size based zoom */}
       <div
         ref={editorContainerRef}
+        role="region"
+        aria-label="편집 영역"
         className="flex-1 overflow-y-auto w-full"
         style={{
           fontSize: `${fontSize}px`,
@@ -279,7 +300,7 @@ export default function TiptapEditor({
             "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
             showZoomControls
               ? "opacity-100 px-2 py-1.5"
-              : "opacity-50 hover:opacity-100 px-2 py-1"
+              : "opacity-50 hover:opacity-100 px-2 py-1",
           )}
           onMouseEnter={() => setShowZoomControls(true)}
           onMouseLeave={() => setShowZoomControls(false)}
@@ -289,6 +310,7 @@ export default function TiptapEditor({
               <button
                 onClick={handleZoomOut}
                 disabled={zoom <= MIN_ZOOM}
+                aria-label="축소"
                 className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
                 title="축소 (Ctrl + 스크롤)"
               >
@@ -300,11 +322,13 @@ export default function TiptapEditor({
                 max={MAX_ZOOM}
                 value={zoom}
                 onChange={(e) => setZoom(parseInt(e.target.value))}
+                aria-label={`확대/축소: ${zoom}%`}
                 className="w-16 h-1 accent-sage-500 cursor-pointer"
               />
               <button
                 onClick={handleZoomIn}
                 disabled={zoom >= MAX_ZOOM}
+                aria-label="확대"
                 className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
                 title="확대 (Ctrl + 스크롤)"
               >

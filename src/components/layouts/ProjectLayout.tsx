@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuthStore, useEditorStore } from "@/stores";
 import { BookReaderModal } from "@/components/common/BookReaderModal";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import type { Document } from "@/types/document";
 // 로고 이미지를 import하여 번들링 호환성 확보
@@ -46,7 +47,7 @@ export function ProjectLayout() {
   const allDocuments = useDocumentStore((state) => state.documents);
   const localDocuments = useMemo(
     () => Object.values(allDocuments).filter((doc) => doc.projectId === id),
-    [allDocuments, id]
+    [allDocuments, id],
   );
 
   /**
@@ -69,7 +70,7 @@ export function ProjectLayout() {
   // 현재 프로젝트 제목 (첫 번째 폴더 또는 기본값)
   const projectTitle = useMemo(() => {
     const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder"
+      (doc: Document) => doc.type === "folder",
     );
     return folder?.title || "내 작품";
   }, [localDocuments]);
@@ -149,7 +150,7 @@ export function ProjectLayout() {
                     "flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-white text-sage-600 shadow-sm border-stone-200"
-                      : "text-muted-foreground hover:text-foreground hover:bg-stone-200/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-stone-200/50",
                   )
                 }
               >
@@ -228,7 +229,9 @@ export function ProjectLayout() {
 
       {/* Content */}
       <main className="flex-1 overflow-hidden">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {/* Book Reader Modal - 로컬 데이터 실시간 반영 */}

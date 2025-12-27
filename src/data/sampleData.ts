@@ -354,11 +354,8 @@ export function initializeSampleData(
   // Check if sample data already exists
   const existingChapters = getChaptersByProject(SAMPLE_PROJECT_ID);
   if (existingChapters.length > 0) {
-    console.log("Sample data already exists, skipping initialization");
     return;
   }
-
-  console.log("Initializing sample data for logged-in user...");
 
   // Add all sample chapters to the store
   SAMPLE_CHAPTERS.forEach((chapter) => {

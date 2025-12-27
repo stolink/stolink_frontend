@@ -44,8 +44,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup = tippy("body", {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
             appendTo: () => document.body,
             content: component.element,
             showOnCreate: true,
@@ -63,8 +62,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup[0].setProps({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
           });
         },
 

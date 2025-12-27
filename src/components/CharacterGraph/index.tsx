@@ -117,48 +117,44 @@ export function CharacterGraph({
     if (!simulation || !gRef.current) return;
 
     // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
+    let frameCount = 0;
     simulation.on("tick", () => {
+      frameCount++;
       const g = d3.select(gRef.current);
 
+      // 1. 필수 업데이트 (매 프레임 실행 - 60fps)
       // Update Links (방어적 null 체크 포함)
       g.selectAll<SVGLineElement, RelationshipLink>(".link-line")
         .attr("x1", (d) => {
           if (!d) return 0;
           const source = d.source as unknown as CharacterNode;
-          if (source && typeof source === "object" && "x" in source)
-            return source.x ?? 0;
-          return 0;
+          return source.x ?? 0;
         })
         .attr("y1", (d) => {
           if (!d) return 0;
           const source = d.source as unknown as CharacterNode;
-          if (source && typeof source === "object" && "y" in source)
-            return source.y ?? 0;
-          return 0;
+          return source.y ?? 0;
         })
         .attr("x2", (d) => {
           if (!d) return 0;
           const target = d.target as unknown as CharacterNode;
-          if (target && typeof target === "object" && "x" in target)
-            return target.x ?? 0;
-          return 0;
+          return target.x ?? 0;
         })
         .attr("y2", (d) => {
           if (!d) return 0;
           const target = d.target as unknown as CharacterNode;
-          if (target && typeof target === "object" && "y" in target)
-            return target.y ?? 0;
-          return 0;
+          return target.y ?? 0;
         });
 
-      // Update Nodes (Groups)
+      // Update Nodes
       g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
         "transform",
         (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
       );
 
+      // 2. 부가 연산 업데이트 (스로틀링 적용 - 30fps)
       // 그룹 클라우드 위치 및 크기 업데이트 (노드 분포 범위 기반)
-      if (enableGrouping) {
+      if (enableGrouping && frameCount % 2 === 0) {
         // tick마다 최신 노드 위치 기반으로 그룹별 노드 재계산
         const currentNodesByGroup: Record<string, CharacterNode[]> = {};
         simulation.nodes().forEach((node) => {
@@ -188,7 +184,7 @@ export function CharacterGraph({
           cloudEl.attr("visibility", "visible");
           labelEl.attr("visibility", "visible");
 
-          // 1. Centroid 계산
+          // Centroid 계산
           let sumX = 0,
             sumY = 0;
           groupNodes.forEach((n) => {
@@ -198,7 +194,7 @@ export function CharacterGraph({
           const cx = sumX / groupNodes.length;
           const cy = sumY / groupNodes.length;
 
-          // 2. 각 노드의 centroid로부터 최대 거리 계산
+          // 각 노드의 centroid로부터 최대 거리 계산
           let maxDistance = 0;
           groupNodes.forEach((n) => {
             const dx = (n.x || 0) - cx;
@@ -207,14 +203,11 @@ export function CharacterGraph({
             if (dist > maxDistance) maxDistance = dist;
           });
 
-          // 3. 동적 반경: r = k * sqrt(n) 수식 적용
-          // - k: 스케일링 상수 (파벌 구름의 기본 크기 결정)
-          // - n: 해당 파벌의 멤버 수
-          // - 노드 분포 거리(maxDistance)도 함께 고려하여 노드가 구름 밖으로 나가지 않도록 보장
-          const k = 80; // 스케일링 상수: 시각적 균형을 위한 조정값
+          // 동적 반경 계산
+          const k = 80;
           const nodeCount = groupNodes.length;
-          const baseRadius = k * Math.sqrt(nodeCount); // 멤버 수 기반 반경
-          const spreadRadius = maxDistance + 80; // 노드 분포 + 패딩
+          const baseRadius = k * Math.sqrt(nodeCount);
+          const spreadRadius = maxDistance + 80;
           const dynamicRadius = Math.max(120, baseRadius, spreadRadius);
 
           cloudEl.attr("cx", cx).attr("cy", cy).attr("r", dynamicRadius);

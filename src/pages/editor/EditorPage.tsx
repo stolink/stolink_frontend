@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { PanelRightOpen, Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -116,9 +116,6 @@ function documentTreeToChapterTree(nodes: DocumentTreeNode[]): ChapterNode[] {
 // ============================================================
 
 export default function EditorPage({ isDemo = false }: EditorPageProps) {
-  // Navigation hook
-  useNavigate();
-
   // UI Store
   const {
     rightSidebarOpen,

@@ -17,6 +17,7 @@ const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 const StudioPage = lazy(() => import("@/pages/studio/StudioPage"));
 
 import { TextureOverlay } from "@/components/ui/TextureOverlay";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -30,53 +31,55 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TextureOverlay />
-      <BrowserRouter>
-        <Suspense
-          fallback={
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-sage-600 font-serif gap-4">
-              <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
-              <p>Loading...</p>
-            </div>
-          }
-        >
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TextureOverlay />
+        <BrowserRouter>
+          <Suspense
+            fallback={
+              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-sage-600 font-serif gap-4">
+                <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
+                <p>Loading...</p>
+              </div>
+            }
+          >
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
 
-            {/* Demo Route - No Auth Required */}
-            <Route path="/demo" element={<EditorPage isDemo={true} />} />
+              {/* Demo Route - No Auth Required */}
+              <Route path="/demo" element={<EditorPage isDemo={true} />} />
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedLayout />}>
-              <Route path="/library" element={<LibraryPage />} />
+              {/* Protected Routes */}
+              <Route element={<ProtectedLayout />}>
+                <Route path="/library" element={<LibraryPage />} />
 
-              {/* Project Routes */}
-              <Route path="/projects/:id" element={<ProjectLayout />}>
-                <Route path="editor" element={<EditorPage />} />
-                <Route path="studio" element={<StudioPage />} />
-                <Route path="world" element={<WorldPage />} />
-                <Route path="stats" element={<StatsPage />} />
-                <Route path="export" element={<ExportPage />} />
-                <Route path="settings" element={<SettingsPage />} />
+                {/* Project Routes */}
+                <Route path="/projects/:id" element={<ProjectLayout />}>
+                  <Route path="editor" element={<EditorPage />} />
+                  <Route path="studio" element={<StudioPage />} />
+                  <Route path="world" element={<WorldPage />} />
+                  <Route path="stats" element={<StatsPage />} />
+                  <Route path="export" element={<ExportPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* 404 */}
-            <Route
-              path="*"
-              element={
-                <div className="flex items-center justify-center h-screen">
-                  페이지를 찾을 수 없습니다
-                </div>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </QueryClientProvider>
+              {/* 404 */}
+              <Route
+                path="*"
+                element={
+                  <div className="flex items-center justify-center h-screen">
+                    페이지를 찾을 수 없습니다
+                  </div>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
