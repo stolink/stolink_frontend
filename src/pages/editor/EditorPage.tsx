@@ -166,8 +166,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const { content: documentContent, saveContent } = useDocumentContent(
     isDemo ? null : selectedSectionId,
   );
-  const { createDocument, updateDocument: updateDocumentMutation } =
-    useDocumentMutations(projectId);
+  const {
+    createDocument,
+    updateDocument: updateDocumentMutation,
+    deleteDocument,
+  } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
   // ============================================================
@@ -201,6 +204,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     updateDocument,
     updateDocumentMutation,
     createDocument,
+    deleteDocument,
   });
 
   // Title editing state

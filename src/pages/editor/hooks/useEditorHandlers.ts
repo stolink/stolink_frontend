@@ -22,6 +22,7 @@ interface UseEditorHandlersOptions {
     title: string;
     parentId?: string;
   }) => Promise<Document | null>;
+  deleteDocument: (id: string) => Promise<void>;
 }
 
 /**
@@ -41,6 +42,7 @@ export function useEditorHandlers({
   updateDocument,
   updateDocumentMutation,
   createDocument,
+  deleteDocument,
 }: UseEditorHandlersOptions) {
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -240,8 +242,11 @@ export function useEditorHandlers({
   const handleDeleteChapter = useCallback(
     async (id: string) => {
       if (isDemo) return;
-      const { _delete } = useDocumentStore.getState();
-      _delete(id);
+
+      // Call backend mutation (which handles local store update and API call)
+      await deleteDocument(id);
+
+      // Handle navigation if current selection was deleted
       if (selectedFolderId === id) {
         setSelectedFolderId(null);
         setSelectedSectionId(null);
@@ -251,6 +256,7 @@ export function useEditorHandlers({
     },
     [
       isDemo,
+      deleteDocument,
       selectedFolderId,
       selectedSectionId,
       setSelectedFolderId,
