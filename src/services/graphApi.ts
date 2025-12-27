@@ -36,8 +36,9 @@ export const graphApi = {
   getCharacters: async (): Promise<unknown[]> => {
     try {
       // Expecting Endpoint: GET /api/characters
-      const response = await client.get<unknown[]>("/api/characters");
-      return response.data;
+      // API returns: { status, message, data: [...], code }
+      const response = await client.get<{ data: unknown[] }>("/api/characters");
+      return response.data.data; // Unwrap from API response wrapper
     } catch (error) {
       console.warn("Failed to fetch characters, using demo data as fallback.");
       throw error;
