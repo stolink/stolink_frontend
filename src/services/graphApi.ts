@@ -38,6 +38,9 @@ export const graphApi = {
       // Expecting Endpoint: GET /api/characters
       // API returns: { status, message, data: [...], code }
       const response = await client.get<{ data: unknown[] }>("/api/characters");
+      if (!response.data || !Array.isArray(response.data.data)) {
+        throw new Error("Invalid API response format");
+      }
       return response.data.data; // Unwrap from API response wrapper
     } catch (error) {
       console.warn("Failed to fetch characters, using demo data as fallback.");

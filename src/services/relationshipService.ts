@@ -34,6 +34,7 @@ export const relationshipService = {
     const response = await api.get<ApiResponse<Relationship[]>>(
       `/projects/${projectId}/relationships`
     );
+    console.log("🌐 Backend API Response (relationships):", response.data);
     return response.data;
   },
 

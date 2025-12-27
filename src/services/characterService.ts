@@ -1,29 +1,13 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { Character, CharacterRole } from "@/types/character";
 
-export type CharacterRole =
-  | "protagonist"
-  | "antagonist"
-  | "supporting"
-  | "mentor"
-  | "sidekick"
-  | "other";
-
-export interface Character {
-  id: string;
-  projectId: string;
-  name: string;
-  role?: CharacterRole;
-  imageUrl?: string;
-  extras?: Record<string, unknown>;
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type { Character };
 
 export interface CreateCharacterInput {
   name: string;
   role?: CharacterRole;
-  extras?: Record<string, unknown>;
+  extras?: Record<string, string | number | boolean | string[]>;
 }
 
 export const characterService = {
@@ -31,6 +15,7 @@ export const characterService = {
     const response = await api.get<ApiResponse<Character[]>>(
       `/projects/${projectId}/characters`
     );
+    console.log("🌐 Backend API Response (characters):", response.data);
     return response.data;
   },
 

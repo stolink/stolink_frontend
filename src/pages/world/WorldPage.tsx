@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, Sword } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
-import type { Character, RelationType } from "@/types";
-import { DEMO_CHARACTERS } from "@/data/demoData";
+import type { Character, RelationType, RelationshipLink } from "@/types";
+import type { RelationshipType } from "@/services/relationshipService";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
 import { CharacterGraph } from "@/components/CharacterGraph";
-import { generateLinksFromCharacters } from "@/components/CharacterGraph/utils";
+
+// Hooks
+import { useCharacters } from "@/hooks/useCharacters";
+import { useRelationships } from "@/hooks/useRelationships";
 
 // Components
 import { NetworkControlsD3 } from "./components/NetworkControlsD3";
@@ -30,59 +34,117 @@ const items = [
   { id: "3", name: "예언서", type: "문서", owner: "없음" },
 ];
 
+/**
+ * 백엔드 RelationshipType → 프론트 RelationType 변환
+ */
+function mapRelationshipType(backendType: RelationshipType): RelationType {
+  switch (backendType) {
+    case "friendly":
+      return "friend";
+    case "romantic":
+      return "lover";
+    case "hostile":
+      return "enemy";
+    case "family":
+      return "friend"; // 가족도 친구 관계로 분류
+    case "neutral":
+    default:
+      return "friend"; // 중립도 일단 friend로
+  }
+}
+
 export default function WorldPage() {
-  const [characters, setCharacters] = useState<Character[]>(DEMO_CHARACTERS);
+  const { id: projectId } = useParams<{ id: string }>();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
 
-  // Fetch Characters from API
-  // const [loading, setLoading] = useState(false); // Unused for now
+  // Fetch Characters & Relationships from API
+  const { data: characters = [], isLoading: isLoadingCharacters } =
+    useCharacters(projectId || "", { enabled: !!projectId });
 
-  useEffect(() => {
-    // setLoading(true);
-    // Try to fetch from Spring Server
-    import("@/services/graphApi").then(({ graphApi }) => {
-      graphApi
-        .getCharacters()
-        .then((data) => {
-          if (data && data.length > 0) {
-            // Assuming API returns compatible Character objects
-            setCharacters(data);
-          }
-        })
-        .catch(() => {
-          // Silent fallback to DEMO_CHARACTERS (default state)
-          console.log("Using Demo Data (API unavailable)");
-        });
-      // .finally(() => setLoading(false));
-    });
-  }, []);
+  // 백엔드가 /relationships 엔드포인트에서 Character[] 배열을 리턴하므로
+  // Character.relationships 필드에서 관계 데이터를 추출
+  const { data: charactersWithRelationships = [], isLoading: isLoadingRelationships } =
+    useRelationships(projectId || "", { enabled: !!projectId });
 
   // ESC 키로 선택 해제
   useEffect(() => {
+    if (!selectedCharacter) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedCharacter) {
+      if (e.key === "Escape") {
         setSelectedCharacter(null);
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedCharacter]);
 
-  // 링크 데이터 생성
-  const links = useMemo(
-    () => generateLinksFromCharacters(characters),
-    [characters],
-  );
+  // Character.relationships에서 관계 데이터 추출 (백엔드 응답 구조 수정 필요)
+  const links: RelationshipLink[] = useMemo(() => {
+    const characterIds = new Set(characters.map((c) => c.id));
+    const allLinks: RelationshipLink[] = [];
+    const processedPairs = new Set<string>(); // 중복 방지
+
+    console.log("🔍 Characters:", characters.length);
+    console.log("🔍 CharactersWithRelationships:", charactersWithRelationships.length);
+
+    // 각 캐릭터의 relationships 배열을 순회
+    charactersWithRelationships.forEach((char: any) => {
+      const sourceId = char.id;
+      const relationships = char.relationships || [];
+
+      console.log(`📦 Character ${char.name} relationships:`, relationships);
+
+      relationships.forEach((rel: any) => {
+        // 관계 데이터 구조 확인
+        console.log("🔍 Relationship structure:", rel);
+
+        // 백엔드가 보내주는 관계 구조에 따라 파싱
+        const targetId = rel.targetId || rel.target?.id || rel.id;
+        const relType = rel.type || "friendly";
+        const strength = rel.strength || 5;
+
+        if (!targetId || !characterIds.has(targetId)) {
+          console.warn(`❌ Invalid target: ${targetId} for source: ${sourceId}`);
+          return;
+        }
+
+        // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
+        const pairKey = sourceId < targetId
+          ? `${sourceId}-${targetId}`
+          : `${targetId}-${sourceId}`;
+
+        if (processedPairs.has(pairKey)) {
+          return;
+        }
+        processedPairs.add(pairKey);
+
+        allLinks.push({
+          id: `${sourceId}-${targetId}`,
+          source: sourceId,
+          target: targetId,
+          type: mapRelationshipType(relType),
+          strength,
+          label: rel.description || rel.extras?.description,
+        });
+      });
+    });
+
+    console.log("✅ Valid links:", allLinks.length);
+    return allLinks;
+  }, [charactersWithRelationships, characters]);
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character,
+      prev?.id === character.id ? null : character
     );
   };
 
@@ -90,6 +152,22 @@ export default function WorldPage() {
     setSelectedCharacter(character);
     setIsModalOpen(true);
   };
+
+  // 로딩 상태 처리
+  const isLoading = isLoadingCharacters || isLoadingRelationships;
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">
+            캐릭터 및 관계 데이터를 불러오는 중...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full">
