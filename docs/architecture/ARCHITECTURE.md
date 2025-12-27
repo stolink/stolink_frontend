@@ -13,9 +13,9 @@
 - 대상: 장편 소설 작가 (방대한 세계관 관리 필요)
 
 > 📖 상세 기술 스택 → [TECHSTACK.md](./TECHSTACK.md)
-> 📋 기능 명세 → [SPEC.md](./SPEC.md)
-> 🗂️ 데이터 모델 → [DATA_MODEL.md](./DATA_MODEL.md)
-> 📡 API 명세 → [API_SPEC.md](./API_SPEC.md)
+> 📋 기능 명세 → [SPEC.md](../spec/SPEC.md)
+> 🗂️ 데이터 모델 → [DATA_MODEL.md](../spec/DATA_MODEL.md)
+> 📡 API 명세 → [API_SPEC.md](../spec/API_SPEC.md)
 
 ---
 
@@ -262,7 +262,7 @@ fix/* ────── 버그 수정 → dev PR
 hotfix/* ─── 긴급 수정 → main PR (자동 backport to dev)
 ```
 
-> 상세 가이드: [GIT_STRATEGY.md](./GIT_STRATEGY.md)
+> 상세 가이드: [GIT_STRATEGY.md](../workflow/GIT_STRATEGY.md)
 
 ---
 
@@ -307,6 +307,87 @@ hotfix/* ─── 긴급 수정 → main PR (자동 backport to dev)
 - [ ] 스냅샷/버전 관리
 - [ ] 통계 대시보드
 - [ ] 드래그 앤 드롭 순서 변경
+
+---
+
+## 데이터 흐름 패턴
+
+### 문서 저장 흐름
+
+```mermaid
+sequenceDiagram
+    participant Editor as TiptapEditor
+    participant Hook as useDocumentContent
+    participant Service as documentService
+    participant API as Backend API
+
+    Editor->>Editor: 사용자 타이핑
+    Note over Editor: 1.5초 디바운스
+    Editor->>Hook: onContentChange(html)
+    Hook->>Service: updateContent(id, content)
+    Service->>API: PATCH /documents/:id/content
+    API-->>Service: { wordCount, updatedAt }
+    Hook->>Hook: 쿼리 캐시 갱신
+```
+
+### 인증 흐름
+
+```mermaid
+sequenceDiagram
+    participant UI as AuthPage
+    participant Hook as useAuth
+    participant Service as authService
+    participant Store as useAuthStore
+
+    UI->>Hook: login(email, password)
+    Hook->>Service: login({ email, password })
+    Service-->>Hook: AuthResponse
+    Hook->>Store: setUser(user)
+    Store->>Store: persist to localStorage
+    UI->>UI: navigate('/library')
+```
+
+---
+
+## 기능별 수정 가이드
+
+### "문서 저장 방식을 변경하고 싶어요"
+
+1. **디바운스 시간 변경**: `TiptapEditor.tsx`
+2. **저장 로직 변경**: `useDocuments.ts`의 `useDocumentContent`
+3. **API 엔드포인트 변경**: `documentService.ts`의 `updateContent`
+
+### "새로운 API를 추가하고 싶어요"
+
+1. `src/types/` 에 새 인터페이스 추가
+2. `src/services/` 에 새 서비스 파일 생성
+3. `src/hooks/` 에 TanStack Query 훅 생성
+4. 컴포넌트에서 훅을 import해서 사용
+
+### "에디터 기능을 추가하고 싶어요"
+
+1. `src/components/editor/extensions/`에 새 Tiptap 익스텐션 추가
+2. `TiptapEditor.tsx`의 extensions 배열에 등록
+3. (필요시) `EditorToolbar.tsx`에 툴바 버튼 추가
+
+---
+
+## FAQ
+
+**Q: 데모 모드와 실제 모드의 차이는?**
+
+- 데모 모드: `LocalDocumentRepository` (Zustand + localStorage)
+- 실제 모드: `documentService` → Backend API
+
+**Q: Repository 패턴을 사용하는 이유?**
+
+- 데모/실제 모드 전환 쉬움, 테스트 용이, 오프라인 지원 가능
+
+**Q: TanStack Query의 캐시 무효화는?**
+
+```typescript
+queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+```
 
 ---
 
