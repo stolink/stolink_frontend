@@ -117,3 +117,18 @@ export const GLOW_CONFIG = {
   stdDeviation: 3,
   opacity: 0.6,
 } as const;
+
+// =====================================================
+// 🌫️ 그룹 배경 (Fog) 색상 팔레트
+// =====================================================
+
+export const GROUP_COLORS = [
+  "#E0E7FF", // Indigo 100
+  "#FAE8FF", // Fuchsia 100
+  "#DCFCE7", // Emerald 100
+  "#FFEDD5", // Orange 100
+  "#F3E8FF", // Purple 100
+  "#E0F2FE", // Sky 100
+  "#FCE7F3", // Pink 100
+  "#FEF3C7", // Amber 100
+] as const;
