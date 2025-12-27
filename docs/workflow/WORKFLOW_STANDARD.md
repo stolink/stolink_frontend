@@ -51,6 +51,7 @@ graph LR
 2.  **프로젝트 추가**: 우측 사이드바 `Projects`에서 **`stolink board`** 선택.
 3.  **Status 설정**: 'Status'를 **`Ready`**로 설정.
     - (Option) 중요도, 사이즈 등을 입력.
+    - **⭐️ 중요: 이슈 제목은 "그래프 UI 개선"처럼 명확하고 간결한 '기능 단위'로 작성**해주세요. (브랜치 이름 생성 기준이 됩니다.)
     - _(참고)_ Draft Item으로 보드에서 먼저 만들고 나중에 'Convert to Issue' 해도 됩니다.
 
 ### Phase 2. 작업 가져오기 (Developer)
@@ -67,7 +68,9 @@ graph LR
     - 예: `/start-work 3`
 
 2.  **자동 수행되는 일**:
-    - 브랜치 생성 (`feature/123-title`) 및 이동.
+    - AI Agent가 이슈 내용을 파악하여 **적절하고 간결한 영문 브랜치명**을 생성합니다.
+      - 예: 이슈 "그래프 UI 개선" -> 브랜치 `feature/123-graph-ui`
+    - 브랜치 생성 및 이동.
     - 담당자(Assignees)에 **나(`@me`)** 할당 (백그라운드).
     - 프로젝트 상태 변경: `Ready` → **`In Progress`** (백그라운드).
 3.  작업 시작!
