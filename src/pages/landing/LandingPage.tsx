@@ -159,10 +159,10 @@ export default function LandingPage() {
         <section className="py-20 px-4 relative">
           <div className="absolute inset-0 bg-stone-50/50 -z-10" />
           <motion.div
-            className="max-w-5xl mx-auto"
+            className="max-w-5xl mx-auto will-change-transform"
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
+            viewport={{ once: false, amount: 0.2 }}
             transition={{ duration: 0.8 }}
           >
             <div className="rounded-2xl bg-white shadow-2xl border border-stone-200 overflow-hidden">
@@ -237,8 +237,8 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-20"
+              viewport={{ once: false, amount: 0.3 }}
+              className="text-center mb-20 will-change-transform"
             >
               <h2 className="text-4xl md:text-5xl font-bold text-ink mb-6 font-heading">
                 창작에만 집중할 수 있는 환경
@@ -257,10 +257,10 @@ export default function LandingPage() {
                   key={index}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  viewport={{ once: false, amount: 0.2 }}
+                  transition={{ delay: index * 0.08, duration: 0.4 }}
                   whileHover={{ y: -8, scale: 1.02 }}
-                  className="p-10 rounded-3xl bg-white border border-stone-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] hover:border-sage-200 transition-all cursor-default group relative overflow-hidden"
+                  className="p-10 rounded-3xl bg-white border border-stone-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] hover:border-sage-200 transition-all cursor-default group relative overflow-hidden will-change-transform"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-sage-50/50 rounded-bl-full -mr-16 -mt-16 group-hover:bg-sage-100 transition-colors" />
                   <div className="w-16 h-16 rounded-2xl bg-sage-50 flex items-center justify-center mb-8 border border-sage-100 group-hover:bg-sage-500 group-hover:shadow-lg group-hover:shadow-sage-200 transition-all transform group-hover:rotate-6">
@@ -281,10 +281,10 @@ export default function LandingPage() {
         {/* Stats / Social Proof Section */}
         <section className="py-24 px-4 bg-ink">
           <motion.div
-            className="max-w-5xl mx-auto text-center"
+            className="max-w-5xl mx-auto text-center will-change-transform"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false, amount: 0.3 }}
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 font-heading">
