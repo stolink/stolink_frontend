@@ -11,19 +11,19 @@ description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 �
 
 ## 0. 브랜치 전략 준수 확인 (필수!)
 
-**⚠️ 직접 push 금지 브랜치**: `main`, `develop`
+**⚠️ 직접 push 금지 브랜치**: `main`, `dev`
 
 ```bash
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 ```
 
-| 현재 브랜치                      | push 가능? | 조치                                                                               |
-| -------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| `main`                           | ❌ 금지    | "main에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단**    |
-| `develop`                        | ❌ 금지    | "develop에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단** |
-| `feature/*`, `fix/*`, `hotfix/*` | ✅ 허용    | 계속 진행                                                                          |
+| 현재 브랜치                      | push 가능? | 조치                                                                            |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `main`                           | ❌ 금지    | "main에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단** |
+| `dev`                            | ❌ 금지    | "dev에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단**  |
+| `feature/*`, `fix/*`, `hotfix/*` | ✅ 허용    | 계속 진행                                                                       |
 
-**main/develop에 있는 경우 → 새 브랜치 생성 제안**:
+**main/dev에 있는 경우 → 새 브랜치 생성 제안**:
 
 ```bash
 # 권장 명령어 안내
@@ -66,13 +66,13 @@ git push origin $CURRENT_BRANCH --no-verify
 | 현재 브랜치 패턴           | Target Branch |
 | -------------------------- | ------------- |
 | `hotfix/*`                 | `main`        |
-| `feature/*`, `fix/*`, 기타 | `develop`     |
+| `feature/*`, `fix/*`, 기타 | `dev`         |
 
 ```bash
 if [[ "$CURRENT_BRANCH" == hotfix/* ]]; then
   TARGET_BRANCH="main"
 else
-  TARGET_BRANCH="develop"
+  TARGET_BRANCH="dev"
 fi
 ```
 
@@ -191,7 +191,7 @@ rm .pr_body_temp.md
 
 ## ⚠️ 주의사항
 
-1. **main/develop에 직접 push 금지** - feature 브랜치 사용 필수
+1. **main/dev에 직접 push 금지** - feature 브랜치 사용 필수
 2. **PR 본문 없이 생성 금지** - 항상 `.pr_body_temp.md` 작성 후 생성
 3. **PR 존재 확인 필수** - gh pr view로 확인 후 생성/업데이트 결정
 4. **변경사항 없어도 PR 상태 확인** - 기존 PR이 있으면 업데이트 가능
@@ -204,7 +204,7 @@ rm .pr_body_temp.md
 시작
   │
   ▼
-브랜치 확인 ──main/develop──▶ ❌ 중단 (새 브랜치 생성 안내)
+브랜치 확인 ──main/dev──▶ ❌ 중단 (새 브랜치 생성 안내)
   │
   ▼ (feature/fix/hotfix)
   │
@@ -214,7 +214,7 @@ rm .pr_body_temp.md
 커밋 & 푸시
   │
   ▼
-Target 결정 (hotfix→main, 그 외→develop)
+Target 결정 (hotfix→main, 그 외→dev)
   │
   ▼
 PR 존재? ──Yes──▶ 4-B: PR 업데이트
