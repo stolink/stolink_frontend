@@ -1,11 +1,16 @@
 import type { Character, RelationshipLink, RelationType } from "@/types";
 
 /**
- * Character extras['관계']에서 RelationshipLink 배열 생성
+ * @deprecated Use extractRelationshipLinks from @/utils/relationshipMapper
+ *
+ * Character extras['관계']에서 RelationshipLink 배열 생성 (레거시 데이터 지원용)
  */
 export function generateLinksFromCharacters(
-  characters: Character[],
+  characters: Character[]
 ): RelationshipLink[] {
+  console.warn(
+    "generateLinksFromCharacters is deprecated. Use extractRelationshipLinks from @/utils/relationshipMapper instead."
+  );
   const links: RelationshipLink[] = [];
   const linkSet = new Set<string>();
 
@@ -48,7 +53,7 @@ export function generateLinksFromCharacters(
       const targetChar = characters.find(
         (c) =>
           c.name.includes(targetName) ||
-          targetName.includes(c.name.split(" ")[0]),
+          targetName.includes(c.name.split(" ")[0])
       );
 
       if (targetChar) {

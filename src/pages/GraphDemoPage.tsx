@@ -1,8 +1,11 @@
 import { useRef, useState, useEffect } from "react";
-import { NetworkGraph, NetworkGraphRef } from "@/components/graph/NetworkGraph";
+import {
+  NetworkGraph,
+  type NetworkGraphRef,
+} from "@/components/graph/NetworkGraph";
 import { SAMPLE_GRAPH_DATA } from "@/data/sampleGraphData";
-import { graphApi, GraphData } from "@/services/graphApi";
-import { NetworkNode, NetworkLink } from "@/types/network";
+import { graphApi, type GraphData } from "@/services/graphApi";
+import type { NetworkNode, NetworkLink } from "@/types/network";
 
 export default function GraphDemoPage() {
   const graphRef = useRef<NetworkGraphRef>(null);

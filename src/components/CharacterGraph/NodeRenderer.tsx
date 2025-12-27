@@ -10,7 +10,7 @@ interface NodeRendererProps {
   isDimmed: boolean;
   onClick: (node: CharacterNode) => void;
   onHover: (nodeId: string | null) => void;
-  dragBehavior: d3.DragBehavior<SVGGElement, CharacterNode, CharacterNode>;
+  dragBehavior: d3.DragBehavior<SVGGElement, CharacterNode, unknown>;
 }
 
 /**

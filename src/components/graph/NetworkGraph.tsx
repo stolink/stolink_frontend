@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import * as d3 from "d3";
-import { NetworkNode, NetworkLink } from "@/types/network";
+import type { NetworkNode, NetworkLink } from "@/types/network";
 import { cn } from "@/lib/utils";
 
 interface NetworkGraphProps {
@@ -224,7 +224,9 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force(
           "collide",
-          d3.forceCollide((d) => (d.radius || 20) + 10).iterations(2),
+          d3
+            .forceCollide<NetworkNode>((d) => (d.radius || 20) + 10)
+            .iterations(2),
         );
 
       simulationRef.current = simulation;
@@ -280,11 +282,10 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .style("visibility", (d) =>
           (d.radius || 5) < 10 && !selectedNodeId ? "hidden" : "visible",
         );
-
-      // Drag Logic
       node.call(
         d3
-          .drag<SVGCircleElement, NetworkNode>()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .drag<any, NetworkNode>()
           .on("start", (e, d) => {
             if (!e.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;

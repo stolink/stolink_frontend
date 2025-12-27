@@ -20,20 +20,12 @@ export function useUpdateProjectStatus() {
       projectId: string;
       status: ProjectStatusType;
     }) => {
-      console.log(
-        "[useUpdateProjectStatus] Updating project:",
-        projectId,
-        "to status:",
-        status
-      );
       const apiStatus = status === "Writing" ? "writing" : "completed";
       return projectService.update(projectId, { status: apiStatus });
     },
 
     // 낙관적 업데이트: API 응답 전에 UI 먼저 업데이트
     onMutate: async ({ projectId, status }) => {
-      console.log("[useUpdateProjectStatus] onMutate - projectId:", projectId);
-
       // 진행 중인 리페치 취소 (모든 프로젝트 관련 쿼리)
       await queryClient.cancelQueries({ queryKey: projectKeys.all });
 
@@ -47,10 +39,6 @@ export function useUpdateProjectStatus() {
         { queryKey: projectKeys.lists() },
         (old: { projects?: Project[] } | undefined) => {
           if (!old?.projects) return old;
-          console.log(
-            "[useUpdateProjectStatus] Updating cache for project:",
-            projectId
-          );
           return {
             ...old,
             projects: old.projects.map((p: Project) =>
@@ -79,16 +67,6 @@ export function useUpdateProjectStatus() {
         });
       }
       alert("상태 변경에 실패했습니다.");
-    },
-
-    // 성공 시 로그
-    onSuccess: (data, variables) => {
-      console.log(
-        "[useUpdateProjectStatus] Success - projectId:",
-        variables.projectId,
-        "response:",
-        data
-      );
     },
   });
 }

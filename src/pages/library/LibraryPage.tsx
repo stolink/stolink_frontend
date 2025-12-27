@@ -84,7 +84,7 @@ export default function LibraryPage() {
 
   // ========== 정렬 상태 ==========
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
-    "updatedAt",
+    "updatedAt"
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -116,7 +116,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -132,7 +132,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
     );
   };
 
@@ -179,7 +179,6 @@ export default function LibraryPage() {
       const { _create } = useDocumentStore.getState();
 
       // 1. Create Project
-      console.log("[LibraryPage] Creating project...");
       const projectResponse = await projectService.create({
         title: "새 작품",
         genre: "other",
@@ -187,29 +186,25 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project",
+        "Failed to create project"
       );
       const projectId = projectData.id;
-      console.log("[LibraryPage] Project created:", projectId);
 
       // 2. Create default chapter (folder)
-      console.log("[LibraryPage] Creating default chapter...");
       const chapterResponse = await documentService.create(projectId, {
         type: "folder",
         title: "챕터 1",
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter",
+        "Failed to create default chapter"
       );
       const chapterId = chapterData.id;
-      console.log("[LibraryPage] Chapter created:", chapterId);
 
       // Add chapter to local store
       _create(mapBackendToFrontend(chapterData));
 
       // 3. Create default section (text document)
-      console.log("[LibraryPage] Creating default section...");
       const sectionResponse = await documentService.create(projectId, {
         type: "text",
         title: "섹션 1",
@@ -219,9 +214,8 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section",
+          "Failed to create section"
         );
-        console.log("[LibraryPage] Section created:", sectionData.id);
         _create(mapBackendToFrontend(sectionData));
       } catch {
         // Section creation failure is not critical
@@ -229,7 +223,6 @@ export default function LibraryPage() {
       }
 
       // 4. Navigate to editor
-      console.log("[LibraryPage] Navigating to editor...");
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
@@ -264,7 +257,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000,
+    chunkSize: number = 10000
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -295,12 +288,12 @@ export default function LibraryPage() {
 
       const chunk = currentText.substring(
         0,
-        bestSplitIndex + separatorUsed.length,
+        bestSplitIndex + separatorUsed.length
       );
       chunks.push(chunk);
 
       const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length,
+        bestSplitIndex + separatorUsed.length
       );
       if (remaining.trim().length > 0) {
         splitText(remaining);
@@ -381,9 +374,6 @@ export default function LibraryPage() {
     let segments = splitContentByChapters(rawText);
 
     if (!segments && rawText.length > 30000) {
-      console.log(
-        "[Import] No explicit chapters found. Using semantic splitter.",
-      );
       segments = splitContentRecursively(rawText);
     }
 
@@ -402,8 +392,6 @@ export default function LibraryPage() {
       if (!projectId) throw new Error("Failed to create project");
 
       if (hasSegments) {
-        console.log(`[Import] Imported as ${segments!.length} segments.`);
-
         for (const segment of segments!) {
           const folderRes = await documentService.create(projectId, {
             type: "folder",
@@ -431,7 +419,6 @@ export default function LibraryPage() {
           }
         }
       } else {
-        console.log("[Import] Importing as single file.");
         const fullContent = processContentToHtml(rawText);
 
         const docResponse = await documentService.create(projectId, {
@@ -462,7 +449,8 @@ export default function LibraryPage() {
         );
       } else {
         alert(
-          "파일을 가져오는 데 실패했습니다. 파일 형식을 확인하고 다시 시도해주세요.",
+          "가져오기에 실패했습니다: " +
+          (error instanceof Error ? error.message : "알 수 없는 오류")
         );
       }
     }
@@ -599,7 +587,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-stone-200 text-stone-600",
+                    !isEditMode && "bg-white border-stone-200 text-stone-600"
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -625,7 +613,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -636,7 +624,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -709,7 +697,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1"
           )}
           initial={false}
           animate="visible"

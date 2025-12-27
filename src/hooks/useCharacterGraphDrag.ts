@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
 
@@ -21,7 +21,7 @@ export function useDrag(options: UseDragOptions) {
   const handleDragStart = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode
+      d: CharacterNode,
     ) => {
       // Wake up simulation ("Mongle-Mongle" effect)
       reheat();
@@ -31,26 +31,26 @@ export function useDrag(options: UseDragOptions) {
       d.fy = d.y;
       onDragStart?.(d);
     },
-    [onDragStart, reheat]
+    [onDragStart, reheat],
   );
 
   // 드래그 중
   const handleDrag = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode
+      d: CharacterNode,
     ) => {
       d.fx = event.x;
       d.fy = event.y;
     },
-    []
+    [],
   );
 
   // 드래그 종료
   const handleDragEnd = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode
+      d: CharacterNode,
     ) => {
       isDraggingRef.current = false;
       // 드래그 종료 후 위치 해제 (자유 이동)
@@ -58,17 +58,23 @@ export function useDrag(options: UseDragOptions) {
       d.fy = null;
       onDragEnd?.(d);
     },
-    [onDragEnd]
+    [onDragEnd],
   );
 
   // D3 drag behavior 생성
-  const dragBehavior = useMemo(() => {
-    return d3
-      .drag<SVGGElement, CharacterNode>()
+  // AI Review suggests useRef, but accessing ref.current in render triggers strict ESLint rules.
+  // useState(() => ...) guarantees single initialization and is safe for render access.
+  // The instance is stable, and listeners are updated in useEffect.
+  const [dragBehavior] = useState(() =>
+    d3.drag<SVGGElement, CharacterNode, unknown>(),
+  );
+
+  useEffect(() => {
+    dragBehavior
       .on("start", handleDragStart)
       .on("drag", handleDrag)
       .on("end", handleDragEnd);
-  }, [handleDragStart, handleDrag, handleDragEnd]);
+  }, [dragBehavior, handleDragStart, handleDrag, handleDragEnd]);
 
   return {
     dragBehavior,

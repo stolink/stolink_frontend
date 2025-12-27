@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { NetworkNode, NetworkLink } from "@/types/network";
+import type { NetworkNode, NetworkLink } from "@/types/network";
 
 interface UseNetworkSimulationOptions {
   width: number;
@@ -45,7 +45,7 @@ export function useNetworkSimulation({
       )
       .force(
         "collide",
-        d3.forceCollide((d) => (d.radius || 20) + 5).iterations(2)
+        d3.forceCollide<NetworkNode>((d) => (d.radius || 20) + 5).iterations(2)
       );
 
     simulation.on("tick", () => {
