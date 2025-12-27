@@ -10,9 +10,30 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document";
-import { useRef, useState, useMemo } from "react";
-import { useChildDocuments, useDocumentTree } from "@/hooks/useDocuments";
+import { useMemo } from "react";
+import {
+  useChildDocuments,
+  useDocumentTree,
+  useDocumentMutations,
+} from "@/hooks/useDocuments";
 import { DEMO_CHAPTERS, DEMO_CHAPTER_CONTENTS } from "@/data/demoData";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface SectionStripProps {
   selectedFolderId: string | null;
@@ -37,14 +58,15 @@ export default function SectionStrip({
   const { documents } = useDocumentTree(projectId);
   const { children: sectionDocuments } = useChildDocuments(
     selectedFolderId,
-    projectId
+    projectId,
   );
+  const { reorderDocuments } = useDocumentMutations(projectId);
 
   // 2. Compute Sections List
   const sections = useMemo(() => {
     if (isDemo) {
       return DEMO_CHAPTERS.filter(
-        (ch) => ch.parentId === selectedFolderId && ch.type === "section"
+        (ch) => ch.parentId === selectedFolderId && ch.type === "section",
       ).map((ch) => ({
         id: ch.id,
         projectId: "demo-project",
@@ -80,16 +102,34 @@ export default function SectionStrip({
     return doc?.title || "폴더 선택";
   }, [isDemo, selectedFolderId, documents]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
+  // 4. Dnd Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required to start drag (prevents accidental drags on click)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id);
-    e.dataTransfer.effectAllowed = "move";
-  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleDragEnd = () => {
-    setDraggedId(null);
+    if (over && active.id !== over.id) {
+      if (isDemo) return; // Demo mode doesn't support reordering
+
+      const oldIndex = sections.findIndex((item) => item.id === active.id);
+      const newIndex = sections.findIndex((item) => item.id === over.id);
+
+      // Create new ordered array locally first
+      const newOrderedSections = arrayMove(sections, oldIndex, newIndex);
+      const newOrderedIds = newOrderedSections.map((s) => s.id);
+
+      // Call mutation (which does optimistic update internally)
+      reorderDocuments(selectedFolderId, newOrderedIds);
+    }
   };
 
   return (
@@ -115,10 +155,7 @@ export default function SectionStrip({
       </div>
 
       {/* Sections Scroll Area */}
-      <div
-        ref={scrollRef}
-        className="flex items-stretch gap-3 px-4 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300"
-      >
+      <div className="flex items-stretch gap-3 px-4 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300">
         {sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-4 text-center">
             <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-2">
@@ -138,24 +175,29 @@ export default function SectionStrip({
             </button>
           </div>
         ) : (
-          <>
-            {sections.map((section, index) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                index={index + 1}
-                isSelected={section.id === selectedSectionId}
-                isDragging={section.id === draggedId}
-                onClick={() => onSelect(section.id)}
-                onDragStart={(e) => handleDragStart(e, section.id)}
-                onDragEnd={handleDragEnd}
-                liveWordCount={
-                  section.id === selectedSectionId ? liveWordCount : undefined
-                }
-              />
-            ))}
-
-            {/* Add Button Card */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sections.map((s) => s.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sections.map((section, index) => (
+                <SectionCard
+                  key={section.id}
+                  section={section}
+                  index={index + 1}
+                  isSelected={section.id === selectedSectionId}
+                  onClick={() => onSelect(section.id)}
+                  liveWordCount={
+                    section.id === selectedSectionId ? liveWordCount : undefined
+                  }
+                />
+              ))}
+            </SortableContext>
+            {/* Add Button Card (Outside Sortable Context) */}
             <button
               onClick={onAdd}
               className="flex flex-col items-center justify-center min-w-[100px] px-4 py-3 border-2 border-dashed border-stone-300 rounded-xl hover:border-sage-400 hover:bg-sage-50/50 transition-all group"
@@ -165,7 +207,7 @@ export default function SectionStrip({
                 새 섹션
               </span>
             </button>
-          </>
+          </DndContext>
         )}
       </div>
     </div>
@@ -176,10 +218,7 @@ interface SectionCardProps {
   section: Document;
   index: number;
   isSelected: boolean;
-  isDragging: boolean;
   onClick: () => void;
-  onDragStart: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
   liveWordCount?: number; // Real-time count for selected section
 }
 
@@ -187,12 +226,24 @@ function SectionCard({
   section,
   index,
   isSelected,
-  isDragging,
   onClick,
-  onDragStart,
-  onDragEnd,
   liveWordCount,
 }: SectionCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    // Disable transition during drag for immediate responsiveness
+    transition: isDragging ? undefined : transition,
+  };
+
   const statusConfig = {
     draft: {
       color: "bg-stone-400",
@@ -221,79 +272,97 @@ function SectionCard({
   const synopsis = section.synopsis || "";
 
   return (
-    <button
-      onClick={onClick}
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
       className={cn(
-        "group relative flex flex-col min-w-[160px] max-w-[200px] p-3 rounded-xl border-2 transition-all text-left",
+        "relative min-w-[160px] max-w-[200px] rounded-xl border-2 transition-all text-left group touch-none",
         "hover:shadow-md hover:-translate-y-1",
         isSelected
           ? "bg-white border-sage-400 shadow-md ring-2 ring-sage-100"
           : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300",
-        isDragging && "opacity-50 scale-95"
+        // Dragging styles: Solid opacity, slightly larger, prominent shadow to indicate lifting
+        isDragging &&
+          "opacity-90 scale-105 shadow-xl z-50 ring-2 ring-sage-500 rotate-2 bg-white",
       )}
     >
-      {/* Header: Index + Status */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
-              isSelected
-                ? "bg-sage-600 text-white"
-                : "bg-stone-100 text-stone-600"
-            )}
-          >
-            {index}
-          </span>
-          <div
-            className={cn("w-2 h-2 rounded-full", config.color)}
-            title={config.label}
-          />
+      {/* 1. Content Layer (Base) - Pure visuals */}
+      <div className="flex flex-col p-3 h-full">
+        {/* Header: Index + Status */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
+                isSelected
+                  ? "bg-sage-600 text-white"
+                  : "bg-stone-100 text-stone-600",
+              )}
+            >
+              {index}
+            </span>
+            <div
+              className={cn("w-2 h-2 rounded-full", config.color)}
+              title={config.label}
+            />
+          </div>
+          {/* Visual placeholder for grip to keep layout consistent if needed, or just spacers */}
+          <div className="w-4 h-4 ml-auto" />
         </div>
-        <GripVertical
+
+        {/* Title */}
+        <h4
           className={cn(
-            "w-4 h-4 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab",
-            isDragging && "cursor-grabbing"
-          )}
-        />
-      </div>
-
-      {/* Title */}
-      <h4
-        className={cn(
-          "text-sm font-semibold truncate mb-1",
-          isSelected ? "text-sage-800" : "text-stone-700"
-        )}
-      >
-        {section.title}
-      </h4>
-
-      {/* Synopsis Preview */}
-      <p className="text-xs text-stone-400 line-clamp-2 min-h-[32px] mb-2">
-        {synopsis || "시놉시스 없음"}
-      </p>
-
-      {/* Footer: Word Count + Status Label */}
-      <div className="flex items-center justify-between pt-2 border-t border-stone-100">
-        <span className="text-[11px] text-stone-500 font-medium">
-          {wordCount.toLocaleString()}자
-        </span>
-        <span
-          className={cn(
-            "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-            status === "final"
-              ? "bg-green-100 text-green-700"
-              : status === "revised"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-stone-100 text-stone-500"
+            "text-sm font-semibold truncate mb-1",
+            isSelected ? "text-sage-800" : "text-stone-700",
           )}
         >
-          {config.label}
-        </span>
+          {section.title}
+        </h4>
+
+        {/* Synopsis Preview */}
+        <p className="text-xs text-stone-400 line-clamp-2 min-h-[32px] mb-2">
+          {synopsis || "시놉시스 없음"}
+        </p>
+
+        {/* Footer: Word Count + Status Label */}
+        <div className="flex items-center justify-between pt-2 border-t border-stone-100 mt-auto">
+          <span className="text-[11px] text-stone-500 font-medium">
+            {wordCount.toLocaleString()}자
+          </span>
+          <span
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+              status === "final"
+                ? "bg-green-100 text-green-700"
+                : status === "revised"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-stone-100 text-stone-500",
+            )}
+          >
+            {config.label}
+          </span>
+        </div>
       </div>
-    </button>
+
+      {/* 2. Interaction Layer (Click) - Covers entire card, enters selection */}
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute inset-0 z-20 w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 rounded-xl bg-transparent"
+        aria-pressed={isSelected}
+        aria-label={`${index}번 섹션 ${section.title} 선택`}
+      />
+
+      {/* 3. Drag Handle Layer (Drag) - Highest priority */}
+      <div
+        {...listeners}
+        className="absolute top-3 right-3 z-30 p-1 cursor-grab active:cursor-grabbing hover:bg-stone-100 rounded-md transition-colors"
+        aria-label="섹션 순서 변경"
+      >
+        <GripVertical className="w-4 h-4 text-stone-300 group-hover:text-stone-400" />
+      </div>
+    </div>
   );
 }
