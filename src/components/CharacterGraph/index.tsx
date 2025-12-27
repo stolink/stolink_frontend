@@ -56,30 +56,71 @@ export function CharacterGraph({
   );
 
   // Force Simulation
-  const { nodes, links, reheat } = useForceSimulation(
+  const { nodes, links, reheat, simulation } = useForceSimulation(
     initialNodes,
     initialLinks,
     { width, height },
   );
 
+  // Imperative Animation Loop (D3 Tick)
+  useEffect(() => {
+    if (!simulation || !gRef.current) return;
+
+    // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
+    simulation.on("tick", () => {
+      const g = d3.select(gRef.current);
+
+      // Update Links
+      g.selectAll<SVGLineElement, RelationshipLink>(".link-line")
+        .attr("x1", (d) => {
+          if (!d) return 0;
+          const source = d.source as unknown as CharacterNode;
+          // D3 mutates d.source to object, valid check:
+          if (source && typeof source === "object" && "x" in source)
+            return source.x ?? 0;
+          return 0;
+        })
+        .attr("y1", (d) => {
+          if (!d) return 0;
+          const source = d.source as unknown as CharacterNode;
+          if (source && typeof source === "object" && "y" in source)
+            return source.y ?? 0;
+          return 0;
+        })
+        .attr("x2", (d) => {
+          if (!d) return 0;
+          const target = d.target as unknown as CharacterNode;
+          if (target && typeof target === "object" && "x" in target)
+            return target.x ?? 0;
+          return 0;
+        })
+        .attr("y2", (d) => {
+          if (!d) return 0;
+          const target = d.target as unknown as CharacterNode;
+          if (target && typeof target === "object" && "y" in target)
+            return target.y ?? 0;
+          return 0;
+        });
+
+      // Update Nodes (Groups)
+      g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
+        "transform",
+        (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
+      );
+    });
+
+    return () => {
+      simulation.on("tick", null); // Cleanup
+    };
+  }, [simulation]);
+
   // Zoom
   const { zoomState } = useZoom(svgRef, gRef);
 
   // Drag
-  const { createDragBehavior } = useDrag({ reheat });
+  const { dragBehavior } = useDrag({ reheat });
 
-  // 노드에 드래그 동작 연결
-  useEffect(() => {
-    const g = gRef.current;
-    if (!g || nodes.length === 0) return;
-
-    const dragBehavior = createDragBehavior();
-
-    d3.select(g)
-      .selectAll<SVGGElement, CharacterNode>(".node-group")
-      .data(nodes, (d) => d?.id ?? "")
-      .call(dragBehavior);
-  }, [nodes, createDragBehavior]);
+  // (Removed faulty useEffect that re-attached drag on every render)
 
   // 연결된 노드 ID 계산
   const connectedNodeIds = useMemo(() => {
@@ -134,35 +175,54 @@ export function CharacterGraph({
       >
         <g ref={gRef}>
           {/* 링크 먼저 렌더링 */}
-          {links.map((link) => (
-            <LinkRenderer
-              key={link.id}
-              link={link}
-              isHighlighted={
-                connectedNodeIds !== null &&
-                (typeof link.source === "string"
-                  ? connectedNodeIds.has(link.source)
-                  : connectedNodeIds.has(link.source.id)) &&
-                (typeof link.target === "string"
-                  ? connectedNodeIds.has(link.target)
-                  : connectedNodeIds.has(link.target.id))
+          {/* 링크 먼저 렌더링 */}
+          {links.map((link) => {
+            const focusId = hoveredNodeId || selectedNodeId;
+
+            // Defensive ID extraction
+            const getId = (
+              nodeOrId: string | CharacterNode | unknown,
+            ): string => {
+              if (
+                typeof nodeOrId === "object" &&
+                nodeOrId !== null &&
+                "id" in nodeOrId
+              ) {
+                return String((nodeOrId as { id: unknown }).id);
               }
-              isDimmed={
-                connectedNodeIds !== null &&
-                !(
-                  (typeof link.source === "string"
-                    ? connectedNodeIds.has(link.source)
-                    : connectedNodeIds.has(link.source.id)) &&
-                  (typeof link.target === "string"
-                    ? connectedNodeIds.has(link.target)
-                    : connectedNodeIds.has(link.target.id))
-                )
-              }
-              isFiltered={
-                relationTypeFilter !== "all" && link.type !== relationTypeFilter
-              }
-            />
-          ))}
+              return String(nodeOrId);
+            };
+
+            const focusIdStr = focusId ? String(focusId) : null;
+            const sourceIdStr = getId(link.source);
+            const targetIdStr = getId(link.target);
+
+            // Strict Star Topology Check
+            const isDirectlyConnected = focusIdStr
+              ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
+              : false;
+
+            // If a node is SELECTED (not just hovered), we strictly HIDE unconnected links
+            if (selectedNodeId && !isDirectlyConnected) {
+              return null;
+            }
+
+            const isHighlighted = focusIdStr ? isDirectlyConnected : false;
+            const isDimmed = focusIdStr ? !isHighlighted : false;
+
+            return (
+              <LinkRenderer
+                key={link.id}
+                link={link}
+                isHighlighted={isHighlighted}
+                isDimmed={isDimmed}
+                isFiltered={
+                  relationTypeFilter !== "all" &&
+                  link.type !== relationTypeFilter
+                }
+              />
+            );
+          })}
 
           {/* 노드 렌더링 */}
           {nodes.map((node) => (
@@ -176,6 +236,7 @@ export function CharacterGraph({
               }
               onClick={handleNodeClick}
               onHover={handleNodeHover}
+              dragBehavior={dragBehavior}
             />
           ))}
         </g>

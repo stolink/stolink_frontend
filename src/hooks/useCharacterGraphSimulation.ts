@@ -20,6 +20,7 @@ interface UseForceSimulationReturn {
   nodes: CharacterNode[];
   links: RelationshipLink[];
   reheat: () => void;
+  simulation: d3.Simulation<CharacterNode, RelationshipLink> | null;
 }
 
 /**
@@ -34,6 +35,13 @@ export function useForceSimulation(
   const { width, height } = options;
 
   // 시뮬레이션과 상태를 저장하는 store
+  // 시뮬레이션 인스턴스를 상태로 관리 (Ref 대신 State 사용으로 린트 에러 해결 & 리렌더링 트리거)
+  const [simulation, setSimulation] = useState<d3.Simulation<
+    CharacterNode,
+    RelationshipLink
+  > | null>(null);
+
+  // 시뮬레이션과 상태를 저장하는 store (내부 로직 및 useSyncExternalStore용)
   const storeRef = useRef<{
     simulation: d3.Simulation<CharacterNode, RelationshipLink> | null;
     state: SimulationState;
@@ -43,6 +51,15 @@ export function useForceSimulation(
     state: { nodes: [], links: [] },
     listeners: new Set(),
   });
+
+  // simulationRef는 storeRef.simulation으로 대체 가능하므로 제거하거나,
+  // 기존 코드 호환성을 위해 storeRef와 동기화.
+  // 여기서는 깔끔하게 storeRef를 사용하도록 아래 로직들을 수정해야 하지만,
+  // 앞서 변경한 cleanup/reheat 로직이 simulationRef를 쓰므로 둠.
+  const simulationRef = useRef<d3.Simulation<
+    CharacterNode,
+    RelationshipLink
+  > | null>(null);
 
   // 노드 반지름 계산
   const getNodeRadius = useCallback((node: CharacterNode): number => {
@@ -65,12 +82,12 @@ export function useForceSimulation(
     const linksCopy = initialLinks.map((d) => ({ ...d }));
 
     // 기존 시뮬레이션 정리
-    if (store.simulation) {
-      store.simulation.stop();
+    if (simulationRef.current) {
+      simulationRef.current.stop();
     }
 
     // 새 시뮬레이션 생성 (Obsidian 스타일)
-    const simulation = d3
+    const newSimulation = d3
       .forceSimulation<CharacterNode, RelationshipLink>(nodesCopy)
       // 링크 포스 - 소프트 스프링
       .force(
@@ -115,19 +132,25 @@ export function useForceSimulation(
       // 낮은 마찰 = 더 유동적인 움직임
       .velocityDecay(FORCE_CONFIG.velocityDecay);
 
-    // tick 이벤트 - 외부 store 업데이트 및 구독자 알림
-    simulation.on("tick", () => {
-      store.state = {
-        nodes: [...nodesCopy],
-        links: [...linksCopy],
-      };
-      store.listeners.forEach((listener) => listener());
-    });
+    // [Pre-warming] 초기 렌더링 시 노드들이 뭉쳐있지 않도록 시뮬레이션을 미리 돌림
+    // 300 -> 10으로 감소: 초기 로딩 렉 해결 (사용자 피드백 반영)
+    newSimulation.tick(10);
 
-    store.simulation = simulation;
+    // Initial State Sync
+    store.state = {
+      nodes: [...nodesCopy],
+      links: [...linksCopy],
+    };
+    store.listeners.forEach((listener) => listener());
+
+    // Update Refs & State
+    simulationRef.current = newSimulation;
+    store.simulation = newSimulation; // storeRef keeps sync for internal usage
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSimulation(newSimulation); // Update state to expose to consumer
 
     return () => {
-      simulation.stop();
+      newSimulation.stop();
     };
   }, [initialNodes, initialLinks, width, height, getNodeRadius]);
 
@@ -153,7 +176,7 @@ export function useForceSimulation(
     }
   }, [width, height]);
 
-  // useSyncExternalStore로 상태 동기화
+  // useSyncExternalStore로 상태 동기화 (구조적 변경만 반영)
   const subscribe = useCallback((onStoreChange: () => void) => {
     const store = storeRef.current;
     store.listeners.add(onStoreChange);
@@ -170,9 +193,8 @@ export function useForceSimulation(
 
   // 시뮬레이션 재가열 함수
   const reheat = useCallback(() => {
-    const store = storeRef.current;
-    if (store.simulation) {
-      store.simulation.alpha(0.3).restart(); // 더 부드러운 재시작
+    if (simulationRef.current) {
+      simulationRef.current.alpha(0.3).restart(); // 더 부드러운 재시작
     }
   }, []);
 
@@ -180,5 +202,6 @@ export function useForceSimulation(
     nodes: state.nodes,
     links: state.links,
     reheat,
+    simulation, // Expose state (safe for render)
   };
 }

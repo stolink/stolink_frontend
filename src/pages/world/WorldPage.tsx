@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,24 +31,47 @@ const items = [
 ];
 
 export default function WorldPage() {
-  const [characters] = useState<Character[]>(DEMO_CHARACTERS);
+  const [characters, setCharacters] = useState<Character[]>(DEMO_CHARACTERS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
 
+  // Fetch Characters from API
+  // const [loading, setLoading] = useState(false); // Unused for now
+
+  useEffect(() => {
+    // setLoading(true);
+    // Try to fetch from Spring Server
+    import("@/services/graphApi").then(({ graphApi }) => {
+      graphApi
+        .getCharacters()
+        .then((data) => {
+          if (data && data.length > 0) {
+            // Assuming API returns compatible Character objects
+            setCharacters(data);
+          }
+        })
+        .catch(() => {
+          // Silent fallback to DEMO_CHARACTERS (default state)
+          console.log("Using Demo Data (API unavailable)");
+        });
+      // .finally(() => setLoading(false));
+    });
+  }, []);
+
   // 링크 데이터 생성
   const links = useMemo(
     () => generateLinksFromCharacters(characters),
-    [characters],
+    [characters]
   );
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character,
+      prev?.id === character.id ? null : character
     );
   };
 

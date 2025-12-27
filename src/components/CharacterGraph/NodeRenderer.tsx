@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useRef, useEffect } from "react";
+import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
 import { NODE_SIZES, ROLE_COLORS, ANIMATION } from "./constants";
 
@@ -9,6 +10,7 @@ interface NodeRendererProps {
   isDimmed: boolean;
   onClick: (node: CharacterNode) => void;
   onHover: (nodeId: string | null) => void;
+  dragBehavior: d3.DragBehavior<SVGGElement, CharacterNode, CharacterNode>;
 }
 
 /**
@@ -21,7 +23,25 @@ export const NodeRenderer = memo(function NodeRenderer({
   isDimmed,
   onClick,
   onHover,
+  dragBehavior,
 }: NodeRendererProps) {
+  // Ref for D3 Drag Attachment
+  const elementRef = useRef<SVGGElement>(null);
+
+  // Data Binding & Drag Attachment
+  // Combined to ensure order: Data must be bound before drag behavior uses it.
+  useEffect(() => {
+    if (elementRef.current) {
+      // 1. Bind Data
+      const selection = d3.select(elementRef.current).data([node]);
+
+      // 2. Attach Drag (only if behavior exists)
+      if (dragBehavior) {
+        selection.call(dragBehavior);
+      }
+    }
+  }, [node, dragBehavior]);
+
   const isProtagonist = node.role === "protagonist";
   const size = isProtagonist ? NODE_SIZES.protagonist : NODE_SIZES.default;
   const radius = size / 2;
@@ -48,6 +68,7 @@ export const NodeRenderer = memo(function NodeRenderer({
 
   return (
     <g
+      ref={elementRef}
       className="node-group"
       transform={`translate(${node.x}, ${node.y})`}
       onClick={() => onClick(node)}
@@ -56,7 +77,7 @@ export const NodeRenderer = memo(function NodeRenderer({
       style={{
         cursor: "pointer",
         opacity: isDimmed ? ANIMATION.dimOpacity : ANIMATION.normalOpacity,
-        transition: `opacity ${ANIMATION.highlightDuration}ms ease, transform ${ANIMATION.hoverTransition}ms ease`,
+        transition: `opacity ${ANIMATION.highlightDuration}ms ease`,
       }}
     >
       {/* 글로우 효과 (선택/하이라이트 시) */}
