@@ -39,3 +39,19 @@ useEffect(() => {
 
 - **State**: ✅ Resolved
 - **Verification**: `npm run type-check` & `npm run lint`.
+
+## Round 2 Fixes (Post-Verification)
+
+### Issue Description
+
+AI Review identified incomplete removal of deprecated code and weak types.
+
+- **Files**:
+  - `src/hooks/useRelationships.ts`: `relationshipKeys` was exported but unused.
+  - `src/components/CharacterGraph/NodeRenderer.tsx`: `unknown` type was too generic.
+- **Type**: ⚠️ Warning
+
+### Solution Strategy
+
+1. **Dead Code Removal**: Fully removed `relationshipKeys` export.
+2. **Type Strengthening**: Updated `dragBehavior` generic to `CharacterNode | unknown`.
