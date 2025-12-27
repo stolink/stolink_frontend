@@ -5,7 +5,6 @@ import type { ChapterNode } from "../types";
 
 interface UseTreeItemMenuProps {
   node: ChapterNode;
-  hasChildren: boolean;
   onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
   onDelete?: (id: string) => void;
   setIsRenaming: (isRenaming: boolean) => void;

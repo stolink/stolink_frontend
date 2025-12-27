@@ -11,7 +11,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
@@ -19,7 +18,6 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
@@ -74,40 +72,46 @@ export function TreeItem({
     transition: isDragging ? undefined : transition,
   };
 
-  // DnD Sensors for children
+  // DnD Sensors for children (simplified - pointer only for nested contexts)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
     }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
   );
 
   // Child IDs for nested SortableContext
   const childIds = useMemo(
-    () => node.children?.map((c) => c.id) || [],
+    () => node.children?.map((c) => c.id) ?? [],
     [node.children],
   );
 
-  // Handle child reorder
+  // Handle child reorder with error logging
   const handleChildDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id && node.children) {
-      const oldIndex = node.children.findIndex((c) => c.id === active.id);
-      const newIndex = node.children.findIndex((c) => c.id === over.id);
+      const children = node.children;
+      const oldIndex = children.findIndex((c) => c.id === active.id);
+      const newIndex = children.findIndex((c) => c.id === over.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = [...node.children];
-        const [removed] = newOrder.splice(oldIndex, 1);
-        newOrder.splice(newIndex, 0, removed);
-
-        const orderedIds = newOrder.map((c) => c.id);
-        onReorder?.(node.id, orderedIds); // node.id = parent
+      if (oldIndex === -1 || newIndex === -1) {
+        console.error("Invalid drag indices:", {
+          oldIndex,
+          newIndex,
+          activeId: active.id,
+          overId: over.id,
+        });
+        return;
       }
+
+      const newOrder = [...children];
+      const [removed] = newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, removed);
+
+      const orderedIds = newOrder.map((c) => c.id);
+      onReorder?.(node.id, orderedIds);
     }
   };
 
@@ -144,7 +148,6 @@ export function TreeItem({
     handleMenuButtonClick,
   } = useTreeItemMenu({
     node,
-    hasChildren,
     onAddChild,
     onDelete,
     setIsRenaming,
