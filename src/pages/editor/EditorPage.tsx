@@ -166,7 +166,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const { content: documentContent, saveContent } = useDocumentContent(
     isDemo ? null : selectedSectionId
   );
-  const { createDocument, updateDocument: updateDocumentById } =
+  const { createDocument, updateDocument: updateDocumentMutation } =
     useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
@@ -200,7 +200,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setViewMode,
     saveContent,
     updateDocument,
-    updateDocumentById,
+    updateDocumentMutation,
     createDocument,
   });
 
