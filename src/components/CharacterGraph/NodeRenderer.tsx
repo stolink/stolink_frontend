@@ -28,19 +28,19 @@ export const NodeRenderer = memo(function NodeRenderer({
   // Ref for D3 Drag Attachment
   const elementRef = useRef<SVGGElement>(null);
 
-  // 1. Data Binding: Always update D3 data when node prop changes (essential for Drag to work on current simulaton object)
+  // Data Binding & Drag Attachment
+  // Combined to ensure order: Data must be bound before drag behavior uses it.
   useEffect(() => {
     if (elementRef.current) {
-      d3.select(elementRef.current).data([node]);
-    }
-  }, [node]);
+      // 1. Bind Data
+      const selection = d3.select(elementRef.current).data([node]);
 
-  // 2. Drag Behavior Attachment
-  useEffect(() => {
-    if (elementRef.current && dragBehavior) {
-      d3.select(elementRef.current).call(dragBehavior);
+      // 2. Attach Drag (only if behavior exists)
+      if (dragBehavior) {
+        selection.call(dragBehavior);
+      }
     }
-  }, [dragBehavior]);
+  }, [node, dragBehavior]);
 
   const isProtagonist = node.role === "protagonist";
   const size = isProtagonist ? NODE_SIZES.protagonist : NODE_SIZES.default;

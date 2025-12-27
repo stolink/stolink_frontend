@@ -52,14 +52,14 @@ export function CharacterGraph({
         role: char.role,
         imageUrl: char.imageUrl,
       })),
-    [characters]
+    [characters],
   );
 
   // Force Simulation
   const { nodes, links, reheat, simulation } = useForceSimulation(
     initialNodes,
     initialLinks,
-    { width, height }
+    { width, height },
   );
 
   // Imperative Animation Loop (D3 Tick)
@@ -72,17 +72,40 @@ export function CharacterGraph({
 
       // Update Links
       g.selectAll<SVGLineElement, RelationshipLink>(".link-line")
-        .attr("x1", (d) => (d && d.source ? (d.source as CharacterNode).x! : 0))
-        .attr("y1", (d) => (d && d.source ? (d.source as CharacterNode).y! : 0))
-        .attr("x2", (d) => (d && d.target ? (d.target as CharacterNode).x! : 0))
-        .attr("y2", (d) =>
-          d && d.target ? (d.target as CharacterNode).y! : 0
-        );
+        .attr("x1", (d) => {
+          if (!d) return 0;
+          const source = d.source as unknown as CharacterNode;
+          // D3 mutates d.source to object, valid check:
+          if (source && typeof source === "object" && "x" in source)
+            return source.x ?? 0;
+          return 0;
+        })
+        .attr("y1", (d) => {
+          if (!d) return 0;
+          const source = d.source as unknown as CharacterNode;
+          if (source && typeof source === "object" && "y" in source)
+            return source.y ?? 0;
+          return 0;
+        })
+        .attr("x2", (d) => {
+          if (!d) return 0;
+          const target = d.target as unknown as CharacterNode;
+          if (target && typeof target === "object" && "x" in target)
+            return target.x ?? 0;
+          return 0;
+        })
+        .attr("y2", (d) => {
+          if (!d) return 0;
+          const target = d.target as unknown as CharacterNode;
+          if (target && typeof target === "object" && "y" in target)
+            return target.y ?? 0;
+          return 0;
+        });
 
       // Update Nodes (Groups)
       g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
         "transform",
-        (d) => (d ? `translate(${d.x}, ${d.y})` : "")
+        (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
       );
     });
 
@@ -129,7 +152,7 @@ export function CharacterGraph({
         onNodeClick(character);
       }
     },
-    [characters, onNodeClick]
+    [characters, onNodeClick],
   );
 
   // 노드 호버 핸들러
@@ -158,7 +181,7 @@ export function CharacterGraph({
 
             // Defensive ID extraction
             const getId = (
-              nodeOrId: string | CharacterNode | unknown
+              nodeOrId: string | CharacterNode | unknown,
             ): string => {
               if (
                 typeof nodeOrId === "object" &&
