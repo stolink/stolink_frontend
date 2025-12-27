@@ -1,4 +1,12 @@
-import { Clock, MoreVertical, Edit, Copy, Trash, BookOpen, Check } from "lucide-react";
+import {
+  Clock,
+  MoreVertical,
+  Edit,
+  Copy,
+  Trash,
+  BookOpen,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,12 +18,7 @@ import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
 
 // ✅ API 형식 통일 - 대문자만 사용
-export type ProjectStatus =
-  | "DRAFTING"
-  | "OUTLINE"
-  | "EDITING"
-  | "COMPLETED"
-  | "IDEA";
+export type ProjectStatus = "Writing" | "Complete";
 
 interface BookCardProps {
   // 프로젝트 ID (상태 변경 및 편집 모드용)
@@ -46,21 +49,24 @@ interface BookCardProps {
  * API 상태값을 UI에서 사용하는 EDITING/COMPLETED로 정규화
  */
 function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
-  const upperStatus = typeof status === "string" ? status.toUpperCase() : status;
+  const upperStatus =
+    typeof status === "string" ? status.toUpperCase() : status;
   switch (upperStatus) {
+    case "COMPLETE":
     case "COMPLETED":
-      return "COMPLETED";
+    case "Complete":
+      return "Complete";
     case "DRAFTING":
     case "EDITING":
     case "OUTLINE":
     case "IDEA":
+    case "Writing":
     default:
-      return "EDITING";
+      return "Writing";
   }
 }
 
 export function BookCard({
-  projectId,
   title,
   author,
   status,
@@ -97,7 +103,8 @@ export function BookCard({
       className={cn(
         "group relative flex flex-col h-full bg-white rounded-lg border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer",
         // 기본 상태
-        !isEditMode && "border-stone-200 hover:shadow-md hover:border-primary/30",
+        !isEditMode &&
+          "border-stone-200 hover:shadow-md hover:border-primary/30",
         // 편집 모드 스타일
         isEditMode && "border-sage-200 scale-[0.98]",
         // 선택됨 스타일
@@ -227,11 +234,13 @@ export function BookCard({
               <span
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  normalizedStatus === "COMPLETED" ? "bg-green-500" : "bg-sage-500"
+                  normalizedStatus === "Complete"
+                    ? "bg-green-500"
+                    : "bg-sage-500"
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">
-                {normalizedStatus === "COMPLETED" ? "Complete" : "Writing"}
+                {normalizedStatus === "Complete" ? "Complete" : "Writing"}
               </span>
             </div>
           )}

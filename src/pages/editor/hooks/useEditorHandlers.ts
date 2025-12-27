@@ -15,8 +15,8 @@ interface UseEditorHandlersOptions {
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
     id: string,
-    updates: Partial<Document>
-  ) => Promise<any>;
+    updates: Partial<Document>,
+  ) => Promise<unknown>;
   createDocument: (data: {
     type: "folder" | "text";
     title: string;
@@ -45,7 +45,7 @@ export function useEditorHandlers({
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const lastContentRef = useRef<string>("");
   const saveContentRef = useRef(saveContent);
@@ -132,7 +132,7 @@ export function useEditorHandlers({
       setViewMode,
       setSelectedFolderId,
       setSelectedSectionId,
-    ]
+    ],
   );
 
   // Select section
@@ -143,7 +143,7 @@ export function useEditorHandlers({
       }
       setSelectedSectionId(id);
     },
-    [selectedSectionId, forceSave, setSelectedSectionId]
+    [selectedSectionId, forceSave, setSelectedSectionId],
   );
 
   // Content change with debounce
@@ -160,7 +160,7 @@ export function useEditorHandlers({
         saveContentRef.current(content);
       }, 500);
     },
-    [isDemo]
+    [isDemo],
   );
 
   // Character count change with debounce
@@ -173,11 +173,12 @@ export function useEditorHandlers({
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           updateDocumentRef.current({ metadata: { wordCount: count } as any });
         }, 1000);
       }
     },
-    [isDemo]
+    [isDemo],
   );
 
   // Add chapter
@@ -185,7 +186,7 @@ export function useEditorHandlers({
     (
       title: string,
       parentId?: string,
-      type: "chapter" | "section" = "chapter"
+      type: "chapter" | "section" = "chapter",
     ) => {
       if (isDemo) return;
       createDocument({
@@ -194,7 +195,7 @@ export function useEditorHandlers({
         parentId,
       });
     },
-    [isDemo, createDocument]
+    [isDemo, createDocument],
   );
 
   // Add section
@@ -232,7 +233,7 @@ export function useEditorHandlers({
         }
       }
     },
-    [isDemo, updateDocumentMutation]
+    [isDemo, updateDocumentMutation],
   );
 
   // Delete chapter
@@ -254,7 +255,7 @@ export function useEditorHandlers({
       selectedSectionId,
       setSelectedFolderId,
       setSelectedSectionId,
-    ]
+    ],
   );
 
   // Duplicate chapter
@@ -274,7 +275,7 @@ export function useEditorHandlers({
         updatedAt: now,
       });
     },
-    [isDemo]
+    [isDemo],
   );
 
   // Convert type
@@ -284,7 +285,7 @@ export function useEditorHandlers({
       const { _updateType } = useDocumentStore.getState();
       _updateType(id, type === "chapter" ? "folder" : "text");
     },
-    [isDemo]
+    [isDemo],
   );
 
   return {

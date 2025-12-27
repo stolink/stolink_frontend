@@ -140,7 +140,7 @@ export const SlashCommandExtension = SlashCommand.configure({
   suggestion: {
     items: getSuggestionItems,
     render: () => {
-      let component: ReactRenderer<CommandListRef, Record<string, unknown>>;
+      let component: ReactRenderer<CommandListRef>;
       let popup: TippyInstance[];
 
       return {
@@ -155,6 +155,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           }
 
           popup = tippy("body", {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getReferenceClientRect: props.clientRect as any,
             appendTo: () => document.body,
             content: component.element,
@@ -173,6 +174,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           }
 
           popup[0].setProps({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getReferenceClientRect: props.clientRect as any,
           });
         },

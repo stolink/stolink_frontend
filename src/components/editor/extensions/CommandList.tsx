@@ -1,21 +1,11 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import type { Editor, Range } from "@tiptap/core";
 import { cn } from "@/lib/utils";
-import {
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Quote,
-  Minus,
-  CheckSquare,
-  User,
-} from "lucide-react";
 
 export interface CommandItemProps {
   title: string;
   icon: React.ReactNode;
-  command: ({ editor, range }: any) => void;
+  command: ({ editor, range }: { editor: Editor; range: Range }) => void;
 }
 
 export interface CommandListProps {
@@ -30,6 +20,12 @@ export interface CommandListRef {
 export const CommandList = forwardRef<CommandListRef, CommandListProps>(
   (props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [prevItems, setPrevItems] = useState(props.items);
+
+    if (props.items !== prevItems) {
+      setPrevItems(props.items);
+      setSelectedIndex(0);
+    }
 
     const selectItem = (index: number) => {
       const item = props.items[index];
@@ -40,7 +36,7 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
 
     const upHandler = () => {
       setSelectedIndex(
-        (selectedIndex + props.items.length - 1) % props.items.length
+        (selectedIndex + props.items.length - 1) % props.items.length,
       );
     };
 
@@ -51,10 +47,6 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
     const enterHandler = () => {
       selectItem(selectedIndex);
     };
-
-    useEffect(() => {
-      setSelectedIndex(0);
-    }, [props.items]);
 
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ event }) => {
@@ -90,7 +82,7 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
               "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
               index === selectedIndex
                 ? "bg-sage-100 text-sage-900"
-                : "text-stone-600 hover:bg-stone-50"
+                : "text-stone-600 hover:bg-stone-50",
             )}
             onClick={() => selectItem(index)}
           >
@@ -102,7 +94,7 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
         ))}
       </div>
     );
-  }
+  },
 );
 
 CommandList.displayName = "CommandList";

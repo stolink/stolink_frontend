@@ -41,12 +41,10 @@ export function TreeItem({
   // 1. 기본 상태 및 동작 훅
   const {
     isExpanded,
-    setIsExpanded,
     isRenaming,
     setIsRenaming,
     renameValue,
     setRenameValue,
-    isHovered,
     setIsHovered,
     renameInputRef,
     itemRef,
@@ -92,7 +90,7 @@ export function TreeItem({
         className={cn(
           "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-colors duration-100",
           "hover:bg-stone-50",
-          isSelected && "bg-sage-50"
+          isSelected && "bg-sage-50",
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -111,7 +109,7 @@ export function TreeItem({
           <div
             className={cn(
               "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
-              statusColors[node.status]
+              statusColors[node.status],
             )}
             title={getStatusTitle(node.status)}
           />
@@ -156,7 +154,7 @@ export function TreeItem({
                 className={cn(
                   "text-sm truncate",
                   isSelected ? "font-medium text-sage-900" : "text-stone-700",
-                  node.isPlot && "italic text-stone-500"
+                  node.isPlot && "italic text-stone-500",
                 )}
               >
                 {node.title}

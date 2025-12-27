@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { JobResponse, JobStatus } from "@/types/api";
 
@@ -14,7 +13,7 @@ interface UseJobPollingOptions<T> {
 export function useJobPolling<T = unknown>(
   jobId: string | null,
   checkStatusFn: (id: string) => Promise<JobResponse<T>>,
-  options: UseJobPollingOptions<T> = {}
+  options: UseJobPollingOptions<T> = {},
 ) {
   const {
     enabled = true,
@@ -26,10 +25,23 @@ export function useJobPolling<T = unknown>(
   } = options;
 
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [prevJobId, setPrevJobId] = useState(jobId);
+
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+
+  // Reset state when jobId changes (Derived State Pattern)
+  if (jobId !== prevJobId) {
+    setPrevJobId(jobId);
+    if (jobId && enabled) {
+      setJobStatus("pending");
+      setProgress(0);
+      setResult(null);
+      setError(null);
+    }
+  }
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -70,7 +82,7 @@ export function useJobPolling<T = unknown>(
 
       return false; // Continue polling
     },
-    [onComplete, onError]
+    [onComplete, onError],
   );
 
   const poll = useCallback(async () => {
@@ -99,7 +111,7 @@ export function useJobPolling<T = unknown>(
       // Continue polling - use ref to avoid stale closure
       timeoutRef.current = setTimeout(
         () => pollRef.current?.(),
-        pollingInterval
+        pollingInterval,
       );
     } catch (err) {
       if (unmountedRef.current) return;
@@ -127,21 +139,15 @@ export function useJobPolling<T = unknown>(
 
   // Reset state when jobId changes (separate from polling logic)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (jobId && enabled) {
-      setJobStatus("pending");
-      setProgress(0);
-      setResult(null);
-      setError(null);
       startTimeRef.current = Date.now();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, enabled]);
 
   // Start polling when jobId changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (jobId && enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       poll();
     } else {
       setIsPolling(false);
@@ -149,7 +155,6 @@ export function useJobPolling<T = unknown>(
         clearTimeout(timeoutRef.current);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, enabled, poll]);
 
   return {

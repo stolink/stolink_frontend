@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { cn } from "@/lib/utils";
 import { type Character } from "@/types/character";
 
@@ -26,7 +26,7 @@ export const SuggestionList = forwardRef<
 
   const upHandler = () => {
     setSelectedIndex(
-      (selectedIndex + props.items.length - 1) % props.items.length
+      (selectedIndex + props.items.length - 1) % props.items.length,
     );
   };
 
@@ -79,7 +79,7 @@ export const SuggestionList = forwardRef<
             "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
             index === selectedIndex
               ? "bg-sage-100 text-sage-900"
-              : "text-stone-600 hover:bg-stone-50"
+              : "text-stone-600 hover:bg-stone-50",
           )}
           onClick={() => selectItem(index)}
         >

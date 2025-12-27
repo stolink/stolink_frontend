@@ -18,15 +18,18 @@ import { Footer } from "@/components/common/Footer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
+import { BookCard } from "@/components/library/BookCard";
 import { CreateBookModal } from "@/components/library/CreateBookModal";
 import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useProjects, useDeleteProject } from "@/hooks/useProjects";
-import { projectService, type Project } from "@/services/projectService";
-import { documentService, mapBackendToFrontend } from "@/services/documentService";
-import type { ApiResponse } from "@/types/api";
+import { projectService } from "@/services/projectService";
+import {
+  documentService,
+  mapBackendToFrontend,
+} from "@/services/documentService";
+
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
 import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
@@ -233,8 +236,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000,
-    overlap: number = 200
+    chunkSize: number = 10000
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -297,7 +299,6 @@ export default function LibraryPage() {
     }
 
     const segments: { title: string; content: string }[] = [];
-    let lastIndex = 0;
 
     matches.forEach((match, i) => {
       const matchIndex = match.index!;
@@ -317,8 +318,6 @@ export default function LibraryPage() {
 
       const content = text.substring(contentStart, contentEnd).trim();
       segments.push({ title, content });
-
-      lastIndex = contentEnd;
     });
 
     return segments;
@@ -377,7 +376,7 @@ export default function LibraryPage() {
       if (hasSegments) {
         console.log(`[Import] Imported as ${segments!.length} segments.`);
 
-        for (const [index, segment] of segments!.entries()) {
+        for (const segment of segments!) {
           const folderRes = await documentService.create(projectId, {
             type: "folder",
             title: segment.title,
@@ -436,7 +435,7 @@ export default function LibraryPage() {
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-          (error instanceof Error ? error.message : "알 수 없는 오류")
+            (error instanceof Error ? error.message : "알 수 없는 오류")
         );
       }
     }
@@ -520,8 +519,12 @@ export default function LibraryPage() {
                     <DropdownMenuCheckboxItem checked>
                       All Statuses
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Drafting</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Completed</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>
+                      Drafting
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>
+                      Completed
+                    </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -712,7 +715,9 @@ export default function LibraryPage() {
                   projectId={project.id}
                   title={project.title}
                   author={project.author || "Author"}
-                  status={(project.status as ProjectStatus) || "writing"}
+                  status={
+                    project.status === "completed" ? "Complete" : "Writing"
+                  }
                   genre={project.genre}
                   coverImage={project.coverImage}
                   location={`Chapter ${project.stats?.chapterCount || 0}`}
@@ -793,8 +798,7 @@ export default function LibraryPage() {
             className="gap-2 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full px-6"
             onClick={() => setIsCreateModalOpen(true)}
           >
-            <Plus className="w-5 h-5" />
-            새 작품 만들기
+            <Plus className="w-5 h-5" />새 작품 만들기
           </Button>
         </motion.div>
       )}

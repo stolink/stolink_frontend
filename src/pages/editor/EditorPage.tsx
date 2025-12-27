@@ -23,7 +23,7 @@ import {
   useDocument,
 } from "@/hooks/useDocuments";
 import type { DocumentTreeNode } from "@/types/document";
-import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+
 import { SAMPLE_PROJECT_ID } from "@/data/sampleDocuments";
 
 // Refactored Components
@@ -56,7 +56,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -136,11 +136,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null
+    isDemo ? "chapter-1" : null,
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -164,7 +164,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId
+    isDemo ? null : selectedSectionId,
   );
   const { createDocument, updateDocument: updateDocumentMutation } =
     useDocumentMutations(projectId);
@@ -178,7 +178,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     lastContentRef,
     saveContentRef,
     saveTimeoutRef,
-    forceSave,
     handleSelectFolder,
     handleSelectSection,
     handleContentChange,
@@ -223,10 +222,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isTourActive,
     setShowTourPrompt,
   });
-
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // ============================================================
   // Computed Data
@@ -276,7 +271,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     (count: number) => {
       handleCharacterCountChange(count, setCharacterCount);
     },
-    [handleCharacterCountChange]
+    [handleCharacterCountChange],
   );
 
   // ============================================================
