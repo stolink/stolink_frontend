@@ -1,4 +1,4 @@
-import { Clock, MoreVertical, Edit, Copy, Trash, BookOpen } from "lucide-react";
+import { Clock, MoreVertical, Edit, Copy, Trash, BookOpen, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,7 +7,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { StatusChip, type ProjectStatusType } from "./StatusChip";
 
+// ✅ API 형식 통일 - 대문자만 사용
 export type ProjectStatus =
   | "DRAFTING"
   | "OUTLINE"
@@ -16,6 +18,8 @@ export type ProjectStatus =
   | "IDEA";
 
 interface BookCardProps {
+  // 프로젝트 ID (상태 변경 및 편집 모드용)
+  projectId?: string;
   title: string;
   author: string;
   status: ProjectStatus;
@@ -27,9 +31,36 @@ interface BookCardProps {
   lastEdited: string;
   onClick?: () => void;
   onAction?: (action: "rename" | "duplicate" | "delete") => void;
+
+  // 상태 변경 콜백
+  onStatusChange?: (status: ProjectStatusType) => void;
+
+  // 편집 모드 관련 props
+  isEditMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+/**
+ * 프로젝트 상태를 StatusChip에서 사용하는 타입으로 변환
+ * API 상태값을 UI에서 사용하는 EDITING/COMPLETED로 정규화
+ */
+function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
+  const upperStatus = typeof status === "string" ? status.toUpperCase() : status;
+  switch (upperStatus) {
+    case "COMPLETED":
+      return "COMPLETED";
+    case "DRAFTING":
+    case "EDITING":
+    case "OUTLINE":
+    case "IDEA":
+    default:
+      return "EDITING";
+  }
 }
 
 export function BookCard({
+  projectId,
   title,
   author,
   status,
@@ -39,46 +70,74 @@ export function BookCard({
   lastEdited,
   onClick,
   onAction,
+  onStatusChange,
+  isEditMode = false,
+  isSelected = false,
+  onSelect,
 }: BookCardProps) {
-  // Status Indicator Colors
-  const getStatusColor = (s: ProjectStatus) => {
-    switch (s) {
-      case "COMPLETED":
-        return "text-green-600";
-      case "DRAFTING":
-        return "text-primary"; // Sage Green
-      case "EDITING":
-        return "text-orange-500";
-      case "OUTLINE":
-        return "text-blue-500";
-      default:
-        return "text-stone-400";
-    }
-  };
+  // 정규화된 상태 값
+  const normalizedStatus = normalizeStatus(status);
 
-  const getStatusLabel = (s: ProjectStatus) => {
-    switch (s) {
-      case "DRAFTING":
-        return "Drafting"; // Or "집필중" if strict Korean
-      case "COMPLETED":
-        return "Completed";
-      default:
-        return s.charAt(0) + s.slice(1).toLowerCase();
+  // 편집 모드에서 onSelect 필수 체크
+  if (isEditMode && !onSelect) {
+    console.warn("BookCard: onSelect is required when isEditMode=true");
+  }
+
+  // 카드 클릭 핸들러 (편집 모드일 때는 선택 동작)
+  const handleCardClick = () => {
+    if (isEditMode) {
+      onSelect?.();
+    } else {
+      onClick?.();
     }
   };
 
   return (
     <div
-      className="group relative flex flex-col h-full bg-white rounded-lg border border-stone-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 overflow-hidden cursor-pointer"
-      onClick={onClick}
+      className={cn(
+        "group relative flex flex-col h-full bg-white rounded-lg border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer",
+        // 기본 상태
+        !isEditMode && "border-stone-200 hover:shadow-md hover:border-primary/30",
+        // 편집 모드 스타일
+        isEditMode && "border-sage-200 scale-[0.98]",
+        // 선택됨 스타일
+        isSelected && "ring-2 ring-primary border-primary"
+      )}
+      onClick={handleCardClick}
     >
+      {/* 편집 모드 체크박스 오버레이 */}
+      {isEditMode && (
+        <div
+          className="absolute top-3 left-3 z-20"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect?.();
+          }}
+        >
+          <div
+            className={cn(
+              "w-6 h-6 rounded-md flex items-center justify-center",
+              "border-2 shadow-sm transition-all duration-200",
+              isSelected
+                ? "border-green-500 bg-green-500"
+                : "bg-white border-stone-400 hover:border-green-500"
+            )}
+          >
+            {isSelected && <Check className="h-4 w-4 text-white" />}
+          </div>
+        </div>
+      )}
+
       {/* Cover Image Area */}
       <div className="relative aspect-[3/2] w-full overflow-hidden bg-stone-100">
         {coverImage ? (
           <img
             src={coverImage}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={cn(
+              "h-full w-full object-cover transition-transform duration-500",
+              !isEditMode && "group-hover:scale-105"
+            )}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-stone-300">
@@ -86,40 +145,42 @@ export function BookCard({
           </div>
         )}
 
-        {/* More Options Menu (Top Right) */}
-        <div
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white text-stone-600 rounded-full shadow-sm"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => onAction?.("rename")}>
-                <Edit className="mr-2 h-4 w-4" /> Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
-                <Copy className="mr-2 h-4 w-4" /> Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onAction?.("delete")}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {/* More Options Menu (Top Right) - 편집 모드가 아닐 때만 표시 */}
+        {!isEditMode && (
+          <div
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white text-stone-600 rounded-full shadow-sm"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => onAction?.("rename")}>
+                  <Edit className="mr-2 h-4 w-4" /> Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
+                  <Copy className="mr-2 h-4 w-4" /> Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onAction?.("delete")}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
-      {/* Content Area (Spec 4.2 match) */}
+      {/* Content Area */}
       <div className="flex flex-col flex-1 p-4 gap-3">
         {/* Title */}
         <div>
@@ -148,21 +209,34 @@ export function BookCard({
           <span>Updated {lastEdited}</span>
         </div>
 
-        {/* Status Line */}
-        <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-          <div className="flex items-center gaps-2">
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full mr-2",
-                getStatusColor(status),
-              )}
+        {/* Status Line - StatusChip으로 교체 */}
+        <div
+          className="pt-3 border-t border-stone-100 flex items-center justify-between"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* StatusChip (편집 모드가 아닐 때만 클릭 가능) */}
+          {onStatusChange ? (
+            <StatusChip
+              status={normalizedStatus}
+              onStatusChange={onStatusChange}
+              disabled={isEditMode}
             />
-            <span className="text-xs font-semibold text-stone-600">
-              {getStatusLabel(status)}
-            </span>
-          </div>
+          ) : (
+            // onStatusChange가 없으면 기존 방식으로 표시 (읽기 전용)
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  normalizedStatus === "COMPLETED" ? "bg-green-500" : "bg-sage-500"
+                )}
+              />
+              <span className="text-xs font-semibold text-stone-600">
+                {normalizedStatus === "COMPLETED" ? "Complete" : "Writing"}
+              </span>
+            </div>
+          )}
 
-          {/* Optional: Words/Length if available (not strictly in spec small card, but useful) */}
+          {/* Words/Length */}
           {length && <span className="text-xs text-stone-400">{length}</span>}
         </div>
       </div>

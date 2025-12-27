@@ -68,7 +68,9 @@ export function ProjectLayout() {
 
   // 현재 프로젝트 제목 (첫 번째 폴더 또는 기본값)
   const projectTitle = useMemo(() => {
-    const folder = localDocuments?.find((doc: Document) => doc.type === "folder");
+    const folder = localDocuments?.find(
+      (doc: Document) => doc.type === "folder"
+    );
     return folder?.title || "내 작품";
   }, [localDocuments]);
 
@@ -114,11 +116,7 @@ export function ProjectLayout() {
                 <span className="text-sm font-medium">서재</span>
               </button>
               <div className="h-6 w-px bg-stone-200" />
-              <img
-                src={mainLogo}
-                alt="Sto-Link"
-                className="h-12 w-auto"
-              />
+              <img src={mainLogo} alt="Sto-Link" className="h-12 w-auto" />
             </div>
 
             <div className="flex flex-col">
@@ -151,7 +149,7 @@ export function ProjectLayout() {
                     "flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-white text-sage-600 shadow-sm border-stone-200"
-                      : "text-muted-foreground hover:text-foreground hover:bg-stone-200/50",
+                      : "text-muted-foreground hover:text-foreground hover:bg-stone-200/50"
                   )
                 }
               >

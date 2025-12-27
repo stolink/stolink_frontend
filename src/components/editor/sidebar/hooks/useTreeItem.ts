@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, MouseEvent } from "react";
+import { useState, useRef, useEffect, type MouseEvent } from "react";
 
 interface UseTreeItemProps {
   initialTitle: string;

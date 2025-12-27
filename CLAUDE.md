@@ -97,7 +97,7 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 - console.log 커밋 (개발용 제외)
 - Set, Map을 Zustand에 저장
 - 중복 로직 작성 (기존 hooks/services 확인 필수)
-- main/develop 브랜치에 직접 push
+- main/dev 브랜치에 직접 push
 - PR 없이 main에 머지
 - useEffect 의존성 배열 빈 배열로 회피 (린트 에러 무시)
 - useQuery 내부에서 Zustand 직접 업데이트
@@ -148,9 +148,9 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 | 브랜치      | 용도      | 직접 Push | PR 대상          |
 | ----------- | --------- | --------- | ---------------- |
 | `main`      | 프로덕션  | ❌ 금지   | hotfix/\*        |
-| `develop`   | 개발 통합 | ❌ 금지   | feature/_, fix/_ |
-| `feature/*` | 기능 개발 | ✅ 허용   | → develop        |
-| `fix/*`     | 버그 수정 | ✅ 허용   | → develop        |
+| `dev`       | 개발 통합 | ❌ 금지   | feature/_, fix/_ |
+| `feature/*` | 기능 개발 | ✅ 허용   | → dev            |
+| `fix/*`     | 버그 수정 | ✅ 허용   | → dev            |
 | `hotfix/*`  | 긴급 수정 | ✅ 허용   | → main           |
 
 **상세 가이드**: [GIT_STRATEGY.md](GIT_STRATEGY.md)
@@ -344,7 +344,7 @@ src/
 | AI 코드 리뷰    | `.github/workflows/ai-review.yml`       | PR 생성/업데이트, `/review` 코멘트 | Claude API로 코드 리뷰 |
 | 스마트 커밋     | `.agent/workflows/smart-commit.md`      | `/smart-commit` 명령               | 커밋, 푸시, PR 관리    |
 | 프로덕션 배포   | `.github/workflows/deploy.yml`          | main push                          | S3 + CloudFront        |
-| 개발 배포       | `.github/workflows/deploy_dev.yml`      | develop push                       | 개발 환경 배포         |
+| 개발 배포       | `.github/workflows/deploy_dev.yml`      | dev push                           | 개발 환경 배포         |
 | Hotfix Backport | `.github/workflows/hotfix-backport.yml` | hotfix/\* → main 머지              | develop에 자동 체리픽  |
 
 </workflow_integration>
