@@ -24,9 +24,9 @@ export function useUpdateProjectStatus() {
         "[useUpdateProjectStatus] Updating project:",
         projectId,
         "to status:",
-        status,
+        status
       );
-      const apiStatus = status === "EDITING" ? "writing" : "completed";
+      const apiStatus = status === "Writing" ? "writing" : "completed";
       return projectService.update(projectId, { status: apiStatus });
     },
 
@@ -49,7 +49,7 @@ export function useUpdateProjectStatus() {
           if (!old?.projects) return old;
           console.log(
             "[useUpdateProjectStatus] Updating cache for project:",
-            projectId,
+            projectId
           );
           return {
             ...old,
@@ -57,12 +57,12 @@ export function useUpdateProjectStatus() {
               p.id === projectId
                 ? {
                     ...p,
-                    status: status === "EDITING" ? "writing" : "completed",
+                    status: status === "Writing" ? "writing" : "completed",
                   }
-                : p,
+                : p
             ),
           };
-        },
+        }
       );
 
       // 롤백용 컨텍스트 반환
@@ -87,7 +87,7 @@ export function useUpdateProjectStatus() {
         "[useUpdateProjectStatus] Success - projectId:",
         variables.projectId,
         "response:",
-        data,
+        data
       );
     },
   });

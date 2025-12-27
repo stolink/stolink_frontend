@@ -18,12 +18,7 @@ import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
 
 // ✅ API 형식 통일 - 대문자만 사용
-export type ProjectStatus =
-  | "DRAFTING"
-  | "OUTLINE"
-  | "EDITING"
-  | "COMPLETED"
-  | "IDEA";
+export type ProjectStatus = "Writing" | "Complete";
 
 interface BookCardProps {
   // 프로젝트 ID (상태 변경 및 편집 모드용)
@@ -57,14 +52,17 @@ function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
   const upperStatus =
     typeof status === "string" ? status.toUpperCase() : status;
   switch (upperStatus) {
+    case "COMPLETE":
     case "COMPLETED":
-      return "COMPLETED";
+    case "Complete":
+      return "Complete";
     case "DRAFTING":
     case "EDITING":
     case "OUTLINE":
     case "IDEA":
+    case "Writing":
     default:
-      return "EDITING";
+      return "Writing";
   }
 }
 
@@ -110,7 +108,7 @@ export function BookCard({
         // 편집 모드 스타일
         isEditMode && "border-sage-200 scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary",
+        isSelected && "ring-2 ring-primary border-primary"
       )}
       onClick={handleCardClick}
     >
@@ -129,7 +127,7 @@ export function BookCard({
               "border-2 shadow-sm transition-all duration-200",
               isSelected
                 ? "border-green-500 bg-green-500"
-                : "bg-white border-stone-400 hover:border-green-500",
+                : "bg-white border-stone-400 hover:border-green-500"
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -145,7 +143,7 @@ export function BookCard({
             alt={title}
             className={cn(
               "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105",
+              !isEditMode && "group-hover:scale-105"
             )}
           />
         ) : (
@@ -236,13 +234,13 @@ export function BookCard({
               <span
                 className={cn(
                   "h-2 w-2 rounded-full",
-                  normalizedStatus === "COMPLETED"
+                  normalizedStatus === "Complete"
                     ? "bg-green-500"
-                    : "bg-sage-500",
+                    : "bg-sage-500"
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">
-                {normalizedStatus === "COMPLETED" ? "Complete" : "Writing"}
+                {normalizedStatus === "Complete" ? "Complete" : "Writing"}
               </span>
             </div>
           )}
