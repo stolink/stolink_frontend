@@ -63,6 +63,18 @@ export const LinkRenderer = memo(function LinkRenderer({
         ? 0.9
         : baseOpacity;
 
+  // Ref for D3 Data Binding
+  const groupRef = useRef<SVGGElement>(null);
+
+  // Bind data to children lines for Imperative D3 Updates
+  useEffect(() => {
+    if (groupRef.current) {
+      // Just bind the single link data to ALL link-line elements
+      // We let React handle the lifecycle (enter/exit), we just tag the data.
+      d3.select(groupRef.current).selectAll(".link-line").datum(link);
+    }
+  }, [link]);
+
   return (
     <g ref={groupRef}>
       {/* 글로우 효과 (하이라이트 시, 필터 제외) */}
