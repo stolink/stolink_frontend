@@ -923,7 +923,10 @@ export default function LibraryPage() {
       </AlertDialog>
 
       {/* ========== 제목 수정(Rename) 모달 ========== */}
-      <AlertDialog open={renameModalOpen} onOpenChange={setRenameModalOpen}>
+      <AlertDialog
+        open={renameModalOpen && !!renameTarget}
+        onOpenChange={setRenameModalOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>제목 변경</AlertDialogTitle>

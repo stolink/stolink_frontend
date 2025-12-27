@@ -245,7 +245,7 @@ export function useDuplicateProject() {
   return useMutation({
     mutationFn: (id: string) => projectService.duplicate(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+      return queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },
   });
 }
