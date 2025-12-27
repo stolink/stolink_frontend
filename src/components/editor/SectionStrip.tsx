@@ -287,14 +287,23 @@ function SectionCard({
       {/* Click handler separate from drag listeners logic if needed, but here wrapping div acts as drag handle */}
       {/* We apply onClick to a covering div or handle specific click logic */}
       <div
-        className="absolute inset-0 z-0"
-        onClick={onClick}
+        className="absolute inset-0 z-0 cursor-pointer"
+        onClick={(e) => {
+          if (!isDragging) onClick();
+          e.stopPropagation();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            onClick();
+            e.preventDefault();
+          }
+        }}
         role="button"
         tabIndex={0}
       />
 
       {/* Header: Index + Status */}
-      <div className="flex items-center justify-between mb-2 z-10 pointers-events-none">
+      <div className="flex items-center justify-between mb-2 z-10 pointer-events-none">
         <div className="flex items-center gap-2">
           <span
             className={cn(
