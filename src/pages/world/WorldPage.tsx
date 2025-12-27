@@ -1,6 +1,4 @@
-import { useState } from "react";
-import ReactFlow, { Controls, Background } from "reactflow";
-import "reactflow/dist/style.css";
+import { useState, useMemo } from "react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,15 +8,14 @@ import type { Character } from "@/types";
 import { DEMO_CHARACTERS } from "@/data/demoData";
 import { roleLabels } from "./constants";
 
-// Components & Hooks
-import { CharacterNode } from "./components/CharacterNode";
-import { NetworkControls } from "./components/NetworkControls";
-import { NetworkDetailPanel } from "./components/NetworkDetailPanel";
-import { useWorldGraph } from "./hooks/useWorldGraph";
+// D3 CharacterGraph
+import { CharacterGraph } from "@/components/CharacterGraph";
+import { generateLinksFromCharacters } from "@/components/CharacterGraph/utils";
+import type { RelationType } from "@/components/CharacterGraph/types";
 
-const nodeTypes = {
-  character: CharacterNode,
-};
+// Components
+import { NetworkControlsD3 } from "./components/NetworkControlsD3";
+import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 
 // Mock Places
 const places = [
@@ -37,20 +34,24 @@ const items = [
 export default function WorldPage() {
   const [characters] = useState<Character[]>(DEMO_CHARACTERS);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+    null,
+  );
+  const [relationTypeFilter, setRelationTypeFilter] = useState<
+    RelationType | "all"
+  >("all");
 
-  // Graph Logic Hook
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    relationTypeFilter,
-    setRelationTypeFilter,
-    selectedCharacter,
-    setSelectedCharacter,
-    handleNodeClick,
-    clearFilter,
-  } = useWorldGraph(characters);
+  // 링크 데이터 생성
+  const links = useMemo(
+    () => generateLinksFromCharacters(characters),
+    [characters],
+  );
+
+  const handleNodeClick = (character: Character) => {
+    setSelectedCharacter((prev) =>
+      prev?.id === character.id ? null : character,
+    );
+  };
 
   const handleCardClick = (character: Character) => {
     setSelectedCharacter(character);
@@ -81,43 +82,32 @@ export default function WorldPage() {
           </TabsList>
         </div>
 
-        {/* Character Graph */}
+        {/* Character Graph - D3.js */}
         <TabsContent value="graph" className="flex-1 m-0">
           <div className="h-full relative">
             {/* Controls & Legend */}
-            <NetworkControls
+            <NetworkControlsD3
               relationTypeFilter={relationTypeFilter}
               onFilterChange={setRelationTypeFilter}
             />
 
             {/* Detail Sidebar */}
-            <NetworkDetailPanel
+            <NetworkDetailPanelD3
               selectedCharacter={selectedCharacter}
               characters={characters}
-              edges={edges}
+              links={links}
               onClose={() => setSelectedCharacter(null)}
               onViewProfile={() => setIsModalOpen(true)}
             />
 
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
+            {/* D3 CharacterGraph */}
+            <CharacterGraph
+              characters={characters}
+              links={links}
               onNodeClick={handleNodeClick}
-              onPaneClick={clearFilter}
-              nodeTypes={nodeTypes}
-              fitView
-              className="bg-white"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            >
-              <Controls className="!bottom-20 !left-auto !right-4" />
-              <Background color="#e2e8f0" gap={40} size={1} />
-            </ReactFlow>
+              selectedNodeId={selectedCharacter?.id || null}
+              relationTypeFilter={relationTypeFilter}
+            />
           </div>
         </TabsContent>
 
@@ -180,7 +170,7 @@ export default function WorldPage() {
                   )}
                 </CardContent>
               </Card>
-            ))}{" "}
+            ))}
           </div>
         </TabsContent>
 
