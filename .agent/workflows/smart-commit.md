@@ -137,7 +137,7 @@ COMMITS=$(git log origin/$TARGET_BRANCH..$CURRENT_BRANCH --oneline)
 ```bash
 # 0. 설정
 MANAGEMENT_REPO="stolink/stolink-manage"
-PROJECT_TITLE="stolink board"
+PROJECT_NUMBER="1"  # stolink board 프로젝트 번호
 PR_TITLE="<종합된 변경 제목>"
 
 # 2. 브랜치 이름에서 이슈 번호 추출 (예: feature/12-login -> 12)
@@ -163,10 +163,9 @@ fi
 if [ "$EXISTING_ISSUE_FOUND" = false ]; then
   echo "🆕 중앙 레포($MANAGEMENT_REPO)에 새로운 이슈를 생성합니다..."
 
-  # gh issue create --repo 및 --project 옵션 사용
+  # gh issue create로 이슈 생성 (--project 제거: deprecated API)
   ISSUE_URL=$(gh issue create \
     --repo "$MANAGEMENT_REPO" \
-    --project "$PROJECT_TITLE" \
     --title "$PR_TITLE" \
     --body-file .pr_body_temp.md \
     --label "auto-generated" \
@@ -174,6 +173,11 @@ if [ "$EXISTING_ISSUE_FOUND" = false ]; then
 
   ISSUE_NUM=${ISSUE_URL##*/}
   echo "✅ 이슈 #$ISSUE_NUM 생성 완료."
+
+  # 프로젝트에 이슈 추가 (Projects V2 API)
+  gh project item-add "$PROJECT_NUMBER" --owner stolink --url "$ISSUE_URL" 2>/dev/null && \
+    echo "✅ 프로젝트에 이슈 연결 완료." || \
+    echo "⚠️ 프로젝트 연결 실패 (수동 추가 필요)"
 fi
 
 # 3. PR 본문에 연결 키워드 추가 (Full URL 사용 권장 for cross-repo linking)
