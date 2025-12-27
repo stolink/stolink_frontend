@@ -202,11 +202,11 @@ export function CharacterGraph({
             const relTypeMatch =
               relationTypeFilter === "all" || link.type === relationTypeFilter;
 
-            // Strict Star Topology Check + Filter Match
-            const isDirectlyConnected =
-              focusIdStr && relTypeMatch
-                ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
-                : false;
+            // Strict Star Topology Check + Filter Match (로직 명확화)
+            const isDirectlyConnected = focusIdStr
+              ? (sourceIdStr === focusIdStr || targetIdStr === focusIdStr) &&
+                relTypeMatch
+              : false;
 
             // If a node is SELECTED (not just hovered), we strictly HIDE unconnected links
             // Unconnected links OR links that don't match the current filter
