@@ -73,7 +73,7 @@ export function CharacterGraph({
 
     d3.select(g)
       .selectAll<SVGGElement, CharacterNode>(".node-group")
-      .data(nodes, (d) => d.id)
+      .data(nodes, (d) => d?.id ?? "")
       .call(dragBehavior);
   }, [nodes, createDragBehavior]);
 
