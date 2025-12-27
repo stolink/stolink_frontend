@@ -70,8 +70,10 @@ export default function WorldPage() {
 
   // 백엔드가 /relationships 엔드포인트에서 Character[] 배열을 리턴하므로
   // Character.relationships 필드에서 관계 데이터를 추출
-  const { data: charactersWithRelationships = [], isLoading: isLoadingRelationships } =
-    useRelationships(projectId || "", { enabled: !!projectId });
+  const {
+    data: charactersWithRelationships = [],
+    isLoading: isLoadingRelationships,
+  } = useRelationships(projectId || "", { enabled: !!projectId });
 
   // ESC 키로 선택 해제
   useEffect(() => {
@@ -94,7 +96,10 @@ export default function WorldPage() {
     const processedPairs = new Set<string>(); // 중복 방지
 
     console.log("🔍 Characters:", characters.length);
-    console.log("🔍 CharactersWithRelationships:", charactersWithRelationships.length);
+    console.log(
+      "🔍 CharactersWithRelationships:",
+      charactersWithRelationships.length
+    );
 
     // 각 캐릭터의 relationships 배열을 순회
     charactersWithRelationships.forEach((char: any) => {
@@ -113,14 +118,17 @@ export default function WorldPage() {
         const strength = rel.strength || 5;
 
         if (!targetId || !characterIds.has(targetId)) {
-          console.warn(`❌ Invalid target: ${targetId} for source: ${sourceId}`);
+          console.warn(
+            `❌ Invalid target: ${targetId} for source: ${sourceId}`
+          );
           return;
         }
 
         // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
-        const pairKey = sourceId < targetId
-          ? `${sourceId}-${targetId}`
-          : `${targetId}-${sourceId}`;
+        const pairKey =
+          sourceId < targetId
+            ? `${sourceId}-${targetId}`
+            : `${targetId}-${sourceId}`;
 
         if (processedPairs.has(pairKey)) {
           return;
