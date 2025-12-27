@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -41,7 +41,7 @@ interface TreeItemProps {
   onReorder?: (parentId: string | null, orderedIds: string[]) => void;
 }
 
-export function TreeItem({
+export const TreeItem = memo(function TreeItem({
   node,
   level = 0,
   selectedId,
@@ -67,10 +67,13 @@ export function TreeItem({
     isDragging,
   } = useSortable({ id: node.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
-  };
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition: isDragging ? undefined : transition,
+    }),
+    [transform, transition, isDragging],
+  );
 
   // DnD Sensors for children (simplified - pointer only for nested contexts)
   const sensors = useSensors(
@@ -152,6 +155,11 @@ export function TreeItem({
     onDelete,
     setIsRenaming,
   });
+
+  const nextParentLines = useMemo(
+    () => [...parentLines, !isLast],
+    [parentLines, isLast],
+  );
 
   return (
     <div
@@ -310,7 +318,7 @@ export function TreeItem({
                   level={level + 1}
                   selectedId={selectedId}
                   isLast={idx === (node.children?.length || 0) - 1}
-                  parentLines={[...parentLines, !isLast]}
+                  parentLines={nextParentLines}
                   onSelect={onSelect}
                   onAddChild={onAddChild}
                   onRename={onRename}
@@ -324,7 +332,7 @@ export function TreeItem({
       )}
     </div>
   );
-}
+});
 
 // 헬퍼 함수
 function getStatusTitle(status: string) {

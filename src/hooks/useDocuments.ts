@@ -16,6 +16,20 @@ import {
   mapBackendToFrontend,
   type BackendDocument,
 } from "@/services/documentService";
+import { handle404 } from "@/lib/errorHandler";
+
+// Query Keys Factory
+export const documentKeys = {
+  all: ["documents"] as const,
+  trees: () => [...documentKeys.all, "tree"] as const,
+  tree: (projectId: string) => [...documentKeys.trees(), projectId] as const,
+  details: () => [...documentKeys.all, "detail"] as const,
+  detail: (documentId: string) =>
+    [...documentKeys.details(), documentId] as const,
+  contents: () => [...documentKeys.all, "content"] as const,
+  content: (documentId: string) =>
+    [...documentKeys.contents(), documentId] as const,
+};
 
 /**
  * Hook to access the entire document tree for a project
@@ -25,7 +39,7 @@ export function useDocumentTree(projectId: string) {
   const lastSyncedDataRef = useRef<string>("");
 
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
-    queryKey: ["documents", projectId],
+    queryKey: documentKeys.tree(projectId),
     queryFn: async () => {
       try {
         const response = await documentService.getTree(projectId);
@@ -48,14 +62,8 @@ export function useDocumentTree(projectId: string) {
         // Convert backend documents to frontend format
         return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
-        // 404 means no documents yet - this is normal for new projects
-        if (
-          (error as { response?: { status?: number } })?.response?.status ===
-          404
-        ) {
-          return [];
-        }
-        throw error;
+        // 404 means no documents yet - return empty array for new projects
+        return handle404(error, []) ?? [];
       }
     },
     enabled: !!projectId,
@@ -96,7 +104,8 @@ export function useDocumentTree(projectId: string) {
   // The store is kept in sync with backend data via the useEffect above
   const documents = storeDocuments;
 
-  const tree = buildTree(documents);
+  // Memoize tree building to avoid expensive recalculation on every render
+  const tree = useMemo(() => buildTree(documents), [documents]);
 
   return {
     documents,
@@ -169,7 +178,7 @@ export function useDocumentContent(id: string | null) {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["document-content", id],
+    queryKey: documentKeys.content(id || ""),
     queryFn: async () => {
       if (!id) return null;
       try {
@@ -292,7 +301,7 @@ export function useBulkDocumentContent() {
  */
 export function useDocumentMutations(projectId: string) {
   const queryClient = useQueryClient();
-  const { _create, _update, _delete } = useDocumentStore();
+  const { _create, _update } = useDocumentStore();
 
   const createDocument = useCallback(
     async (input: Omit<CreateDocumentInput, "projectId">) => {
@@ -317,7 +326,9 @@ export function useDocumentMutations(projectId: string) {
           const frontendDoc = mapBackendToFrontend(response.data);
           _create(frontendDoc);
           // Invalidate documents query to refetch tree with new document
-          queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+          queryClient.invalidateQueries({
+            queryKey: documentKeys.tree(projectId),
+          });
           return frontendDoc;
         }
       } catch (error: unknown) {
@@ -384,7 +395,9 @@ export function useDocumentMutations(projectId: string) {
 
       // 2. Optimistic Update
       // 2.1. Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: ["documents", projectId] });
+      await queryClient.cancelQueries({
+        queryKey: documentKeys.tree(projectId),
+      });
 
       // 2.2. Update React Query Cache (Server State)
       if (previousQueryData) {
@@ -418,10 +431,12 @@ export function useDocumentMutations(projectId: string) {
         }
       } finally {
         // 5. Always refetch to ensure data consistency
-        queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
       }
     },
-    [projectId, queryClient, _delete, _create],
+    [projectId, queryClient],
   );
 
   const reorderDocuments = useCallback(
@@ -446,7 +461,9 @@ export function useDocumentMutations(projectId: string) {
       try {
         await documentService.reorder(parentId, orderedIds);
         // 4. Ensure data consistency by invalidating queries
-        queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
       } catch (error) {
         console.error("Failed to reorder documents:", error);
         // 5. Rollback on failure

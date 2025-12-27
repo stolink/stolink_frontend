@@ -15,7 +15,7 @@ interface UseEditorHandlersOptions {
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
     id: string,
-    updates: Partial<Document>
+    updates: Partial<Document>,
   ) => Promise<unknown>;
   createDocument: (data: {
     type: "folder" | "text";
@@ -25,7 +25,7 @@ interface UseEditorHandlersOptions {
   deleteDocument: (id: string) => Promise<void>;
   reorderDocuments: (
     parentId: string | null,
-    orderedIds: string[]
+    orderedIds: string[],
   ) => Promise<void>;
 }
 
@@ -52,7 +52,7 @@ export function useEditorHandlers({
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const lastContentRef = useRef<string>("");
   const saveContentRef = useRef(saveContent);
@@ -138,7 +138,7 @@ export function useEditorHandlers({
       setViewMode,
       setSelectedFolderId,
       setSelectedSectionId,
-    ]
+    ],
   );
 
   // Select section
@@ -149,7 +149,7 @@ export function useEditorHandlers({
       }
       setSelectedSectionId(id);
     },
-    [selectedSectionId, forceSave, setSelectedSectionId]
+    [selectedSectionId, forceSave, setSelectedSectionId],
   );
 
   // Content change with debounce
@@ -166,7 +166,7 @@ export function useEditorHandlers({
         saveContentRef.current(content);
       }, 500);
     },
-    [isDemo]
+    [isDemo],
   );
 
   // Character count change with debounce
@@ -179,12 +179,20 @@ export function useEditorHandlers({
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          updateDocumentRef.current({ metadata: { wordCount: count } as any });
+          // Get current metadata and update only wordCount
+          const currentDoc = documents.find(
+            (d) => d.id === selectedSectionIdRef.current,
+          );
+          if (currentDoc) {
+            const updates: Partial<Document> = {
+              metadata: { ...currentDoc.metadata, wordCount: count },
+            };
+            updateDocumentRef.current(updates);
+          }
         }, 1000);
       }
     },
-    [isDemo]
+    [isDemo, documents],
   );
 
   // Add chapter
@@ -192,7 +200,7 @@ export function useEditorHandlers({
     (
       title: string,
       parentId?: string,
-      type: "chapter" | "section" = "chapter"
+      type: "chapter" | "section" = "chapter",
     ) => {
       if (isDemo) return;
       createDocument({
@@ -201,7 +209,7 @@ export function useEditorHandlers({
         parentId,
       });
     },
-    [isDemo, createDocument]
+    [isDemo, createDocument],
   );
 
   // Add section
@@ -239,7 +247,7 @@ export function useEditorHandlers({
         }
       }
     },
-    [isDemo, updateDocumentMutation]
+    [isDemo, updateDocumentMutation],
   );
 
   // Delete chapter
@@ -265,7 +273,7 @@ export function useEditorHandlers({
       selectedSectionId,
       setSelectedFolderId,
       setSelectedSectionId,
-    ]
+    ],
   );
 
   return {

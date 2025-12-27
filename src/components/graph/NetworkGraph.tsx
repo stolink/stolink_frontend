@@ -282,10 +282,10 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .style("visibility", (d) =>
           (d.radius || 5) < 10 && !selectedNodeId ? "hidden" : "visible",
         );
-      node.call(
+      // Apply drag behavior
+      (node as d3.Selection<Element, NetworkNode, SVGGElement, unknown>).call(
         d3
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .drag<any, NetworkNode>()
+          .drag<Element, NetworkNode>()
           .on("start", (e, d) => {
             if (!e.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;

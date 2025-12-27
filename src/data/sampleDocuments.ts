@@ -460,7 +460,6 @@ export function initializeSampleDocuments(): void {
     return;
   }
 
-  console.log("Initializing sample documents...");
   SAMPLE_DOCUMENTS.forEach((doc) => _create(doc));
 }
 

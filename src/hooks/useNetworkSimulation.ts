@@ -19,7 +19,7 @@ export function useNetworkSimulation({
   const [links, setLinks] = useState<NetworkLink[]>([]);
 
   const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkLink> | null>(
-    null
+    null,
   );
 
   // Initialize simulation
@@ -41,11 +41,11 @@ export function useNetworkSimulation({
         d3
           .forceLink<NetworkNode, NetworkLink>(linksCopy)
           .id((d) => d.id)
-          .distance(100)
+          .distance(100),
       )
       .force(
         "collide",
-        d3.forceCollide<NetworkNode>((d) => (d.radius || 20) + 5).iterations(2)
+        d3.forceCollide<NetworkNode>((d) => (d.radius || 20) + 5).iterations(2),
       );
 
     simulation.on("tick", () => {
@@ -83,11 +83,11 @@ export function useNetworkSimulation({
               : (l.target as NetworkNode).id
             : typeof l.source === "string"
               ? l.source
-              : (l.source as NetworkNode).id
+              : (l.source as NetworkNode).id,
       );
 
       const neighbors = currentNodes.filter((n) =>
-        connectedNodeIds.includes(n.id)
+        connectedNodeIds.includes(n.id),
       );
 
       if (neighbors.length > 0) {
@@ -115,7 +115,7 @@ export function useNetworkSimulation({
       // Simplification for this demo: Just append new links and re-process only those that might be parallel
       // or just re-run standard D3 update pattern
 
-      const allRawLinks = [...currentLinks, ...newLinks];
+      // const allRawLinks = [...currentLinks, ...newLinks]; // Unused variable removed for linting
       // Note: currentLinks already has source/target as Objects.
       // newLinks has strings. D3 handles mixed types if we are careful, but safer to re-process carefully.
 
@@ -151,29 +151,48 @@ export function useNetworkSimulation({
 
       setNodes(updatedNodes);
       setLinks(
-        sim.force<d3.ForceLink<NetworkNode, NetworkLink>>("link")?.links() || []
+        sim.force<d3.ForceLink<NetworkNode, NetworkLink>>("link")?.links() ||
+          [],
       );
     },
-    [width, height, links]
+    [width, height, links],
   );
 
   // Interaction handlers
-  const dragStarted = useCallback((e: any, d: NetworkNode) => {
-    if (!e.active) simulationRef.current?.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-  }, []);
+  const dragStarted = useCallback(
+    (
+      e: d3.D3DragEvent<SVGCircleElement, NetworkNode, NetworkNode>,
+      d: NetworkNode,
+    ) => {
+      if (!e.active) simulationRef.current?.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    },
+    [],
+  );
 
-  const dragged = useCallback((e: any, d: NetworkNode) => {
-    d.fx = e.x;
-    d.fy = e.y;
-  }, []);
+  const dragged = useCallback(
+    (
+      e: d3.D3DragEvent<SVGCircleElement, NetworkNode, NetworkNode>,
+      d: NetworkNode,
+    ) => {
+      d.fx = e.x;
+      d.fy = e.y;
+    },
+    [],
+  );
 
-  const dragEnded = useCallback((e: any, d: NetworkNode) => {
-    if (!e.active) simulationRef.current?.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-  }, []);
+  const dragEnded = useCallback(
+    (
+      e: d3.D3DragEvent<SVGCircleElement, NetworkNode, NetworkNode>,
+      d: NetworkNode,
+    ) => {
+      if (!e.active) simulationRef.current?.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    },
+    [],
+  );
 
   return { nodes, links, addNode, dragStarted, dragged, dragEnded };
 }
@@ -221,7 +240,7 @@ function processParallelLinks(links: NetworkLink[]): NetworkLink[] {
     // "We need to judge the direction of the edge." -> compare source.name and target.name
 
     // Let's keep it simple for now: simple alternation centered on 0
-    let mid = (len - 1) / 2;
+    const mid = (len - 1) / 2;
     group.forEach((link, i) => {
       link.linkNum = i - mid;
       // e.g. length 1: i=0, mid=0 -> 0 (straight)
