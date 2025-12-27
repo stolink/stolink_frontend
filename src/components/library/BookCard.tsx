@@ -165,16 +165,16 @@ export function BookCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={() => onAction?.("rename")}>
-                  <Edit className="mr-2 h-4 w-4" /> Rename
+                  <Edit className="mr-2 h-4 w-4" /> 이름 변경
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
-                  <Copy className="mr-2 h-4 w-4" /> Duplicate
+                  <Copy className="mr-2 h-4 w-4" /> 복제
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onAction?.("delete")}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash className="mr-2 h-4 w-4" /> Delete
+                  <Trash className="mr-2 h-4 w-4" /> 삭제
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
