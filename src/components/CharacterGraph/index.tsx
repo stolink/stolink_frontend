@@ -58,13 +58,15 @@ export function CharacterGraph({
         try {
           const parsed = JSON.parse(char.extras);
           factionName = parsed.faction || "무소속";
-        } catch (e) {
+        } catch {
           factionName = "무소속";
         }
       }
       // 3. extras가 이미 객체인 경우
       else if (char.extras && typeof char.extras === "object") {
-        factionName = (char.extras as any).faction || "무소속";
+        factionName =
+          ((char.extras as Record<string, unknown>).faction as string) ||
+          "무소속";
       }
 
       return {
@@ -80,7 +82,7 @@ export function CharacterGraph({
   const { nodes, links, reheat, simulation } = useForceSimulation(
     initialNodes,
     initialLinks,
-    { width, height, enableGrouping }
+    { width, height, enableGrouping },
   );
 
   /**
@@ -96,12 +98,12 @@ export function CharacterGraph({
         if (g) acc[g] = (acc[g] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
 
     // 2. 멤버가 1명 이상인 그룹만 추출합니다.
     const activeGroups = Object.keys(groupCounts).filter(
-      (groupName) => groupCounts[groupName] > 0
+      (groupName) => groupCounts[groupName] > 0,
     );
 
     return activeGroups.map((group, index) => ({
@@ -152,7 +154,7 @@ export function CharacterGraph({
       // Update Nodes (Groups)
       g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
         "transform",
-        (d) => (d ? `translate(${d.x}, ${d.y})` : "")
+        (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
       );
 
       // 그룹 클라우드 위치 및 크기 업데이트 (노드 분포 범위 기반)
@@ -226,7 +228,7 @@ export function CharacterGraph({
     };
   }, [simulation, enableGrouping, groupConfig]);
 
-  const { zoomState } = useZoom(svgRef, gRef);
+  useZoom(svgRef, gRef);
   const { dragBehavior } = useDrag({ reheat });
 
   const connectedNodeIds = useMemo(() => {
@@ -251,12 +253,12 @@ export function CharacterGraph({
       const char = characters.find((c) => c.id === node.id);
       if (char && onNodeClick) onNodeClick(char);
     },
-    [characters, onNodeClick]
+    [characters, onNodeClick],
   );
 
   const handleNodeHover = useCallback(
     (id: string | null) => setHoveredNodeId(id),
-    []
+    [],
   );
 
   return (
@@ -337,11 +339,11 @@ export function CharacterGraph({
             const focusId = hoveredNodeId || selectedNodeId;
             const sId =
               typeof link.source === "object"
-                ? (link.source as any).id
+                ? (link.source as CharacterNode).id
                 : link.source;
             const tId =
               typeof link.target === "object"
-                ? (link.target as any).id
+                ? (link.target as CharacterNode).id
                 : link.target;
             const isConnected = focusId
               ? sId === focusId || tId === focusId

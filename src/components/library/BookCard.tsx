@@ -200,7 +200,7 @@ export function BookCard({
             </span>
           ) : (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-stone-50 text-stone-300 border border-stone-100">
-              No Genre
+              장르 없음
             </span>
           )}
         </div>
@@ -208,7 +208,7 @@ export function BookCard({
         {/* Last Edited */}
         <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-auto">
           <Clock className="w-3.5 h-3.5" />
-          <span>Updated {lastEdited}</span>
+          <span>수정: {lastEdited}</span>
         </div>
 
         {/* Status Line - StatusChip으로 교체 */}
@@ -235,7 +235,7 @@ export function BookCard({
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">
-                {normalizedStatus === "Complete" ? "Complete" : "Writing"}
+                {normalizedStatus === "Complete" ? "완료" : "집필중"}
               </span>
             </div>
           )}

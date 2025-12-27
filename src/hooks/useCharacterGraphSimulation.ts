@@ -17,6 +17,10 @@ interface UseForceSimulationOptions {
   height: number;
 }
 
+interface UseForceSimulationOptionsWithGrouping extends UseForceSimulationOptions {
+  enableGrouping?: boolean;
+}
+
 interface SimulationState {
   nodes: CharacterNode[];
   links: RelationshipLink[];
@@ -36,7 +40,7 @@ interface UseForceSimulationReturn {
 export function useForceSimulation(
   initialNodes: CharacterNode[],
   initialLinks: RelationshipLink[],
-  options: UseForceSimulationOptions & { enableGrouping?: boolean }
+  options: UseForceSimulationOptionsWithGrouping,
 ): UseForceSimulationReturn {
   const { width, height, enableGrouping = false } = options;
 
@@ -88,7 +92,7 @@ export function useForceSimulation(
 
     // 그룹 위치 계산 (Circular Layout)
     const groups = Array.from(
-      new Set(nodesCopy.map((d) => d.group).filter(Boolean))
+      new Set(nodesCopy.map((d) => d.group).filter(Boolean)),
     ) as string[];
     const groupCenters: Record<string, { x: number; y: number }> = {};
     const radius = Math.min(width, height) * 0.35; // 화면 크기 비례 반지름
@@ -118,8 +122,8 @@ export function useForceSimulation(
           .strength(
             enableGrouping
               ? FORCE_CONFIG.linkStrength * 0.5
-              : FORCE_CONFIG.linkStrength
-          ) // 그룹핑 시 링크 힘 약화
+              : FORCE_CONFIG.linkStrength,
+          ), // 그룹핑 시 링크 힘 약화
       )
       .force(
         "charge",
@@ -127,14 +131,14 @@ export function useForceSimulation(
           .forceManyBody<CharacterNode>()
           .strength(FORCE_CONFIG.charge)
           .distanceMin(FORCE_CONFIG.chargeDistanceMin)
-          .distanceMax(FORCE_CONFIG.chargeDistanceMax)
+          .distanceMax(FORCE_CONFIG.chargeDistanceMax),
       )
       .force(
         "collision",
         d3
           .forceCollide<CharacterNode>()
           .radius((d) => getNodeRadius(d) + FORCE_CONFIG.collisionPadding)
-          .strength(FORCE_CONFIG.collisionStrength)
+          .strength(FORCE_CONFIG.collisionStrength),
       )
       .alphaDecay(FORCE_CONFIG.alphaDecay)
       .alphaMin(FORCE_CONFIG.alphaMin)
@@ -186,7 +190,7 @@ export function useForceSimulation(
             // 중요 인물일수록 강한 위치 고정
             const importance = getImportanceScore(d.role);
             return FORCE_CONFIG.positionStrength * (0.8 + importance * 0.7);
-          })
+          }),
       );
 
       newSimulation.force(
@@ -209,13 +213,13 @@ export function useForceSimulation(
           .strength((d) => {
             const importance = getImportanceScore(d.role);
             return FORCE_CONFIG.positionStrength * (0.8 + importance * 0.7);
-          })
+          }),
       );
 
       // 전체적으로 중앙 유지하되 약하게
       newSimulation.force(
         "center",
-        d3.forceCenter(width / 2, height / 2).strength(0.05)
+        d3.forceCenter(width / 2, height / 2).strength(0.05),
       );
     } else {
       // === 일반 모드 (기존) ===
@@ -224,15 +228,15 @@ export function useForceSimulation(
           "center",
           d3
             .forceCenter(width / 2, height / 2)
-            .strength(FORCE_CONFIG.centerStrength)
+            .strength(FORCE_CONFIG.centerStrength),
         )
         .force(
           "x",
-          d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength)
+          d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength),
         )
         .force(
           "y",
-          d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength)
+          d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength),
         );
     }
 
