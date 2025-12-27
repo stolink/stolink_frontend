@@ -197,12 +197,18 @@ export function CharacterGraph({
             const sourceIdStr = getId(link.source);
             const targetIdStr = getId(link.target);
 
-            // Strict Star Topology Check
-            const isDirectlyConnected = focusIdStr
-              ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
-              : false;
+            // Check if link matches the current relation type filter
+            const relTypeMatch =
+              relationTypeFilter === "all" || link.type === relationTypeFilter;
+
+            // Strict Star Topology Check + Filter Match
+            const isDirectlyConnected =
+              focusIdStr && relTypeMatch
+                ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
+                : false;
 
             // If a node is SELECTED (not just hovered), we strictly HIDE unconnected links
+            // Unconnected links OR links that don't match the current filter
             if (selectedNodeId && !isDirectlyConnected) {
               return null;
             }

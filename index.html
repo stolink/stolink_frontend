@@ -7,14 +7,23 @@
 
     <!-- SEO Meta Tags -->
     <title>StoLink - 스마트한 스토리 관리 플랫폼</title>
-    <meta name="description" content="복선, 캐릭터, 설정을 한눈에 관리하세요. AI가 도와주는 스마트한 스토리 관리 플랫폼. 무료로 시작하기." />
-    <meta name="keywords" content="소설 쓰기, 스토리 관리, 복선 추적, 캐릭터 관계도, AI 집필 도우미, 창작 도구" />
+    <meta
+      name="description"
+      content="복선, 캐릭터, 설정을 한눈에 관리하세요. AI가 도와주는 스마트한 스토리 관리 플랫폼. 무료로 시작하기."
+    />
+    <meta
+      name="keywords"
+      content="소설 쓰기, 스토리 관리, 복선 추적, 캐릭터 관계도, AI 집필 도우미, 창작 도구"
+    />
     <meta name="author" content="StoLink" />
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="StoLink - 스마트한 스토리 관리 플랫폼" />
-    <meta property="og:description" content="복선, 캐릭터, 설정을 한눈에 관리하세요. AI가 도와주는 스마트한 스토리 관리 플랫폼." />
+    <meta
+      property="og:description"
+      content="복선, 캐릭터, 설정을 한눈에 관리하세요. AI가 도와주는 스마트한 스토리 관리 플랫폼."
+    />
     <meta property="og:image" content="/assets/main_logo.png" />
     <meta property="og:url" content="https://stolink.com" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -32,10 +41,16 @@
       rel="preload"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
       as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
     />
     <noscript>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+      />
     </noscript>
 
     <!-- Google Fonts with display=swap for better performance -->
@@ -43,14 +58,77 @@
       href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap"
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
+      onload="this.media = 'all'"
     />
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap"
+        rel="stylesheet"
+      />
     </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial Loading Screen (Obsidian Style) -->
+      <style>
+        body {
+          background-color: #ffffff;
+          margin: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .loader-container {
+          text-align: center;
+        }
+        .loader-logo {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: #6b8e6b;
+          margin-bottom: 1rem;
+          opacity: 0;
+          transform: translateY(10px);
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+        .loader-bar {
+          width: 120px;
+          height: 2px;
+          background: #f1f5f9;
+          margin: 0 auto;
+          position: relative;
+          overflow: hidden;
+          border-radius: 1px;
+        }
+        .loader-progress {
+          position: absolute;
+          width: 40%;
+          height: 100%;
+          background: #6b8e6b;
+          animation: loading 1.5s infinite ease-in-out;
+        }
+        @keyframes fadeIn {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes loading {
+          from {
+            left: -40%;
+          }
+          to {
+            left: 100%;
+          }
+        }
+      </style>
+      <div class="loader-container">
+        <div class="loader-logo">StoLink</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
