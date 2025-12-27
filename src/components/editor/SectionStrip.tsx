@@ -240,7 +240,8 @@ function SectionCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    // Disable transition during drag for immediate responsiveness
+    transition: isDragging ? undefined : transition,
   };
 
   const statusConfig = {
@@ -276,92 +277,91 @@ function SectionCard({
       style={style}
       {...attributes}
       className={cn(
-        "relative flex flex-col min-w-[160px] max-w-[200px] p-3 rounded-xl border-2 transition-all text-left group touch-none",
+        "relative min-w-[160px] max-w-[200px] rounded-xl border-2 transition-all text-left group touch-none",
         "hover:shadow-md hover:-translate-y-1",
         isSelected
           ? "bg-white border-sage-400 shadow-md ring-2 ring-sage-100"
           : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300",
-        isDragging && "opacity-50 scale-95 z-50 ring-2 ring-sage-400",
+        // Dragging styles: Solid opacity, slightly larger, prominent shadow to indicate lifting
+        isDragging &&
+          "opacity-90 scale-105 shadow-xl z-50 ring-2 ring-sage-500 rotate-2 bg-white",
       )}
     >
-      {/* Click handler separate from drag listeners logic if needed, but here wrapping div acts as drag handle */}
-      {/* We apply onClick to a covering div or handle specific click logic */}
-      <div
-        className="absolute inset-0 z-0 cursor-pointer"
-        onClick={(e) => {
-          if (!isDragging) onClick();
-          e.stopPropagation();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            onClick();
-            e.preventDefault();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-pressed={isSelected}
-      />
+      {/* 1. Content Layer (Base) - Pure visuals */}
+      <div className="flex flex-col p-3 h-full">
+        {/* Header: Index + Status */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
+                isSelected
+                  ? "bg-sage-600 text-white"
+                  : "bg-stone-100 text-stone-600",
+              )}
+            >
+              {index}
+            </span>
+            <div
+              className={cn("w-2 h-2 rounded-full", config.color)}
+              title={config.label}
+            />
+          </div>
+          {/* Visual placeholder for grip to keep layout consistent if needed, or just spacers */}
+          <div className="w-4 h-4 ml-auto" />
+        </div>
 
-      {/* Header: Index + Status */}
-      <div className="flex items-center justify-between mb-2 z-10 pointer-events-none">
-        <div className="flex items-center gap-2">
+        {/* Title */}
+        <h4
+          className={cn(
+            "text-sm font-semibold truncate mb-1",
+            isSelected ? "text-sage-800" : "text-stone-700",
+          )}
+        >
+          {section.title}
+        </h4>
+
+        {/* Synopsis Preview */}
+        <p className="text-xs text-stone-400 line-clamp-2 min-h-[32px] mb-2">
+          {synopsis || "시놉시스 없음"}
+        </p>
+
+        {/* Footer: Word Count + Status Label */}
+        <div className="flex items-center justify-between pt-2 border-t border-stone-100 mt-auto">
+          <span className="text-[11px] text-stone-500 font-medium">
+            {wordCount.toLocaleString()}자
+          </span>
           <span
             className={cn(
-              "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
-              isSelected
-                ? "bg-sage-600 text-white"
-                : "bg-stone-100 text-stone-600",
+              "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+              status === "final"
+                ? "bg-green-100 text-green-700"
+                : status === "revised"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-stone-100 text-stone-500",
             )}
           >
-            {index}
+            {config.label}
           </span>
-          <div
-            className={cn("w-2 h-2 rounded-full", config.color)}
-            title={config.label}
-          />
-        </div>
-        {/* Drag Handle Icon - needs pointer-events-auto to override parent's none */}
-        <div
-          {...listeners}
-          className="p-1 -mr-2 cursor-grab active:cursor-grabbing hover:bg-stone-100 rounded-md transition-colors pointer-events-auto"
-        >
-          <GripVertical className="w-4 h-4 text-stone-300 group-hover:text-stone-400" />
         </div>
       </div>
 
-      {/* Title */}
-      <h4
-        className={cn(
-          "text-sm font-semibold truncate mb-1 z-10 pointer-events-none",
-          isSelected ? "text-sage-800" : "text-stone-700",
-        )}
+      {/* 2. Interaction Layer (Click) - Covers entire card, enters selection */}
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute inset-0 z-20 w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 rounded-xl bg-transparent"
+        aria-pressed={isSelected}
+        aria-label={`${index}번 섹션 ${section.title} 선택`}
+      />
+
+      {/* 3. Drag Handle Layer (Drag) - Highest priority */}
+      <div
+        {...listeners}
+        className="absolute top-3 right-3 z-30 p-1 cursor-grab active:cursor-grabbing hover:bg-stone-100 rounded-md transition-colors"
+        aria-label="섹션 순서 변경"
       >
-        {section.title}
-      </h4>
-
-      {/* Synopsis Preview */}
-      <p className="text-xs text-stone-400 line-clamp-2 min-h-[32px] mb-2 z-10 pointer-events-none">
-        {synopsis || "시놉시스 없음"}
-      </p>
-
-      {/* Footer: Word Count + Status Label */}
-      <div className="flex items-center justify-between pt-2 border-t border-stone-100 z-10 pointer-events-none">
-        <span className="text-[11px] text-stone-500 font-medium">
-          {wordCount.toLocaleString()}자
-        </span>
-        <span
-          className={cn(
-            "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-            status === "final"
-              ? "bg-green-100 text-green-700"
-              : status === "revised"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-stone-100 text-stone-500",
-          )}
-        >
-          {config.label}
-        </span>
+        <GripVertical className="w-4 h-4 text-stone-300 group-hover:text-stone-400" />
       </div>
     </div>
   );
