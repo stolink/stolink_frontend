@@ -1,4 +1,4 @@
-import { NetworkNode, NetworkLink } from "@/types/network";
+import type { NetworkNode, NetworkLink } from "@/types/network";
 
 const NODES: NetworkNode[] = [
   // Group 1: Protagonists

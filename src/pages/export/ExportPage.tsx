@@ -70,13 +70,13 @@ export default function ExportPage() {
   // Filter documents for current project
   // If no documents found for projectId, fall back to sample project
   let projectDocuments = documents.filter(
-    (doc: Document) => doc.projectId === projectId,
+    (doc: Document) => doc.projectId === projectId
   );
 
   // Fallback to sample project if no documents found
   if (projectDocuments.length === 0) {
     projectDocuments = documents.filter(
-      (doc: Document) => doc.projectId === SAMPLE_PROJECT_ID,
+      (doc: Document) => doc.projectId === SAMPLE_PROJECT_ID
     );
   }
 
@@ -164,7 +164,7 @@ export default function ExportPage() {
                 projectId,
                 documents: projectDocuments,
               },
-              projectTitle,
+              projectTitle
             );
             break;
           case "epub":
@@ -194,7 +194,7 @@ export default function ExportPage() {
         }, 3000);
       }
     },
-    [projectDocuments, projectTitle, projectId],
+    [projectDocuments, projectTitle, projectId]
   );
 
   const handleImportClick = () => {
@@ -228,7 +228,6 @@ export default function ExportPage() {
 
   // Import a text file as a new document
   const importTextFile = async (file: File): Promise<void> => {
-    console.log("[Import] Reading file:", file.name, file.size, "bytes");
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
 
@@ -263,7 +262,7 @@ export default function ExportPage() {
       (doc) =>
         doc.projectId === targetProjectId &&
         doc.type === "folder" &&
-        doc.title === "가져온 문서",
+        doc.title === "가져온 문서"
     )?.id;
 
     if (!importFolderId) {
@@ -288,7 +287,6 @@ export default function ExportPage() {
         createdAt: now,
         updatedAt: now,
       });
-      console.log("[Import] Created folder:", importFolderId);
     }
 
     const docId = `doc-import-${Date.now()}`;
@@ -313,12 +311,6 @@ export default function ExportPage() {
       createdAt: now,
       updatedAt: now,
     });
-    console.log(
-      "[Import] Created document:",
-      docId,
-      "in folder:",
-      importFolderId,
-    );
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,7 +360,7 @@ export default function ExportPage() {
       console.error("Import error:", error);
       setImportStatus("error");
       setImportError(
-        error instanceof Error ? error.message : "가져오기에 실패했습니다.",
+        error instanceof Error ? error.message : "가져오기에 실패했습니다."
       );
       setTimeout(() => {
         setImportStatus("idle");
@@ -460,7 +452,7 @@ export default function ExportPage() {
                   >
                     {getButtonIcon(
                       format.id,
-                      exportStatus[format.id] || "idle",
+                      exportStatus[format.id] || "idle"
                     )}
                   </div>
                   <h3 className="font-medium">{format.title}</h3>

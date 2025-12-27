@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
 
@@ -62,13 +62,14 @@ export function useDrag(options: UseDragOptions) {
   );
 
   // D3 drag behavior 생성
-  const dragBehavior = useMemo(() => {
-    return d3
-      .drag<SVGGElement, CharacterNode>()
+  const [dragBehavior] = useState(() => d3.drag<SVGGElement, CharacterNode>());
+
+  useEffect(() => {
+    dragBehavior
       .on("start", handleDragStart)
       .on("drag", handleDrag)
       .on("end", handleDragEnd);
-  }, [handleDragStart, handleDrag, handleDragEnd]);
+  }, [dragBehavior, handleDragStart, handleDrag, handleDragEnd]);
 
   return {
     dragBehavior,

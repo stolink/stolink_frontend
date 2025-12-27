@@ -10,7 +10,8 @@ interface NodeRendererProps {
   isDimmed: boolean;
   onClick: (node: CharacterNode) => void;
   onHover: (nodeId: string | null) => void;
-  dragBehavior: d3.DragBehavior<SVGGElement, CharacterNode, CharacterNode>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dragBehavior: d3.DragBehavior<SVGGElement, CharacterNode, any>;
 }
 
 /**

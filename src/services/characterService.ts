@@ -15,7 +15,6 @@ export const characterService = {
     const response = await api.get<ApiResponse<Character[]>>(
       `/projects/${projectId}/characters`
     );
-    console.log("🌐 Backend API Response (characters):", response.data);
     return response.data;
   },
 
