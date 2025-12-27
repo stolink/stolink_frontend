@@ -84,7 +84,7 @@ export default function LibraryPage() {
 
   // ========== 정렬 상태 ==========
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
-    "updatedAt"
+    "updatedAt",
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -116,7 +116,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -132,7 +132,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
     );
   };
 
@@ -186,7 +186,7 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project"
+        "Failed to create project",
       );
       const projectId = projectData.id;
 
@@ -197,7 +197,7 @@ export default function LibraryPage() {
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter"
+        "Failed to create default chapter",
       );
       const chapterId = chapterData.id;
 
@@ -214,7 +214,7 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section"
+          "Failed to create section",
         );
         _create(mapBackendToFrontend(sectionData));
       } catch {
@@ -257,7 +257,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000
+    chunkSize: number = 10000,
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -288,12 +288,12 @@ export default function LibraryPage() {
 
       const chunk = currentText.substring(
         0,
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       chunks.push(chunk);
 
       const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       if (remaining.trim().length > 0) {
         splitText(remaining);
@@ -450,7 +450,7 @@ export default function LibraryPage() {
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-          (error instanceof Error ? error.message : "알 수 없는 오류")
+            (error instanceof Error ? error.message : "알 수 없는 오류"),
         );
       }
     }
@@ -587,7 +587,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-stone-200 text-stone-600"
+                    !isEditMode && "bg-white border-stone-200 text-stone-600",
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -613,7 +613,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -624,7 +624,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -697,7 +697,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
+              : "grid-cols-1",
           )}
           initial={false}
           animate="visible"
