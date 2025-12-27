@@ -96,6 +96,12 @@ export default function LibraryPage() {
   } | null>(null);
   const [newTitle, setNewTitle] = useState("");
 
+  // ========== 개별 삭제 확인 모달 상태 ==========
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+
   const {
     data: projectsData,
     isLoading,
@@ -220,11 +226,7 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "프로젝트 생성에 실패했습니다.";
-      alert(message);
+      alert("작품 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsCreatingProject(false);
     }
@@ -443,12 +445,12 @@ export default function LibraryPage() {
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
         alert(
-          "저장 용량이 부족합니다. 파일이 너무 크거나 브라우저 저장 공간이 가득 찼습니다."
+          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
         );
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류")
+          (error instanceof Error ? error.message : "알 수 없는 오류")
         );
       }
     }
@@ -501,7 +503,7 @@ export default function LibraryPage() {
                 <div className="relative hidden lg:block">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search title..."
+                    placeholder="제목으로 검색..."
                     className="pl-9 h-9 w-[240px] bg-white border-stone-200 focus:border-sage-400 focus:ring-sage-200 transition-all text-sm rounded-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -516,28 +518,24 @@ export default function LibraryPage() {
                       className="h-9 gap-2 bg-white border-stone-200 text-stone-600"
                     >
                       <Filter className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Filter</span>
+                      <span className="hidden sm:inline">필터</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Genre</DropdownMenuLabel>
+                    <DropdownMenuLabel>장르</DropdownMenuLabel>
                     <DropdownMenuCheckboxItem checked>
-                      All Genres
+                      전체
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Fantasy</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Romance</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Sci-Fi</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>판타지</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>로맨스</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>SF</DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Status</DropdownMenuLabel>
+                    <DropdownMenuLabel>상태</DropdownMenuLabel>
                     <DropdownMenuCheckboxItem checked>
-                      All Statuses
+                      전체
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>
-                      Drafting
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>
-                      Completed
-                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>집필중</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>완료</DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -549,7 +547,7 @@ export default function LibraryPage() {
                       className="h-9 gap-2 bg-white border-stone-200 text-stone-600"
                     >
                       <ArrowUpDown className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Sort</span>
+                      <span className="hidden sm:inline">정렬</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -560,7 +558,7 @@ export default function LibraryPage() {
                       }}
                       className={sortBy === "updatedAt" ? "bg-sage-50" : ""}
                     >
-                      Last Modified
+                      최근 수정순
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -569,7 +567,7 @@ export default function LibraryPage() {
                       }}
                       className={sortBy === "createdAt" ? "bg-sage-50" : ""}
                     >
-                      Created Date
+                      생성일순
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -578,7 +576,7 @@ export default function LibraryPage() {
                       }}
                       className={sortBy === "title" ? "bg-sage-50" : ""}
                     >
-                      Name (A-Z)
+                      이름순
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -673,7 +671,7 @@ export default function LibraryPage() {
             <div className="relative w-full lg:hidden">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search title..."
+                placeholder="제목으로 검색..."
                 className="pl-9 h-10 w-full bg-white border-stone-200 focus:bg-white transition-all text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -764,11 +762,11 @@ export default function LibraryPage() {
                   onClick={() => navigate(`/projects/${project.id}/editor`)}
                   onAction={(action) => {
                     if (action === "delete") {
-                      if (
-                        confirm(`"${project.title}"을(를) 삭제하시겠습니까?`)
-                      ) {
-                        deleteProject(project.id);
-                      }
+                      // AlertDialog로 삭제 확인
+                      setSingleDeleteTarget({
+                        id: project.id,
+                        title: project.title,
+                      });
                     } else if (action === "rename") {
                       // Rename 모달 열기
                       setRenameTarget({ id: project.id, title: project.title });
@@ -955,6 +953,36 @@ export default function LibraryPage() {
               disabled={!newTitle.trim() || newTitle === renameTarget?.title}
             >
               변경
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ========== 개별 삭제 확인 모달 ========== */}
+      <AlertDialog
+        open={!!singleDeleteTarget}
+        onOpenChange={(open) => !open && setSingleDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{singleDeleteTarget?.title}"이(가) 영구적으로 삭제됩니다.
+              <br />이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (singleDeleteTarget) {
+                  deleteProject(singleDeleteTarget.id);
+                  setSingleDeleteTarget(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
