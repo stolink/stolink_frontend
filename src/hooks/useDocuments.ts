@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -22,6 +22,7 @@ import {
  */
 export function useDocumentTree(projectId: string) {
   const { _syncProjectDocuments } = useDocumentStore();
+  const lastSyncedDataRef = useRef<string>("");
 
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
     queryKey: ["documents", projectId],
@@ -74,7 +75,11 @@ export function useDocumentTree(projectId: string) {
   // Sync fetched documents to Zustand store
   useEffect(() => {
     if (fetchedDocuments && fetchedDocuments.length > 0) {
-      _syncProjectDocuments(projectId, fetchedDocuments);
+      const dataStr = JSON.stringify(fetchedDocuments);
+      if (lastSyncedDataRef.current !== dataStr) {
+        lastSyncedDataRef.current = dataStr;
+        _syncProjectDocuments(projectId, fetchedDocuments);
+      }
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
 
@@ -82,9 +87,9 @@ export function useDocumentTree(projectId: string) {
   const storeDocuments = useDocumentStore(
     useShallow((state) =>
       Object.values(state.documents).filter(
-        (doc) => doc.projectId === projectId
-      )
-    )
+        (doc) => doc.projectId === projectId,
+      ),
+    ),
   );
 
   // Use store documents as the primary source of truth to support optimistic updates
@@ -105,7 +110,7 @@ export function useDocumentTree(projectId: string) {
  */
 export function useDocument(id: string | null) {
   const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null
+    id ? state.documents[id] : null,
   );
 
   const updateDocument = useCallback(
@@ -113,7 +118,7 @@ export function useDocument(id: string | null) {
       if (!id) return;
       await localDocumentRepository.update(id, updates);
     },
-    [id]
+    [id],
   );
 
   return {
@@ -132,13 +137,17 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
       Object.values(state.documents).filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined)
-      )
-    )
+          doc.parentId === (parentId ?? undefined),
+      ),
+    ),
   );
 
+  const sortedChildren = useMemo(() => {
+    return [...children].sort((a, b) => a.order - b.order);
+  }, [children]);
+
   return {
-    children: children.sort((a, b) => a.order - b.order),
+    children: sortedChildren,
     isLoading: false,
   };
 }
@@ -152,7 +161,7 @@ export function useDocumentContent(id: string | null) {
 
   // Zustand store content as fallback
   const storeContent = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : ""
+    id ? state.documents[id]?.content || "" : "",
   );
 
   const {
@@ -241,7 +250,7 @@ export function useDocumentContent(id: string | null) {
         _setContent(id, originalContent);
       }
     },
-    [id, _setContent, queryClient]
+    [id, _setContent, queryClient],
   );
 
   return {
@@ -263,14 +272,14 @@ export function useBulkDocumentContent() {
 
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
-            documentService.updateContent(id, content)
-          )
+            documentService.updateContent(id, content),
+          ),
         );
       } catch (error) {
         console.error("Bulk save failed:", error);
       }
     },
-    []
+    [],
   );
 
   return {
@@ -314,7 +323,7 @@ export function useDocumentMutations(projectId: string) {
       } catch (error: unknown) {
         console.error(
           "[useDocumentMutations] Failed to create document:",
-          error
+          error,
         );
 
         // Fallback to local-only creation if backend fails
@@ -322,7 +331,7 @@ export function useDocumentMutations(projectId: string) {
         if (err?.response?.status === 500 || err?.response?.status === 404) {
           const localDocumentRepository =
             await import("@/repositories/LocalDocumentRepository").then(
-              (m) => m.localDocumentRepository
+              (m) => m.localDocumentRepository,
             );
 
           try {
@@ -335,14 +344,14 @@ export function useDocumentMutations(projectId: string) {
           } catch (localError) {
             console.error(
               "[useDocumentMutations] Local fallback failed:",
-              localError
+              localError,
             );
           }
         }
       }
       return null;
     },
-    [projectId, _create, queryClient]
+    [projectId, _create, queryClient],
   );
 
   const updateDocument = useCallback(
@@ -360,7 +369,7 @@ export function useDocumentMutations(projectId: string) {
       }
       return null;
     },
-    [_update]
+    [_update],
   );
 
   const deleteDocument = useCallback(
@@ -376,18 +385,38 @@ export function useDocumentMutations(projectId: string) {
         console.error("Failed to delete document:", error);
       }
     },
-    [_delete]
+    [_delete],
   );
 
   const reorderDocuments = useCallback(
     async (parentId: string | null, orderedIds: string[]) => {
+      // 1. Snapshot previous order for rollback
+      // We need to know the previous order of these specific siblings
+      const { documents, _reorder } = useDocumentStore.getState();
+      const previousSiblingIds = Object.values(documents)
+        .filter(
+          (doc) =>
+            doc.projectId === projectId &&
+            doc.parentId === (parentId ?? undefined),
+        )
+        .sort((a, b) => a.order - b.order)
+        .map((doc) => doc.id);
+
+      // 2. Optimistic Update: Update local store immediately
+      _reorder(parentId, orderedIds);
+
+      // 3. Sync with Backend
       try {
         await documentService.reorder(parentId, orderedIds);
       } catch (error) {
         console.error("Failed to reorder documents:", error);
+        // 4. Rollback on failure
+        if (previousSiblingIds.length > 0) {
+          _reorder(parentId, previousSiblingIds);
+        }
       }
     },
-    []
+    [projectId],
   );
 
   return {
@@ -403,7 +432,7 @@ export function useDocumentMutations(projectId: string) {
  */
 export function useDescendantDocuments(
   parentId: string | null,
-  projectId: string
+  projectId: string,
 ) {
   const documents = useDocumentStore((state) => state.documents);
 
@@ -459,5 +488,16 @@ function buildTree(documents: Document[]): DocumentTreeNode[] {
     }
   });
 
-  return roots.sort((a, b) => a.order - b.order);
+  // Sort children of each node
+  map.forEach((node) => {
+    node.children.sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  });
+
+  return roots.sort((a, b) => {
+    if (a.order !== b.order) return a.order - b.order;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 }

@@ -38,6 +38,7 @@ interface DocumentStore {
   _setBulkContent: (updates: Record<string, string>) => void;
   _setAll: (documents: Document[]) => void;
   _syncProjectDocuments: (projectId: string, documents: Document[]) => void;
+  _reorder: (parentId: string | null, orderedIds: string[]) => void;
 }
 
 import { get, set, del } from "idb-keyval";
@@ -156,12 +157,24 @@ export const useDocumentStore = create<DocumentStore>()(
           });
         });
       },
+
+      _reorder: (parentId, orderedIds) => {
+        set((state) => {
+          orderedIds.forEach((id, index) => {
+            if (state.documents[id]) {
+              state.documents[id].order = index;
+              state.documents[id].parentId = parentId ?? undefined;
+              state.documents[id].updatedAt = new Date().toISOString();
+            }
+          });
+        });
+      },
     })),
     {
       name: "sto-link-documents",
       storage: createJSONStorage(() => storage),
-    }
-  )
+    },
+  ),
 );
 
 // Repository implementation
@@ -184,21 +197,21 @@ export class LocalDocumentRepository implements IDocumentRepository {
 
   async getChildren(
     parentId: string | null,
-    projectId: string
+    projectId: string,
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     return Object.values(documents)
       .filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined)
+          doc.parentId === (parentId ?? undefined),
       )
       .sort((a, b) => a.order - b.order);
   }
 
   async getAllDescendants(
     parentId: string,
-    projectId: string
+    projectId: string,
   ): Promise<Document[]> {
     const { documents } = this.getStore();
     const result: Document[] = [];
@@ -207,7 +220,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     const traverse = (currentId: string) => {
       const children = Object.values(documents)
         .filter(
-          (doc) => doc.projectId === projectId && doc.parentId === currentId
+          (doc) => doc.projectId === projectId && doc.parentId === currentId,
         )
         .sort((a, b) => a.order - b.order);
 
@@ -240,7 +253,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     // Calculate order
     const siblings = Object.values(store.documents).filter(
       (doc) =>
-        doc.projectId === input.projectId && doc.parentId === input.parentId
+        doc.projectId === input.projectId && doc.parentId === input.parentId,
     );
     const order = siblings.length;
 
@@ -274,7 +287,7 @@ export class LocalDocumentRepository implements IDocumentRepository {
     if (!doc) {
       // Document not in local store - this happens when backend documents aren't synced locally yet
       console.warn(
-        `[LocalDocumentRepository] Document not found in local store: ${id}. Skipping local update.`
+        `[LocalDocumentRepository] Document not found in local store: ${id}. Skipping local update.`,
       );
       // Return a minimal document to satisfy the interface
       return {
