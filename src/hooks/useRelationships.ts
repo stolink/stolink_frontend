@@ -5,13 +5,7 @@ import {
 } from "@/services/relationshipService";
 import { characterKeys } from "./useCharacters";
 
-// Query Keys
-export const relationshipKeys = {
-  all: ["relationships"] as const,
-  lists: () => [...relationshipKeys.all, "list"] as const,
-  list: (projectId: string) =>
-    [...relationshipKeys.lists(), projectId] as const,
-};
+// relationshipKeys removed (unused deprecated code)
 
 /**
  * @deprecated

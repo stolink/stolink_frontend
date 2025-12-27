@@ -36,9 +36,9 @@ interface UseForceSimulationReturn {
 export function useForceSimulation(
   initialNodes: CharacterNode[],
   initialLinks: RelationshipLink[],
-  options: UseForceSimulationOptions,
+  options: UseForceSimulationOptions & { enableGrouping?: boolean },
 ): UseForceSimulationReturn {
-  const { width, height } = options;
+  const { width, height, enableGrouping = false } = options;
 
   // 시뮬레이션과 상태를 저장하는 store
   // 시뮬레이션 인스턴스를 상태로 관리 (Ref 대신 State 사용으로 린트 에러 해결 & 리렌더링 트리거)
@@ -60,8 +60,6 @@ export function useForceSimulation(
 
   // simulationRef는 storeRef.simulation으로 대체 가능하므로 제거하거나,
   // 기존 코드 호환성을 위해 storeRef와 동기화.
-  // 여기서는 깔끔하게 storeRef를 사용하도록 아래 로직들을 수정해야 하지만,
-  // 앞서 변경한 cleanup/reheat 로직이 simulationRef를 쓰므로 둠.
   const simulationRef = useRef<d3.Simulation<
     CharacterNode,
     RelationshipLink
@@ -69,42 +67,60 @@ export function useForceSimulation(
 
   // 노드 반지름 계산
   const getNodeRadius = useCallback((node: CharacterNode): number => {
-    return node.role === "protagonist"
-      ? NODE_SIZES.protagonist / 2
-      : NODE_SIZES.default / 2;
+    // Leader 노드 크기 증가 (가시성 확보)
+    if (node.role === "protagonist" || node.role === "antagonist") {
+      return NODE_SIZES.protagonist * 0.7; // 기존 / 2 보다 조금 더 크게 (0.5 -> 0.7)
+    }
+    return NODE_SIZES.default / 2;
   }, []);
 
   // 시뮬레이션 초기화/업데이트
   useEffect(() => {
     const store = storeRef.current;
 
-    // 노드/링크 복사 - 초기 위치를 중앙에서 시작 (엔트리 애니메이션)
+    // 노드/링크 복사
     const nodesCopy = initialNodes.map((d) => ({
       ...d,
-      // 중앙에서 약간의 랜덤 오프셋으로 시작
       x: width / 2 + (Math.random() - 0.5) * 50,
       y: height / 2 + (Math.random() - 0.5) * 50,
     }));
     const linksCopy = initialLinks.map((d) => ({ ...d }));
+
+    // 그룹 위치 계산 (Circular Layout)
+    const groups = Array.from(
+      new Set(nodesCopy.map((d) => d.group).filter(Boolean)),
+    ) as string[];
+    const groupCenters: Record<string, { x: number; y: number }> = {};
+    const radius = Math.min(width, height) * 0.35; // 화면 크기 비례 반지름
+
+    groups.forEach((group, i) => {
+      const angle = (i / groups.length) * 2 * Math.PI - Math.PI / 2; // 상단(-90도)부터 시작
+      groupCenters[group] = {
+        x: width / 2 + Math.cos(angle) * radius,
+        y: height / 2 + Math.sin(angle) * radius,
+      };
+    });
 
     // 기존 시뮬레이션 정리
     if (simulationRef.current) {
       simulationRef.current.stop();
     }
 
-    // 새 시뮬레이션 생성 (Obsidian 스타일)
+    // 새 시뮬레이션 생성
     const newSimulation = d3
       .forceSimulation<CharacterNode, RelationshipLink>(nodesCopy)
-      // 링크 포스 - 소프트 스프링
       .force(
         "link",
         d3
           .forceLink<CharacterNode, RelationshipLink>(linksCopy)
           .id((d) => d.id)
           .distance(FORCE_CONFIG.linkDistance)
-          .strength(FORCE_CONFIG.linkStrength),
+          .strength(
+            enableGrouping
+              ? FORCE_CONFIG.linkStrength * 0.5
+              : FORCE_CONFIG.linkStrength,
+          ), // 그룹핑 시 링크 힘 약화
       )
-      // 반발력 - 거리 제한 추가
       .force(
         "charge",
         d3
@@ -113,18 +129,6 @@ export function useForceSimulation(
           .distanceMin(FORCE_CONFIG.chargeDistanceMin)
           .distanceMax(FORCE_CONFIG.chargeDistanceMax),
       )
-      // 부드러운 센터링
-      .force(
-        "center",
-        d3
-          .forceCenter(width / 2, height / 2)
-          .strength(FORCE_CONFIG.centerStrength),
-      )
-      // X축 포지셔닝 (부드러운 분산)
-      .force("x", d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength))
-      // Y축 포지셔닝
-      .force("y", d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength))
-      // 충돌 감지
       .force(
         "collision",
         d3
@@ -132,52 +136,104 @@ export function useForceSimulation(
           .radius((d) => getNodeRadius(d) + FORCE_CONFIG.collisionPadding)
           .strength(FORCE_CONFIG.collisionStrength),
       )
-      // 느린 수렴 = 더 오래 부드럽게 움직임
       .alphaDecay(FORCE_CONFIG.alphaDecay)
       .alphaMin(FORCE_CONFIG.alphaMin)
-      // 낮은 마찰 = 더 유동적인 움직임
       .velocityDecay(FORCE_CONFIG.velocityDecay);
 
-    // [Pre-warming] 초기 렌더링 시 노드들이 뭉쳐있지 않도록 시뮬레이션을 미리 돌림
-    // 300 -> 10으로 감소: 초기 로딩 렉 해결 (사용자 피드백 반영)
+    // [CENTERING LOGIC]
+    if (enableGrouping) {
+      // === 그룹핑 모드 ===
+      newSimulation.force(
+        "x",
+        d3
+          .forceX<CharacterNode>((d) => {
+            // 1. 그룹이 없으면 화면 중앙
+            if (!d.group || !groupCenters[d.group]) return width / 2;
+
+            const groupCenter = groupCenters[d.group];
+
+            // 2. 리더(주연급)는 화면 중앙 쪽으로 더 가깝게 배치 ("리더가 앞장서도록")
+            if (d.role === "protagonist" || d.role === "antagonist") {
+              // 그룹 중심과 화면 중앙 사이의 30% 지점 (화면 중앙에 더 가까움)
+              return groupCenter.x * 0.3 + (width / 2) * 0.7;
+            }
+
+            // 3. 일반 멤버는 그룹 최외곽으로 밀려나지 않도록 그룹 중심 유지
+            return groupCenter.x;
+          })
+          .strength(FORCE_CONFIG.positionStrength * 1.5), // 강한 위치 고정
+      );
+
+      newSimulation.force(
+        "y",
+        d3
+          .forceY<CharacterNode>((d) => {
+            if (!d.group || !groupCenters[d.group]) return height / 2;
+            const groupCenter = groupCenters[d.group];
+
+            if (d.role === "protagonist" || d.role === "antagonist") {
+              return groupCenter.y * 0.3 + (height / 2) * 0.7;
+            }
+            return groupCenter.y;
+          })
+          .strength(FORCE_CONFIG.positionStrength * 1.5),
+      );
+
+      // 전체적으로 중앙 유지하되 약하게
+      newSimulation.force(
+        "center",
+        d3.forceCenter(width / 2, height / 2).strength(0.05),
+      );
+    } else {
+      // === 일반 모드 (기존) ===
+      newSimulation
+        .force(
+          "center",
+          d3
+            .forceCenter(width / 2, height / 2)
+            .strength(FORCE_CONFIG.centerStrength),
+        )
+        .force(
+          "x",
+          d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength),
+        )
+        .force(
+          "y",
+          d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength),
+        );
+    }
+
+    // [Pre-warming]
     newSimulation.tick(10);
 
     // Initial State Sync
-    store.state = {
-      nodes: [...nodesCopy],
-      links: [...linksCopy],
-    };
+    store.state = { nodes: [...nodesCopy], links: [...linksCopy] };
     store.listeners.forEach((listener) => listener());
 
     // Update Refs & State
     simulationRef.current = newSimulation;
-    store.simulation = newSimulation; // storeRef keeps sync for internal usage
+    store.simulation = newSimulation;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSimulation(newSimulation); // Update state to expose to consumer
+    setSimulation(newSimulation);
 
     return () => {
       newSimulation.stop();
     };
-  }, [initialNodes, initialLinks, width, height, getNodeRadius]);
+  }, [
+    initialNodes,
+    initialLinks,
+    width,
+    height,
+    getNodeRadius,
+    enableGrouping,
+  ]);
 
-  // 중앙 포스 업데이트 (리사이즈 시)
+  // 중앙 포스 업데이트 (리사이즈 시) - enableGrouping 상태 고려
   useEffect(() => {
     const store = storeRef.current;
     if (store.simulation) {
-      store.simulation.force(
-        "center",
-        d3
-          .forceCenter(width / 2, height / 2)
-          .strength(FORCE_CONFIG.centerStrength),
-      );
-      store.simulation.force(
-        "x",
-        d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength),
-      );
-      store.simulation.force(
-        "y",
-        d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength),
-      );
+      // 리사이즈 시에는 간단히 중앙 포스만 업데이트하고 재시작
+      // 복잡한 그룹핑 위치 재계산은 위 useEffect가 의존성(width, height)으로 처리함
       store.simulation.alpha(0.3).restart();
     }
   }, [width, height]);
