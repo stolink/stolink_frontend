@@ -108,7 +108,7 @@ export function BookCard({
         // 편집 모드 스타일
         isEditMode && "border-sage-200 scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary"
+        isSelected && "ring-2 ring-primary border-primary",
       )}
       onClick={handleCardClick}
     >
@@ -127,7 +127,7 @@ export function BookCard({
               "border-2 shadow-sm transition-all duration-200",
               isSelected
                 ? "border-green-500 bg-green-500"
-                : "bg-white border-stone-400 hover:border-green-500"
+                : "bg-white border-stone-400 hover:border-green-500",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -143,7 +143,7 @@ export function BookCard({
             alt={title}
             className={cn(
               "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105"
+              !isEditMode && "group-hover:scale-105",
             )}
           />
         ) : (
@@ -170,16 +170,16 @@ export function BookCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={() => onAction?.("rename")}>
-                  <Edit className="mr-2 h-4 w-4" /> Rename
+                  <Edit className="mr-2 h-4 w-4" /> 이름 변경
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
-                  <Copy className="mr-2 h-4 w-4" /> Duplicate
+                  <Copy className="mr-2 h-4 w-4" /> 복제
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onAction?.("delete")}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash className="mr-2 h-4 w-4" /> Delete
+                  <Trash className="mr-2 h-4 w-4" /> 삭제
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -236,7 +236,7 @@ export function BookCard({
                   "h-2 w-2 rounded-full",
                   normalizedStatus === "Complete"
                     ? "bg-green-500"
-                    : "bg-sage-500"
+                    : "bg-sage-500",
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">

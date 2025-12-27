@@ -23,7 +23,13 @@ import { CreateBookModal } from "@/components/library/CreateBookModal";
 import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { useProjects, useDeleteProject } from "@/hooks/useProjects";
+// TODO: useDuplicateProject는 현재 임시로 넣었고 추후 Duplicate기능이 사라지면 없애야함
+import {
+  useProjects,
+  useDeleteProject,
+  useDuplicateProject,
+  useUpdateProject,
+} from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
 import {
   documentService,
@@ -76,15 +82,35 @@ export default function LibraryPage() {
   // 일괄 삭제 진행 중 상태
   const [isDeletingBatch, setIsDeletingBatch] = useState(false);
 
-  const { data: projectsData, isLoading, error } = useProjects();
+  // ========== 정렬 상태 ==========
+  const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
+    "updatedAt",
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ========== Rename 모달 상태 ==========
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+
+  const {
+    data: projectsData,
+    isLoading,
+    error,
+  } = useProjects({ sort: sortBy, order: sortOrder });
   const { mutate: deleteProject, mutateAsync: deleteProjectAsync } =
     useDeleteProject();
   const { mutate: updateProjectStatus } = useUpdateProjectStatus();
+  const { mutate: duplicateProject } = useDuplicateProject();
+  const { mutate: updateProject } = useUpdateProject();
 
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -100,7 +126,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
     );
   };
 
@@ -155,7 +181,7 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project"
+        "Failed to create project",
       );
       const projectId = projectData.id;
       console.log("[LibraryPage] Project created:", projectId);
@@ -168,7 +194,7 @@ export default function LibraryPage() {
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter"
+        "Failed to create default chapter",
       );
       const chapterId = chapterData.id;
       console.log("[LibraryPage] Chapter created:", chapterId);
@@ -187,7 +213,7 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section"
+          "Failed to create section",
         );
         console.log("[LibraryPage] Section created:", sectionData.id);
         _create(mapBackendToFrontend(sectionData));
@@ -236,7 +262,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000
+    chunkSize: number = 10000,
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -267,12 +293,12 @@ export default function LibraryPage() {
 
       const chunk = currentText.substring(
         0,
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       chunks.push(chunk);
 
       const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       if (remaining.trim().length > 0) {
         splitText(remaining);
@@ -354,7 +380,7 @@ export default function LibraryPage() {
 
     if (!segments && rawText.length > 30000) {
       console.log(
-        "[Import] No explicit chapters found. Using semantic splitter."
+        "[Import] No explicit chapters found. Using semantic splitter.",
       );
       segments = splitContentRecursively(rawText);
     }
@@ -430,12 +456,12 @@ export default function LibraryPage() {
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
         alert(
-          "저장 용량이 부족합니다. 파일이 너무 크거나 브라우저 저장 공간이 가득 찼습니다."
+          "저장 용량이 부족합니다. 파일이 너무 크거나 브라우저 저장 공간이 가득 찼습니다.",
         );
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류")
+            (error instanceof Error ? error.message : "알 수 없는 오류"),
         );
       }
     }
@@ -540,9 +566,33 @@ export default function LibraryPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Last Modified</DropdownMenuItem>
-                    <DropdownMenuItem>Created Date</DropdownMenuItem>
-                    <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSortBy("updatedAt");
+                        setSortOrder("desc");
+                      }}
+                      className={sortBy === "updatedAt" ? "bg-sage-50" : ""}
+                    >
+                      Last Modified
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSortBy("createdAt");
+                        setSortOrder("desc");
+                      }}
+                      className={sortBy === "createdAt" ? "bg-sage-50" : ""}
+                    >
+                      Created Date
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSortBy("title");
+                        setSortOrder("asc");
+                      }}
+                      className={sortBy === "title" ? "bg-sage-50" : ""}
+                    >
+                      Name (A-Z)
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -552,7 +602,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-stone-200 text-stone-600"
+                    !isEditMode && "bg-white border-stone-200 text-stone-600",
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -578,7 +628,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -589,7 +639,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
+                        : "text-muted-foreground hover:text-sage-600",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -662,7 +712,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
+              : "grid-cols-1",
           )}
           initial={false}
           animate="visible"
@@ -732,6 +782,14 @@ export default function LibraryPage() {
                       ) {
                         deleteProject(project.id);
                       }
+                    } else if (action === "rename") {
+                      // Rename 모달 열기
+                      setRenameTarget({ id: project.id, title: project.title });
+                      setNewTitle(project.title);
+                      setRenameModalOpen(true);
+                    } else if (action === "duplicate") {
+                      // 프로젝트 복제
+                      duplicateProject(project.id);
                     }
                   }}
                   onStatusChange={(status) =>
@@ -859,6 +917,54 @@ export default function LibraryPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeletingBatch ? "삭제 중..." : "삭제"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ========== 제목 수정(Rename) 모달 ========== */}
+      <AlertDialog open={renameModalOpen} onOpenChange={setRenameModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>제목 변경</AlertDialogTitle>
+            <AlertDialogDescription>
+              새로운 제목을 입력하세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="새 제목"
+              className="w-full"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setRenameModalOpen(false);
+                setRenameTarget(null);
+                setNewTitle("");
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (renameTarget && newTitle.trim()) {
+                  updateProject({
+                    id: renameTarget.id,
+                    payload: { title: newTitle.trim() },
+                  });
+                  setRenameModalOpen(false);
+                  setRenameTarget(null);
+                  setNewTitle("");
+                }
+              }}
+              disabled={!newTitle.trim() || newTitle === renameTarget?.title}
+            >
+              변경
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
