@@ -8,6 +8,20 @@ import {
   FolderPlus,
   ChevronsUpDown,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TreeItem } from "./TreeItem";
@@ -68,8 +82,7 @@ export function ChapterTree({
   onAddChapter,
   onRenameChapter,
   onDeleteChapter,
-  onDuplicateChapter,
-  onConvertType,
+  onReorderChapter,
 }: ChapterTreeProps) {
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
@@ -84,6 +97,18 @@ export function ChapterTree({
     y: 0,
   });
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px 이동 후 드래그 시작
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     if (isAdding && inputRef.current) {
@@ -116,6 +141,26 @@ export function ChapterTree({
     setNewChapterTitle("");
     setIsAdding(false);
     setAddingToParent(null);
+  };
+
+  // Drag End Handler
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = chapters.findIndex((c) => c.id === active.id);
+      const newIndex = chapters.findIndex((c) => c.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Reorder: Create new ordered array
+        const newOrder = [...chapters];
+        const [removed] = newOrder.splice(oldIndex, 1);
+        newOrder.splice(newIndex, 0, removed);
+
+        const orderedIds = newOrder.map((c) => c.id);
+        onReorderChapter?.(null, orderedIds); // null = root level
+      }
+    }
   };
 
   // 컨테이너 컨텍스트 메뉴 (빈 공간 우클릭)
@@ -157,6 +202,9 @@ export function ChapterTree({
     },
   ];
 
+  // Root level item IDs for SortableContext
+  const rootItemIds = useMemo(() => chapters.map((c) => c.id), [chapters]);
+
   return (
     <div
       className="flex-1 flex flex-col min-h-full py-1"
@@ -183,24 +231,33 @@ export function ChapterTree({
           </Button>
         </div>
       ) : (
-        <div className="space-y-0.5">
-          {chapters.map((node, idx) => (
-            <div key={node.id} data-tree-item>
-              <TreeItem
-                node={node}
-                selectedId={selectedChapterId}
-                isLast={idx === chapters.length - 1}
-                parentLines={[]}
-                onSelect={onSelectChapter}
-                onAddChild={handleStartAddChild}
-                onRename={onRenameChapter}
-                onDelete={onDeleteChapter}
-                onDuplicate={onDuplicateChapter}
-                onConvertType={onConvertType}
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={rootItemIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-0.5">
+              {chapters.map((node, idx) => (
+                <TreeItem
+                  key={node.id}
+                  node={node}
+                  selectedId={selectedChapterId}
+                  isLast={idx === chapters.length - 1}
+                  parentLines={[]}
+                  onSelect={onSelectChapter}
+                  onAddChild={handleStartAddChild}
+                  onRename={onRenameChapter}
+                  onDelete={onDeleteChapter}
+                  onReorder={onReorderChapter}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Add Form */}

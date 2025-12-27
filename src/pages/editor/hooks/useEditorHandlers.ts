@@ -23,6 +23,10 @@ interface UseEditorHandlersOptions {
     parentId?: string;
   }) => Promise<Document | null>;
   deleteDocument: (id: string) => Promise<void>;
+  reorderDocuments: (
+    parentId: string | null,
+    orderedIds: string[],
+  ) => Promise<void>;
 }
 
 /**
@@ -43,6 +47,7 @@ export function useEditorHandlers({
   updateDocumentMutation,
   createDocument,
   deleteDocument,
+  reorderDocuments,
 }: UseEditorHandlersOptions) {
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -264,36 +269,6 @@ export function useEditorHandlers({
     ],
   );
 
-  // Duplicate chapter
-  const handleDuplicateChapter = useCallback(
-    async (id: string) => {
-      if (isDemo) return;
-      const { documents: docs, _create } = useDocumentStore.getState();
-      const original = docs[id];
-      if (!original) return;
-
-      const now = new Date().toISOString();
-      _create({
-        ...original,
-        id: `${original.id}-copy-${Date.now()}`,
-        title: `${original.title} (복사본)`,
-        createdAt: now,
-        updatedAt: now,
-      });
-    },
-    [isDemo],
-  );
-
-  // Convert type
-  const handleConvertType = useCallback(
-    async (id: string, type: "chapter" | "section") => {
-      if (isDemo) return;
-      const { _updateType } = useDocumentStore.getState();
-      _updateType(id, type === "chapter" ? "folder" : "text");
-    },
-    [isDemo],
-  );
-
   return {
     // Refs (exposed for keyboard handler)
     lastContentRef,
@@ -310,7 +285,6 @@ export function useEditorHandlers({
     handleAddSection,
     handleRenameChapter,
     handleDeleteChapter,
-    handleDuplicateChapter,
-    handleConvertType,
+    handleReorderChapter: reorderDocuments,
   };
 }

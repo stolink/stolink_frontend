@@ -22,8 +22,7 @@ export interface ChapterTreeProps {
   ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
-  onDuplicateChapter?: (id: string) => void;
-  onConvertType?: (id: string, type: "chapter" | "section") => void;
+  onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
 }
 
 // Status colors mapping
