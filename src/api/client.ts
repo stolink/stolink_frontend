@@ -31,6 +31,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired, logout user
       useAuthStore.getState().logout();
+      // Redirect to landing page (Publicly accessible, no ProtectedLayout loop)
       window.location.href = "/";
     }
     return Promise.reject(error);

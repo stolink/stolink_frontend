@@ -365,6 +365,67 @@ src/
 8. 응답은 한국어로 작성
    </request_guidelines>
 
+<domain_glossary>
+
+  <!-- StoLink 도메인 용어 정의 -->
+
+| 용어       | 영문            | 설명                                                               | 관련 타입/경로                              |
+| ---------- | --------------- | ------------------------------------------------------------------ | ------------------------------------------- |
+| 복선       | Foreshadowing   | 나중에 회수될 스토리 요소. 에디터에서 `#복선:태그명` 문법으로 작성 | `Foreshadowing`, `useForeshadowing`         |
+| 회수       | Recovery        | 복선이 해결/사용되는 시점. `isRecovery: true`로 표시               | `ForeshadowingAppearance`                   |
+| 문서       | Document        | 폴더(folder) 또는 텍스트(text). Scrivener 스타일 재귀 구조 ⭐      | `Document`, `DocumentTreeNode`              |
+| 서재       | Library         | 사용자의 모든 작품을 관리하는 메인 페이지                          | `/library`, `LibraryPage`                   |
+| 설정집     | World           | 캐릭터, 장소, 아이템 등 세계관 요소 관리 페이지                    | `/projects/:id/world`                       |
+| 관계도     | Character Graph | React Flow 기반 캐릭터 관계 시각화                                 | `CharacterRelationship`, `useRelationships` |
+| 스크리브닝 | Scrivenings     | 여러 문서를 하나로 통합하여 편집하는 모드                          | EditorPage 뷰 모드                          |
+| 콕보드     | Corkboard       | 카드 기반 시놉시스 뷰 (예정)                                       | EditorPage 뷰 모드                          |
+
+</domain_glossary>
+
+---
+
+<troubleshooting_reference>
+
+  <!-- 과거 이슈 해결 기록 참조 -->
+
+**목적**: 동일한 실수를 반복하지 않기 위해 과거 해결 기록을 참조합니다.
+
+| 파일/폴더            | 내용                                         |
+| -------------------- | -------------------------------------------- |
+| `.troubles/`         | 상세 이슈별 문서 (`YYYY-MM-DD_주제.md` 형식) |
+| `troubleshooting.md` | 요약 로그 테이블 (날짜, 유형, 설명, 해결)    |
+
+**사용 시점**:
+
+- 빌드/타입 에러 발생 시 유사 이슈 검색
+- AI 코드 리뷰 피드백 처리 후 문서화
+- 새로운 패턴 도입 시 기존 트러블 확인
+
+</troubleshooting_reference>
+
+---
+
+<api_quick_reference>
+
+  <!-- 핵심 API 엔드포인트 요약 -->
+
+| 도메인        | GET                                | POST                                 | PATCH                    | DELETE                   |
+| ------------- | ---------------------------------- | ------------------------------------ | ------------------------ | ------------------------ |
+| Auth          | `/api/auth/me`                     | `/api/auth/login`, `/register`       | `/api/auth/me`           | -                        |
+| Projects      | `/api/projects`                    | `/api/projects`                      | `/api/projects/:id`      | `/api/projects/:id`      |
+| Documents     | `/api/projects/:pid/documents`     | ←                                    | `/api/documents/:id`     | `/api/documents/:id`     |
+| Characters    | `/api/projects/:pid/characters`    | ←                                    | `/api/characters/:id`    | `/api/characters/:id`    |
+| Relationships | `/api/projects/:pid/relationships` | `/api/relationships`                 | `/api/relationships/:id` | `/api/relationships/:id` |
+| Foreshadowing | `/api/projects/:pid/foreshadowing` | ←                                    | `/api/foreshadowing/:id` | `/api/foreshadowing/:id` |
+| Places        | `/api/projects/:pid/places`        | ←                                    | `/api/places/:id`        | `/api/places/:id`        |
+| Items         | `/api/projects/:pid/items`         | ←                                    | `/api/items/:id`         | `/api/items/:id`         |
+| AI            | -                                  | `/api/ai/chat`, `/consistency-check` | -                        | -                        |
+| Export        | `/api/exports/:jobId`              | `/api/projects/:id/export`           | -                        | -                        |
+
+> 📡 상세 명세: [API_SPEC.md](API_SPEC.md)
+
+</api_quick_reference>
+
 ---
 
 <reference_docs>
@@ -378,6 +439,7 @@ src/
 | `SPEC.md`         | 기능 명세서                   |
 | `ARCHITECTURE.md` | 아키텍처 개요                 |
 | `GIT_STRATEGY.md` | 브랜치 전략 상세              |
+| `.troubles/`      | 트러블슈팅 이력               |
 
 </reference_docs>
 
@@ -391,3 +453,4 @@ src/
 | 1.1  | 2024.12    | 워크플로우 연동 섹션 추가                                                                                                                   |
 | 2.0  | 2025.12.26 | XML 태그 구조화, MUST/MUST NOT 규칙 강화                                                                                                    |
 | 2.1  | 2025.12.26 | 실제 버전 반영 (React 19, TS 5.9, Vite 7.2), TanStack Query 규칙 추가, 파일 구조 업데이트 (12 hooks, 8 stores, 12 services), 리뷰 기준 보강 |
+| 2.2  | 2025.12.27 | 도메인 용어집, 트러블슈팅 참조, API Quick Reference 추가                                                                                    |
