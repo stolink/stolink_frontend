@@ -8,31 +8,29 @@ import {
   User,
   LogOut,
   FileText,
+  Plus,
+  Pencil,
+  X,
+  Trash2,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookCard, type ProjectStatus } from "@/components/library/BookCard";
-import { CreateBookCard } from "@/components/library/CreateBookCard";
-import { ImportBookCard } from "@/components/library/ImportBookCard";
+import { CreateBookModal } from "@/components/library/CreateBookModal";
 import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  useProjects,
-  useDeleteProject,
-  useCreateProject,
-} from "@/hooks/useProjects";
+import { useProjects, useDeleteProject } from "@/hooks/useProjects";
 import { projectService, type Project } from "@/services/projectService";
-import {
-  documentService,
-  mapBackendToFrontend,
-} from "@/services/documentService";
+import { documentService, mapBackendToFrontend } from "@/services/documentService";
 import type { ApiResponse } from "@/types/api";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
+import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
+import type { ProjectStatusType } from "@/components/library/StatusChip";
 
 import {
   DropdownMenu,
@@ -44,6 +42,17 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 export default function LibraryPage() {
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,14 +61,82 @@ export default function LibraryPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ========== 새로운 상태 변수들 ==========
+  // 새 작품 만들기 모달 상태
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // 편집(삭제) 모드 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+  // 선택된 책 ID 목록
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
+  // 삭제 확인 모달 상태
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // 일괄 삭제 진행 중 상태
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+
   const { data: projectsData, isLoading, error } = useProjects();
-  const { mutate: deleteProject } = useDeleteProject();
+  const { mutate: deleteProject, mutateAsync: deleteProjectAsync } =
+    useDeleteProject();
+  const { mutate: updateProjectStatus } = useUpdateProjectStatus();
 
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // ========== 편집 모드 핸들러 ==========
+  // 편집 모드 토글
+  const handleToggleEditMode = () => {
+    if (isEditMode) {
+      // 편집 모드 종료 시 선택 초기화
+      setSelectedBooks([]);
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  // 책 선택/해제 토글
+  const toggleBookSelection = (id: string) => {
+    setSelectedBooks((prev) =>
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+    );
+  };
+
+  // 일괄 삭제 실행
+  const handleBatchDelete = async () => {
+    setIsDeletingBatch(true);
+    const failedIds: string[] = [];
+
+    try {
+      // 순차적으로 삭제
+      for (const id of selectedBooks) {
+        try {
+          await deleteProjectAsync(id);
+        } catch (err) {
+          console.error(`[LibraryPage] Failed to delete project ${id}:`, err);
+          failedIds.push(id);
+        }
+      }
+
+      // 삭제 완료 후 상태 초기화
+      setSelectedBooks([]);
+      setIsEditMode(false);
+      setShowDeleteConfirm(false);
+
+      if (failedIds.length > 0) {
+        alert(`${failedIds.length}개의 프로젝트 삭제에 실패했습니다.`);
+      }
+    } catch (error) {
+      console.error("[LibraryPage] Batch delete failed:", error);
+      alert("프로젝트 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeletingBatch(false);
+    }
+  };
+
+  // 상태 변경 핸들러
+  const handleStatusChange = (projectId: string, status: ProjectStatusType) => {
+    updateProjectStatus({ projectId, status });
+  };
 
   const handleCreateProject = async () => {
     setIsCreatingProject(true);
@@ -154,7 +231,6 @@ export default function LibraryPage() {
   };
 
   // Helper: Recursive Character Text Splitter approach
-  // Splits text into chunks respecting separators to keep semantic meaning
   const splitContentRecursively = (
     text: string,
     chunkSize: number = 10000,
@@ -164,43 +240,35 @@ export default function LibraryPage() {
     const chunks: string[] = [];
 
     const splitText = (currentText: string) => {
-      // Base case: if text fits in chunk, just return it
       if (currentText.length <= chunkSize) {
         chunks.push(currentText);
         return;
       }
 
-      // Try separators in order
       let bestSplitIndex = -1;
       let separatorUsed = "";
 
       for (const separator of separators) {
-        // Find the last occurrence of separator within the limit
-        // We want to maximize the chunk size while staying under the limit
         const limit = chunkSize;
         const lastIndex = currentText.lastIndexOf(separator, limit);
 
         if (lastIndex !== -1 && lastIndex > chunkSize * 0.3) {
-          // Found a good split point (at least 30% filled)
           bestSplitIndex = lastIndex;
           separatorUsed = separator;
           break;
         }
       }
 
-      // If no good separator found (rare, huge block of text), force split
       if (bestSplitIndex === -1) {
         bestSplitIndex = chunkSize;
       }
 
-      // Add the chunk
       const chunk = currentText.substring(
         0,
         bestSplitIndex + separatorUsed.length
       );
       chunks.push(chunk);
 
-      // Recurse on the rest
       const remaining = currentText.substring(
         bestSplitIndex + separatorUsed.length
       );
@@ -219,17 +287,9 @@ export default function LibraryPage() {
 
   // Helper: Split text into chapters based on patterns
   const splitContentByChapters = (text: string) => {
-    // 1. Try to find explicit chapter headers
-    // Patterns: "제1장", "제 1 장", "Chapter 1", "Prologue", "프롤로그"
-    // Regex logic:
-    // (?:^|\n) matches start of file or new line
-    // \s* matches optional whitespace
-    // (Chapter\s*\d+|제\s*\d+\s*장|Prologue|Epilogue|프롤로그|에필로그) matches the chapter title
-    // .* matches rest of the title line
     const pattern =
       /(?:^|\n)\s*((?:Chapter|제|Section|Part)\s*\d+[^(\n)]*|Prologue|Epilogue|프롤로그|에필로그|Episode\s*\d+).*/gi;
 
-    // Check if we have enough matches to warrant splitting (at least 2, or 1 if it starts with it)
     const matches = [...text.matchAll(pattern)];
 
     if (matches.length < 2) {
@@ -244,7 +304,6 @@ export default function LibraryPage() {
       const matchLength = match[0].length;
       const title = match[1].trim();
 
-      // Content before the first chapter (e.g. title page, intro)
       if (i === 0 && matchIndex > 0) {
         const introContent = text.substring(0, matchIndex).trim();
         if (introContent) {
@@ -252,8 +311,6 @@ export default function LibraryPage() {
         }
       }
 
-      // Content for the current chapter
-      // It goes from end of this match line to start of next match line
       const contentStart = matchIndex + matchLength;
       const nextMatch = matches[i + 1];
       const contentEnd = nextMatch ? nextMatch.index! : text.length;
@@ -294,10 +351,8 @@ export default function LibraryPage() {
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
 
-    // 1. Try Chapter Splitting
     let segments = splitContentByChapters(rawText);
 
-    // 2. If no chapters, try Recursive Semantic Splitting if text is large (>30k chars)
     if (!segments && rawText.length > 30000) {
       console.log(
         "[Import] No explicit chapters found. Using semantic splitter."
@@ -310,7 +365,6 @@ export default function LibraryPage() {
     try {
       const { _create, _setContent } = useDocumentStore.getState();
 
-      // 1. Create Project
       const projectResponse = await projectService.create({
         title: title,
         genre: "other",
@@ -320,13 +374,10 @@ export default function LibraryPage() {
       const projectId = projectResponse.data?.id;
       if (!projectId) throw new Error("Failed to create project");
 
-      // 2. Import Logic
       if (hasSegments) {
         console.log(`[Import] Imported as ${segments!.length} segments.`);
 
-        // Use sequential execution to preserve order and prevent race conditions
         for (const [index, segment] of segments!.entries()) {
-          // A. Create Folder (Chapter/Part)
           const folderRes = await documentService.create(projectId, {
             type: "folder",
             title: segment.title,
@@ -336,12 +387,11 @@ export default function LibraryPage() {
 
           _create(mapBackendToFrontend(folderRes.data!));
 
-          // B. Create Document (Content) inside Folder
           const chunkHtml = processContentToHtml(segment.content);
 
           const docRes = await documentService.create(projectId, {
             type: "text",
-            title: "본문", // Standard name for section inside chapter
+            title: "본문",
             parentId: folderId,
             targetWordCount: segment.content.length,
           });
@@ -354,7 +404,6 @@ export default function LibraryPage() {
           }
         }
       } else {
-        // Fallback: Single Document Import
         console.log("[Import] Importing as single file.");
         const fullContent = processContentToHtml(rawText);
 
@@ -372,12 +421,10 @@ export default function LibraryPage() {
         _setContent(docId, fullContent);
       }
 
-      // 3. Navigate
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("Import failed:", error);
 
-      // Handle QuotaExceededError specifically
       if (
         error instanceof DOMException &&
         (error.name === "QuotaExceededError" ||
@@ -389,7 +436,7 @@ export default function LibraryPage() {
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류")
+          (error instanceof Error ? error.message : "알 수 없는 오류")
         );
       }
     }
@@ -473,12 +520,8 @@ export default function LibraryPage() {
                     <DropdownMenuCheckboxItem checked>
                       All Statuses
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>
-                      Drafting
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>
-                      Completed
-                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>Drafting</DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem>Completed</DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -499,6 +542,29 @@ export default function LibraryPage() {
                     <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* 편집 모드 버튼 */}
+                <Button
+                  variant={isEditMode ? "destructive" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-9 gap-2",
+                    !isEditMode && "bg-white border-stone-200 text-stone-600"
+                  )}
+                  onClick={handleToggleEditMode}
+                >
+                  {isEditMode ? (
+                    <>
+                      <X className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">취소</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">편집</span>
+                    </>
+                  )}
+                </Button>
 
                 <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
 
@@ -599,6 +665,7 @@ export default function LibraryPage() {
           animate="visible"
           variants={containerVariants}
         >
+          {/* 숨겨진 파일 입력 (기존 원고 불러오기용) */}
           <input
             type="file"
             ref={fileInputRef}
@@ -607,16 +674,7 @@ export default function LibraryPage() {
             className="hidden"
           />
 
-          <motion.div variants={itemVariants} className="h-full min-h-[320px]">
-            <CreateBookCard
-              onClick={handleCreateProject}
-              disabled={isCreatingProject}
-            />
-          </motion.div>
-
-          <motion.div variants={itemVariants} className="h-full min-h-[320px]">
-            <ImportBookCard onClick={handleImportClick} />
-          </motion.div>
+          {/* CreateBookCard, ImportBookCard 제거됨 - 하단 플로팅 버튼으로 대체 */}
 
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
@@ -651,9 +709,10 @@ export default function LibraryPage() {
                 className="h-full min-h-[320px]"
               >
                 <BookCard
+                  projectId={project.id}
                   title={project.title}
                   author={project.author || "Author"}
-                  status={(project.status as ProjectStatus) || "DRAFTING"}
+                  status={(project.status as ProjectStatus) || "writing"}
                   genre={project.genre}
                   coverImage={project.coverImage}
                   location={`Chapter ${project.stats?.chapterCount || 0}`}
@@ -670,6 +729,12 @@ export default function LibraryPage() {
                       }
                     }
                   }}
+                  onStatusChange={(status) =>
+                    handleStatusChange(project.id, status)
+                  }
+                  isEditMode={isEditMode}
+                  isSelected={selectedBooks.includes(project.id)}
+                  onSelect={() => toggleBookSelection(project.id)}
                 />
               </motion.div>
             ))
@@ -689,7 +754,7 @@ export default function LibraryPage() {
         )}
 
         {/* Empty State - No Projects at all */}
-        {projects.length === 0 && (
+        {projects.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-24 h-24 bg-sage-50 rounded-full flex items-center justify-center mb-6 text-sage-400">
               <FileText className="h-12 w-12" />
@@ -702,8 +767,12 @@ export default function LibraryPage() {
               <br />
               복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
             </p>
-            <Button size="lg" className="gap-2" onClick={handleCreateProject}>
-              <FileText className="w-5 h-5" />새 작품 만들기
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="w-5 h-5" />새 작품 만들기
             </Button>
           </div>
         )}
@@ -712,7 +781,84 @@ export default function LibraryPage() {
       {/* Footer */}
       <Footer />
 
-      {/* Modals */}
+      {/* ========== 새 작품 만들기 플로팅 버튼 ========== */}
+      {!isEditMode && projects.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="fixed bottom-8 right-8 z-40"
+        >
+          <Button
+            size="lg"
+            className="gap-2 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full px-6"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="w-5 h-5" />
+            새 작품 만들기
+          </Button>
+        </motion.div>
+      )}
+
+      {/* ========== 일괄 삭제 플로팅 바 ========== */}
+      <AnimatePresence>
+        {isEditMode && selectedBooks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
+          >
+            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 text-stone-900 dark:text-stone-100 px-6 py-3 rounded-full shadow-xl flex items-center gap-3">
+              <span className="font-medium">
+                {selectedBooks.length}개 선택됨
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2 font-semibold"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                삭제
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========== 새 작품 만들기 모달 ========== */}
+      <CreateBookModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onCreateBlank={handleCreateProject}
+        onImport={handleImportClick}
+        isCreating={isCreatingProject}
+      />
+
+      {/* ========== 삭제 확인 모달 ========== */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              선택한 {selectedBooks.length}개의 작품이 영구적으로 삭제됩니다.
+              <br />이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingBatch}>
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchDelete}
+              disabled={isDeletingBatch}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingBatch ? "삭제 중..." : "삭제"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
