@@ -87,11 +87,9 @@ export function useDocumentTree(projectId: string) {
     )
   );
 
-  // Use fetched documents if available, otherwise fall back to store
-  const documents =
-    fetchedDocuments && fetchedDocuments.length > 0
-      ? fetchedDocuments
-      : storeDocuments;
+  // Use store documents as the primary source of truth to support optimistic updates
+  // The store is kept in sync with backend data via the useEffect above
+  const documents = storeDocuments;
 
   const tree = buildTree(documents);
 
