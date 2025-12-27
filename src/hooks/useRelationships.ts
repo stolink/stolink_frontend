@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   relationshipService,
-  type Relationship,
   type CreateRelationshipInput,
 } from "@/services/relationshipService";
 import { characterKeys } from "./useCharacters";
@@ -35,9 +34,7 @@ export function useCreateRelationship(projectId: string) {
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
       });
-      queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
-      });
+      // relationshipKeys 무효화 제거 (deprecated API)
     },
   });
 }
@@ -56,36 +53,10 @@ export function useUpdateRelationship(projectId: string) {
       id: string;
       payload: Partial<CreateRelationshipInput>;
     }) => relationshipService.update(id, payload),
-    onMutate: async ({ id, payload }) => {
-      await queryClient.cancelQueries({
-        queryKey: relationshipKeys.list(projectId),
-      });
-      const previous = queryClient.getQueryData(
-        relationshipKeys.list(projectId)
-      );
-
-      queryClient.setQueryData(
-        relationshipKeys.list(projectId),
-        (old: Relationship[] | undefined) =>
-          old?.map((rel) => (rel.id === id ? { ...rel, ...payload } : rel))
-      );
-
-      return { previous };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          relationshipKeys.list(projectId),
-          context.previous
-        );
-      }
-    },
-    onSettled: () => {
+    // Optimistic update for deprecated API removed
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
       });
     },
   });
@@ -99,35 +70,10 @@ export function useDeleteRelationship(projectId: string) {
 
   return useMutation({
     mutationFn: (id: string) => relationshipService.delete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({
-        queryKey: relationshipKeys.list(projectId),
-      });
-      const previous = queryClient.getQueryData(
-        relationshipKeys.list(projectId)
-      );
-
-      queryClient.setQueryData(
-        relationshipKeys.list(projectId),
-        (old: Relationship[] | undefined) => old?.filter((rel) => rel.id !== id)
-      );
-
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          relationshipKeys.list(projectId),
-          context.previous
-        );
-      }
-    },
-    onSettled: () => {
+    // Optimistic update for deprecated API removed
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
       });
     },
   });
