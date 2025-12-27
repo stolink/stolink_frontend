@@ -80,7 +80,7 @@ export default function LandingPage() {
               <Link to="/auth">
                 <Button variant="ghost">로그인</Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/auth?tab=register">
                 <Button className="shadow-sm">시작하기</Button>
               </Link>
             </div>
