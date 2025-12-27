@@ -20,7 +20,7 @@ interface UseZoomReturn {
 export function useZoom(
   svgRef: React.RefObject<SVGSVGElement | null>,
   gRef: React.RefObject<SVGGElement | null>,
-  options: UseZoomOptions = {},
+  options: UseZoomOptions = {}
 ): UseZoomReturn {
   const { onZoomChange } = options;
 
@@ -44,6 +44,18 @@ export function useZoom(
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([ZOOM_CONFIG.min, ZOOM_CONFIG.max])
+      .filter((event) => {
+        // Prevent zoom/pan if interacting with a node
+        // Use 'closest' to check if target is inside a node group
+        if (
+          event.target instanceof Element &&
+          event.target.closest(".node-group")
+        ) {
+          return false;
+        }
+        // Default D3 filter: Ignore secondary buttons and ctrl-click
+        return !event.ctrlKey && !event.button;
+      })
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         const { transform } = event;
         d3.select(g).attr("transform", transform.toString());

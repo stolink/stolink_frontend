@@ -20,6 +20,7 @@ interface UseForceSimulationReturn {
   nodes: CharacterNode[];
   links: RelationshipLink[];
   reheat: () => void;
+  simulation: d3.Simulation<CharacterNode, RelationshipLink> | null;
 }
 
 /**
@@ -29,7 +30,7 @@ interface UseForceSimulationReturn {
 export function useForceSimulation(
   initialNodes: CharacterNode[],
   initialLinks: RelationshipLink[],
-  options: UseForceSimulationOptions,
+  options: UseForceSimulationOptions
 ): UseForceSimulationReturn {
   const { width, height } = options;
 
@@ -79,7 +80,7 @@ export function useForceSimulation(
           .forceLink<CharacterNode, RelationshipLink>(linksCopy)
           .id((d) => d.id)
           .distance(FORCE_CONFIG.linkDistance)
-          .strength(FORCE_CONFIG.linkStrength),
+          .strength(FORCE_CONFIG.linkStrength)
       )
       // 반발력 - 거리 제한 추가
       .force(
@@ -88,14 +89,14 @@ export function useForceSimulation(
           .forceManyBody<CharacterNode>()
           .strength(FORCE_CONFIG.charge)
           .distanceMin(FORCE_CONFIG.chargeDistanceMin)
-          .distanceMax(FORCE_CONFIG.chargeDistanceMax),
+          .distanceMax(FORCE_CONFIG.chargeDistanceMax)
       )
       // 부드러운 센터링
       .force(
         "center",
         d3
           .forceCenter(width / 2, height / 2)
-          .strength(FORCE_CONFIG.centerStrength),
+          .strength(FORCE_CONFIG.centerStrength)
       )
       // X축 포지셔닝 (부드러운 분산)
       .force("x", d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength))
@@ -107,7 +108,7 @@ export function useForceSimulation(
         d3
           .forceCollide<CharacterNode>()
           .radius((d) => getNodeRadius(d) + FORCE_CONFIG.collisionPadding)
-          .strength(FORCE_CONFIG.collisionStrength),
+          .strength(FORCE_CONFIG.collisionStrength)
       )
       // 느린 수렴 = 더 오래 부드럽게 움직임
       .alphaDecay(FORCE_CONFIG.alphaDecay)
@@ -115,14 +116,15 @@ export function useForceSimulation(
       // 낮은 마찰 = 더 유동적인 움직임
       .velocityDecay(FORCE_CONFIG.velocityDecay);
 
-    // tick 이벤트 - 외부 store 업데이트 및 구독자 알림
-    simulation.on("tick", () => {
-      store.state = {
-        nodes: [...nodesCopy],
-        links: [...linksCopy],
-      };
-      store.listeners.forEach((listener) => listener());
-    });
+    // [Pre-warming] 초기 렌더링 시 노드들이 뭉쳐있지 않도록 시뮬레이션을 미리 돌림
+    simulation.tick(300);
+
+    // Initial State Sync
+    store.state = {
+      nodes: [...nodesCopy],
+      links: [...linksCopy],
+    };
+    store.listeners.forEach((listener) => listener());
 
     store.simulation = simulation;
 
@@ -139,21 +141,21 @@ export function useForceSimulation(
         "center",
         d3
           .forceCenter(width / 2, height / 2)
-          .strength(FORCE_CONFIG.centerStrength),
+          .strength(FORCE_CONFIG.centerStrength)
       );
       store.simulation.force(
         "x",
-        d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength),
+        d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength)
       );
       store.simulation.force(
         "y",
-        d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength),
+        d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength)
       );
       store.simulation.alpha(0.3).restart();
     }
   }, [width, height]);
 
-  // useSyncExternalStore로 상태 동기화
+  // useSyncExternalStore로 상태 동기화 (구조적 변경만 반영)
   const subscribe = useCallback((onStoreChange: () => void) => {
     const store = storeRef.current;
     store.listeners.add(onStoreChange);
@@ -180,5 +182,6 @@ export function useForceSimulation(
     nodes: state.nodes,
     links: state.links,
     reheat,
+    simulation: storeRef.current.simulation, // Expose simulation
   };
 }

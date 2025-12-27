@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useMemo } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
 
@@ -12,8 +12,7 @@ interface UseDragOptions {
  * D3 Drag 동작을 제공하는 훅
  */
 export function useDrag(options: UseDragOptions) {
-  const { onDragStart, onDragEnd, reheat: _reheat } = options;
-  void _reheat; // 향후 드래그 시 시뮬레이션 재가열에 사용 예정
+  const { onDragStart, onDragEnd, reheat } = options;
 
   // 드래그 중인 노드를 추적
   const isDraggingRef = useRef(false);
@@ -22,33 +21,36 @@ export function useDrag(options: UseDragOptions) {
   const handleDragStart = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      d: CharacterNode
     ) => {
+      // Wake up simulation ("Mongle-Mongle" effect)
+      reheat();
+
       isDraggingRef.current = true;
       d.fx = d.x;
       d.fy = d.y;
       onDragStart?.(d);
     },
-    [onDragStart],
+    [onDragStart, reheat]
   );
 
   // 드래그 중
   const handleDrag = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      d: CharacterNode
     ) => {
       d.fx = event.x;
       d.fy = event.y;
     },
-    [],
+    []
   );
 
   // 드래그 종료
   const handleDragEnd = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      d: CharacterNode
     ) => {
       isDraggingRef.current = false;
       // 드래그 종료 후 위치 해제 (자유 이동)
@@ -56,11 +58,11 @@ export function useDrag(options: UseDragOptions) {
       d.fy = null;
       onDragEnd?.(d);
     },
-    [onDragEnd],
+    [onDragEnd]
   );
 
   // D3 drag behavior 생성
-  const createDragBehavior = useCallback(() => {
+  const dragBehavior = useMemo(() => {
     return d3
       .drag<SVGGElement, CharacterNode>()
       .on("start", handleDragStart)
@@ -69,6 +71,6 @@ export function useDrag(options: UseDragOptions) {
   }, [handleDragStart, handleDrag, handleDragEnd]);
 
   return {
-    createDragBehavior,
+    dragBehavior,
   };
 }
