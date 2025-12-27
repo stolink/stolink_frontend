@@ -374,18 +374,54 @@ export function useDocumentMutations(projectId: string) {
 
   const deleteDocument = useCallback(
     async (id: string) => {
+      // 1. Snapshot for rollback (Zustand & React Query)
+      const { documents, _delete, _create } = useDocumentStore.getState();
+      const deletedDoc = documents[id];
+      const previousQueryData = queryClient.getQueryData<Document[]>([
+        "documents",
+        projectId,
+      ]);
+
+      // 2. Optimistic Update
+      // 2.1. Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["documents", projectId] });
+
+      // 2.2. Update React Query Cache (Server State)
+      if (previousQueryData) {
+        queryClient.setQueryData<Document[]>(["documents", projectId], (old) =>
+          old ? old.filter((doc) => doc.id !== id) : [],
+        );
+      }
+
+      // 2.3. Update Zustand Store (Client State)
+      _delete(id);
+
       try {
+        // 3. Sync with Backend
         const response = await documentService.delete(id);
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
-        if (isSuccess) {
-          _delete(id);
+
+        if (!isSuccess) {
+          throw new Error("Failed to delete document");
         }
       } catch (error) {
         console.error("Failed to delete document:", error);
+        // 4. Rollback on failure
+        // 4.1. Rollback React Query Cache
+        if (previousQueryData) {
+          queryClient.setQueryData(["documents", projectId], previousQueryData);
+        }
+        // 4.2. Rollback Zustand Store
+        if (deletedDoc) {
+          _create(deletedDoc);
+        }
+      } finally {
+        // 5. Always refetch to ensure data consistency
+        queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
       }
     },
-    [_delete],
+    [projectId, queryClient, _delete, _create],
   );
 
   const reorderDocuments = useCallback(
