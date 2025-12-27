@@ -2,8 +2,8 @@
 
 > 이 문서는 AI 모델이 프로젝트 컨텍스트를 이해하고, 코드 품질을 일관되게 유지하기 위한 **프로젝트 헌법(Constitution)**입니다.
 
-**버전:** 2.1
-**최종 수정:** 2025년 12월 26일
+**버전:** 2.3
+**최종 수정:** 2025년 12월 27일
 **문서 상태:** 활성
 
 ---
@@ -19,6 +19,49 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 <!-- 2025.12.26 기준 실제 버전 --> - Framework: React 19.2, TypeScript 5.9, Vite 7.2 - State: Zustand 5.0 (전역), TanStack Query 5.90 (서버), React Hook Form 7.69 (폼) - UI: Tailwind CSS 3.4, shadcn/ui, Radix UI - Editor: Tiptap 3.14 (ProseMirror 기반) - Graph: React Flow 11.11 (캐릭터 관계도) - DnD: dnd-kit 6.3 (챕터 트리) - Validation: Zod 4.2 - Export: docx, jspdf, epub-gen-memory - Util: immer 11.1, lodash-es, date-fns - Backend: Spring Boot, PostgreSQL, Neo4j
 
 </tech_stack>
+
+<design_system>
+
+<!-- 인지 피로도 최소화 및 공학적 대비를 반영한 컬러 시스템 -->
+
+## Primary Palette
+
+| 이름      | HEX     | 용도                             | 대비비 (WCAG) |
+| --------- | ------- | -------------------------------- | ------------- |
+| Sage 500  | #5F7D5F | Primary 브랜드 색상 (버튼, 링크) | 4.5:1 (AA)    |
+| Sage 400  | #82A182 | Hover 상태 (형광 제거)           | -             |
+| Sage 700  | #3E523E | Dark 상태 (깊이감)               | 7:1 (AAA)     |
+| Stone 50  | #F8F8F7 | 배경 (Off-white, 눈 피로 감소)   | -             |
+| Stone 800 | #2D2A28 | 본문 텍스트 (잉크 번짐 방지)     | 13.5:1 (AAA)  |
+| Paper     | #F8F8F7 | 종이 질감 배경                   | -             |
+| Ink       | #2D2A28 | 텍스트 (가독성 최적화)           | 13.5:1 (AAA)  |
+
+## Relationship Colors (서사적 깊이)
+
+| 관계 유형 | HEX     | 설명                | 설계 전략               |
+| --------- | ------- | ------------------- | ----------------------- |
+| friendly  | #4B9F7D | 친밀 (Emerald 계열) | 신뢰감, 차분한 녹색     |
+| hostile   | #B14B4B | 적대 (Russet Red)   | 위기감, 톤 다운된 레드  |
+| romance   | #C4718A | 로맨스 (Muted Rose) | 성숙한 로맨스 상징      |
+| family    | #4A4E5A | 가족 (Deep Slate)   | 깊이 있는 네이비 그레이 |
+| neutral   | #8B929E | 중립 (Sharkskin)    | 명확한 존재감           |
+
+## Status Colors (즉각 피드백)
+
+| 상태    | HEX     | 가시성 기준                       |
+| ------- | ------- | --------------------------------- |
+| success | #45A049 | Sage 50 배경에서 3:1 이상 대비    |
+| warning | #D9A406 | 흰색 텍스트와 함께 사용 시 가독성 |
+| error   | #D32F2F | 표준 공학용 레드 (잔상 최소화)    |
+
+## 설계 원칙
+
+- **인지 부하 최소화**: 형광톤 제거, Munsell 중채도 영역 사용
+- **공학적 대비**: WCAG AAA (7:1) 이상 본문 텍스트
+- **장시간 집중**: 종이 질감(Paper) 배경으로 눈의 피로 감소
+- **서사적 일관성**: Pantone 기반 감정 색조로 스토리텔링 지원
+
+</design_system>
 
 <core_entities>
 
@@ -454,3 +497,4 @@ src/
 | 2.0  | 2025.12.26 | XML 태그 구조화, MUST/MUST NOT 규칙 강화                                                                                                    |
 | 2.1  | 2025.12.26 | 실제 버전 반영 (React 19, TS 5.9, Vite 7.2), TanStack Query 규칙 추가, 파일 구조 업데이트 (12 hooks, 8 stores, 12 services), 리뷰 기준 보강 |
 | 2.2  | 2025.12.27 | 도메인 용어집, 트러블슈팅 참조, API Quick Reference 추가                                                                                    |
+| 2.3  | 2025.12.27 | 디자인 시스템 섹션 추가 (인지 피로도 최소화 컬러 팔레트, WCAG AAA 준수, 관계/상태 색상 정의)                                                |

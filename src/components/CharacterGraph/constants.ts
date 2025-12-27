@@ -4,11 +4,11 @@ import type { RelationType, CharacterRole } from "@/types";
 // 🎨 색상 설정
 // =====================================================
 
-// 관계 타입별 색상
+// 관계 타입별 색상 (서사적 깊이, 형광 톤 제거)
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friend: "#22c55e", // 초록
-  lover: "#ec4899", // 핑크
-  enemy: "#ef4444", // 빨강
+  friend: "#4B9F7D", // Emerald - 신뢰감, 차분한 녹색
+  lover: "#C4718A", // Muted Rose - 성숙한 로맨스
+  enemy: "#B14B4B", // Russet Red - 위기감, 톤 다운된 레드
 };
 
 // 관계 타입별 라벨 (한글)
@@ -28,14 +28,14 @@ export const ROLE_LABELS: Record<CharacterRole, string> = {
   other: "기타",
 };
 
-// 역할별 색상 (노드 테두리)
+// 역할별 색상 (노드 테두리 - 형광 톤 제거, 시각적 조화)
 export const ROLE_COLORS: Record<CharacterRole, string> = {
-  protagonist: "#3b82f6", // 파랑
-  antagonist: "#ef4444", // 빨강
-  supporting: "#64748b", // 슬레이트
-  mentor: "#8b5cf6", // 보라
-  sidekick: "#22c55e", // 초록
-  other: "#94a3b8", // 회색
+  protagonist: "#5F7D5F", // Sage Primary - 브랜드 일관성
+  antagonist: "#B14B4B", // Russet Red - 차분한 위기감
+  supporting: "#64748b", // Slate - 중립적 조연
+  mentor: "#7C6BA8", // Muted Purple - 지혜로운 차분함
+  sidekick: "#4B9F7D", // Emerald - 신뢰감 있는 조력자
+  other: "#8B929E", // Sharkskin - 명확한 중립
 };
 
 // =====================================================

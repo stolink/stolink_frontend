@@ -166,10 +166,11 @@ export function CharacterGraph({
         ref={svgRef}
         width={width}
         height={height}
-        className="bg-white cursor-grab active:cursor-grabbing"
+        className="cursor-grab active:cursor-grabbing"
         style={{
+          backgroundColor: "#F8F8F7",
           backgroundImage:
-            "linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)",
+            "linear-gradient(to right, rgba(215, 211, 209, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(215, 211, 209, 0.15) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }}
       >
@@ -197,12 +198,18 @@ export function CharacterGraph({
             const sourceIdStr = getId(link.source);
             const targetIdStr = getId(link.target);
 
-            // Strict Star Topology Check
-            const isDirectlyConnected = focusIdStr
-              ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
-              : false;
+            // Check if link matches the current relation type filter
+            const relTypeMatch =
+              relationTypeFilter === "all" || link.type === relationTypeFilter;
+
+            // Strict Star Topology Check + Filter Match
+            const isDirectlyConnected =
+              focusIdStr && relTypeMatch
+                ? sourceIdStr === focusIdStr || targetIdStr === focusIdStr
+                : false;
 
             // If a node is SELECTED (not just hovered), we strictly HIDE unconnected links
+            // Unconnected links OR links that don't match the current filter
             if (selectedNodeId && !isDirectlyConnected) {
               return null;
             }

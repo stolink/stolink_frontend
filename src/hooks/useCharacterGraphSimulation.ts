@@ -1,4 +1,10 @@
-import { useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useSyncExternalStore,
+  useState,
+} from "react";
 import * as d3 from "d3";
 import type { CharacterNode, RelationshipLink } from "@/types";
 import {

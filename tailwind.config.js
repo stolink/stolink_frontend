@@ -5,21 +5,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // StoLink Design System - Sage Green
+        // StoLink Design System - Sage Green (Optimized for Low Visual Fatigue)
         sage: {
           50: "#F4F7F4",
           100: "#E8EFE8",
           200: "#C5D8C5",
           300: "#A2C1A2",
-          400: "#8BA888",
-          500: "#6B8E6B", // Primary
+          400: "#82A182", // Light - reduced fluorescence
+          500: "#5F7D5F", // Primary - optimized contrast
           600: "#5A7A5A",
-          700: "#4A6B4A", // Dark
+          700: "#3E523E", // Dark - enhanced readability
           800: "#3A5A3A",
           900: "#2A4A2A",
         },
         stone: {
-          50: "#FAFAF9",
+          50: "#F8F8F7", // Off-white with reduced eye strain
           100: "#F5F5F4",
           200: "#E7E5E4",
           300: "#D6D3D1",
@@ -27,23 +27,25 @@ export default {
           500: "#78716C",
           600: "#57534E",
           700: "#44403C",
-          800: "#292524",
+          800: "#2D2A28", // Body text - ink bleed prevention
           900: "#1C1917",
         },
         // Premium/Crafted colors
-        paper: "#FAFAF9", // Warm off-white
-        ink: "#1A1A1A", // Soft charcoal black
-        // Relationship colors
+        paper: "#F8F8F7", // Warm off-white
+        ink: "#2D2A28", // Soft charcoal black (higher readability)
+        // Relationship colors (Narrative-focused palette)
         relation: {
-          friendly: "#6B8E6B",
-          hostile: "#DC7C7C",
-          neutral: "#9CA3AF",
+          friendly: "#4B9F7D", // Emerald - trust and calmness
+          hostile: "#B14B4B", // Russet Red - tension without aggression
+          romance: "#C4718A", // Muted Rose - mature romance
+          family: "#4A4E5A", // Deep Slate - depth and stability
+          neutral: "#8B929E", // Sharkskin - clear presence
         },
-        // Status colors
+        // Status colors (Engineering-grade visibility)
         status: {
-          success: "#22C55E",
-          warning: "#EAB308",
-          error: "#EF4444",
+          success: "#45A049", // 3:1+ contrast on Sage 50
+          warning: "#D9A406", // Legible with white text
+          error: "#D32F2F", // Standard engineering red
         },
       },
       fontFamily: {
