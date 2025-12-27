@@ -12,7 +12,8 @@ interface UseDragOptions {
  * D3 Drag 동작을 제공하는 훅
  */
 export function useDrag(options: UseDragOptions) {
-  const { onDragStart, onDragEnd, reheat } = options;
+  const { onDragStart, onDragEnd, reheat: _reheat } = options;
+  void _reheat; // 향후 드래그 시 시뮬레이션 재가열에 사용 예정
 
   // 드래그 중인 노드를 추적
   const isDraggingRef = useRef(false);
@@ -23,15 +24,12 @@ export function useDrag(options: UseDragOptions) {
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
       d: CharacterNode,
     ) => {
-      if (!event.active) {
-        reheat();
-      }
       isDraggingRef.current = true;
       d.fx = d.x;
       d.fy = d.y;
       onDragStart?.(d);
     },
-    [reheat, onDragStart],
+    [onDragStart],
   );
 
   // 드래그 중

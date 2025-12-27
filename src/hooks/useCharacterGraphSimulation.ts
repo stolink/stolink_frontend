@@ -172,7 +172,7 @@ export function useForceSimulation(
   const reheat = useCallback(() => {
     const store = storeRef.current;
     if (store.simulation) {
-      store.simulation.alpha(0.8).restart();
+      store.simulation.alpha(0.3).restart(); // 더 부드러운 재시작
     }
   }, []);
 

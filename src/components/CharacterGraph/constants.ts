@@ -70,9 +70,9 @@ export const FORCE_CONFIG = {
   collisionPadding: 20,
   collisionStrength: 0.7,
 
-  // 수렴 (느리고 부드럽게)
-  alphaDecay: 0.01, // 느린 수렴 = 더 오래 움직임
-  alphaMin: 0.001,
+  // 수렴 (빠른 안정화)
+  alphaDecay: 0.02, // 빠른 수렴 = 안정화 빨라짐 (기본값: 0.0228)
+  alphaMin: 0.005, // 더 높은 최소값 = 조기 정지
   velocityDecay: 0.3, // 낮은 마찰 = 더 유동적
 } as const;
 
