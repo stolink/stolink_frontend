@@ -13,8 +13,7 @@ interface EditorLeftSidebarProps {
   ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
-  onDuplicateChapter?: (id: string) => void;
-  onConvertType?: (id: string, type: "chapter" | "section") => void;
+  onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -26,8 +25,7 @@ export default function EditorLeftSidebar({
   onAddChapter,
   onRenameChapter,
   onDeleteChapter,
-  onDuplicateChapter,
-  onConvertType,
+  onReorderChapter,
   isOpen,
   onToggle,
 }: EditorLeftSidebarProps) {
@@ -72,8 +70,7 @@ export default function EditorLeftSidebar({
           onAddChapter={onAddChapter}
           onRenameChapter={onRenameChapter}
           onDeleteChapter={onDeleteChapter}
-          onDuplicateChapter={onDuplicateChapter}
-          onConvertType={onConvertType}
+          onReorderChapter={onReorderChapter}
         />
       </div>
     </aside>

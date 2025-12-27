@@ -1,4 +1,27 @@
-import { ChevronRight, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
+import { useMemo } from "react";
+import {
+  ChevronRight,
+  ChevronDown,
+  MoreHorizontal,
+  Plus,
+  GripVertical,
+} from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
 import { NodeIcon } from "./NodeIcon";
 import { ContextMenu } from "./ContextMenu";
@@ -16,9 +39,8 @@ interface TreeItemProps {
   onSelect?: (id: string) => void;
   onRename?: (id: string, newTitle: string) => void;
   onDelete?: (id: string) => void;
-  onDuplicate?: (id: string) => void;
-  onConvertType?: (id: string, type: "chapter" | "section") => void;
   onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
+  onReorder?: (parentId: string | null, orderedIds: string[]) => void;
 }
 
 export function TreeItem({
@@ -31,12 +53,63 @@ export function TreeItem({
   onAddChild,
   onRename,
   onDelete,
-  onDuplicate,
-  onConvertType,
+  onReorder,
 }: TreeItemProps) {
   const hasChildren = (node.children?.length || 0) > 0;
   const isPart = node.type === "part";
   const isSelected = node.id === selectedId;
+
+  // Sortable hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? undefined : transition,
+  };
+
+  // DnD Sensors for children
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // Child IDs for nested SortableContext
+  const childIds = useMemo(
+    () => node.children?.map((c) => c.id) || [],
+    [node.children],
+  );
+
+  // Handle child reorder
+  const handleChildDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && node.children) {
+      const oldIndex = node.children.findIndex((c) => c.id === active.id);
+      const newIndex = node.children.findIndex((c) => c.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = [...node.children];
+        const [removed] = newOrder.splice(oldIndex, 1);
+        newOrder.splice(newIndex, 0, removed);
+
+        const orderedIds = newOrder.map((c) => c.id);
+        onReorder?.(node.id, orderedIds); // node.id = parent
+      }
+    }
+  };
 
   // 1. 기본 상태 및 동작 훅
   const {
@@ -73,14 +146,17 @@ export function TreeItem({
     node,
     hasChildren,
     onAddChild,
-    onDuplicate,
-    onConvertType,
     onDelete,
     setIsRenaming,
   });
 
   return (
-    <div className="relative">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("relative", isDragging && "opacity-50 z-50")}
+      data-tree-item
+    >
       {/* 트리 연결선 컴포넌트 */}
       <TreeLines level={level} isLast={isLast} parentLines={parentLines} />
 
@@ -91,6 +167,7 @@ export function TreeItem({
           "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-colors duration-100",
           "hover:bg-stone-50",
           isSelected && "bg-sage-50",
+          isDragging && "shadow-lg ring-2 ring-sage-400 bg-white",
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -98,7 +175,17 @@ export function TreeItem({
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        {...attributes}
       >
+        {/* Drag Handle */}
+        <div
+          {...listeners}
+          className="p-0.5 cursor-grab active:cursor-grabbing hover:bg-stone-200 rounded transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="h-3.5 w-3.5 text-stone-400" />
+        </div>
+
         {/* Selection indicator */}
         {isSelected && (
           <div className="absolute left-0 top-1 bottom-1 w-[3px] bg-sage-500 rounded-r" />
@@ -201,26 +288,36 @@ export function TreeItem({
         />
       )}
 
-      {/* Children */}
+      {/* Children with nested DndContext */}
       {hasChildren && isExpanded && (
-        <div>
-          {node.children?.map((child, idx) => (
-            <TreeItem
-              key={child.id}
-              node={child}
-              level={level + 1}
-              selectedId={selectedId}
-              isLast={idx === (node.children?.length || 0) - 1}
-              parentLines={[...parentLines, !isLast]}
-              onSelect={onSelect}
-              onAddChild={onAddChild}
-              onRename={onRename}
-              onDelete={onDelete}
-              onDuplicate={onDuplicate}
-              onConvertType={onConvertType}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleChildDragEnd}
+        >
+          <SortableContext
+            items={childIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <div>
+              {node.children?.map((child, idx) => (
+                <TreeItem
+                  key={child.id}
+                  node={child}
+                  level={level + 1}
+                  selectedId={selectedId}
+                  isLast={idx === (node.children?.length || 0) - 1}
+                  parentLines={[...parentLines, !isLast]}
+                  onSelect={onSelect}
+                  onAddChild={onAddChild}
+                  onRename={onRename}
+                  onDelete={onDelete}
+                  onReorder={onReorder}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
