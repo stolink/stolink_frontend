@@ -64,8 +64,10 @@ if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
   git checkout "$BRANCH_NAME" >/dev/null 2>&1
 echo "✅ $BRANCH_NAME (기존)"
 else
-  git checkout -b "$BRANCH_NAME" >/dev/null 2>&1
-echo "✅ $BRANCH_NAME (신규)"
+  # 항상 최신 dev에서 분기하여 불필요한 커밋 포함 방지
+  git fetch origin dev >/dev/null 2>&1
+  git checkout -b "$BRANCH_NAME" origin/dev >/dev/null 2>&1
+echo "✅ $BRANCH_NAME (신규, from dev)"
 fi
 echo "📝 $TITLE"
 
