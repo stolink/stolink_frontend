@@ -26,6 +26,7 @@ export interface Character {
 
   // === 주요 선택 필드 (UI에서 별도 표시) ===
   role?: CharacterRole;
+  faction?: string | null; // 소속/세력 (그룹화 기준)
   imageUrl?: string;
 
   // === 관계 정보 (백엔드에서 항상 포함) ===

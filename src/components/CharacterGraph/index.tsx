@@ -39,6 +39,7 @@ export function CharacterGraph({
   const gRef = useRef<SVGGElement>(null);
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [enableGrouping, setEnableGrouping] = useState(false);
 
   // 컨테이너 크기 감지
   const { width, height } = useResize(containerRef);
@@ -50,6 +51,11 @@ export function CharacterGraph({
         id: char.id,
         name: char.name,
         role: char.role,
+        group:
+          char.faction ||
+          (typeof char.extras?.faction === "string"
+            ? char.extras.faction
+            : "무소속"), // 소속이 없는 경우 '무소속'으로 그룹화
         imageUrl: char.imageUrl,
       })),
     [characters],
@@ -59,7 +65,7 @@ export function CharacterGraph({
   const { nodes, links, reheat, simulation } = useForceSimulation(
     initialNodes,
     initialLinks,
-    { width, height },
+    { width, height, enableGrouping },
   );
 
   // Imperative Animation Loop (D3 Tick)
@@ -252,6 +258,23 @@ export function CharacterGraph({
       {/* 줌 레벨 표시 (디버그용, 필요시 제거) */}
       <div className="absolute bottom-4 right-4 text-xs text-muted-foreground bg-white/80 px-2 py-1 rounded">
         {Math.round(zoomState.scale * 100)}%
+      </div>
+
+      {/* Grouping Toggle */}
+      <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="grouping-toggle"
+          checked={enableGrouping}
+          onChange={(e) => setEnableGrouping(e.target.checked)}
+          className="cursor-pointer"
+        />
+        <label
+          htmlFor="grouping-toggle"
+          className="cursor-pointer font-medium select-none"
+        >
+          Group by Faction
+        </label>
       </div>
     </div>
   );

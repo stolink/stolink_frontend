@@ -13,6 +13,7 @@ export interface CharacterNode extends d3.SimulationNodeDatum {
   id: string;
   name: string;
   role?: CharacterRole;
+  group?: string;
   imageUrl?: string;
   // D3 런타임 필드 (시뮬레이션이 자동 추가)
   x?: number;
