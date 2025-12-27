@@ -394,6 +394,23 @@ export function CharacterGraph({
           그룹 보기
         </label>
       </div>
+
+      {/* Grouping Toggle */}
+      <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="grouping-toggle"
+          checked={enableGrouping}
+          onChange={(e) => setEnableGrouping(e.target.checked)}
+          className="cursor-pointer"
+        />
+        <label
+          htmlFor="grouping-toggle"
+          className="cursor-pointer font-medium select-none"
+        >
+          Group by Faction
+        </label>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,6 +38,11 @@ type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
+  const [searchParams] = useSearchParams();
+  // URL 쿼리 파라미터로 기본 탭 설정 (예: /auth?tab=register)
+  const defaultTab =
+    searchParams.get("tab") === "register" ? "register" : "login";
+
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string>("");
 
@@ -75,7 +80,7 @@ export default function AuthPage() {
             )?.response?.data?.error?.message || "로그인에 실패했습니다";
           setApiError(errorMsg);
         },
-      }
+      },
     );
   };
 
@@ -97,7 +102,7 @@ export default function AuthPage() {
             )?.response?.data?.error?.message || "회원가입에 실패했습니다";
           setApiError(errorMsg);
         },
-      }
+      },
     );
   };
 
@@ -114,7 +119,7 @@ export default function AuthPage() {
         </Link>
 
         <Card>
-          <Tabs defaultValue="login">
+          <Tabs defaultValue={defaultTab} onValueChange={() => setApiError("")}>
             <CardHeader>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">로그인</TabsTrigger>

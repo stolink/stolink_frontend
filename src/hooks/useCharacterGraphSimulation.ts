@@ -17,6 +17,10 @@ interface UseForceSimulationOptions {
   height: number;
 }
 
+interface UseForceSimulationOptionsWithGrouping extends UseForceSimulationOptions {
+  enableGrouping?: boolean;
+}
+
 interface SimulationState {
   nodes: CharacterNode[];
   links: RelationshipLink[];
@@ -36,7 +40,7 @@ interface UseForceSimulationReturn {
 export function useForceSimulation(
   initialNodes: CharacterNode[],
   initialLinks: RelationshipLink[],
-  options: UseForceSimulationOptions & { enableGrouping?: boolean }
+  options: UseForceSimulationOptionsWithGrouping
 ): UseForceSimulationReturn {
   const { width, height, enableGrouping = false } = options;
 
