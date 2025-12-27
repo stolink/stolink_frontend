@@ -166,10 +166,11 @@ export function CharacterGraph({
         ref={svgRef}
         width={width}
         height={height}
-        className="bg-white cursor-grab active:cursor-grabbing"
+        className="cursor-grab active:cursor-grabbing"
         style={{
+          backgroundColor: "#F8F8F7",
           backgroundImage:
-            "linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)",
+            "linear-gradient(to right, rgba(215, 211, 209, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(215, 211, 209, 0.15) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }}
       >

@@ -74,10 +74,10 @@ export const LinkRenderer = memo(function LinkRenderer({
           x2={target.x}
           y2={target.y}
           stroke={color}
-          strokeWidth={strokeWidth + 4}
-          strokeOpacity={0.2}
+          strokeWidth={strokeWidth + 3}
+          strokeOpacity={0.12}
           strokeLinecap="round"
-          style={{ filter: "blur(3px)" }}
+          style={{ filter: "blur(2px)" }}
         />
       )}
 

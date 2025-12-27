@@ -9,35 +9,35 @@
 /* CSS Variables for Design System */
 @layer base {
   :root {
-    /* Paper: #FAFAF9 (hsl(60 9% 98%)) */
-    /* Ink: #1A1A1A (hsl(0 0% 10%)) */
-    --background: 60 9% 98%;
-    --foreground: 0 0% 10%;
+    /* Paper: #F8F8F7 (hsl(40 7% 97%)) */
+    /* Ink: #2D2A28 (hsl(20 6% 17%)) */
+    --background: 40 7% 97%;
+    --foreground: 20 6% 17%;
 
-    --card: 60 9% 98%;
-    --card-foreground: 0 0% 10%;
+    --card: 40 7% 97%;
+    --card-foreground: 20 6% 17%;
 
-    --popover: 60 9% 98%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 40 7% 97%;
+    --popover-foreground: 20 6% 17%;
 
-    --primary: 115 16% 49%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 120 14% 43%;
+    --primary-foreground: 40 7% 97%;
 
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
+    --secondary: 40 4.8% 95.9%;
+    --secondary-foreground: 20 6% 17%;
 
-    --muted: 60 5% 96%;
+    --muted: 40 5% 96%;
     --muted-foreground: 25 5% 45%;
 
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
+    --accent: 40 4.8% 95.9%;
+    --accent-foreground: 20 6% 17%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62% 51%;
+    --destructive-foreground: 40 7% 97%;
 
     --border: 20 6% 90%;
     --input: 20 6% 90%;
-    --ring: 115 16% 49%;
+    --ring: 120 14% 43%;
     --radius: 0.5rem;
   }
 

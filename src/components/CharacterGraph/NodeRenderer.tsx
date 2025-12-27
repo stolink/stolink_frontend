@@ -83,11 +83,11 @@ export const NodeRenderer = memo(function NodeRenderer({
       {/* 글로우 효과 (선택/하이라이트 시) */}
       {(isSelected || isHighlighted) && (
         <circle
-          r={radius + 12}
-          fill={isSelected ? "#3b82f6" : roleColor}
-          opacity={0.2}
+          r={radius + 10}
+          fill={isSelected ? "#5F7D5F" : roleColor}
+          opacity={0.15}
           style={{
-            filter: "blur(8px)",
+            filter: "blur(6px)",
           }}
         />
       )}
@@ -109,32 +109,33 @@ export const NodeRenderer = memo(function NodeRenderer({
       {/* 외부 링 (선택 표시) */}
       {isSelected && (
         <circle
-          r={radius + 6}
+          r={radius + 5}
           fill="none"
-          stroke="#3b82f6"
-          strokeWidth={3}
-          opacity={0.9}
+          stroke="#5F7D5F"
+          strokeWidth={2.5}
+          opacity={0.8}
         />
       )}
 
-      {/* 그림자 (깊이감) */}
+      {/* 그림자 (깊이감 - 부드러운 종이 효과) */}
       <circle
         r={radius}
-        fill="rgba(0,0,0,0.1)"
-        transform="translate(2, 2)"
-        style={{ filter: "blur(3px)" }}
+        fill="rgba(0,0,0,0.04)"
+        transform="translate(1, 2)"
+        style={{ filter: "blur(2px)" }}
       />
 
-      {/* 메인 원 - 그라디언트 효과 */}
+      {/* 메인 원 - 그라디언트 효과 (자연스러운 종이 질감) */}
       <defs>
         <radialGradient
           id={`node-gradient-${node.id}`}
-          cx="30%"
-          cy="30%"
-          r="70%"
+          cx="35%"
+          cy="35%"
+          r="65%"
         >
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-          <stop offset="100%" stopColor="#f1f5f9" stopOpacity="1" />
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.98" />
+          <stop offset="50%" stopColor="#F8F8F7" stopOpacity="1" />
+          <stop offset="100%" stopColor="#E7E5E4" stopOpacity="1" />
         </radialGradient>
       </defs>
       <circle
@@ -195,11 +196,11 @@ export const NodeRenderer = memo(function NodeRenderer({
           width={node.name.length * 8 + 20}
           height={22}
           rx={11}
-          fill={isSelected ? "#1f2937" : "rgba(255,255,255,0.95)"}
-          stroke={isSelected ? "none" : "rgba(0,0,0,0.06)"}
+          fill={isSelected ? "#5F7D5F" : "rgba(248,248,247,0.98)"}
+          stroke={isSelected ? "none" : "rgba(0,0,0,0.05)"}
           strokeWidth={1}
           style={{
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.08))",
+            filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.06))",
           }}
         />
         <text
@@ -207,7 +208,7 @@ export const NodeRenderer = memo(function NodeRenderer({
           dominantBaseline="central"
           fontSize={11}
           fontWeight={600}
-          fill={isSelected ? "#ffffff" : "#374151"}
+          fill={isSelected ? "#ffffff" : "#2D2A28"}
           style={{ userSelect: "none" }}
         >
           {node.name}
