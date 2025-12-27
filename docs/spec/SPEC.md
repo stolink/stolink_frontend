@@ -2,8 +2,8 @@
 
 > AI 기반 작가용 스토리 관리 플랫폼
 
-**버전:** 1.6
-**작성일:** 2025년 12월 26일
+**버전:** 1.7
+**작성일:** 2025년 12월 28일
 **상태:** 활성
 
 > 📐 프로젝트 구조 → [ARCHITECTURE.md](../architecture/ARCHITECTURE.md)
@@ -440,7 +440,7 @@ StoLink는 작가를 위한 AI 기반 스토리 관리 플랫폼입니다. 복�
 
 **기능:**
 
-- **그래프 시각화 (React Flow):**
+- **그래프 시각화 (D3.js Force Simulation):**
   - **Force-Directed 레이아웃:** 노드 간 반발력 적용, 황금 각도 스파이럴 배치
   - **옵시디언 스타일 디자인:** 얇고 투명한 간선, 직관적인 시각화
   - 확대/축소 (마우스 휠, 컨트롤 패널), 패닝 (드래그)
@@ -638,7 +638,7 @@ StoLink는 작가를 위한 AI 기반 스토리 관리 플랫폼입니다. 복�
 | Database   | PostgreSQL (RDS), Neo4j (Graph)                     |
 | Storage    | AWS S3                                              |
 | Hosting    | S3 + CloudFront (Frontend), EC2/ECS (Backend)       |
-| Libraries  | React Flow (Graph), Tiptap 3.14 (Editor)            |
+| Libraries  | D3.js 7.x (Graph), Tiptap 3.14 (Editor)             |
 
 ### 8.1 아키텍처
 
@@ -736,6 +736,7 @@ User → React (S3+CloudFront) → Spring API → PostgreSQL
 | 1.4  | 2024.12    | 문서 간 상호 참조 추가 (ARCHITECTURE, TECHSTACK, DATA_MODEL)                  |
 | 1.5  | 2024.12    | API_SPEC.md 통합 참조                                                         |
 | 1.6  | 2025.12.26 | 데모 에디터 경로, 뷰 모드, 기술 스택 버전 업데이트                            |
+| 1.7  | 2025.12.28 | React Flow → D3.js Force Simulation 전환 반영                                 |
 
 ---
 
