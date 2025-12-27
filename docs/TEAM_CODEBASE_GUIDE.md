@@ -370,13 +370,13 @@ graph TD
 
 ## 📚 관련 문서 참조
 
-| 문서                                                                    | 내용                |
-| ----------------------------------------------------------------------- | ------------------- |
-| [SPEC.md](file:///Users/dongha/jungle/sto-link/SPEC.md)                 | 전체 기능 명세      |
-| [API_SPEC.md](file:///Users/dongha/jungle/sto-link/API_SPEC.md)         | API 엔드포인트 상세 |
-| [ARCHITECTURE.md](file:///Users/dongha/jungle/sto-link/ARCHITECTURE.md) | 프로젝트 아키텍처   |
-| [DATA_MODEL.md](file:///Users/dongha/jungle/sto-link/DATA_MODEL.md)     | 데이터 모델 정의    |
-| [TECHSTACK.md](file:///Users/dongha/jungle/sto-link/TECHSTACK.md)       | 기술 스택 상세      |
+| 문서                                                                         | 내용                |
+| ---------------------------------------------------------------------------- | ------------------- |
+| [SPEC.md](file:///Users/dongha/jungle/sto-link/docs/SPEC.md)                 | 전체 기능 명세      |
+| [API_SPEC.md](file:///Users/dongha/jungle/sto-link/docs/API_SPEC.md)         | API 엔드포인트 상세 |
+| [ARCHITECTURE.md](file:///Users/dongha/jungle/sto-link/docs/ARCHITECTURE.md) | 프로젝트 아키텍처   |
+| [DATA_MODEL.md](file:///Users/dongha/jungle/sto-link/docs/DATA_MODEL.md)     | 데이터 모델 정의    |
+| [TECHSTACK.md](file:///Users/dongha/jungle/sto-link/docs/TECHSTACK.md)       | 기술 스택 상세      |
 
 ---
 

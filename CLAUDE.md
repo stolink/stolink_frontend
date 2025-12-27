@@ -153,7 +153,7 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 | `fix/*`     | 버그 수정 | ✅ 허용   | → dev            |
 | `hotfix/*`  | 긴급 수정 | ✅ 허용   | → main           |
 
-**상세 가이드**: [GIT_STRATEGY.md](GIT_STRATEGY.md)
+**상세 가이드**: [GIT_STRATEGY.md](docs/GIT_STRATEGY.md)
 </branch_strategy>
 
 ---
@@ -422,7 +422,7 @@ src/
 | AI            | -                                  | `/api/ai/chat`, `/consistency-check` | -                        | -                        |
 | Export        | `/api/exports/:jobId`              | `/api/projects/:id/export`           | -                        | -                        |
 
-> 📡 상세 명세: [API_SPEC.md](API_SPEC.md)
+> 📡 상세 명세: [API_SPEC.md](docs/API_SPEC.md)
 
 </api_quick_reference>
 

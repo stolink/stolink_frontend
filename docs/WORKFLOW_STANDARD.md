@@ -26,8 +26,8 @@
 ```mermaid
 graph LR
     A[Backlog/Idea] -->|Issue 등록| B(Ready)
-    B -->|/list-work| C(Select)
-    C -->|/start-work| D(In Progress)
+    B -->|/start-work| C(Select)
+    C -->|/start-work N| D(In Progress)
     D -->|Dev & Commit| D
     D -->|/smart-commit| E(In Review)
     E -->|Merge| F(Done)
@@ -57,23 +57,20 @@ graph LR
 
 > **목표:** `Ready` 작업을 선택하고, 브랜치 생성 및 담당자 할당, 상태 변경을 **자동화**합니다.
 
-1.  **목록 조회**:
-    ```bash
-    /list-work
-    ```
-2.  **작업 시작**: (위 목록에서 번호 확인 후)
+1.  **목록 조회 또는 작업 시작**:
 
     ```bash
-    /start-work <이슈번호>
+    /start-work          # 작업 가능한 이슈 목록 보기
+    /start-work <이슈번호>  # 바로 작업 시작
     ```
 
     - 예: `/start-work 3`
 
-3.  **자동 수행되는 일**:
+2.  **자동 수행되는 일**:
     - 브랜치 생성 (`feature/123-title`) 및 이동.
-    - 담당자(Assignees)에 **나(`@me`)** 할당.
-    - 프로젝트 상태 변경: `Ready` → **`In Progress`**.
-4.  작업 시작!
+    - 담당자(Assignees)에 **나(`@me`)** 할당 (백그라운드).
+    - 프로젝트 상태 변경: `Ready` → **`In Progress`** (백그라운드).
+3.  작업 시작!
 
 ### Phase 3. 구현 및 커밋 (Developer)
 
@@ -115,7 +112,7 @@ graph LR
 ## ❓ 자주 묻는 질문 (FAQ)
 
 **Q. 할당되지 않은 이슈도 가져올 수 있나요?**
-A. 네! `/list-work`는 `Ready` 상태인 모든 이슈를 보여주므로, 할당되지 않은 것을 선택하면 자동으로 본인을 할당하고 가져옵니다. (Pull 방식)
+A. 네! `/start-work`는 `Ready`, `Open` 상태인 모든 이슈를 보여주므로, 할당되지 않은 것을 선택하면 자동으로 본인을 할당하고 가져옵니다. (Pull 방식)
 
 **Q. 이슈 없이 작업을 시작해버렸다면?**
 A. `/smart-commit`을 할 때 브랜치 이름에 번호가 없으면 **자동으로 이슈를 생성**해주므로 걱정 마세요. (다만, Phase 1~2를 따르는 것이 관리에 더 좋습니다.)
