@@ -13,6 +13,10 @@ interface UseEditorHandlersOptions {
   setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
   saveContent: (content: string) => Promise<void>;
   updateDocument: (updates: Partial<Document>) => void;
+  updateDocumentMutation: (
+    id: string,
+    updates: Partial<Document>
+  ) => Promise<any>;
   createDocument: (data: {
     type: "folder" | "text";
     title: string;
@@ -35,6 +39,7 @@ export function useEditorHandlers({
   setViewMode,
   saveContent,
   updateDocument,
+  updateDocumentMutation,
   createDocument,
 }: UseEditorHandlersOptions) {
   // Refs for save management
@@ -209,10 +214,25 @@ export function useEditorHandlers({
   const handleRenameChapter = useCallback(
     async (id: string, newTitle: string) => {
       if (isDemo) return;
-      const { _update } = useDocumentStore.getState();
+
+      const { _update, documents: currentDocs } = useDocumentStore.getState();
+      const previousTitle = currentDocs[id]?.title;
+
+      // 1. Optimistic Update: Update local store immediately for instant UI feedback
       _update(id, { title: newTitle });
+
+      // 2. Sync with Backend
+      try {
+        await updateDocumentMutation(id, { title: newTitle });
+      } catch (error) {
+        console.error("Failed to rename chapter:", error);
+        // 3. Rollback on failure: Revert to previous title if API fails
+        if (previousTitle !== undefined) {
+          _update(id, { title: previousTitle });
+        }
+      }
     },
-    [isDemo]
+    [isDemo, updateDocumentMutation]
   );
 
   // Delete chapter
