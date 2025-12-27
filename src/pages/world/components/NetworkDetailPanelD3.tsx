@@ -1,30 +1,39 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Character } from "@/types";
-import type { Edge } from "reactflow";
+import type { Character, RelationshipLink } from "@/types";
 import {
-  type RelationType,
-  relationshipLabels,
-  relationshipColors,
-  roleLabels,
-} from "../constants";
+  RELATION_LABELS,
+  RELATION_COLORS,
+  ROLE_LABELS,
+} from "@/components/CharacterGraph/constants";
 
-interface NetworkDetailPanelProps {
+interface NetworkDetailPanelD3Props {
   selectedCharacter: Character | null;
   characters: Character[];
-  edges: Edge[];
+  links: RelationshipLink[];
   onClose: () => void;
   onViewProfile: () => void;
 }
 
-export function NetworkDetailPanel({
+export function NetworkDetailPanelD3({
   selectedCharacter,
   characters,
-  edges,
+  links,
   onClose,
   onViewProfile,
-}: NetworkDetailPanelProps) {
+}: NetworkDetailPanelD3Props) {
   if (!selectedCharacter) return null;
+
+  // 연결된 링크 찾기
+  const connectedLinks = links.filter((link) => {
+    const sourceId =
+      typeof link.source === "string" ? link.source : link.source.id;
+    const targetId =
+      typeof link.target === "string" ? link.target : link.target.id;
+    return (
+      sourceId === selectedCharacter.id || targetId === selectedCharacter.id
+    );
+  });
 
   return (
     <div className="absolute right-4 top-4 bottom-4 w-72 z-10 bg-white rounded-lg border shadow-lg overflow-hidden flex flex-col">
@@ -42,7 +51,7 @@ export function NetworkDetailPanel({
           <div>
             <h3 className="font-semibold">{selectedCharacter.name}</h3>
             <p className="text-sm text-muted-foreground">
-              {roleLabels[selectedCharacter.role || "other"]}
+              {ROLE_LABELS[selectedCharacter.role || "other"]}
             </p>
           </div>
         </div>
@@ -60,20 +69,14 @@ export function NetworkDetailPanel({
         <div className="flex justify-around text-center">
           <div>
             <div className="text-2xl font-bold text-stone-800">
-              {
-                edges.filter(
-                  (e) =>
-                    e.source === selectedCharacter.id ||
-                    e.target === selectedCharacter.id
-                ).length
-              }
+              {connectedLinks.length}
             </div>
             <div className="text-xs text-muted-foreground uppercase">
               Connections
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-stone-800">12</div>
+            <div className="text-2xl font-bold text-stone-800">-</div>
             <div className="text-xs text-muted-foreground uppercase">
               Scenes
             </div>
@@ -86,43 +89,41 @@ export function NetworkDetailPanel({
           <h4 className="font-medium text-sm">Direct Links</h4>
         </div>
         <ul className="space-y-2">
-          {edges
-            .filter(
-              (e) =>
-                e.source === selectedCharacter.id ||
-                e.target === selectedCharacter.id
-            )
-            .map((edge) => {
-              const otherId =
-                edge.source === selectedCharacter.id
-                  ? edge.target
-                  : edge.source;
-              const otherChar = characters.find((c) => c.id === otherId);
-              const relType = (edge.data?.type as RelationType) || "neutral";
-              return (
-                <li
-                  key={edge.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50"
-                >
-                  <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm">
-                    {otherChar?.role === "antagonist"
-                      ? "🦹"
-                      : otherChar?.role === "mentor"
-                        ? "🧙"
-                        : "👤"}
+          {connectedLinks.map((link) => {
+            const sourceId =
+              typeof link.source === "string" ? link.source : link.source.id;
+            const targetId =
+              typeof link.target === "string" ? link.target : link.target.id;
+            const otherId =
+              sourceId === selectedCharacter.id ? targetId : sourceId;
+            const otherChar = characters.find((c) => c.id === otherId);
+            const relType = link.type;
+
+            return (
+              <li
+                key={link.id}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50"
+              >
+                <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm">
+                  {otherChar?.role === "antagonist"
+                    ? "🦹"
+                    : otherChar?.role === "mentor"
+                      ? "🧙"
+                      : "👤"}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{otherChar?.name}</div>
+                  <div
+                    className="text-xs"
+                    style={{ color: RELATION_COLORS[relType] }}
+                  >
+                    • {RELATION_LABELS[relType]}
+                    {link.label && ` (${link.label})`}
                   </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{otherChar?.name}</div>
-                    <div
-                      className="text-xs"
-                      style={{ color: relationshipColors[relType] }}
-                    >
-                      • {relationshipLabels[relType]}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
 

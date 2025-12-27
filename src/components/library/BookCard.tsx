@@ -53,13 +53,8 @@ function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
     typeof status === "string" ? status.toUpperCase() : status;
   switch (upperStatus) {
     case "COMPLETE":
-    case "COMPLETED":
     case "Complete":
       return "Complete";
-    case "DRAFTING":
-    case "EDITING":
-    case "OUTLINE":
-    case "IDEA":
     case "Writing":
     default:
       return "Writing";
@@ -108,7 +103,7 @@ export function BookCard({
         // 편집 모드 스타일
         isEditMode && "border-sage-200 scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary"
+        isSelected && "ring-2 ring-primary border-primary",
       )}
       onClick={handleCardClick}
     >
@@ -127,7 +122,7 @@ export function BookCard({
               "border-2 shadow-sm transition-all duration-200",
               isSelected
                 ? "border-green-500 bg-green-500"
-                : "bg-white border-stone-400 hover:border-green-500"
+                : "bg-white border-stone-400 hover:border-green-500",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -143,7 +138,7 @@ export function BookCard({
             alt={title}
             className={cn(
               "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105"
+              !isEditMode && "group-hover:scale-105",
             )}
           />
         ) : (
@@ -236,7 +231,7 @@ export function BookCard({
                   "h-2 w-2 rounded-full",
                   normalizedStatus === "Complete"
                     ? "bg-green-500"
-                    : "bg-sage-500"
+                    : "bg-sage-500",
                 )}
               />
               <span className="text-xs font-semibold text-stone-600">
