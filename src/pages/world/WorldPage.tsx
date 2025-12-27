@@ -53,12 +53,29 @@ function mapRelationshipType(backendType: RelationshipType): RelationType {
   }
 }
 
+/**
+ * 백엔드 데이터 구조를 유연하게 받기 위한 인터페이스
+ */
+interface RawRelationship {
+  id?: string;
+  sourceId?: string;
+  targetId?: string;
+  source?: { id: string; name?: string };
+  target?: { id: string; name?: string };
+  relationships?: RawRelationship[]; // Character에 포함된 경우
+  type?: string;
+  strength?: number;
+  description?: string;
+  extras?: { description?: string };
+  [key: string]: unknown;
+}
+
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
@@ -68,12 +85,11 @@ export default function WorldPage() {
   const { data: characters = [], isLoading: isLoadingCharacters } =
     useCharacters(projectId || "", { enabled: !!projectId });
 
-  // 백엔드가 /relationships 엔드포인트에서 Character[] 배열을 리턴하므로
-  // Character.relationships 필드에서 관계 데이터를 추출
-  const {
-    data: charactersWithRelationships = [],
-    isLoading: isLoadingRelationships,
-  } = useRelationships(projectId || "", { enabled: !!projectId });
+  // 백엔드가 /relationships 엔드포인트에서 Character[] 배열 또는 Relationship[] 배열을 리턴할 수 있음
+  const { data: rawData = [], isLoading: isLoadingRelationships } =
+    useRelationships(projectId || "", { enabled: !!projectId });
+
+  const charactersWithRelationships = rawData as unknown as RawRelationship[];
 
   // ESC 키로 선택 해제
   useEffect(() => {
@@ -95,64 +111,82 @@ export default function WorldPage() {
     const allLinks: RelationshipLink[] = [];
     const processedPairs = new Set<string>(); // 중복 방지
 
-    console.log("🔍 Characters:", characters.length);
-    console.log(
-      "🔍 CharactersWithRelationships:",
-      charactersWithRelationships.length
-    );
+    console.log("🔍 Characters Count:", characters.length);
+    console.log("🔍 Data Source Count:", charactersWithRelationships.length);
 
     // 각 캐릭터의 relationships 배열을 순회
-    charactersWithRelationships.forEach((char: any) => {
-      const sourceId = char.id;
-      const relationships = char.relationships || [];
-
-      console.log(`📦 Character ${char.name} relationships:`, relationships);
-
-      relationships.forEach((rel: any) => {
-        // 관계 데이터 구조 확인
-        console.log("🔍 Relationship structure:", rel);
-
-        // 백엔드가 보내주는 관계 구조에 따라 파싱
-        const targetId = rel.targetId || rel.target?.id || rel.id;
-        const relType = rel.type || "friendly";
-        const strength = rel.strength || 5;
-
-        if (!targetId || !characterIds.has(targetId)) {
-          console.warn(
-            `❌ Invalid target: ${targetId} for source: ${sourceId}`
-          );
-          return;
+    // 만약 charactersWithRelationships가 Relationship[] 배열인 경우도 고려하여 처리
+    if (Array.isArray(charactersWithRelationships)) {
+      charactersWithRelationships.forEach((item: RawRelationship) => {
+        // Case 1: item이 Character이고 그 안에 relationships가 있는 경우
+        if (item.relationships && Array.isArray(item.relationships)) {
+          const sourceId = item.id;
+          if (sourceId) {
+            item.relationships.forEach((rel) => {
+              const targetId = rel.targetId || rel.target?.id;
+              if (targetId) processRel(sourceId, targetId, rel);
+            });
+          }
         }
-
-        // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
-        const pairKey =
-          sourceId < targetId
-            ? `${sourceId}-${targetId}`
-            : `${targetId}-${sourceId}`;
-
-        if (processedPairs.has(pairKey)) {
-          return;
+        // Case 2: item 자체가 Relationship인 경우
+        else {
+          const sourceId = item.sourceId || item.source?.id;
+          const targetId = item.targetId || item.target?.id;
+          if (sourceId && targetId) {
+            processRel(sourceId, targetId, item);
+          }
         }
-        processedPairs.add(pairKey);
-
-        allLinks.push({
-          id: `${sourceId}-${targetId}`,
-          source: sourceId,
-          target: targetId,
-          type: mapRelationshipType(relType),
-          strength,
-          label: rel.description || rel.extras?.description,
-        });
       });
-    });
+    }
 
-    console.log("✅ Valid links:", allLinks.length);
+    function processRel(
+      sourceId: string,
+      targetId: string,
+      rel: RawRelationship,
+    ) {
+      if (!sourceId || !targetId) {
+        console.warn(`❌ Missing ID in relationship:`, {
+          sourceId,
+          targetId,
+          rel,
+        });
+        return;
+      }
+
+      if (!characterIds.has(sourceId) || !characterIds.has(targetId)) {
+        // 가끔 백엔드에서 삭제된 캐릭터의 관계가 남아있을 수 있음
+        return;
+      }
+
+      const relType = (rel.type || "friendly") as RelationshipType;
+      const strength = rel.strength || 5;
+
+      // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
+      const pairKey =
+        sourceId < targetId
+          ? `${sourceId}-${targetId}`
+          : `${targetId}-${sourceId}`;
+
+      if (processedPairs.has(pairKey)) return;
+      processedPairs.add(pairKey);
+
+      allLinks.push({
+        id: rel.id || `${sourceId}-${targetId}`,
+        source: sourceId,
+        target: targetId,
+        type: mapRelationshipType(relType),
+        strength,
+        label: rel.description || rel.extras?.description,
+      });
+    }
+
+    console.log("✅ Valid links mapped:", allLinks.length);
     return allLinks;
   }, [charactersWithRelationships, characters]);
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character
+      prev?.id === character.id ? null : character,
     );
   };
 

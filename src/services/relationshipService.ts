@@ -12,6 +12,8 @@ export interface Relationship {
   id: string;
   sourceId: string;
   targetId: string;
+  source?: { id: string; name?: string; [key: string]: unknown };
+  target?: { id: string; name?: string; [key: string]: unknown };
   type: RelationshipType;
   strength: number; // 1-10
   extras?: {
@@ -32,7 +34,7 @@ export interface CreateRelationshipInput {
 export const relationshipService = {
   getAll: async (projectId: string) => {
     const response = await api.get<ApiResponse<Relationship[]>>(
-      `/projects/${projectId}/relationships`
+      `/projects/${projectId}/relationships`,
     );
     console.log("🌐 Backend API Response (relationships):", response.data);
     return response.data;
@@ -41,7 +43,7 @@ export const relationshipService = {
   create: async (payload: CreateRelationshipInput) => {
     const response = await api.post<ApiResponse<Relationship>>(
       "/relationships",
-      payload
+      payload,
     );
     return response.data;
   },
@@ -49,14 +51,14 @@ export const relationshipService = {
   update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
     const response = await api.patch<ApiResponse<Relationship>>(
       `/relationships/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
 
   delete: async (id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/relationships/${id}`
+      `/relationships/${id}`,
     );
     return response.data;
   },
