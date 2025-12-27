@@ -101,7 +101,7 @@ export function useUpdateProject() {
       // Optimistically update detail
       queryClient.setQueryData(
         projectKeys.detail(id),
-        (old: Project | undefined) => (old ? { ...old, ...payload } : old),
+        (old: Project | undefined) => (old ? { ...old, ...payload } : old)
       );
 
       // Optimistically update lists (순서 유지하면서 데이터만 변경)
@@ -112,10 +112,10 @@ export function useUpdateProject() {
           return {
             ...old,
             projects: old.projects.map((p: Project) =>
-              p.id === id ? { ...p, ...payload } : p,
+              p.id === id ? { ...p, ...payload } : p
             ),
           };
-        },
+        }
       );
 
       return { previousDetail, previousLists, id, currentOrder };
@@ -125,7 +125,7 @@ export function useUpdateProject() {
       if (context?.previousDetail) {
         queryClient.setQueryData(
           projectKeys.detail(context.id),
-          context.previousDetail,
+          context.previousDetail
         );
       }
       if (context?.previousLists) {
@@ -160,7 +160,7 @@ export function useUpdateProject() {
               ...old,
               projects: sortedProjects,
             };
-          },
+          }
         );
       }
     },
@@ -175,13 +175,10 @@ export function useDeleteProject() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      console.log("[useDeleteProject] Deleting project:", id);
       const result = await projectService.delete(id);
-      console.log("[useDeleteProject] Delete result:", result);
       return result;
     },
     onMutate: async (id) => {
-      console.log("[useDeleteProject] onMutate - id:", id);
       // Cancel queries
       await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
 
@@ -195,12 +192,11 @@ export function useDeleteProject() {
         { queryKey: projectKeys.lists() },
         (old: { projects?: Project[] } | undefined) => {
           if (!old?.projects) return old;
-          console.log("[useDeleteProject] Removing from cache:", id);
           return {
             ...old,
             projects: old.projects.filter((p: Project) => p.id !== id),
           };
-        },
+        }
       );
 
       return { previousLists };
@@ -214,8 +210,7 @@ export function useDeleteProject() {
         });
       }
     },
-    onSuccess: (_data, id) => {
-      console.log("[useDeleteProject] Successfully deleted:", id);
+    onSuccess: (_data, _id) => {
       // 성공 시에만 목록 재조회 (에러 시에는 이미 onError에서 롤백됨)
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },

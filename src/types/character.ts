@@ -1,5 +1,23 @@
 // Character Types with flexible extras pattern
 
+// 백엔드 RelationshipType 정의 (5종 - 백엔드 스펙)
+export type BackendRelationshipType =
+  | "friendly"
+  | "hostile"
+  | "neutral"
+  | "romantic"
+  | "family";
+
+// 백엔드에서 반환하는 관계 구조 (Neo4j)
+export interface BackendRelationship {
+  id: number; // Neo4j internal ID
+  target: string; // Target character ID
+  type: BackendRelationshipType;
+  strength: number; // 1-10
+  label?: string | null;
+  since?: string | null;
+}
+
 export interface Character {
   // === 필수 필드 ===
   id: string;
@@ -9,6 +27,9 @@ export interface Character {
   // === 주요 선택 필드 (UI에서 별도 표시) ===
   role?: CharacterRole;
   imageUrl?: string;
+
+  // === 관계 정보 (백엔드에서 항상 포함) ===
+  relationships: BackendRelationship[];
 
   // === 동적 추가 정보 ===
   extras?: Record<string, string | number | boolean | string[]>;
@@ -26,6 +47,13 @@ export type CharacterRole =
   | "sidekick"
   | "other";
 
+// 기존 타입 호환성 유지
+export type RelationshipType = BackendRelationshipType;
+
+/**
+ * @deprecated Use Character.relationships instead
+ * 이 타입은 하위 호환성을 위해 유지되며, 향후 제거될 예정입니다.
+ */
 export interface CharacterRelationship {
   id: string;
   sourceId: string;
@@ -36,8 +64,6 @@ export interface CharacterRelationship {
   // 동적 추가 정보 (관계 설명, 시작 시점 등)
   extras?: Record<string, string | number | boolean>;
 }
-
-export type RelationshipType = "friendly" | "hostile" | "neutral";
 
 // =====================================================
 // 📍 장소 타입 (새로 추가)

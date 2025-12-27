@@ -1,16 +1,21 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, Sword } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
-import type { Character, RelationType } from "@/types";
-import { DEMO_CHARACTERS } from "@/data/demoData";
+import type { Character, RelationType, RelationshipLink } from "@/types";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
 import { CharacterGraph } from "@/components/CharacterGraph";
-import { generateLinksFromCharacters } from "@/components/CharacterGraph/utils";
+
+// Hooks
+import { useCharacters } from "@/hooks/useCharacters";
+
+// Utils
+// extractRelationshipLinks removed (replaced by useRelationshipLinks hook)
 
 // Components
 import { NetworkControlsD3 } from "./components/NetworkControlsD3";
@@ -30,59 +35,52 @@ const items = [
   { id: "3", name: "예언서", type: "문서", owner: "없음" },
 ];
 
+import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
+
 export default function WorldPage() {
-  const [characters, setCharacters] = useState<Character[]>(DEMO_CHARACTERS);
+  const { id: projectId } = useParams<{ id: string }>();
+
+  // Fetch Characters
+  // projectId is guaranteed to be string here
+  const { data: characters = [], isLoading } = useCharacters(projectId || "", {
+    enabled: !!projectId,
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
 
-  // Fetch Characters from API
-  // const [loading, setLoading] = useState(false); // Unused for now
-
-  useEffect(() => {
-    // setLoading(true);
-    // Try to fetch from Spring Server
-    import("@/services/graphApi").then(({ graphApi }) => {
-      graphApi
-        .getCharacters()
-        .then((data) => {
-          if (data && data.length > 0) {
-            // Assuming API returns compatible Character objects
-            setCharacters(data);
-          }
-        })
-        .catch(() => {
-          // Silent fallback to DEMO_CHARACTERS (default state)
-          console.log("Using Demo Data (API unavailable)");
-        });
-      // .finally(() => setLoading(false));
-    });
-  }, []);
-
-  // ESC 키로 선택 해제
+  // ESC Key Handler (Optimized)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedCharacter) {
-        setSelectedCharacter(null);
+      if (e.key === "Escape") {
+        setSelectedCharacter(null); // setState 사용으로 의존성 회피
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCharacter]);
+  }, []); // 빈 배열 - setState는 항상 최신 상태로 업데이트
 
-  // 링크 데이터 생성
-  const links = useMemo(
-    () => generateLinksFromCharacters(characters),
-    [characters],
-  );
+  // Character.relationships에서 관계 데이터 추출 (using hook)
+  const links: RelationshipLink[] = useRelationshipLinks(characters);
+
+  // Critical Guard: Render error if projectId is missing (AFTER hooks)
+  if (!projectId) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        프로젝트 ID가 유효하지 않습니다.
+      </div>
+    );
+  }
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character,
+      prev?.id === character.id ? null : character
     );
   };
 
@@ -90,6 +88,19 @@ export default function WorldPage() {
     setSelectedCharacter(character);
     setIsModalOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">
+            캐릭터 데이터를 불러오는 중...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full">

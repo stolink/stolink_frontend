@@ -271,6 +271,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 80,
     },
     createdAt: "2024-01-01",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -290,6 +291,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 60,
     },
     createdAt: "2024-01-02",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -309,6 +311,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 100,
     },
     createdAt: "2024-01-03",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -333,6 +336,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 50,
     },
     createdAt: "2024-01-04",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -357,6 +361,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 70,
     },
     createdAt: "2024-01-05",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -376,6 +381,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 100,
     },
     createdAt: "2024-01-06",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -395,6 +401,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 100,
     },
     createdAt: "2024-01-07",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -419,6 +426,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 60,
     },
     createdAt: "2024-01-08",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -438,6 +446,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 100,
     },
     createdAt: "2024-01-09",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
   {
@@ -457,6 +466,7 @@ export const DEMO_CHARACTERS: Character[] = [
       진행률: 100,
     },
     createdAt: "2024-01-10",
+    relationships: [],
     updatedAt: "2024-12-20",
   },
 ];

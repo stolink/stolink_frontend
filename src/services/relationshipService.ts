@@ -12,6 +12,8 @@ export interface Relationship {
   id: string;
   sourceId: string;
   targetId: string;
+  source?: { id: string; name?: string; [key: string]: unknown };
+  target?: { id: string; name?: string; [key: string]: unknown };
   type: RelationshipType;
   strength: number; // 1-10
   extras?: {
@@ -30,11 +32,18 @@ export interface CreateRelationshipInput {
 }
 
 export const relationshipService = {
-  getAll: async (projectId: string) => {
-    const response = await api.get<ApiResponse<Relationship[]>>(
-      `/projects/${projectId}/relationships`
+  /**
+   * @deprecated
+   * GET /projects/{projectId}/relationships 엔드포인트가 삭제되었습니다.
+   * useCharacters 훅을 사용하고 character.relationships에서 데이터를 추출하세요.
+   *
+   * @throws Error - 항상 에러 발생
+   */
+  getAll: async () => {
+    throw new Error(
+      "GET /projects/{projectId}/relationships endpoint has been removed. " +
+        "Use characterService.getAll() and extract from character.relationships instead."
     );
-    return response.data;
   },
 
   create: async (payload: CreateRelationshipInput) => {

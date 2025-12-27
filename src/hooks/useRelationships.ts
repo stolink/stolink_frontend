@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   relationshipService,
-  type Relationship,
   type CreateRelationshipInput,
 } from "@/services/relationshipService";
+import { characterKeys } from "./useCharacters";
 
 // Query Keys
 export const relationshipKeys = {
@@ -14,21 +14,11 @@ export const relationshipKeys = {
 };
 
 /**
- * Hook for fetching relationships in a project
+ * @deprecated
+ * Relationship 데이터는 이제 Character API에 포함됩니다.
+ * useCharacters 훅을 사용하고 character.relationships에서 데이터를 추출하세요.
  */
-export function useRelationships(
-  projectId: string,
-  options?: { enabled?: boolean }
-) {
-  return useQuery({
-    queryKey: relationshipKeys.list(projectId),
-    queryFn: async () => {
-      const response = await relationshipService.getAll(projectId);
-      return response.data;
-    },
-    enabled: options?.enabled !== false && !!projectId,
-  });
-}
+// useRelationships hook removed (unused and broken after refactor)
 
 /**
  * Hook for creating a relationship
@@ -40,9 +30,11 @@ export function useCreateRelationship(projectId: string) {
     mutationFn: (payload: CreateRelationshipInput) =>
       relationshipService.create(payload),
     onSuccess: () => {
+      // 캐릭터 데이터에 관계가 포함되어 있으므로 캐릭터 목록 무효화
       queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
+        queryKey: characterKeys.list(projectId),
       });
+      // relationshipKeys 무효화 제거 (deprecated API)
     },
   });
 }
@@ -61,33 +53,10 @@ export function useUpdateRelationship(projectId: string) {
       id: string;
       payload: Partial<CreateRelationshipInput>;
     }) => relationshipService.update(id, payload),
-    onMutate: async ({ id, payload }) => {
-      await queryClient.cancelQueries({
-        queryKey: relationshipKeys.list(projectId),
-      });
-      const previous = queryClient.getQueryData(
-        relationshipKeys.list(projectId)
-      );
-
-      queryClient.setQueryData(
-        relationshipKeys.list(projectId),
-        (old: Relationship[] | undefined) =>
-          old?.map((rel) => (rel.id === id ? { ...rel, ...payload } : rel))
-      );
-
-      return { previous };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          relationshipKeys.list(projectId),
-          context.previous
-        );
-      }
-    },
-    onSettled: () => {
+    // Optimistic update for deprecated API removed
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
+        queryKey: characterKeys.list(projectId),
       });
     },
   });
@@ -101,32 +70,10 @@ export function useDeleteRelationship(projectId: string) {
 
   return useMutation({
     mutationFn: (id: string) => relationshipService.delete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({
-        queryKey: relationshipKeys.list(projectId),
-      });
-      const previous = queryClient.getQueryData(
-        relationshipKeys.list(projectId)
-      );
-
-      queryClient.setQueryData(
-        relationshipKeys.list(projectId),
-        (old: Relationship[] | undefined) => old?.filter((rel) => rel.id !== id)
-      );
-
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          relationshipKeys.list(projectId),
-          context.previous
-        );
-      }
-    },
-    onSettled: () => {
+    // Optimistic update for deprecated API removed
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: relationshipKeys.list(projectId),
+        queryKey: characterKeys.list(projectId),
       });
     },
   });
