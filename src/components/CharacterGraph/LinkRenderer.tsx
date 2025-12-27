@@ -10,7 +10,7 @@ interface LinkRendererProps {
 }
 
 /**
- * SVG 링크(엣지) 렌더러 컴포넌트
+ * SVG 링크(엣지) 렌더러 컴포넌트 - Obsidian 스타일 비주얼
  */
 export const LinkRenderer = memo(function LinkRenderer({
   link,
@@ -33,7 +33,13 @@ export const LinkRenderer = memo(function LinkRenderer({
   }
 
   const color = RELATION_COLORS[link.type] || "#9ca3af";
-  const strokeWidth = isHighlighted ? 3 : link.strength / 5 + 1;
+
+  // 강도에 따른 선 두께
+  const baseWidth = 1 + (link.strength / 10) * 2;
+  const strokeWidth = isHighlighted ? baseWidth + 1.5 : baseWidth;
+
+  // 강도에 따른 기본 투명도
+  const baseOpacity = 0.3 + (link.strength / 10) * 0.4;
 
   // 필터링된 링크는 거의 보이지 않게
   if (isFiltered && !isHighlighted) {
@@ -45,24 +51,52 @@ export const LinkRenderer = memo(function LinkRenderer({
         y2={target.y}
         stroke={color}
         strokeWidth={1}
-        strokeOpacity={0.05}
+        strokeOpacity={0.03}
       />
     );
   }
 
+  const finalOpacity = isDimmed
+    ? ANIMATION.dimOpacity * 0.5
+    : isHighlighted
+      ? 0.9
+      : baseOpacity;
+
   return (
-    <line
-      x1={source.x}
-      y1={source.y}
-      x2={target.x}
-      y2={target.y}
-      stroke={color}
-      strokeWidth={strokeWidth}
-      strokeOpacity={isDimmed ? ANIMATION.dimOpacity : isHighlighted ? 1 : 0.6}
-      strokeDasharray={link.type === "enemy" ? "5,5" : undefined}
-      style={{
-        transition: `stroke-opacity ${ANIMATION.highlightDuration}ms ease, stroke-width ${ANIMATION.highlightDuration}ms ease`,
-      }}
-    />
+    <g>
+      {/* 글로우 효과 (하이라이트 시) */}
+      {isHighlighted && (
+        <line
+          x1={source.x}
+          y1={source.y}
+          x2={target.x}
+          y2={target.y}
+          stroke={color}
+          strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.2}
+          strokeLinecap="round"
+          style={{ filter: "blur(3px)" }}
+        />
+      )}
+
+      {/* 메인 링크 */}
+      <line
+        x1={source.x}
+        y1={source.y}
+        x2={target.x}
+        y2={target.y}
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeOpacity={finalOpacity}
+        strokeLinecap="round"
+        strokeDasharray={link.type === "enemy" ? "6,4" : undefined}
+        style={{
+          transition: `
+            stroke-opacity ${ANIMATION.highlightDuration}ms ease,
+            stroke-width ${ANIMATION.highlightDuration}ms ease
+          `,
+        }}
+      />
+    </g>
   );
 });

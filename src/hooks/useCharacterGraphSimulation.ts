@@ -24,7 +24,7 @@ interface UseForceSimulationReturn {
 
 /**
  * D3 Force Simulation을 관리하는 훅
- * useSyncExternalStore를 사용하여 D3 시뮬레이션을 React와 동기화
+ * Obsidian 스타일의 부드럽고 유동적인 물리 시뮬레이션
  */
 export function useForceSimulation(
   initialNodes: CharacterNode[],
@@ -55,8 +55,13 @@ export function useForceSimulation(
   useEffect(() => {
     const store = storeRef.current;
 
-    // 노드/링크 복사
-    const nodesCopy = initialNodes.map((d) => ({ ...d }));
+    // 노드/링크 복사 - 초기 위치를 중앙에서 시작 (엔트리 애니메이션)
+    const nodesCopy = initialNodes.map((d) => ({
+      ...d,
+      // 중앙에서 약간의 랜덤 오프셋으로 시작
+      x: width / 2 + (Math.random() - 0.5) * 50,
+      y: height / 2 + (Math.random() - 0.5) * 50,
+    }));
     const linksCopy = initialLinks.map((d) => ({ ...d }));
 
     // 기존 시뮬레이션 정리
@@ -64,38 +69,51 @@ export function useForceSimulation(
       store.simulation.stop();
     }
 
-    // 새 시뮬레이션 생성
+    // 새 시뮬레이션 생성 (Obsidian 스타일)
     const simulation = d3
       .forceSimulation<CharacterNode, RelationshipLink>(nodesCopy)
+      // 링크 포스 - 소프트 스프링
       .force(
         "link",
         d3
           .forceLink<CharacterNode, RelationshipLink>(linksCopy)
           .id((d) => d.id)
-          .distance((link) => {
-            const strength =
-              typeof link.strength === "number" ? link.strength : 5;
-            return FORCE_CONFIG.linkDistance / (strength / 5);
-          })
-          .strength((link) => {
-            const strength =
-              typeof link.strength === "number" ? link.strength : 5;
-            return strength / 10;
-          }),
+          .distance(FORCE_CONFIG.linkDistance)
+          .strength(FORCE_CONFIG.linkStrength),
       )
+      // 반발력 - 거리 제한 추가
       .force(
         "charge",
-        d3.forceManyBody<CharacterNode>().strength(FORCE_CONFIG.charge),
+        d3
+          .forceManyBody<CharacterNode>()
+          .strength(FORCE_CONFIG.charge)
+          .distanceMin(FORCE_CONFIG.chargeDistanceMin)
+          .distanceMax(FORCE_CONFIG.chargeDistanceMax),
       )
-      .force("center", d3.forceCenter(width / 2, height / 2))
+      // 부드러운 센터링
+      .force(
+        "center",
+        d3
+          .forceCenter(width / 2, height / 2)
+          .strength(FORCE_CONFIG.centerStrength),
+      )
+      // X축 포지셔닝 (부드러운 분산)
+      .force("x", d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength))
+      // Y축 포지셔닝
+      .force("y", d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength))
+      // 충돌 감지
       .force(
         "collision",
         d3
           .forceCollide<CharacterNode>()
-          .radius((d) => getNodeRadius(d) + FORCE_CONFIG.collisionPadding),
+          .radius((d) => getNodeRadius(d) + FORCE_CONFIG.collisionPadding)
+          .strength(FORCE_CONFIG.collisionStrength),
       )
+      // 느린 수렴 = 더 오래 부드럽게 움직임
       .alphaDecay(FORCE_CONFIG.alphaDecay)
-      .alphaMin(FORCE_CONFIG.alphaMin);
+      .alphaMin(FORCE_CONFIG.alphaMin)
+      // 낮은 마찰 = 더 유동적인 움직임
+      .velocityDecay(FORCE_CONFIG.velocityDecay);
 
     // tick 이벤트 - 외부 store 업데이트 및 구독자 알림
     simulation.on("tick", () => {
@@ -117,7 +135,20 @@ export function useForceSimulation(
   useEffect(() => {
     const store = storeRef.current;
     if (store.simulation) {
-      store.simulation.force("center", d3.forceCenter(width / 2, height / 2));
+      store.simulation.force(
+        "center",
+        d3
+          .forceCenter(width / 2, height / 2)
+          .strength(FORCE_CONFIG.centerStrength),
+      );
+      store.simulation.force(
+        "x",
+        d3.forceX(width / 2).strength(FORCE_CONFIG.positionStrength),
+      );
+      store.simulation.force(
+        "y",
+        d3.forceY(height / 2).strength(FORCE_CONFIG.positionStrength),
+      );
       store.simulation.alpha(0.3).restart();
     }
   }, [width, height]);
@@ -141,7 +172,7 @@ export function useForceSimulation(
   const reheat = useCallback(() => {
     const store = storeRef.current;
     if (store.simulation) {
-      store.simulation.alpha(1).restart();
+      store.simulation.alpha(0.8).restart();
     }
   }, []);
 
