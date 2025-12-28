@@ -35,14 +35,14 @@ const isValidDocumentNode = (item: unknown): item is DocumentNode => {
 export default function SharedProjectPage() {
   const { shareId } = useParams<{ shareId: string }>();
   const [password, setPassword] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
+  const [isPasswordSubmitted, setIsPasswordSubmitted] = useState(false);
 
   const {
     data: project,
     isLoading,
     error,
     refetch,
-  } = useSharedProject(shareId || "", password, {
+  } = useSharedProject(shareId || "", isPasswordSubmitted ? password : "", {
     enabled: !!shareId, // Fetch initially to check if password is required
     retry: (failureCount, error) => {
       const isPasswordError = (error as ApiError)?.response?.status === 403;
@@ -100,19 +100,14 @@ export default function SharedProjectPage() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPassword(passwordInput);
-    // Retry fetching with new password
-    await refetch();
+    setIsPasswordSubmitted(true);
+    // Explicitly refetch after state update
+    setTimeout(() => refetch(), 0);
   };
 
   const handleClose = () => {
-    // For a shared link, we might not have a logical "back", so we could redirect to home or just do nothing (modal stays open)
-    // Here we'll try to go back, or go to home if history is empty-ish
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "/";
-    }
+    // Explicitly redirect to home
+    window.location.href = "/";
   };
 
   if (isLoading) {
@@ -150,8 +145,8 @@ export default function SharedProjectPage() {
               <Input
                 type="password"
                 placeholder="비밀번호 입력"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="text-center"
               />
               <Button type="submit" className="w-full">

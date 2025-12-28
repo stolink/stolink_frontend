@@ -28,9 +28,19 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { Toggle } from "@/components/ui/toggle";
 import { SettingRow } from "@/components/ui/setting-row";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
-  const { id: projectId } = useParams<{ id?: string }>();
+  const { id: projectId } = useParams<{ id: string }>();
 
   // Share Hooks
   const { data: shareSettings, isLoading: isLoadingShare } = useShareSettings(
@@ -45,6 +55,7 @@ export default function SettingsPage() {
   const [goalNotification, setGoalNotification] = useState(true);
   const [foreshadowingNotification, setForeshadowingNotification] =
     useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!projectId) {
     return <div>잘못된 접근입니다. (프로젝트 ID 누락)</div>;
@@ -55,13 +66,13 @@ export default function SettingsPage() {
   };
 
   const handleDeleteShare = () => {
-    if (!projectId) return;
-    if (
-      confirm(
-        "정말로 공유 링크를 삭제하시겠습니까? 더 이상 이 링크로 접근할 수 없습니다.",
-      )
-    ) {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (projectId) {
       deleteShare.mutate(projectId);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -260,6 +271,22 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>공유 링크 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말로 공유 링크를 삭제하시겠습니까? 더 이상 이 링크로 접근할 수
+              없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>삭제</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
