@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   NavLink,
   Outlet,
@@ -98,6 +98,25 @@ export function ProjectLayout() {
     navigate("/");
   };
 
+  // 편집 모드 시작 핸들러 (프로젝트 제목으로 초기화)
+  const startEditing = useCallback(() => {
+    if (project?.title) {
+      setEditedTitle(project.title);
+      setIsEditingTitle(true);
+    }
+  }, [project]);
+
+  // ⚠️ Fix: 제목 제출 로직 중복 제거
+  const handleTitleSubmit = useCallback(() => {
+    if (editedTitle.trim() && editedTitle !== project?.title && id) {
+      updateProject.mutate({
+        id,
+        payload: { title: editedTitle.trim() },
+      });
+    }
+    setIsEditingTitle(false);
+  }, [editedTitle, project?.title, id, updateProject]);
+
   return (
     <div className="flex flex-col h-screen bg-paper">
       {/* Header */}
@@ -136,34 +155,13 @@ export function ProjectLayout() {
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    onBlur={() => {
-                      if (
-                        editedTitle.trim() &&
-                        editedTitle !== project?.title &&
-                        id
-                      ) {
-                        updateProject.mutate({
-                          id,
-                          payload: { title: editedTitle.trim() },
-                        });
-                      }
-                      setIsEditingTitle(false);
-                    }}
+                    onBlur={handleTitleSubmit}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        if (
-                          editedTitle.trim() &&
-                          editedTitle !== project?.title &&
-                          id
-                        ) {
-                          updateProject.mutate({
-                            id,
-                            payload: { title: editedTitle.trim() },
-                          });
-                        }
-                        setIsEditingTitle(false);
+                        handleTitleSubmit();
                       }
                       if (e.key === "Escape") {
+                        setEditedTitle(project?.title || "");
                         setIsEditingTitle(false);
                       }
                     }}
@@ -172,12 +170,7 @@ export function ProjectLayout() {
                   />
                 ) : (
                   <button
-                    onClick={() => {
-                      if (project?.title) {
-                        setEditedTitle(project.title);
-                        setIsEditingTitle(true);
-                      }
-                    }}
+                    onClick={startEditing}
                     className="font-heading font-semibold text-sm text-foreground hover:text-sage-600 transition-colors cursor-pointer"
                     title="클릭하여 제목 편집"
                   >
