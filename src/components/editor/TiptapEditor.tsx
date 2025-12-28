@@ -102,6 +102,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const scrollPositionRef = useRef<number>(0);
 
+    const isAutoScrollingRef = useRef(false);
+
     // Memoize extensions to prevent duplicate registration
     const extensions = useMemo(() => {
       const exts = [
@@ -148,6 +150,10 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             ),
             spellcheck: "false",
           },
+          handleScrollToSelection: () => {
+            // 타자기 모드일 때는 ProseMirror의 기본 스크롤 동작을 차단
+            return isTypewriterModeRef.current;
+          },
           handleDOMEvents: {
             beforeinput: () => {
               if (editorContainerRef.current) {
@@ -165,26 +171,46 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           if (onContentChangeRef.current) {
             onContentChangeRef.current(editor.getHTML());
           }
-
+          // Note: Typewriter scroll is handled in onSelectionUpdate for better responsiveness
+        },
+        onSelectionUpdate: ({ editor }) => {
           // 타자기 모드: 커서 위치를 화면 중앙으로 스크롤
           if (isTypewriterModeRef.current && editorContainerRef.current) {
+            if (isAutoScrollingRef.current) return;
+
+            const { view } = editor;
+            const { from } = view.state.selection;
+
             requestAnimationFrame(() => {
-              const { view } = editor;
-              const { from } = view.state.selection;
               try {
+                if (isAutoScrollingRef.current) return;
+
                 const coords = view.coordsAtPos(from);
                 const container = editorContainerRef.current;
                 if (!container) return;
 
                 const containerRect = container.getBoundingClientRect();
-                const centerY = containerRect.height / 2;
-                const cursorRelativeY = coords.top - containerRect.top;
-                const scrollOffset = cursorRelativeY - centerY;
 
-                // 절대 위치로 스크롤 (현재 스크롤 + 오프셋)
-                container.scrollTop = container.scrollTop + scrollOffset;
+                // UX 개선: 중앙(0.5)보다 조금 위(0.4)에 위치시켜 시야 확보
+                const targetY = containerRect.height * 0.4;
+
+                // Calculate cursor position relative to the container's *visible* area top
+                const cursorRelativeY = coords.top - containerRect.top;
+
+                // If cursorRelativeY > targetY, scroll down (increase scrollTop)
+                const scrollOffset = cursorRelativeY - targetY;
+
+                // Threshold to prevent jitter (5px)
+                if (Math.abs(scrollOffset) > 5) {
+                  isAutoScrollingRef.current = true;
+                  container.scrollTop += scrollOffset;
+
+                  setTimeout(() => {
+                    isAutoScrollingRef.current = false;
+                  }, 50);
+                }
               } catch {
-                // coordsAtPos may fail in some edge cases
+                isAutoScrollingRef.current = false;
               }
             });
           }
@@ -200,8 +226,45 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           });
         },
       },
-      [extensions] // Add dependency array to prevent recreation
+      [extensions] // Removed isTypewriterMode dependency to prevent re-creation
     );
+
+    // Apply typewriter styles dynamically to prevent editor re-creation
+    useEffect(() => {
+      if (!editor) return;
+
+      const dom = editor.view.dom as HTMLElement;
+
+      if (isTypewriterMode) {
+        // Apply padding for typewriter mode (40vh top to align at 40%, 60vh bottom)
+        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
+        dom.style.paddingTop = "40vh";
+        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
+        dom.style.paddingBottom = "60vh";
+
+        // Immediate scroll adjustment to prevent jump
+        if (editorContainerRef.current) {
+          const { from } = editor.state.selection;
+          try {
+            const coords = editor.view.coordsAtPos(from);
+            const container = editorContainerRef.current;
+            const containerRect = container.getBoundingClientRect();
+            const targetY = containerRect.height * 0.4;
+            const cursorRelativeY = coords.top - containerRect.top;
+            container.scrollTop += cursorRelativeY - targetY;
+          } catch {
+            // Ignore scroll errors during initialization
+          }
+        }
+      } else {
+        // Reset styles
+        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
+        dom.style.paddingTop = "";
+        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
+        dom.style.paddingBottom = "";
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editor, isTypewriterMode]);
 
     // Expose split functionality via ref
     useImperativeHandle(ref, () => ({

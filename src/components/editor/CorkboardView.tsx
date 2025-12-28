@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   LayoutGrid,
   GripVertical,
@@ -47,37 +47,49 @@ export default function CorkboardView({
   const [editingSynopsis, setEditingSynopsis] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  // 현재 폴더의 자식 문서들을 카드로 변환
-  const findChildDocuments = (
-    nodes: DocumentTreeNode[],
-    parentId: string
-  ): CorkboardCard[] => {
-    for (const node of nodes) {
-      if (node.id === parentId) {
-        // 이 폴더의 자식들 반환
-        return (node.children || []).map((child) => {
-          const doc = documents.find((d) => d.id === child.id);
-          return {
-            id: child.id,
-            title: child.title,
-            synopsis: doc?.synopsis || "",
-            type: child.type,
-            order: doc?.order ?? 0,
-            wordCount: doc?.content?.length ?? 0,
-          };
-        });
-      }
-      // 재귀 탐색
-      if (node.children?.length) {
-        const found = findChildDocuments(node.children, parentId);
-        if (found.length > 0) return found;
-      }
-    }
-    return [];
-  };
+  // 현재 폴더의 자식 문서들을 카드로 변환 (순환 참조 방지 적용)
+  const findChildDocuments = useCallback(
+    (
+      nodes: DocumentTreeNode[],
+      parentId: string,
+      visited = new Set<string>()
+    ): CorkboardCard[] => {
+      for (const node of nodes) {
+        if (visited.has(node.id)) continue;
+        visited.add(node.id);
 
-  const cards = findChildDocuments(tree, folderId).sort(
-    (a, b) => a.order - b.order
+        if (node.id === parentId) {
+          // 이 폴더의 자식들 반환
+          return (node.children || []).map((child) => {
+            const doc = documents.find((d) => d.id === child.id);
+            // 안전한 wordCount 접근
+            const content = doc?.content;
+            const wordCount = typeof content === "string" ? content.length : 0;
+
+            return {
+              id: child.id,
+              title: child.title,
+              synopsis: doc?.synopsis || "",
+              type: child.type,
+              order: doc?.order ?? 0,
+              wordCount,
+            };
+          });
+        }
+        // 재귀 탐색
+        if (node.children?.length) {
+          const found = findChildDocuments(node.children, parentId, visited);
+          if (found.length > 0) return found;
+        }
+      }
+      return [];
+    },
+    [documents]
+  ); // documents가 변경될 때만 재생성
+
+  const cards = useMemo(
+    () => findChildDocuments(tree, folderId).sort((a, b) => a.order - b.order),
+    [tree, folderId, findChildDocuments]
   );
 
   const handleStartEdit = (card: CorkboardCard) => {

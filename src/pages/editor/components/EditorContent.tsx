@@ -136,7 +136,7 @@ export const EditorContent = forwardRef<
         return (
           <ResizablePanelGroup direction={splitView.direction}>
             <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-y-auto">
+              <div className="h-full overflow-hidden">
                 <TiptapEditor
                   ref={editorRef}
                   onUpdate={onCharacterCountChange}
@@ -150,7 +150,7 @@ export const EditorContent = forwardRef<
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-y-auto bg-stone-50/50 border-l border-stone-100 flex flex-col">
+              <div className="h-full overflow-hidden bg-stone-50/50 border-l border-stone-100 flex flex-col">
                 <div className="h-10 border-b flex items-center px-4 bg-stone-50 text-xs text-muted-foreground shrink-0">
                   <span className="font-medium mr-2">참조 화면</span>
                   <span className="text-stone-400">|</span>
@@ -169,7 +169,7 @@ export const EditorContent = forwardRef<
       }
 
       return (
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-hidden">
           <TiptapEditor
             ref={editorRef}
             onUpdate={onCharacterCountChange}
