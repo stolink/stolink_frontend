@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { shareService } from "@/services/shareService";
 
 // Query Keys
@@ -26,12 +27,9 @@ export function useShareSettings(
         const response = await shareService.getSettings(projectId);
         return response.data;
       } catch (error) {
-        // 404 means no share link exists - return null instead of throwing
-        if (error && typeof error === "object" && "response" in error) {
-          const axiosError = error as { response?: { status?: number } };
-          if (axiosError.response?.status === 404) {
-            return null;
-          }
+        // Axios 에러의 404 상태 코드 처리: 공유 링크 미존재 시 null 반환
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          return null;
         }
         throw error;
       }
@@ -72,8 +70,14 @@ export function useDeleteShareLink() {
   return useMutation({
     mutationFn: (projectId: string) => shareService.disable(projectId),
     onSuccess: (_data, projectId) => {
-      // Immediately set cache to null for instant UI update
+      // 삭제 성공 시 즉시 캐시를 null로 설정하여 UI 즉시 갱신
       queryClient.setQueryData(shareKeys.settings(projectId), null);
+    },
+    onError: (_error, projectId) => {
+      // 삭제 실패 시 캐시 무효화로 다음 조회에서 리페치
+      queryClient.invalidateQueries({
+        queryKey: shareKeys.settings(projectId),
+      });
     },
   });
 }

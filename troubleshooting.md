@@ -12,3 +12,4 @@
 | 2025-12-28 | PR #67 AI Review Round 4      | ✅ Resolved | Fixed strict type safety (any), runtime array checks, and hooks rule violation in SettingsPage    |
 | 2025-12-28 | PR #67 AI Review Round 5      | ✅ Resolved | Implemented `isPasswordSubmitted` state pattern, strict `useParams`, and `AlertDialog` for delete |
 | 2025-12-28 | Build Fix (SharedProjectPage) | ✅ Resolved | Updated `useSharedProject` hook signature to support `retry` option, fixing build failure         |
+| 2025-12-28 | PR #69 AI Review Fixes        | ✅ Resolved | Used `axios.isAxiosError` for type-safe 404 handling, added `onError` handler for cache strategy  |
