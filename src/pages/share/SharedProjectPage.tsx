@@ -8,14 +8,13 @@ import { BookReaderModal } from "@/components/reader/BookReaderModal";
 import type { Chapter } from "@/components/reader/hooks/useBookReader";
 
 // Define a type for the document structure from the API
-interface SharedDocument {
-  id: string;
-  title: string;
-  type: "folder" | "text" | "FOLDER" | "TEXT";
-  content?: string; // HTML content
-  children?: SharedDocument[];
-  wordCount?: number;
-  description?: string;
+
+// Define ApiError type for better type safety
+interface ApiError {
+  response?: {
+    status: number;
+    data?: unknown;
+  };
 }
 
 export default function SharedProjectPage() {
@@ -28,7 +27,11 @@ export default function SharedProjectPage() {
     isLoading,
     error,
   } = useSharedProject(shareId || "", password, {
-    enabled: !!shareId,
+    enabled: !!shareId && (password !== "" || !error), // Enable if shareId exists, and handle password retry logic if needed
+    retry: (failureCount, error) => {
+      // Don't retry on 403 (passowrd required)
+      return (error as ApiError)?.response?.status !== 403 && failureCount < 1;
+    },
   });
 
   // Flatten the document tree into a linear list of chapters
@@ -37,31 +40,54 @@ export default function SharedProjectPage() {
 
     const result: Chapter[] = [];
 
-    const traverse = (docs: SharedDocument[]) => {
+    // Helper with runtime checks
+    const traverse = (docs: unknown) => {
+      if (!Array.isArray(docs)) return;
+
       for (const doc of docs) {
+        if (!doc || typeof doc !== "object") continue;
+
+        // Type guardish check
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const item = doc as any;
+
         // We only treat "text" type as readable chapters
-        if ((doc.type === "text" || doc.type === "TEXT") && doc.content) {
+        if (
+          (item.type === "text" || item.type === "TEXT") &&
+          item.content &&
+          typeof item.content === "string"
+        ) {
           result.push({
-            id: doc.id,
-            title: doc.title,
-            content: doc.content,
+            id: item.id,
+            title: item.title,
+            content: item.content,
           });
         }
 
         // Recursively check children
-        if (doc.children && doc.children.length > 0) {
-          traverse(doc.children as SharedDocument[]);
+        if (Array.isArray(item.children) && item.children.length > 0) {
+          traverse(item.children);
         }
       }
     };
 
-    traverse(project.documents as unknown as SharedDocument[]);
+    traverse(project.documents);
     return result;
   }, [project]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPassword(passwordInput);
+  };
+
+  const handleClose = () => {
+    // For a shared link, we might not have a logical "back", so we could redirect to home or just do nothing (modal stays open)
+    // Here we'll try to go back, or go to home if history is empty-ish
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/";
+    }
   };
 
   if (isLoading) {
@@ -77,8 +103,7 @@ export default function SharedProjectPage() {
 
   // Handle password required error (403 or specific error code)
   if (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const isPasswordError = (error as any)?.response?.status === 403;
+    const isPasswordError = (error as ApiError)?.response?.status === 403;
 
     if (isPasswordError || !project) {
       return (
@@ -146,7 +171,7 @@ export default function SharedProjectPage() {
     <BookReaderModal
       key={shareId}
       isOpen={true}
-      onClose={() => {}} // No-op: user effectively stays on the page
+      onClose={handleClose}
       chapters={chapters}
       bookTitle={project?.title || "공유된 작품"}
     />

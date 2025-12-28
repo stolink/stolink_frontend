@@ -46,6 +46,10 @@ export default function SettingsPage() {
   const [foreshadowingNotification, setForeshadowingNotification] =
     useState(true);
 
+  if (!projectId) {
+    return <div>잘못된 접근입니다. (프로젝트 ID 누락)</div>;
+  }
+
   const handleCreateShare = () => {
     if (!projectId) return;
     createShare.mutate({ projectId });
