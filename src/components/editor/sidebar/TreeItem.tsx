@@ -166,21 +166,21 @@ export const TreeItem = memo(function TreeItem({
       {showDropBefore && (
         <div
           className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
-          style={{ top: -1, marginLeft: `${level * 16 + 4}px` }}
+          style={{ top: -1, marginLeft: `${level * 12}px` }}
         >
           <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
           <div className="flex-1 h-0.5 bg-emerald-500 rounded-full" />
         </div>
       )}
 
-      {/* 트리 연결선 컴포넌트 */}
+      {/* 트리 연결선 제거 - 미니멀 디자인 */}
       <TreeLines level={level} isLast={isLast} parentLines={parentLines} />
 
       {/* Item row */}
       <div
         ref={itemRef}
         className={cn(
-          "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-all duration-150",
+          "relative flex items-center gap-1.5 py-1 pl-1 pr-2 rounded-md cursor-pointer group select-none transition-all duration-150",
           "hover:bg-stone-50",
           isSelected && "bg-sage-50",
           isDragging && "shadow-lg ring-2 ring-sage-400 bg-white",
@@ -190,7 +190,7 @@ export const TreeItem = memo(function TreeItem({
             !isParentOfActive &&
             "bg-emerald-100 ring-2 ring-emerald-500",
         )}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ marginLeft: `${level * 12}px` }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
@@ -350,7 +350,7 @@ export const TreeItem = memo(function TreeItem({
       {showDropAfter && (
         <div
           className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
-          style={{ bottom: -1, marginLeft: `${level * 16 + 4}px` }}
+          style={{ bottom: -1, marginLeft: `${level * 12}px` }}
         >
           <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
           <div className="flex-1 h-0.5 bg-emerald-500 rounded-full" />

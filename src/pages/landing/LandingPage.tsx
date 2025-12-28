@@ -11,6 +11,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  InteractiveLightOverlay,
+  PaperTexture,
+  BrushStrokeDivider,
+} from "@/components/effects";
 
 export default function LandingPage() {
   const features = [
@@ -65,9 +70,15 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      {/* Navigation */}
+      {/* Navigation with Interactive Light Effect */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-paper/80 backdrop-blur-sm border-b border-stone-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Ver.1: SVG 동적 광원 효과 */}
+        <InteractiveLightOverlay
+          id="nav-light"
+          intensity={0.12}
+          className="z-0"
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <img
@@ -89,10 +100,12 @@ export default function LandingPage() {
       </nav>
 
       <main>
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 px-4 overflow-hidden">
+        {/* Hero Section with Paper Texture */}
+        <section className="pt-32 pb-20 px-4 overflow-hidden relative">
+          {/* Ver.4: 미묘한 종이 질감 */}
+          <PaperTexture opacity={0.12} />
           <motion.div
-            className="max-w-4xl mx-auto text-center"
+            className="max-w-4xl mx-auto text-center relative z-10"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
@@ -154,6 +167,9 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
         </section>
+
+        {/* Ver.4: 브러시 스트로크 구분선 */}
+        <BrushStrokeDivider className="text-stone-300" height={12} />
 
         {/* Editor Preview */}
         <section className="py-20 px-4 relative">
@@ -231,8 +247,11 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-24 px-4 bg-white border-y border-stone-100 overflow-hidden">
+        {/* Ver.4: 브러시 스트로크 구분선 */}
+        <BrushStrokeDivider className="text-stone-300" height={12} />
+
+        {/* Features Section with Paper Texture */}
+        <section className="py-24 px-4 bg-white overflow-hidden relative">
           <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

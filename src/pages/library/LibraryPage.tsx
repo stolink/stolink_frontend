@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
+import { InteractiveLightOverlay, PaperTexture } from "@/components/effects";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +85,7 @@ export default function LibraryPage() {
 
   // ========== 정렬 상태 ==========
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
-    "updatedAt",
+    "updatedAt"
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -116,7 +117,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -132,7 +133,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
     );
   };
 
@@ -186,7 +187,7 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project",
+        "Failed to create project"
       );
       const projectId = projectData.id;
 
@@ -197,7 +198,7 @@ export default function LibraryPage() {
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter",
+        "Failed to create default chapter"
       );
       const chapterId = chapterData.id;
 
@@ -214,7 +215,7 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section",
+          "Failed to create section"
         );
         _create(mapBackendToFrontend(sectionData));
       } catch {
@@ -257,7 +258,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000,
+    chunkSize: number = 10000
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -288,12 +289,12 @@ export default function LibraryPage() {
 
       const chunk = currentText.substring(
         0,
-        bestSplitIndex + separatorUsed.length,
+        bestSplitIndex + separatorUsed.length
       );
       chunks.push(chunk);
 
       const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length,
+        bestSplitIndex + separatorUsed.length
       );
       if (remaining.trim().length > 0) {
         splitText(remaining);
@@ -445,12 +446,12 @@ export default function LibraryPage() {
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
         alert(
-          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
+          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요."
         );
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류"),
+            (error instanceof Error ? error.message : "알 수 없는 오류")
         );
       }
     }
@@ -488,7 +489,9 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-sage-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        {/* Ver.1: SVG 동적 광원 효과 */}
+        <InteractiveLightOverlay id="library-header-light" intensity={0.1} />
+        <div className="max-w-7xl mx-auto px-6 py-4 relative z-10">
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -587,7 +590,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-stone-200 text-stone-600",
+                    !isEditMode && "bg-white border-stone-200 text-stone-600"
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -613,7 +616,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "grid"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -624,7 +627,7 @@ export default function LibraryPage() {
                       "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
                       viewMode === "list"
                         ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600",
+                        : "text-muted-foreground hover:text-sage-600"
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -687,7 +690,7 @@ export default function LibraryPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h2 className="text-2xl font-heading font-bold text-ink inline-block border-b-2 border-sage-500 pb-1">
+          <h2 className="text-2xl font-heading font-bold text-ink inline-block brush-underline pb-1">
             내 서재
           </h2>
         </motion.div>
@@ -697,7 +700,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1"
           )}
           initial={false}
           animate="visible"

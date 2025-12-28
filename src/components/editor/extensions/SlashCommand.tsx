@@ -22,6 +22,7 @@ import {
   Quote,
   Minus,
   User,
+  FilePlus,
 } from "lucide-react";
 
 export const SlashCommand = Extension.create({
@@ -29,6 +30,7 @@ export const SlashCommand = Extension.create({
 
   addOptions() {
     return {
+      onCreateSection: null as ((title: string) => void) | null,
       suggestion: {
         char: "/",
         command: ({
@@ -58,10 +60,44 @@ export const SlashCommand = Extension.create({
 
 const getSuggestionItems = ({
   query,
+  editor,
 }: {
   query: string;
+  editor: any;
 }): SlashCommandItem[] => {
-  return [
+  const items: SlashCommandItem[] = [
+    {
+      title: "새 섹션",
+      icon: <FilePlus className="w-4 h-4" />,
+      command: ({ editor, range }: SlashCommandParams) => {
+        const onCreateSection = editor.extensionManager.extensions.find(
+          (ext: any) => ext.name === "slashCommand"
+        )?.options?.onCreateSection;
+
+        if (onCreateSection) {
+          // Delete the slash command text
+          editor.chain().focus().deleteRange(range).run();
+          // Call the callback to create a new section (sibling)
+          onCreateSection("새 섹션", false);
+        }
+      },
+    },
+    {
+      title: "새 하위 섹션",
+      icon: <FilePlus className="w-4 h-4 text-sage-600" />,
+      command: ({ editor, range }: SlashCommandParams) => {
+        const onCreateSection = editor.extensionManager.extensions.find(
+          (ext: any) => ext.name === "slashCommand"
+        )?.options?.onCreateSection;
+
+        if (onCreateSection) {
+          // Delete the slash command text
+          editor.chain().focus().deleteRange(range).run();
+          // Call the callback to create a new subsection (child)
+          onCreateSection("새 하위 섹션", true);
+        }
+      },
+    },
     {
       title: "제목 1",
       icon: <Heading1 className="w-4 h-4" />,
@@ -133,7 +169,11 @@ const getSuggestionItems = ({
         editor.chain().focus().deleteRange(range).insertContent("@").run();
       },
     },
-  ].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()));
+  ];
+
+  return items.filter((item) =>
+    item.title.toLowerCase().includes(query.toLowerCase())
+  );
 };
 
 export const SlashCommandExtension = SlashCommand.configure({
