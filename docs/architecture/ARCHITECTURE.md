@@ -63,7 +63,7 @@ src/
 ├── data/                 # 목 데이터, 상수 (3개)
 │   └── demoData.ts       # 데모 모드 목 데이터
 │
-├── hooks/                # 커스텀 훅 (19개) ⭐
+├── hooks/                # 커스텀 훅 (25개) ⭐
 │   ├── useDocuments.ts   # 문서 CRUD (TanStack Query)
 │   ├── useProjects.ts    # 프로젝트 관리
 │   ├── useCharacters.ts  # 캐릭터 관리
@@ -98,7 +98,7 @@ src/
 │   ├── DocumentRepository.ts
 │   └── LocalDocumentRepository.ts
 │
-├── services/             # API 서비스 레이어 (12개) ⭐
+├── services/             # API 서비스 레이어 (16개) ⭐
 │   ├── documentService.ts
 │   ├── projectService.ts
 │   ├── characterService.ts
@@ -124,7 +124,7 @@ src/
 │
 ├── styles/               # 추가 스타일
 │
-└── types/                # TypeScript 타입 (11개)
+└── types/                # TypeScript 타입 (12개)
     ├── document.ts       # Document, DocumentMetadata
     ├── project.ts        # Project, ProjectStats
     ├── character.ts      # Character, Place, Item, BackendRelationship
@@ -187,7 +187,7 @@ src/
 | `useForeshadowingStore` | 복선 CRUD, 등장 위치         | -         |
 | `useChapterStore`       | 챕터 CRUD                    | -         |
 
-### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (2개)
+### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (8개)
 
 | 훅                 | 역할                | Query Key 패턴                 |
 | ------------------ | ------------------- | ------------------------------ |
@@ -341,7 +341,7 @@ sequenceDiagram
     participant API as Backend API
 
     Editor->>Editor: 사용자 타이핑
-    Note over Editor: 1.5초 디바운스
+    Note over Editor: 0.5초 디바운스
     Editor->>Hook: onContentChange(html)
     Hook->>Service: updateContent(id, content)
     Service->>API: PATCH /documents/:id/content

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   NavLink,
   Outlet,
@@ -24,6 +24,7 @@ import { BookReaderModal } from "@/components/common/BookReaderModal";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import type { Document } from "@/types/document";
+import { useProject, useUpdateProject } from "@/hooks/useProjects";
 // 로고 이미지를 import하여 번들링 호환성 확보
 import mainLogo from "@/assets/main_logo.png";
 
@@ -32,9 +33,17 @@ export function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { isFocusMode } = useEditorStore();
+  const { isFocusMode, saveStatus } = useEditorStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showReader, setShowReader] = useState(false);
+
+  // Project data
+  const { data: project } = useProject(id || "");
+  const updateProject = useUpdateProject();
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
 
   // 에디터 페이지이고 집중 모드일 때 헤더 숨김
   const isEditorPage = location.pathname.includes("/editor");
@@ -89,6 +98,25 @@ export function ProjectLayout() {
     navigate("/");
   };
 
+  // 편집 모드 시작 핸들러 (프로젝트 제목으로 초기화)
+  const startEditing = useCallback(() => {
+    if (project?.title) {
+      setEditedTitle(project.title);
+      setIsEditingTitle(true);
+    }
+  }, [project]);
+
+  // ⚠️ Fix: 제목 제출 로직 중복 제거
+  const handleTitleSubmit = useCallback(() => {
+    if (editedTitle.trim() && editedTitle !== project?.title && id) {
+      updateProject.mutate({
+        id,
+        payload: { title: editedTitle.trim() },
+      });
+    }
+    setIsEditingTitle(false);
+  }, [editedTitle, project?.title, id, updateProject]);
+
   return (
     <div className="flex flex-col h-screen bg-paper">
       {/* Header */}
@@ -122,17 +150,47 @@ export function ProjectLayout() {
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="font-heading font-semibold text-sm text-foreground">
-                  마법사의 여정
-                </h1>
-                <span className="px-1.5 py-0.5 rounded-md bg-stone-100 text-[10px] font-medium text-stone-600 border border-stone-200">
-                  DRAFT 1
-                </span>
+                {isEditingTitle ? (
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={handleTitleSubmit}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleTitleSubmit();
+                      }
+                      if (e.key === "Escape") {
+                        setEditedTitle(project?.title || "");
+                        setIsEditingTitle(false);
+                      }
+                    }}
+                    autoFocus
+                    className="font-heading font-semibold text-sm text-foreground bg-transparent border-b border-sage-400 focus:outline-none min-w-[120px]"
+                  />
+                ) : (
+                  <button
+                    onClick={startEditing}
+                    className="font-heading font-semibold text-sm text-foreground hover:text-sage-600 transition-colors cursor-pointer"
+                    title="클릭하여 제목 편집"
+                  >
+                    {project?.title || "프로젝트"}
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <div
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    saveStatus === "saved" && "bg-green-500",
+                    saveStatus === "saving" && "bg-yellow-500 animate-pulse",
+                    saveStatus === "unsaved" && "bg-amber-500",
+                  )}
+                />
                 <span className="text-[10px] text-muted-foreground">
-                  저장됨
+                  {saveStatus === "saved" && "저장 완료"}
+                  {saveStatus === "saving" && "저장 중..."}
+                  {saveStatus === "unsaved" && "편집 중"}
                 </span>
               </div>
             </div>
