@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { useEditorStore } from "@/stores";
 import type { Document } from "@/types/document";
 
 interface UseEditorHandlersOptions {
@@ -62,6 +63,10 @@ export function useEditorHandlers({
   const lastContentRef = useRef<string>("");
   const saveContentRef = useRef(saveContent);
   const selectedSectionIdRef = useRef(selectedSectionId);
+
+  // 🔴 Fix: selector로 setSaveStatus 가져와서 ref에 저장 (React 렌더링 사이클 호환)
+  const setSaveStatus = useEditorStore((state) => state.setSaveStatus);
+  const setSaveStatusRef = useRef(setSaveStatus);
   const updateDocumentRef = useRef(updateDocument);
 
   // Sync refs
@@ -76,6 +81,11 @@ export function useEditorHandlers({
   useEffect(() => {
     updateDocumentRef.current = updateDocument;
   }, [updateDocument]);
+
+  // Sync setSaveStatus ref
+  useEffect(() => {
+    setSaveStatusRef.current = setSaveStatus;
+  }, [setSaveStatus]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -163,12 +173,22 @@ export function useEditorHandlers({
       lastContentRef.current = content;
       if (isDemo) return;
 
+      // 🔴 Fix: ref를 통해 setSaveStatus 호출 (React 렌더링 사이클 호환)
+      setSaveStatusRef.current("unsaved");
+
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
-      saveTimeoutRef.current = setTimeout(() => {
-        saveContentRef.current(content);
+      saveTimeoutRef.current = setTimeout(async () => {
+        setSaveStatusRef.current("saving");
+        try {
+          await saveContentRef.current(content);
+          setSaveStatusRef.current("saved");
+        } catch (error) {
+          console.error("[EditorPage] Auto-save failed:", error);
+          setSaveStatusRef.current("unsaved");
+        }
       }, 500);
     },
     [isDemo],

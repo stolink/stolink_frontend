@@ -1,0 +1,311 @@
+
+> sto-link@0.0.0 test:coverage
+> vitest --coverage
+
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90m/Users/dongha/jungle/sto-link[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | src/hooks/useAuth.test.ts[2m > [22m[2museLogin[2m > [22m[2mshould handle login errors
+[22m[39mLogin Failed: Error: Invalid credentials
+    at [90m/Users/dongha/jungle/sto-link/[39msrc/hooks/useAuth.test.ts:115:19
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.U4xDYhzZ.js:115:27[90m)[39m
+    at trace [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+
+ [32m✓[39m src/services/characterService.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32m✓[39m src/services/foreshadowingService.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 213[2mms[22m[39m
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocument[2m > [22m[2mshould update document title
+[22m[39mAn update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/hooks/useCharacters.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 552[2mms[22m[39m
+ [32m✓[39m src/hooks/useAuth.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 555[2mms[22m[39m
+ [32m✓[39m src/hooks/useProjects.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 697[2mms[22m[39m
+ [32m✓[39m src/hooks/useForeshadowing.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 737[2mms[22m[39m
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocumentContent[2m > [22m[2mshould save content with optimistic update
+[22m[39mAn update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocumentContent[2m > [22m[2mshould save content with optimistic update
+[22m[39mAn update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocumentContent[2m > [22m[2mshould rollback on save error
+[22m[39mAn update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocumentContent[2m > [22m[2mshould rollback on save error
+[22m[39mFailed to save content: Error: Network error
+    at [90m/Users/dongha/jungle/sto-link/[39msrc/hooks/useDocuments.test.ts:454:7
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:915:26
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1209:10[90m)[39m
+    at [90mfile:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:37
+    at Traces.$ [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.U4xDYhzZ.js:115:27[90m)[39m
+    at trace [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4mvitest[24m/dist/chunks/test.B8ej_ZHS.js:239:21[90m)[39m
+    at runTest [90m(file:///Users/dongha/jungle/sto-link/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1653:12[90m)[39m
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/hooks/useDocuments.test.ts[2m > [22m[2museDocumentMutations[2m > [22m[2mshould reorder documents
+[22m[39mAn update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [31m❯[39m src/hooks/useDocuments.test.ts [2m([22m[2m33 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[33m 901[2mms[22m[39m
+     [32m✓[39m should generate correct query keys[32m 4[2mms[22m[39m
+     [32m✓[39m should fetch and build document tree[32m 187[2mms[22m[39m
+     [32m✓[39m should sync fetched documents to Zustand store[32m 58[2mms[22m[39m
+     [32m✓[39m should return empty tree for empty project[32m 59[2mms[22m[39m
+     [32m✓[39m should handle 404 errors gracefully[32m 56[2mms[22m[39m
+[31m     [31m×[31m should build tree with parent-child relationships[39m[32m 67[2mms[22m[39m
+[31m     [31m×[31m should sort tree nodes by order and createdAt[39m[32m 56[2mms[22m[39m
+     [32m✓[39m should return document by id[32m 3[2mms[22m[39m
+[31m     [31m×[31m should return null for non-existent document[39m[32m 4[2mms[22m[39m
+     [32m✓[39m should return null when id is null[32m 7[2mms[22m[39m
+     [32m✓[39m should provide updateDocument function[32m 4[2mms[22m[39m
+     [32m✓[39m should update document title[32m 10[2mms[22m[39m
+     [32m✓[39m should return children of a parent document[32m 4[2mms[22m[39m
+     [32m✓[39m should sort children by order[32m 3[2mms[22m[39m
+     [32m✓[39m should return root documents when parentId is null[32m 7[2mms[22m[39m
+     [32m✓[39m should return empty array for parent with no children[32m 3[2mms[22m[39m
+     [32m✓[39m should fetch document content[32m 59[2mms[22m[39m
+     [32m✓[39m should use local content when fetch returns null[32m 55[2mms[22m[39m
+     [32m✓[39m should handle 404 errors and use local cache[32m 56[2mms[22m[39m
+     [32m✓[39m should save content with optimistic update[32m 61[2mms[22m[39m
+     [32m✓[39m should rollback on save error[32m 61[2mms[22m[39m
+     [32m✓[39m should return empty string for null id[32m 3[2mms[22m[39m
+[31m     [31m×[31m should get content for multiple documents[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m should save bulk content[39m[32m 4[2mms[22m[39m
+[31m     [31m×[31m should return empty string for non-existent document[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m should create a new document[39m[32m 5[2mms[22m[39m
+[31m     [31m×[31m should update document[39m[32m 6[2mms[22m[39m
+[31m     [31m×[31m should delete document[39m[32m 5[2mms[22m[39m
+     [32m✓[39m should reorder documents[32m 12[2mms[22m[39m
+     [32m✓[39m should return all descendants including parent[32m 6[2mms[22m[39m
+     [32m✓[39m should return empty array for null parentId[32m 5[2mms[22m[39m
+     [32m✓[39m should return only parent if it has no children[32m 3[2mms[22m[39m
+     [32m✓[39m should traverse deeply nested hierarchy[32m 4[2mms[22m[39m
+ [32m✓[39m src/services/authService.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 205[2mms[22m[39m
+ [32m✓[39m src/services/documentService.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 325[2mms[22m[39m
+ [32m✓[39m src/stores/useChapterStore.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m src/stores/useSceneStore.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m src/stores/useForeshadowingStore.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m src/repositories/LocalDocumentRepository.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 9 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocumentTree[2m > [22mshould build tree with parent-child relationships
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m137:40[22m[39m
+    [90m135| [39m    })[33m;[39m
+    [90m136| [39m
+    [90m137| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                       [31m^[39m
+    [90m138| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[[34m0[39m][33m.[39mid)[33m.[39m[34mtoBe[39m([32m'doc-1'[39m)[33m;[39m
+    [90m139| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[[34m0[39m][33m.[39mchildren[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocumentTree[2m > [22mshould sort tree nodes by order and createdAt
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'id')[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m181:35[22m[39m
+    [90m179| [39m    })[33m;[39m
+    [90m180| [39m
+    [90m181| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[[34m0[39m][33m.[39mid)[33m.[39m[34mtoBe[39m([32m'doc-1'[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m182| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[[34m1[39m][33m.[39mid)[33m.[39m[34mtoBe[39m([32m'doc-2'[39m)[33m;[39m
+    [90m183| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mtree[[34m2[39m][33m.[39mid)[33m.[39m[34mtoBe[39m([32m'doc-3'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocument[2m > [22mshould return null for non-existent document
+[31m[1mAssertionError[22m: expected undefined to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m227:37[22m[39m
+    [90m225| [39m    [35mconst[39m { result } [33m=[39m [34mrenderHook[39m(() [33m=>[39m [34museDocument[39m([32m'non-existent'[39m))[33m;[39m
+    [90m226| [39m
+    [90m227| [39m    [34mexpect[39m(result[33m.[39mcurrent[33m.[39mdocument)[33m.[39m[34mtoBeNull[39m()[33m;[39m
+    [90m   | [39m                                    [31m^[39m
+    [90m228| [39m  })[33m;[39m
+    [90m229| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museBulkDocumentContent[2m > [22mshould get content for multiple documents
+[31m[1mTypeError[22m: result.current.getContent is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m528:36[22m[39m
+    [90m526| [39m    [35mconst[39m { result } [33m=[39m [34mrenderHook[39m(() [33m=>[39m [34museBulkDocumentContent[39m())[33m;[39m
+    [90m527| [39m
+    [90m528| [39m    [35mconst[39m content [33m=[39m result[33m.[39mcurrent[33m.[39m[34mgetContent[39m([[32m'doc-1'[39m[33m,[39m [32m'doc-2'[39m])[33m;[39m
+    [90m   | [39m                                   [31m^[39m
+    [90m529| [39m
+    [90m530| [39m    [34mexpect[39m(content[[32m'doc-1'[39m])[33m.[39m[34mtoBe[39m([32m'Content 1'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museBulkDocumentContent[2m > [22mshould save bulk content
+[31m[1mTypeError[22m: result.current.saveBulkContent is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m537:20[22m[39m
+    [90m535| [39m    [35mconst[39m { result } [33m=[39m [34mrenderHook[39m(() [33m=>[39m [34museBulkDocumentContent[39m())[33m;[39m
+    [90m536| [39m
+    [90m537| [39m    result[33m.[39mcurrent[33m.[39m[34msaveBulkContent[39m({
+    [90m   | [39m                   [31m^[39m
+    [90m538| [39m      [32m'doc-1'[39m[33m:[39m [32m'Updated 1'[39m[33m,[39m
+    [90m539| [39m      [32m'doc-2'[39m[33m:[39m [32m'Updated 2'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museBulkDocumentContent[2m > [22mshould return empty string for non-existent document
+[31m[1mTypeError[22m: result.current.getContent is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m550:36[22m[39m
+    [90m548| [39m    [35mconst[39m { result } [33m=[39m [34mrenderHook[39m(() [33m=>[39m [34museBulkDocumentContent[39m())[33m;[39m
+    [90m549| [39m
+    [90m550| [39m    [35mconst[39m content [33m=[39m result[33m.[39mcurrent[33m.[39m[34mgetContent[39m([[32m'non-existent'[39m])[33m;[39m
+    [90m   | [39m                                   [31m^[39m
+    [90m551| [39m
+    [90m552| [39m    [34mexpect[39m(content[[32m'non-existent'[39m])[33m.[39m[34mtoBe[39m([32m''[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocumentMutations[2m > [22mshould create a new document
+[31m[1mTypeError[22m: result.current.createDocument.mutateAsync is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m588:41[22m[39m
+    [90m586| [39m    const { result } = renderHook(() => useDocumentMutations('project-…
+    [90m587| [39m
+    [90m588| [39m    [35mawait[39m result[33m.[39mcurrent[33m.[39mcreateDocument[33m.[39m[34mmutateAsync[39m({
+    [90m   | [39m                                        [31m^[39m
+    [90m589| [39m      projectId[33m:[39m [32m'project-1'[39m[33m,[39m
+    [90m590| [39m      type[33m:[39m [32m'text'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocumentMutations[2m > [22mshould update document
+[31m[1mTypeError[22m: result.current.updateDocument.mutateAsync is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m635:41[22m[39m
+    [90m633| [39m    const { result } = renderHook(() => useDocumentMutations('project-…
+    [90m634| [39m
+    [90m635| [39m    [35mawait[39m result[33m.[39mcurrent[33m.[39mupdateDocument[33m.[39m[34mmutateAsync[39m({
+    [90m   | [39m                                        [31m^[39m
+    [90m636| [39m      id[33m:[39m [32m'doc-1'[39m[33m,[39m
+    [90m637| [39m      title[33m:[39m [32m'Updated Title'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/hooks/useDocuments.test.ts[2m > [22museDocumentMutations[2m > [22mshould delete document
+[31m[1mTypeError[22m: result.current.deleteDocument.mutateAsync is not a function[39m
+[36m [2m❯[22m src/hooks/useDocuments.test.ts:[2m676:41[22m[39m
+    [90m674| [39m    const { result } = renderHook(() => useDocumentMutations('project-…
+    [90m675| [39m
+    [90m676| [39m    [35mawait[39m result[33m.[39mcurrent[33m.[39mdeleteDocument[33m.[39m[34mmutateAsync[39m([32m'doc-1'[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m677| [39m
+    [90m678| [39m    [35mconst[39m state [33m=[39m useDocumentStore[33m.[39m[34mgetState[39m()[33m.[39mdocuments[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (13)[39m
+[2m      Tests [22m [1m[31m9 failed[39m[22m[2m | [22m[1m[32m195 passed[39m[22m[90m (204)[39m
+[2m   Start at [22m 15:03:42
+[2m   Duration [22m 9.01s[2m (transform 3.06s, setup 15.31s, import 5.66s, tests 4.53s, environment 24.81s)[22m
+
