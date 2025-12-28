@@ -7,15 +7,8 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -39,6 +32,12 @@ interface TreeItemProps {
   onDelete?: (id: string) => void;
   onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
   onReorder?: (parentId: string | null, orderedIds: string[]) => void;
+  onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
+  dropIndicator?: {
+    id: string;
+    position: "before" | "after" | "inside";
+  } | null;
+  activeId?: string | null;
 }
 
 export const TreeItem = memo(function TreeItem({
@@ -52,36 +51,71 @@ export const TreeItem = memo(function TreeItem({
   onRename,
   onDelete,
   onReorder,
+  onMoveToFolder,
+  dropIndicator,
+  activeId,
 }: TreeItemProps) {
   const hasChildren = (node.children?.length || 0) > 0;
   const isPart = node.type === "part";
   const isSelected = node.id === selectedId;
+  const isFolder = node.type === "chapter" || node.type === "part";
 
-  // Sortable hook
+  // 현재 이 폴더가 드래그 중인 아이템의 부모인지 확인
+  const isParentOfActive = useMemo(() => {
+    if (!activeId || !node.children) return false;
+    return node.children.some((child) => child.id === activeId);
+  }, [activeId, node.children]);
+
+  // 드롭 인디케이터 표시 조건
+  const showDropBefore =
+    dropIndicator?.id === node.id && dropIndicator.position === "before";
+  const showDropAfter =
+    dropIndicator?.id === node.id && dropIndicator.position === "after";
+  const showDropInside =
+    dropIndicator?.id === node.id &&
+    dropIndicator.position === "inside" &&
+    isFolder &&
+    !isParentOfActive; // 자기 부모인 경우 하이라이트 제외
+
+  // Sortable hook - 드래그 + 정렬 가능
+  // animateLayoutChanges: () => false 로 드래그 중 다른 아이템들이 움직이지 않게 함
   const {
     attributes,
     listeners,
-    setNodeRef,
+    setNodeRef: setSortableRef,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: node.id });
+  } = useSortable({
+    id: node.id,
+    animateLayoutChanges: () => false, // 드래그 중 레이아웃 애니메이션 비활성화
+  });
 
+  // Droppable hook - 폴더만 드롭 타겟 (폴더 간 이동용)
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `folder-drop-${node.id}`,
+    disabled: !isFolder,
+    data: { folderId: node.id },
+  });
+
+  // Combine refs
+  const setNodeRef = (element: HTMLDivElement | null) => {
+    setSortableRef(element);
+    if (isFolder) {
+      setDroppableRef(element);
+    }
+  };
+
+  // Style: 드래그 중인 아이템만 움직임, 다른 아이템은 고정
   const style = useMemo(
     () => ({
-      transform: CSS.Transform.toString(transform),
+      // 드래그 중인 본인만 transform 적용, 다른 아이템은 자리 유지
+      transform: isDragging ? CSS.Transform.toString(transform) : undefined,
       transition: isDragging ? undefined : transition,
+      // 드래그 중인 원래 위치는 희미하게 표시
+      opacity: isDragging ? 0.3 : 1,
     }),
     [transform, transition, isDragging],
-  );
-
-  // DnD Sensors for children (simplified - pointer only for nested contexts)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
   );
 
   // Child IDs for nested SortableContext
@@ -89,34 +123,6 @@ export const TreeItem = memo(function TreeItem({
     () => node.children?.map((c) => c.id) ?? [],
     [node.children],
   );
-
-  // Handle child reorder with error logging
-  const handleChildDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id && node.children) {
-      const children = node.children;
-      const oldIndex = children.findIndex((c) => c.id === active.id);
-      const newIndex = children.findIndex((c) => c.id === over.id);
-
-      if (oldIndex === -1 || newIndex === -1) {
-        console.error("Invalid drag indices:", {
-          oldIndex,
-          newIndex,
-          activeId: active.id,
-          overId: over.id,
-        });
-        return;
-      }
-
-      const newOrder = [...children];
-      const [removed] = newOrder.splice(oldIndex, 1);
-      newOrder.splice(newIndex, 0, removed);
-
-      const orderedIds = newOrder.map((c) => c.id);
-      onReorder?.(node.id, orderedIds);
-    }
-  };
 
   // 1. 기본 상태 및 동작 훅
   const {
@@ -168,6 +174,17 @@ export const TreeItem = memo(function TreeItem({
       className={cn("relative", isDragging && "opacity-50 z-50")}
       data-tree-item
     >
+      {/* Drop indicator - before (굵은 선 + 동그라미) */}
+      {showDropBefore && (
+        <div
+          className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+          style={{ top: -1, marginLeft: `${level * 16 + 4}px` }}
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          <div className="flex-1 h-0.5 bg-emerald-500 rounded-full" />
+        </div>
+      )}
+
       {/* 트리 연결선 컴포넌트 */}
       <TreeLines level={level} isLast={isLast} parentLines={parentLines} />
 
@@ -175,10 +192,14 @@ export const TreeItem = memo(function TreeItem({
       <div
         ref={itemRef}
         className={cn(
-          "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-colors duration-100",
+          "relative flex items-center gap-1.5 py-1 pr-2 rounded-md cursor-pointer group select-none transition-all duration-150",
           "hover:bg-stone-50",
           isSelected && "bg-sage-50",
           isDragging && "shadow-lg ring-2 ring-sage-400 bg-white",
+          // 폴더 드래그 오버 상태 - 강화된 하이라이트
+          (showDropInside ||
+            (isOver && isFolder && !isDragging && !isParentOfActive)) &&
+            "bg-emerald-100 ring-2 ring-emerald-500",
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -202,16 +223,24 @@ export const TreeItem = memo(function TreeItem({
           <div className="absolute left-0 top-1 bottom-1 w-[3px] bg-sage-500 rounded-r" />
         )}
 
-        {/* Status indicator */}
-        {node.status && (
-          <div
-            className={cn(
-              "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
-              statusColors[node.status],
-            )}
-            title={getStatusTitle(node.status)}
-          />
+        {/* Drop target indicator for folders */}
+        {isOver && isFolder && !isDragging && !isParentOfActive && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
+            여기에 놓기
+          </div>
         )}
+
+        {/* Status indicator */}
+        {node.status &&
+          !(isOver && isFolder && !isDragging && !isParentOfActive) && (
+            <div
+              className={cn(
+                "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
+                statusColors[node.status],
+              )}
+              title={getStatusTitle(node.status)}
+            />
+          )}
 
         {/* Expand/Collapse */}
         {hasChildren ? (
@@ -299,36 +328,44 @@ export const TreeItem = memo(function TreeItem({
         />
       )}
 
-      {/* Children with nested DndContext */}
+      {/* Children with nested SortableContext */}
       {hasChildren && isExpanded && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleChildDragEnd}
+        <SortableContext
+          items={childIds}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={childIds}
-            strategy={verticalListSortingStrategy}
-          >
-            <div>
-              {node.children?.map((child, idx) => (
-                <TreeItem
-                  key={child.id}
-                  node={child}
-                  level={level + 1}
-                  selectedId={selectedId}
-                  isLast={idx === (node.children?.length || 0) - 1}
-                  parentLines={nextParentLines}
-                  onSelect={onSelect}
-                  onAddChild={onAddChild}
-                  onRename={onRename}
-                  onDelete={onDelete}
-                  onReorder={onReorder}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+          <div>
+            {node.children?.map((child, idx) => (
+              <TreeItem
+                key={child.id}
+                node={child}
+                level={level + 1}
+                selectedId={selectedId}
+                isLast={idx === (node.children?.length || 0) - 1}
+                parentLines={nextParentLines}
+                onSelect={onSelect}
+                onAddChild={onAddChild}
+                onRename={onRename}
+                onDelete={onDelete}
+                onReorder={onReorder}
+                onMoveToFolder={onMoveToFolder}
+                dropIndicator={dropIndicator}
+                activeId={activeId}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      )}
+
+      {/* Drop indicator - after (굵은 선 + 동그라미) */}
+      {showDropAfter && (
+        <div
+          className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+          style={{ bottom: -1, marginLeft: `${level * 16 + 4}px` }}
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          <div className="flex-1 h-0.5 bg-emerald-500 rounded-full" />
+        </div>
       )}
     </div>
   );

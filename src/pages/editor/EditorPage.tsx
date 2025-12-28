@@ -168,6 +168,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     updateDocument: updateDocumentMutation,
     deleteDocument,
     reorderDocuments,
+    moveDocument,
   } = useDocumentMutations(projectId);
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
@@ -188,6 +189,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     handleRenameChapter,
     handleDeleteChapter,
     handleReorderChapter,
+    handleMoveToFolder,
   } = useEditorHandlers({
     isDemo,
     documents,
@@ -203,6 +205,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     createDocument,
     deleteDocument,
     reorderDocuments,
+    moveDocument,
   });
 
   // Title editing state
@@ -312,6 +315,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           onRenameChapter={handleRenameChapter}
           onDeleteChapter={handleDeleteChapter}
           onReorderChapter={handleReorderChapter}
+          onMoveToFolder={handleMoveToFolder}
           isOpen={isSidebarVisible}
           onToggle={toggleSidebar}
         />

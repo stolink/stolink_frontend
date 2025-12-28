@@ -475,11 +475,61 @@ export function useDocumentMutations(projectId: string) {
     [projectId, queryClient],
   );
 
+  /**
+   * Move document to a different folder (optimistic update)
+   */
+  const moveDocument = useCallback(
+    async (itemId: string, targetFolderId: string | null) => {
+      const { documents, _update } = useDocumentStore.getState();
+      const document = documents[itemId];
+
+      if (!document) {
+        console.error("Document not found:", itemId);
+        return;
+      }
+
+      // 1. Backup previous parentId for rollback
+      const previousParentId = document.parentId;
+
+      // 2. Optimistic Update: Update local store immediately
+      _update(itemId, { parentId: targetFolderId ?? undefined });
+
+      // 3. Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: documentKeys.tree(projectId),
+      });
+
+      try {
+        // 4. Sync with Backend
+        await documentService.update(itemId, {
+          parentId: targetFolderId ?? undefined,
+        });
+
+        // 5. Ensure data consistency by invalidating queries
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
+      } catch (error) {
+        console.error("Failed to move document:", error);
+
+        // 6. Rollback on failure
+        _update(itemId, { parentId: previousParentId });
+
+        // 7. Re-invalidate to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
+      }
+    },
+    [projectId, queryClient],
+  );
+
   return {
     createDocument,
     updateDocument,
     deleteDocument,
     reorderDocuments,
+    moveDocument,
   };
 }
 

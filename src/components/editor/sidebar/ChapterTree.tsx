@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   FileText,
   Folder,
@@ -11,11 +11,13 @@ import {
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
+  KeyboardSensor,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -27,6 +29,53 @@ import { Input } from "@/components/ui/input";
 import { TreeItem } from "./TreeItem";
 import { ContextMenu, type MenuItemType } from "./ContextMenu";
 import { type ChapterNode, type ChapterTreeProps } from "./types";
+
+// Helper: 전체 트리에서 노드 찾기
+function findNodeById(
+  nodes: ChapterNode[],
+  id: string,
+): ChapterNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const found = findNodeById(node.children, id);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+// Helper: 노드의 부모 ID 찾기
+function findParentId(
+  nodes: ChapterNode[],
+  id: string,
+  parentId: string | null = null,
+): string | null {
+  for (const node of nodes) {
+    if (node.id === id) return parentId;
+    if (node.children) {
+      const found = findParentId(node.children, id, node.id);
+      if (found !== undefined && found !== null) return found;
+      if (node.children.some((c) => c.id === id)) return node.id;
+    }
+  }
+  return null;
+}
+
+// Helper: 순환 참조 확인 (targetId가 itemId의 하위에 있는지)
+function isDescendant(
+  nodes: ChapterNode[],
+  itemId: string,
+  targetId: string,
+): boolean {
+  const item = findNodeById(nodes, itemId);
+  if (!item || !item.children) return false;
+  for (const child of item.children) {
+    if (child.id === targetId) return true;
+    if (isDescendant([child], child.id, targetId)) return true;
+  }
+  return false;
+}
 
 // 기본 Mock 데이터
 const defaultChapters: ChapterNode[] = [
@@ -83,6 +132,7 @@ export function ChapterTree({
   onRenameChapter,
   onDeleteChapter,
   onReorderChapter,
+  onMoveToFolder,
 }: ChapterTreeProps) {
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
@@ -98,11 +148,19 @@ export function ChapterTree({
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // DnD states
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // Drop indicator: { id: 타겟 아이템 ID, position: 'before' | 'after' | 'inside' }
+  const [dropIndicator, setDropIndicator] = useState<{
+    id: string;
+    position: "before" | "after" | "inside";
+  } | null>(null);
+
   // DnD Sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px 이동 후 드래그 시작
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -143,24 +201,168 @@ export function ChapterTree({
     setAddingToParent(null);
   };
 
-  // Drag End Handler
+  // Root level item IDs for SortableContext
+  const rootItemIds = useMemo(() => chapters.map((c) => c.id), [chapters]);
+
+  // Drag Start Handler
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    setDropIndicator(null);
+  };
+
+  // Drag Over Handler - 드롭 위치 감지
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { over, active } = event;
+
+      if (!over || over.id === active.id) {
+        setDropIndicator(null);
+        return;
+      }
+
+      const overId = over.id as string;
+      const overNode = findNodeById(chapters, overId);
+
+      if (!overNode) {
+        setDropIndicator(null);
+        return;
+      }
+
+      // 순환 참조 방지
+      if (isDescendant(chapters, active.id as string, overId)) {
+        setDropIndicator(null);
+        return;
+      }
+
+      // 폴더인 경우 -> inside (폴더 안으로 이동)
+      if (overNode.type === "chapter" || overNode.type === "part") {
+        setDropIndicator({ id: overId, position: "inside" });
+      } else {
+        // 섹션인 경우 -> before 또는 after
+        const overRect = over.rect;
+        const activeRect = active.rect.current.translated;
+
+        if (overRect && activeRect) {
+          // 드래그 중인 아이템의 중앙 Y 좌표
+          const activeMidY = activeRect.top + activeRect.height / 2;
+          // 타겟 아이템의 중앙 Y 좌표
+          const overMidY = overRect.top + overRect.height / 2;
+
+          if (activeMidY < overMidY) {
+            setDropIndicator({ id: overId, position: "before" });
+          } else {
+            setDropIndicator({ id: overId, position: "after" });
+          }
+        } else {
+          setDropIndicator({ id: overId, position: "after" });
+        }
+      }
+    },
+    [chapters],
+  );
+
+  // Drag End Handler - 순서 변경 + 폴더 이동 처리
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = chapters.findIndex((c) => c.id === active.id);
-      const newIndex = chapters.findIndex((c) => c.id === over.id);
+    // Cleanup
+    setActiveId(null);
+    setDropIndicator(null);
 
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeIdValue = active.id as string;
+    const overIdValue = over.id as string;
+
+    const activeNode = findNodeById(chapters, activeIdValue);
+    const overNode = findNodeById(chapters, overIdValue);
+
+    if (!activeNode || !overNode) return;
+
+    const activeParentId = findParentId(chapters, activeIdValue);
+    const overParentId = findParentId(chapters, overIdValue);
+
+    // Case 1: 폴더 위에 드롭 → 폴더 안으로 이동
+    if (overNode.type === "chapter" || overNode.type === "part") {
+      // 순환 참조 방지
+      if (isDescendant(chapters, activeIdValue, overIdValue)) {
+        console.warn("Cannot move item into its own descendant");
+        return;
+      }
+
+      // 이미 해당 폴더의 자식인 경우 → 순서 변경으로 처리
+      if (activeParentId === overIdValue) {
+        // 폴더의 자식들 중 순서 변경
+        const parent = findNodeById(chapters, overIdValue);
+        if (parent?.children) {
+          const oldIndex = parent.children.findIndex(
+            (c) => c.id === activeIdValue,
+          );
+          // 폴더 자체 위에 드롭한 경우이므로 첫 번째로 이동
+          if (oldIndex !== -1 && oldIndex !== 0) {
+            const newOrder = [...parent.children];
+            const [removed] = newOrder.splice(oldIndex, 1);
+            newOrder.unshift(removed);
+            onReorderChapter?.(
+              overIdValue,
+              newOrder.map((c) => c.id),
+            );
+          }
+        }
+        return;
+      }
+
+      // 폴더로 이동
+      onMoveToFolder?.(activeIdValue, overIdValue);
+      return;
+    }
+
+    // Case 2: 같은 부모 내에서 순서 변경
+    if (activeParentId === overParentId) {
+      const siblings =
+        activeParentId === null
+          ? chapters
+          : findNodeById(chapters, activeParentId)?.children || [];
+
+      const oldIndex = siblings.findIndex((c) => c.id === activeIdValue);
+      let newIndex = siblings.findIndex((c) => c.id === overIdValue);
+
+      // 드롭 인디케이터 위치에 따른 인덱스 보정
+      if (dropIndicator?.position === "after") {
+        newIndex += 1;
+      }
+
+      // 자기 자신보다 뒤로 가는 경우 인덱스 조정 (splice의 특성상)
       if (oldIndex !== -1 && newIndex !== -1) {
-        // Reorder: Create new ordered array
-        const newOrder = [...chapters];
-        const [removed] = newOrder.splice(oldIndex, 1);
-        newOrder.splice(newIndex, 0, removed);
+        const adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
 
-        const orderedIds = newOrder.map((c) => c.id);
-        onReorderChapter?.(null, orderedIds); // null = root level
+        if (oldIndex !== adjustedNewIndex) {
+          const newOrder = [...siblings];
+          const [removed] = newOrder.splice(oldIndex, 1);
+          newOrder.splice(adjustedNewIndex, 0, removed);
+
+          const orderedIds = newOrder.map((c) => c.id);
+          onReorderChapter?.(activeParentId, orderedIds);
+        }
       }
     }
+    // Case 3: 다른 폴더의 섹션 위에 드롭 → 해당 폴더로 이동
+    else if (overParentId !== null) {
+      // 순환 참조 방지
+      if (isDescendant(chapters, activeIdValue, overParentId)) {
+        console.warn("Cannot move item into its own descendant");
+        return;
+      }
+
+      onMoveToFolder?.(activeIdValue, overParentId);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDropIndicator(null);
   };
 
   // 컨테이너 컨텍스트 메뉴 (빈 공간 우클릭)
@@ -202,9 +404,6 @@ export function ChapterTree({
     },
   ];
 
-  // Root level item IDs for SortableContext
-  const rootItemIds = useMemo(() => chapters.map((c) => c.id), [chapters]);
-
   return (
     <div
       className="flex-1 flex flex-col min-h-full py-1"
@@ -234,7 +433,10 @@ export function ChapterTree({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <SortableContext
             items={rootItemIds}
@@ -253,6 +455,9 @@ export function ChapterTree({
                   onRename={onRenameChapter}
                   onDelete={onDeleteChapter}
                   onReorder={onReorderChapter}
+                  onMoveToFolder={onMoveToFolder}
+                  dropIndicator={dropIndicator}
+                  activeId={activeId}
                 />
               ))}
             </div>

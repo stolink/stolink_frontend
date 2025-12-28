@@ -63,6 +63,7 @@ export interface UpdateDocumentInput {
   content?: string;
   synopsis?: string;
   order?: number;
+  parentId?: string; // For moving to different folder
   metadata?: Partial<DocumentMetadata>;
   characterIds?: string[];
   foreshadowingIds?: string[];

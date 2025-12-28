@@ -23,6 +23,7 @@ export interface ChapterTreeProps {
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
   onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
+  onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
 }
 
 // Status colors mapping
