@@ -165,6 +165,15 @@ export function CharacterGraph({
           }
         });
 
+        // 라벨 위치 정보 저장 (충돌 감지용)
+        const labelPositions: Array<{
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          name: string;
+        }> = [];
+
         // groupConfig의 모든 그룹에 대해 처리
         groupConfig.forEach((config) => {
           const groupName = config.name;
@@ -210,8 +219,57 @@ export function CharacterGraph({
           const spreadRadius = maxDistance + 80;
           const dynamicRadius = Math.max(120, baseRadius, spreadRadius);
 
+          // 그룹 크기에 따라 폰트 크기 동적 조정 (최소 32, 최대 64)
+          const fontSize = Math.max(32, Math.min(64, dynamicRadius / 4));
+
+          // 초기 라벨 위치 (클라우드 상단)
+          let labelX = cx;
+          let labelY = cy - dynamicRadius * 0.6;
+
+          // 라벨 크기 추정 (폰트 크기 기반)
+          const estimatedWidth = groupName.length * fontSize * 0.7;
+          const estimatedHeight = fontSize * 1.2;
+
+          // 충돌 감지 및 위치 조정
+          let hasCollision = true;
+          let attempts = 0;
+          const maxAttempts = 8;
+          const angleStep = (Math.PI * 2) / maxAttempts;
+
+          while (hasCollision && attempts < maxAttempts) {
+            hasCollision = labelPositions.some((pos) => {
+              const dx = Math.abs(labelX - pos.x);
+              const dy = Math.abs(labelY - pos.y);
+              return (
+                dx < (estimatedWidth + pos.width) / 2 + 20 &&
+                dy < (estimatedHeight + pos.height) / 2 + 20
+              );
+            });
+
+            if (hasCollision) {
+              // 원형으로 위치 회전
+              const angle = angleStep * attempts;
+              const offset = dynamicRadius * 0.6;
+              labelX = cx + Math.cos(angle) * offset;
+              labelY = cy + Math.sin(angle) * offset;
+              attempts++;
+            }
+          }
+
+          // 라벨 위치 저장
+          labelPositions.push({
+            x: labelX,
+            y: labelY,
+            width: estimatedWidth,
+            height: estimatedHeight,
+            name: groupName,
+          });
+
           cloudEl.attr("cx", cx).attr("cy", cy).attr("r", dynamicRadius);
-          labelEl.attr("x", cx).attr("y", cy + dynamicRadius * 0.4);
+          labelEl
+            .attr("x", labelX)
+            .attr("y", labelY)
+            .attr("font-size", fontSize);
         });
       }
     });
@@ -309,17 +367,19 @@ export function CharacterGraph({
                   id={`label-${config.name.replace(/\s+/g, "-")}`}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill="rgba(0,0,0,0.6)"
-                  fontSize="64"
+                  fill="rgba(0,0,0,0.7)"
+                  fontSize="48"
                   fontWeight="700"
                   visibility="hidden"
-                  className="pointer-events-none select-none tracking-tighter"
+                  className="pointer-events-none select-none tracking-tight"
                   style={{
                     fontFamily: "'Nanum Myeongjo', serif",
                     stroke: "#FFFFFF",
-                    strokeWidth: "8px",
+                    strokeWidth: "10px",
                     strokeLinejoin: "round",
+                    strokeLinecap: "round",
                     paintOrder: "stroke fill",
+                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
                   }}
                 >
                   {config.name}
