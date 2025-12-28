@@ -73,7 +73,13 @@ export function useDeleteShareLink() {
 export function useSharedProject(
   shareId: string,
   password?: string,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    retry?:
+      | boolean
+      | number
+      | ((failureCount: number, error: Error) => boolean);
+  },
 ) {
   return useQuery({
     queryKey: shareKeys.public(shareId, password),
@@ -82,6 +88,6 @@ export function useSharedProject(
       return response.data;
     },
     enabled: options?.enabled !== false && !!shareId,
-    retry: false,
+    retry: options?.retry ?? false,
   });
 }
