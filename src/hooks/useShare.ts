@@ -13,6 +13,7 @@ export const shareKeys = {
 
 /**
  * Hook for fetching share settings
+ * Returns null if share is not enabled (404)
  */
 export function useShareSettings(
   projectId: string,
@@ -21,8 +22,19 @@ export function useShareSettings(
   return useQuery({
     queryKey: shareKeys.settings(projectId),
     queryFn: async () => {
-      const response = await shareService.getSettings(projectId);
-      return response.data;
+      try {
+        const response = await shareService.getSettings(projectId);
+        return response.data;
+      } catch (error) {
+        // 404 means no share link exists - return null instead of throwing
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 404) {
+            return null;
+          }
+        }
+        throw error;
+      }
     },
     enabled: options?.enabled !== false && !!projectId,
     retry: false, // Don't retry if share is not enabled
@@ -60,9 +72,8 @@ export function useDeleteShareLink() {
   return useMutation({
     mutationFn: (projectId: string) => shareService.disable(projectId),
     onSuccess: (_data, projectId) => {
-      queryClient.invalidateQueries({
-        queryKey: shareKeys.settings(projectId),
-      });
+      // Immediately set cache to null for instant UI update
+      queryClient.setQueryData(shareKeys.settings(projectId), null);
     },
   });
 }
