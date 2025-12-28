@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { useEditorStore } from "@/stores";
 import type { Document } from "@/types/document";
 
 interface UseEditorHandlersOptions {
@@ -158,12 +159,25 @@ export function useEditorHandlers({
       lastContentRef.current = content;
       if (isDemo) return;
 
+      // Set status to unsaved when content changes
+      useEditorStore.getState().setSaveStatus("unsaved");
+
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
-      saveTimeoutRef.current = setTimeout(() => {
-        saveContentRef.current(content);
+      saveTimeoutRef.current = setTimeout(async () => {
+        // Set status to saving
+        useEditorStore.getState().setSaveStatus("saving");
+        try {
+          await saveContentRef.current(content);
+          // Set status to saved on success
+          useEditorStore.getState().setSaveStatus("saved");
+        } catch (error) {
+          console.error("[EditorPage] Auto-save failed:", error);
+          // Revert to unsaved on error
+          useEditorStore.getState().setSaveStatus("unsaved");
+        }
       }, 500);
     },
     [isDemo],
