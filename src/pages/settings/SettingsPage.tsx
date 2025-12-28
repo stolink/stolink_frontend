@@ -30,7 +30,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { SettingRow } from "@/components/ui/setting-row";
 
 export default function SettingsPage() {
-  const { id: projectId } = useParams<{ id: string }>();
+  const { id: projectId } = useParams<{ id?: string }>();
 
   // Share Hooks
   const { data: shareSettings, isLoading: isLoadingShare } = useShareSettings(
@@ -51,7 +51,7 @@ export default function SettingsPage() {
   }
 
   const handleCreateShare = () => {
-    createShare.mutate({ projectId: projectId! });
+    createShare.mutate({ projectId });
   };
 
   const handleDeleteShare = () => {
@@ -61,7 +61,7 @@ export default function SettingsPage() {
         "정말로 공유 링크를 삭제하시겠습니까? 더 이상 이 링크로 접근할 수 없습니다.",
       )
     ) {
-      deleteShare.mutate(projectId!);
+      deleteShare.mutate(projectId);
     }
   };
 
@@ -69,10 +69,14 @@ export default function SettingsPage() {
     ? `${window.location.origin}/share/${shareSettings.shareId}`
     : "";
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl);
-      // Optional: Add toast notification if available
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        // Optional: Add toast notification if available
+      } catch (err) {
+        console.error("클립보드 복사 실패:", err);
+      }
     }
   };
 

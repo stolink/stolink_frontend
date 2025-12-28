@@ -24,6 +24,18 @@ interface ApiError {
   };
 }
 
+const isValidDocumentNode = (item: unknown): item is DocumentNode => {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    "id" in item &&
+    "title" in item &&
+    "type" in item &&
+    typeof (item as any).id === "string" && // eslint-disable-line @typescript-eslint/no-explicit-any
+    typeof (item as any).title === "string" // eslint-disable-line @typescript-eslint/no-explicit-any
+  );
+};
+
 export default function SharedProjectPage() {
   const { shareId } = useParams<{ shareId: string }>();
   const [password, setPassword] = useState("");
@@ -33,11 +45,13 @@ export default function SharedProjectPage() {
     data: project,
     isLoading,
     error,
+    refetch,
   } = useSharedProject(shareId || "", password, {
     enabled: !!shareId, // Fetch initially to check if password is required
     retry: (failureCount, error) => {
-      // Don't retry on 403 (passowrd required)
-      return (error as ApiError)?.response?.status !== 403 && failureCount < 1;
+      const isPasswordError = (error as ApiError)?.response?.status === 403;
+      // Don't retry on 403 (password required)
+      return !isPasswordError && failureCount < 1;
     },
   });
 
@@ -52,7 +66,7 @@ export default function SharedProjectPage() {
       if (!Array.isArray(docs)) return;
 
       for (const doc of docs) {
-        if (!doc || typeof doc !== "object") continue;
+        if (!isValidDocumentNode(doc)) continue;
 
         const item = doc as DocumentNode;
 
@@ -83,6 +97,8 @@ export default function SharedProjectPage() {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPassword(passwordInput);
+    // Retry fetching with new password
+    setTimeout(() => refetch(), 0);
   };
 
   const handleClose = () => {
