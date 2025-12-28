@@ -1,5 +1,6 @@
 import {
   PanelLeft,
+  PanelRight,
   BookOpen,
   ChevronRight,
   Layout,
@@ -15,6 +16,14 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { EditorSettingsPanel } from "@/components/editor/settings/EditorSettingsPanel";
 
 interface EditorToolbarProps {
   // Sidebar
@@ -102,12 +111,12 @@ export function EditorToolbar({
   onExport,
 }: EditorToolbarProps) {
   return (
-    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-white z-10">
+    <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-card z-10">
       <div className="flex items-center gap-3">
         {!isSidebarVisible && (
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors mr-2"
+            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground transition-colors mr-2"
             title="사이드바 열기"
           >
             <PanelLeft className="w-5 h-5" />
@@ -130,7 +139,7 @@ export function EditorToolbar({
         />
 
         {characterCount > 0 && (
-          <span className="text-xs text-stone-400">
+          <span className="text-xs text-muted-foreground">
             ({characterCount.toLocaleString()}자)
           </span>
         )}
@@ -142,13 +151,13 @@ export function EditorToolbar({
           onViewModeChange={onViewModeChange}
         />
 
-        <div className="h-4 w-px bg-stone-200 mx-1" />
+        <div className="h-4 w-px bg-border mx-1" />
 
         <div className="flex items-center gap-1">
           {onShowReader && (
             <button
               onClick={onShowReader}
-              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 hover:text-stone-900 rounded-lg transition-all border border-stone-300 hover:border-stone-400 flex items-center gap-1.5 font-medium text-xs shadow-sm"
+              className="px-3 py-1.5 bg-secondary hover:bg-accent text-foreground rounded-lg transition-all border border-border hover:border-primary/30 flex items-center gap-1.5 font-medium text-xs shadow-sm"
               title="미리보기 (작품을 읽기 모드로 확인)"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -156,15 +165,15 @@ export function EditorToolbar({
             </button>
           )}
 
-          <div className="h-4 w-px bg-stone-200 mx-1" />
+          <div className="h-4 w-px bg-border mx-1" />
 
           <button
             onClick={onToggleSplitView}
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               splitViewEnabled
-                ? "bg-sage-100 text-sage-700"
-                : "hover:bg-stone-100 text-stone-500"
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-accent text-muted-foreground"
             )}
             title="분할 화면"
           >
@@ -176,8 +185,8 @@ export function EditorToolbar({
             className={cn(
               "p-1.5 rounded-lg transition-colors",
               isTypewriterMode
-                ? "bg-sage-100 text-sage-700"
-                : "hover:bg-stone-100 text-stone-500"
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-accent text-muted-foreground"
             )}
             title="타자기 모드 (커서를 화면 중앙에 고정)"
           >
@@ -187,7 +196,7 @@ export function EditorToolbar({
           {onToggleSnapshot && (
             <button
               onClick={onToggleSnapshot}
-              className="p-1.5 rounded-lg transition-colors hover:bg-stone-100 text-stone-500"
+              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
               title="스냅샷 (문서 버전 관리)"
             >
               <History className="w-4 h-4" />
@@ -197,7 +206,7 @@ export function EditorToolbar({
           {onExport && (
             <button
               onClick={onExport}
-              className="p-1.5 rounded-lg transition-colors hover:bg-stone-100 text-stone-500"
+              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
               title="내보내기"
             >
               <Download className="w-4 h-4" />
@@ -206,24 +215,48 @@ export function EditorToolbar({
 
           <button
             onClick={onToggleFocusMode}
-            className="p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 transition-colors"
+            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground transition-colors"
             title="집중 모드"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="h-4 w-px bg-stone-200 mx-1" />
+        <div className="h-4 w-px bg-border mx-1" />
+
+        {/* Editor Settings Sheet - 톱니바퀴 아이콘 */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
+              title="에디터 설정"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="w-[400px] sm:w-[450px] overflow-y-auto"
+          >
+            <SheetHeader>
+              <SheetTitle>에디터 설정</SheetTitle>
+            </SheetHeader>
+            <EditorSettingsPanel className="mt-4" />
+          </SheetContent>
+        </Sheet>
+
+        {/* Right Sidebar Toggle - 패널 아이콘 */}
         <button
           onClick={onToggleRightSidebar}
           className={cn(
             "p-1.5 rounded-lg transition-colors",
             rightSidebarOpen
-              ? "bg-sage-100 text-sage-700"
-              : "hover:bg-stone-100 text-stone-500"
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-accent text-muted-foreground"
           )}
+          title="복선/AI 사이드바"
         >
-          <Settings className="w-4 h-4" />
+          <PanelRight className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -272,8 +305,8 @@ function TitleBreadcrumb({
   const usePath = sectionPath.length > 0;
 
   return (
-    <div className="flex items-center gap-2 text-sm overflow-hidden bg-stone-50/50 px-3 py-1.5 rounded-full border border-stone-200/50 shadow-sm max-w-xl">
-      <BookOpen className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+    <div className="flex items-center gap-2 text-sm overflow-hidden bg-secondary/50 px-3 py-1.5 rounded-full border border-border/50 shadow-sm max-w-xl">
+      <BookOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
 
       {usePath ? (
         // Full path breadcrumb (루트 > 챕터 > 섹션 > 하위섹션)
@@ -290,7 +323,7 @@ function TitleBreadcrumb({
                     onBlur={onSaveTitle}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="font-bold text-stone-800 bg-transparent focus:outline-none min-w-[150px]"
+                    className="font-bold text-foreground bg-transparent focus:outline-none min-w-[150px]"
                   />
                 ) : (
                   <button
@@ -302,8 +335,8 @@ function TitleBreadcrumb({
                     className={cn(
                       "truncate max-w-[150px] transition-colors",
                       isLast
-                        ? "font-bold text-stone-800 hover:text-sage-700"
-                        : "font-medium text-stone-500"
+                        ? "font-bold text-foreground hover:text-primary"
+                        : "font-medium text-muted-foreground"
                     )}
                     title={
                       isLast && !isDemo ? "클릭하여 제목 편집" : item.title
@@ -313,7 +346,7 @@ function TitleBreadcrumb({
                   </button>
                 )}
                 {!isLast && (
-                  <ChevronRight className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
                 )}
               </div>
             );
@@ -322,12 +355,12 @@ function TitleBreadcrumb({
       ) : (
         // Fallback: old 2-level breadcrumb
         <>
-          <div className="flex items-center gap-1.5 text-stone-400">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <span className="font-medium truncate max-w-[120px]">
               {currentFolderTitle || "챕터"}
             </span>
           </div>
-          <ChevronRight className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
           <div className="flex items-center gap-1.5 min-w-0">
             {isEditingTitle ? (
               <input
@@ -337,7 +370,7 @@ function TitleBreadcrumb({
                 onBlur={onSaveTitle}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="font-bold text-stone-800 bg-transparent focus:outline-none min-w-[150px]"
+                className="font-bold text-foreground bg-transparent focus:outline-none min-w-[150px]"
               />
             ) : (
               <button
@@ -346,7 +379,7 @@ function TitleBreadcrumb({
                     onStartEditTitle();
                   }
                 }}
-                className="font-bold text-stone-800 truncate max-w-[200px] hover:text-sage-700 transition-colors"
+                className="font-bold text-foreground truncate max-w-[200px] hover:text-primary transition-colors"
                 title={isDemo ? "데모 모드" : "클릭하여 제목 편집"}
               >
                 {currentSectionTitle || "섹션을 선택하세요"}
@@ -376,7 +409,7 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
   ];
 
   return (
-    <div className="flex bg-stone-100/80 p-1 rounded-xl border border-stone-200 shadow-inner">
+    <div className="flex bg-secondary/80 p-1 rounded-xl border border-border shadow-inner">
       {modes.map(({ mode, icon: Icon, label }) => (
         <button
           key={mode}
@@ -384,8 +417,8 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
             viewMode === mode
-              ? "bg-white text-sage-600 shadow-sm ring-1 ring-black/5"
-              : "text-stone-500 hover:text-stone-700 hover:bg-white/50"
+              ? "bg-card text-primary shadow-sm ring-1 ring-border"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           )}
         >
           <Icon className="w-3.5 h-3.5" />

@@ -37,9 +37,9 @@ export default function EditorRightSidebar({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-80 min-w-[280px] border-l border-stone-200 bg-white flex flex-col shrink-0">
+    <aside className="w-80 min-w-[280px] border-l border-border bg-card flex flex-col shrink-0">
       {/* Header with Tabs */}
-      <div className="h-12 px-2 border-b border-stone-100 flex items-center justify-between shrink-0">
+      <div className="h-12 px-2 border-b border-border/50 flex items-center justify-between shrink-0">
         <Tabs
           value={activeTab}
           onValueChange={(v) => onTabChange(v as RightSidebarTab)}
@@ -80,7 +80,7 @@ export default function EditorRightSidebar({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-7 w-7 ml-1 text-stone-400 hover:text-stone-600"
+          className="h-7 w-7 ml-1 text-muted-foreground hover:text-foreground"
         >
           <PanelRightClose className="h-4 w-4" />
         </Button>

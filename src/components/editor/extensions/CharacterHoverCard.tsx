@@ -19,7 +19,7 @@ export function CharacterHoverCard({
   avatar,
 }: CharacterHoverCardProps) {
   return (
-    <div className="w-64 bg-white rounded-lg shadow-xl border border-stone-200 overflow-hidden">
+    <div className="w-64 bg-card rounded-lg shadow-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 text-white">
         <div className="flex items-center gap-3">
@@ -30,7 +30,7 @@ export function CharacterHoverCard({
               className="w-10 h-10 rounded-full border-2 border-white/50 object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-card/20 flex items-center justify-center">
               <User className="w-5 h-5" />
             </div>
           )}
@@ -38,7 +38,7 @@ export function CharacterHoverCard({
             <h4 className="font-bold text-sm">{name}</h4>
             <Badge
               variant="secondary"
-              className="text-[10px] px-1.5 py-0 bg-white/20 text-white border-none"
+              className="text-[10px] px-1.5 py-0 bg-card/20 text-white border-none"
             >
               {role}
             </Badge>
@@ -49,7 +49,7 @@ export function CharacterHoverCard({
       {/* Body */}
       <div className="p-3 space-y-2">
         {description && (
-          <p className="text-xs text-stone-600 leading-relaxed line-clamp-2">
+          <p className="text-xs text-foreground leading-relaxed line-clamp-2">
             {description}
           </p>
         )}
@@ -57,13 +57,13 @@ export function CharacterHoverCard({
         {(age || trait) && (
           <div className="flex items-center gap-3 pt-1 border-t border-stone-100">
             {age && (
-              <div className="flex items-center gap-1 text-[10px] text-stone-500">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Calendar className="w-3 h-3" />
                 <span>{age}세</span>
               </div>
             )}
             {trait && (
-              <div className="flex items-center gap-1 text-[10px] text-stone-500">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Sparkles className="w-3 h-3" />
                 <span>{trait}</span>
               </div>

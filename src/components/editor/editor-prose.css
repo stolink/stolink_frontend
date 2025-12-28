@@ -2,14 +2,15 @@
 
 .ProseMirror {
   font-size: inherit;
-  line-height: 1.75;
-  color: #292524;
+  line-height: inherit;
+  color: inherit;
   width: 100% !important;
   max-width: 100% !important;
 }
 
 .ProseMirror p {
-  margin-bottom: 1em;
+  margin-bottom: var(--st-editor-paragraph-spacing, 1em);
+  text-indent: var(--st-editor-text-indent, 0);
   word-break: keep-all;
 }
 
@@ -18,7 +19,8 @@
   font-weight: 700;
   margin-top: 1.5em;
   margin-bottom: 0.5em;
-  color: #1c1917;
+  text-indent: 0;
+  color: inherit;
 }
 
 .ProseMirror h2 {
@@ -26,7 +28,8 @@
   font-weight: 600;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
-  color: #292524;
+  text-indent: 0;
+  color: inherit;
 }
 
 .ProseMirror h3 {
@@ -34,7 +37,8 @@
   font-weight: 500;
   margin-top: 1em;
   margin-bottom: 0.5em;
-  color: #44403c;
+  text-indent: 0;
+  color: inherit;
 }
 
 .ProseMirror blockquote {
@@ -62,7 +66,7 @@
 }
 
 .ProseMirror ::selection {
-  background-color: #d1fae5;
+  background-color: var(--st-editor-selection-color, #d1fae5);
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {

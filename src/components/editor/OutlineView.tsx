@@ -31,7 +31,7 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
 
   return (
     <TableRow
-      className="hover:bg-stone-50/50 transition-colors cursor-pointer"
+      className="hover:bg-muted/50/50 transition-colors cursor-pointer"
       onClick={() => onSelect(doc.id)}
     >
       <TableCell className="font-medium">
@@ -77,11 +77,11 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
                 setSynopsis(doc.synopsis || "");
               }
             }}
-            className="w-full text-sm bg-white border border-sage-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sage-500"
+            className="w-full text-sm bg-card border border-sage-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sage-500"
           />
         ) : (
           <span
-            className="text-stone-500 text-sm line-clamp-1 italic cursor-text hover:bg-stone-100 rounded px-2 py-1 transition-colors"
+            className="text-muted-foreground text-sm line-clamp-1 italic cursor-text hover:bg-muted rounded px-2 py-1 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               setIsEditingSynopsis(true);
@@ -99,12 +99,12 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
           {doc.metadata?.status ?? "작성 중"}
         </Badge>
       </TableCell>
-      <TableCell className="text-right text-stone-600 font-mono text-xs">
+      <TableCell className="text-right text-foreground font-mono text-xs">
         {(doc.metadata.wordCount || 0).toLocaleString()}
       </TableCell>
       <TableCell>
         <button
-          className="p-1 hover:bg-stone-100 rounded text-stone-400"
+          className="p-1 hover:bg-muted rounded text-muted-foreground"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal className="w-4 h-4" />
@@ -135,22 +135,22 @@ export default function OutlineView({
   };
 
   if (isLoading)
-    return <div className="p-8 text-stone-400">Loading outline...</div>;
+    return <div className="p-8 text-muted-foreground">Loading outline...</div>;
 
   return (
-    <div className="flex-1 overflow-auto p-6 bg-white">
+    <div className="flex-1 overflow-auto p-6 bg-card">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-stone-800">아웃라인</h1>
-          <p className="text-stone-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">아웃라인</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             섹션별 시놉시스와 진행 상태를 한눈에 파악합니다. 행을 클릭하면
             단일 뷰로 전환됩니다.
           </p>
         </header>
 
-        <div className="border rounded-lg overflow-hidden border-stone-200 shadow-sm">
+        <div className="border rounded-lg overflow-hidden border-border shadow-sm">
           <Table>
-            <TableHeader className="bg-stone-50">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[300px]">제목</TableHead>
                 <TableHead>시놉시스</TableHead>
@@ -172,7 +172,7 @@ export default function OutlineView({
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center py-12 text-stone-400 italic"
+                    className="text-center py-12 text-muted-foreground italic"
                   >
                     이 폴더에 섹션이 없습니다.
                   </TableCell>

@@ -33,12 +33,12 @@ export default function EditorLeftSidebar({
 }: EditorLeftSidebarProps) {
   if (!isOpen) {
     return (
-      <div className="w-10 border-r border-stone-200 bg-paper flex flex-col items-center py-2 shrink-0">
+      <div className="w-10 border-r border-border bg-background flex flex-col items-center py-2 shrink-0">
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="text-stone-500 hover:text-stone-900"
+          className="text-muted-foreground hover:text-foreground"
           title="사이드바 열기"
         >
           <PanelLeft className="h-4 w-4" />
@@ -48,14 +48,14 @@ export default function EditorLeftSidebar({
   }
 
   return (
-    <aside className="w-64 min-w-[240px] max-w-xs border-r border-stone-200 bg-paper flex flex-col shrink-0">
+    <aside className="w-64 min-w-[240px] max-w-xs border-r border-border bg-background flex flex-col shrink-0">
       {/* Minimal Header - 닫기 버튼만 */}
-      <div className="h-10 px-2 border-b border-stone-100 flex items-center justify-end shrink-0">
+      <div className="h-10 px-2 border-b border-border/50 flex items-center justify-end shrink-0">
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="h-7 w-7 text-stone-400 hover:text-stone-600"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
           title="사이드바 닫기"
         >
           <PanelLeftClose className="h-4 w-4" />

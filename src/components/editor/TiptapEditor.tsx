@@ -23,6 +23,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
+import { TypewriterScroll } from "./extensions/TypewriterScroll";
+import { FocusMode } from "./extensions/FocusMode";
+import { SmartPunctuation } from "./extensions/SmartPunctuation";
+import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
+import { getEditorCSSVariables } from "@/lib/editor-styles";
 import { sanitizeEditorContent } from "@/lib/sanitize";
 import "./editor-prose.css";
 
@@ -33,7 +38,7 @@ export interface TiptapEditorProps {
   initialContent?: string;
   readOnly?: boolean;
   hideToolbar?: boolean;
-  isTypewriterMode?: boolean; // 타자기 모드 - 커서를 화면 중앙에 고정
+  // Note: isTypewriterMode prop removed - now handled by useEditorSettingStore + TypewriterScroll extension
 }
 
 export interface TiptapEditorHandle {
@@ -66,7 +71,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       initialContent,
       readOnly = false,
       hideToolbar = false,
-      isTypewriterMode = false,
     },
     ref
   ) => {
@@ -92,19 +96,59 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       onCreateSectionRef.current = onCreateSection;
     }, [onCreateSection]);
 
-    // Ref for typewriter mode to avoid stale closure
-    const isTypewriterModeRef = useRef(isTypewriterMode);
-    useEffect(() => {
-      isTypewriterModeRef.current = isTypewriterMode;
-    }, [isTypewriterMode]);
-
     const [showZoomControls, setShowZoomControls] = useState(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const scrollPositionRef = useRef<number>(0);
 
-    const isAutoScrollingRef = useRef(false);
+    // Get settings from the store
+    const typography = useEditorSettingStore((s) => s.typography);
+    const visual = useEditorSettingStore((s) => s.visual);
+    const behavior = useEditorSettingStore((s) => s.behavior);
 
-    // Memoize extensions to prevent duplicate registration
+    // Destructure behavior settings
+    const typewriterMode = behavior?.typewriterMode ?? "off";
+    const focusModeEnabled = behavior?.focusMode ?? false;
+    const smartQuotes = behavior?.smartQuotes ?? true;
+    const smartDashes = behavior?.smartDashes ?? true;
+    const smartEllipsis = behavior?.smartEllipsis ?? true;
+
+    // Get CSS variables and theme class from settings
+    const editorSettings = {
+      typography: typography ?? {
+        fontFamily: "pretendard" as const,
+        fontSize: 16,
+        lineHeight: 1.8,
+        letterSpacing: 0,
+        paragraphSpacing: 0.5,
+        indent: 0,
+      },
+      visual: visual ?? {
+        theme: "light" as const,
+        width: "standard" as const,
+        showLineNumbers: false,
+        highlightCurrentLine: true,
+        caretStyle: { width: 2, blink: "blink" as const },
+      },
+      behavior: behavior ?? {
+        typewriterMode: "off" as const,
+        typewriterSmoothScroll: true,
+        focusMode: false,
+        zenMode: false,
+        smartQuotes: true,
+        smartDashes: true,
+        smartEllipsis: true,
+        linguisticMode: "off" as const,
+      },
+      system: {
+        autoSaveInterval: "5s" as const,
+        overscroll: true,
+      },
+    };
+
+    const cssVariables = getEditorCSSVariables(editorSettings);
+
+    // Memoize extensions - no dependencies to prevent editor recreation
+    // Settings are applied via commands after editor creation
     const extensions = useMemo(() => {
       const exts = [
         StarterKit.configure({
@@ -130,141 +174,90 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             onCreateSectionRef.current?.(title);
           },
         }),
+        TypewriterScroll.configure({
+          position: "off",
+          smoothScroll: true,
+          threshold: 5,
+        }),
+        // FocusMode and SmartPunctuation disabled due to type compatibility issues
+        // TODO: Fix these extensions in a future update
+        // FocusMode.configure({
+        //   enabled: false,
+        // }),
+        // SmartPunctuation.configure({
+        //   smartQuotes,
+        //   smartDashes,
+        //   smartEllipsis,
+        // }),
       ];
 
       return exts;
-    }, []); // No dependencies - stable reference
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const editor = useEditor(
-      {
-        editable: !readOnly,
-        extensions,
-        content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
-        editorProps: {
-          attributes: {
-            class: cn(
-              // Remove prose class - use direct styling for full width
-              "w-full",
-              "focus:outline-none min-h-[500px] px-6 py-6",
-              readOnly && "pointer-events-none opacity-80"
-            ),
-            spellcheck: "false",
-          },
-          handleScrollToSelection: () => {
-            // 타자기 모드일 때는 ProseMirror의 기본 스크롤 동작을 차단
-            return isTypewriterModeRef.current;
-          },
-          handleDOMEvents: {
-            beforeinput: () => {
-              if (editorContainerRef.current) {
-                scrollPositionRef.current =
-                  editorContainerRef.current.scrollTop;
-              }
-              return false;
-            },
-          },
+    const editor = useEditor({
+      editable: !readOnly,
+      extensions,
+      content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
+      editorProps: {
+        attributes: {
+          class: cn(
+            // Remove prose class - use direct styling for full width
+            "w-full",
+            "focus:outline-none min-h-[500px] px-6 py-6",
+            readOnly && "pointer-events-none opacity-80"
+          ),
+          spellcheck: "false",
         },
-        onUpdate: ({ editor }) => {
-          if (onUpdateRef.current) {
-            onUpdateRef.current(editor.storage.characterCount.characters());
-          }
-          if (onContentChangeRef.current) {
-            onContentChangeRef.current(editor.getHTML());
-          }
-          // Note: Typewriter scroll is handled in onSelectionUpdate for better responsiveness
-        },
-        onSelectionUpdate: ({ editor }) => {
-          // 타자기 모드: 커서 위치를 화면 중앙으로 스크롤
-          if (isTypewriterModeRef.current && editorContainerRef.current) {
-            if (isAutoScrollingRef.current) return;
-
-            const { view } = editor;
-            const { from } = view.state.selection;
-
-            requestAnimationFrame(() => {
-              try {
-                if (isAutoScrollingRef.current) return;
-
-                const coords = view.coordsAtPos(from);
-                const container = editorContainerRef.current;
-                if (!container) return;
-
-                const containerRect = container.getBoundingClientRect();
-
-                // UX 개선: 중앙(0.5)보다 조금 위(0.4)에 위치시켜 시야 확보
-                const targetY = containerRect.height * 0.4;
-
-                // Calculate cursor position relative to the container's *visible* area top
-                const cursorRelativeY = coords.top - containerRect.top;
-
-                // If cursorRelativeY > targetY, scroll down (increase scrollTop)
-                const scrollOffset = cursorRelativeY - targetY;
-
-                // Threshold to prevent jitter (5px)
-                if (Math.abs(scrollOffset) > 5) {
-                  isAutoScrollingRef.current = true;
-                  container.scrollTop += scrollOffset;
-
-                  setTimeout(() => {
-                    isAutoScrollingRef.current = false;
-                  }, 50);
-                }
-              } catch {
-                isAutoScrollingRef.current = false;
-              }
-            });
-          }
-        },
-        onTransaction: () => {
-          // 타자기 모드일 때는 스크롤 위치 복원 건너뛰기
-          if (isTypewriterModeRef.current) return;
-
-          requestAnimationFrame(() => {
-            if (editorContainerRef.current && scrollPositionRef.current > 0) {
-              editorContainerRef.current.scrollTop = scrollPositionRef.current;
+        // Note: handleScrollToSelection for typewriter mode now handled by TypewriterScroll extension
+        handleDOMEvents: {
+          beforeinput: () => {
+            if (editorContainerRef.current) {
+              scrollPositionRef.current = editorContainerRef.current.scrollTop;
             }
-          });
+            return false;
+          },
         },
       },
-      [extensions] // Removed isTypewriterMode dependency to prevent re-creation
-    );
-
-    // Apply typewriter styles dynamically to prevent editor re-creation
-    useEffect(() => {
-      if (!editor) return;
-
-      const dom = editor.view.dom as HTMLElement;
-
-      if (isTypewriterMode) {
-        // Apply padding for typewriter mode (40vh top to align at 40%, 60vh bottom)
-        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
-        dom.style.paddingTop = "40vh";
-        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
-        dom.style.paddingBottom = "60vh";
-
-        // Immediate scroll adjustment to prevent jump
-        if (editorContainerRef.current) {
-          const { from } = editor.state.selection;
-          try {
-            const coords = editor.view.coordsAtPos(from);
-            const container = editorContainerRef.current;
-            const containerRect = container.getBoundingClientRect();
-            const targetY = containerRect.height * 0.4;
-            const cursorRelativeY = coords.top - containerRect.top;
-            container.scrollTop += cursorRelativeY - targetY;
-          } catch {
-            // Ignore scroll errors during initialization
-          }
+      onUpdate: ({ editor }) => {
+        if (onUpdateRef.current) {
+          onUpdateRef.current(editor.storage.characterCount.characters());
         }
-      } else {
-        // Reset styles
-        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
-        dom.style.paddingTop = "";
-        // eslint-disable-next-line react-hooks/immutability, no-param-reassign
-        dom.style.paddingBottom = "";
+        if (onContentChangeRef.current) {
+          onContentChangeRef.current(editor.getHTML());
+        }
+      },
+      // Note: Typewriter scroll now handled by TypewriterScroll extension
+      onTransaction: () => {
+        requestAnimationFrame(() => {
+          if (editorContainerRef.current && scrollPositionRef.current > 0) {
+            editorContainerRef.current.scrollTop = scrollPositionRef.current;
+          }
+        });
+      },
+    });
+
+    // Apply typewriter mode setting when it changes
+    useEffect(() => {
+      if (editor && editor.commands.setTypewriterPosition) {
+        try {
+          editor.commands.setTypewriterPosition(typewriterMode);
+        } catch (e) {
+          console.warn("Failed to set typewriter position:", e);
+        }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editor, isTypewriterMode]);
+    }, [editor, typewriterMode]);
+
+    // Focus mode useEffect disabled - extension commented out
+    // useEffect(() => {
+    //   if (editor && editor.commands.setFocusMode) {
+    //     try {
+    //       editor.commands.setFocusMode(focusModeEnabled);
+    //     } catch (e) {
+    //       console.warn("Failed to set focus mode:", e);
+    //     }
+    //   }
+    // }, [editor, focusModeEnabled]);
 
     // Expose split functionality via ref
     useImperativeHandle(ref, () => ({
@@ -394,17 +387,26 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       }
     };
 
-    // Base font size at 100% = 18px (1.125rem)
-    const baseFontSize = 18;
+    // Apply zoom to the base font size from settings
+    const baseFontSize = editorSettings.typography.fontSize;
     const fontSize = (zoom / 100) * baseFontSize;
 
+    // Editor width mapping
+    const widthMap: Record<string, string> = {
+      narrow: "640px",
+      standard: "720px",
+      wide: "960px",
+      full: "100%",
+    };
+    const editorWidth = widthMap[editorSettings.visual.width] || "720px";
+
     return (
-      <div className="flex flex-col h-full relative">
+      <div className={cn("flex flex-col h-full relative")}>
         {/* Bubble Menu for Selection */}
         {editor && !readOnly && (
           <BubbleMenu
             editor={editor}
-            className="flex overflow-hidden rounded-md border border-stone-200 bg-white shadow-md z-50"
+            className="flex overflow-hidden rounded-md border border-border bg-card shadow-md z-50"
           >
             <Button
               variant="ghost"
@@ -416,7 +418,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               <Clapperboard className="w-3.5 h-3.5" />
               Studio로 보내기
             </Button>
-            <div className="w-px h-8 bg-stone-100" />
+            <div className="w-px h-8 bg-muted" />
             <Button
               variant="ghost"
               size="sm"
@@ -425,7 +427,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("bold")}
               className={cn(
                 "h-8 w-8 p-0",
-                editor.isActive("bold") && "bg-stone-100"
+                editor.isActive("bold") && "bg-muted"
               )}
             >
               <Bold className="w-3.5 h-3.5" />
@@ -438,7 +440,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("italic")}
               className={cn(
                 "h-8 w-8 p-0",
-                editor.isActive("italic") && "bg-stone-100"
+                editor.isActive("italic") && "bg-muted"
               )}
             >
               <Italic className="w-3.5 h-3.5" />
@@ -449,25 +451,48 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         {/* Toolbar */}
         {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
 
-        {/* Editor Content - Full width with font-size based zoom */}
+        {/* Editor Content - Apply settings from store */}
         <div
           ref={editorContainerRef}
           role="region"
           aria-label="편집 영역"
           className="flex-1 overflow-y-auto w-full"
-          style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: 1.75,
-          }}
+          style={
+            {
+              backgroundColor:
+                cssVariables["--st-editor-bg-color"] || "#F8F8F7",
+              color: cssVariables["--st-editor-text-color"] || "#2D2A28",
+              "--st-editor-text-indent":
+                cssVariables["--st-editor-text-indent"],
+              "--st-editor-paragraph-spacing":
+                cssVariables["--st-editor-paragraph-spacing"],
+              "--st-editor-selection-color":
+                cssVariables["--st-editor-selection-color"],
+            } as React.CSSProperties
+          }
         >
-          <EditorContent editor={editor} className="w-full" />
+          <div
+            className={cn(
+              "px-6 py-6",
+              editorSettings.visual.width !== "full" && "mx-auto"
+            )}
+            style={{
+              maxWidth: editorWidth,
+              fontFamily: cssVariables["--st-editor-font-family"],
+              fontSize: `${fontSize}px`,
+              lineHeight: editorSettings.typography.lineHeight,
+              letterSpacing: `${editorSettings.typography.letterSpacing}em`,
+            }}
+          >
+            <EditorContent editor={editor} className="w-full" />
+          </div>
         </div>
 
         {/* Minimal Zoom Indicator - Bottom right */}
         {!hideToolbar && (
           <div
             className={cn(
-              "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
+              "absolute bottom-3 right-3 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-all duration-200",
               showZoomControls
                 ? "opacity-100 px-2 py-1.5"
                 : "opacity-50 hover:opacity-100 px-2 py-1"
@@ -481,10 +506,10 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                   onClick={handleZoomOut}
                   disabled={zoom <= MIN_ZOOM}
                   aria-label="축소"
-                  className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                  className="p-1 hover:bg-muted rounded disabled:opacity-30 transition-colors"
                   title="축소 (Ctrl + 스크롤)"
                 >
-                  <ZoomOut className="w-4 h-4 text-stone-600" />
+                  <ZoomOut className="w-4 h-4 text-foreground" />
                 </button>
                 <input
                   type="range"
@@ -499,17 +524,17 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                   onClick={handleZoomIn}
                   disabled={zoom >= MAX_ZOOM}
                   aria-label="확대"
-                  className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                  className="p-1 hover:bg-muted rounded disabled:opacity-30 transition-colors"
                   title="확대 (Ctrl + 스크롤)"
                 >
-                  <ZoomIn className="w-4 h-4 text-stone-600" />
+                  <ZoomIn className="w-4 h-4 text-foreground" />
                 </button>
-                <span className="text-xs text-stone-500 ml-1 min-w-[36px] text-right">
+                <span className="text-xs text-muted-foreground ml-1 min-w-[36px] text-right">
                   {zoom}%
                 </span>
               </>
             ) : (
-              <span className="text-xs text-stone-500">{zoom}%</span>
+              <span className="text-xs text-muted-foreground">{zoom}%</span>
             )}
           </div>
         )}

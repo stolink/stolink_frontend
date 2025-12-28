@@ -27,7 +27,7 @@ export default function SectionDividerView({ node }: NodeViewProps) {
           <span className="text-xs font-bold text-sage-600 uppercase tracking-wider">
             {level === 0 ? "섹션" : `${level}차 하위`}
           </span>
-          <span className="text-sm font-semibold text-stone-700">
+          <span className="text-sm font-semibold text-foreground">
             {title}
           </span>
         </div>

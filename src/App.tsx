@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 
 // Layouts
 import { ProtectedLayout, ProjectLayout } from "@/components/layouts";
@@ -30,6 +31,23 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Global theme application
+  const theme = useEditorSettingStore((s) => s.visual?.theme ?? "light");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    // Remove all theme classes
+    root.classList.remove(
+      "theme-light",
+      "theme-dark",
+      "theme-sepia",
+      "theme-eye-care",
+      "theme-true-black"
+    );
+    // Add current theme class
+    root.classList.add(`theme-${theme}`);
+  }, [theme]);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

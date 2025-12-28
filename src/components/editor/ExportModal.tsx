@@ -171,7 +171,7 @@ export default function ExportModal({
         <div className="py-4 space-y-4">
           {/* 프리셋 선택 */}
           <div>
-            <label className="text-sm font-medium text-stone-700 mb-2 block">
+            <label className="text-sm font-medium text-foreground mb-2 block">
               플랫폼 프리셋
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -183,7 +183,7 @@ export default function ExportModal({
                     "p-3 rounded-lg border text-left transition-all",
                     selectedPreset === p.id
                       ? "border-sage-500 bg-sage-50 ring-1 ring-sage-500"
-                      : "border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+                      : "border-border hover:border-stone-300 hover:bg-muted/50"
                   )}
                 >
                   <p.icon
@@ -191,11 +191,11 @@ export default function ExportModal({
                       "w-5 h-5 mb-1",
                       selectedPreset === p.id
                         ? "text-sage-600"
-                        : "text-stone-500"
+                        : "text-muted-foreground"
                     )}
                   />
-                  <p className="text-sm font-medium text-stone-700">{p.name}</p>
-                  <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">
+                  <p className="text-sm font-medium text-foreground">{p.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                     {p.description}
                   </p>
                 </button>
@@ -205,11 +205,11 @@ export default function ExportModal({
 
           {/* 미리보기 */}
           <div>
-            <label className="text-sm font-medium text-stone-700 mb-2 block">
+            <label className="text-sm font-medium text-foreground mb-2 block">
               미리보기
             </label>
             <div
-              className="border border-stone-200 rounded-lg p-4 max-h-48 overflow-y-auto bg-white"
+              className="border border-border rounded-lg p-4 max-h-48 overflow-y-auto bg-card"
               style={{
                 fontFamily: preset.styles.fontFamily,
                 fontSize: preset.styles.fontSize,
@@ -232,7 +232,7 @@ export default function ExportModal({
           </div>
 
           {/* 통계 */}
-          <div className="flex items-center gap-4 text-xs text-stone-500">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>📄 {plainText.length.toLocaleString()}자</span>
             <span>📖 약 {Math.ceil(plainText.length / 500)}분 읽기</span>
           </div>

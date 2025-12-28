@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { PanelRightOpen, Minimize2 } from "lucide-react";
+import { Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores";
@@ -13,6 +13,7 @@ import {
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
 import { useEditorStore } from "@/stores";
+import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { type ChapterNode } from "@/components/editor/sidebar";
 import { BookReaderModal } from "@/components/common/BookReaderModal";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
@@ -36,6 +37,7 @@ import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import SnapshotPanel from "@/components/editor/SnapshotPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import DemoHeader from "@/components/editor/DemoHeader";
+import { EditorSettingsPanel } from "@/components/editor/settings/EditorSettingsPanel";
 // SectionStrip removed - minimizing distractions for writer focus
 // ScriveningsEditor & OutlineView removed (moved to EditorContent)
 
@@ -154,16 +156,25 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Editor Store
-  const {
-    splitView,
-    toggleSplitView,
-    isFocusMode,
-    toggleFocusMode,
-    isTypewriterMode,
-    toggleTypewriterMode,
-    viewMode,
-    setViewMode,
-  } = useEditorStore();
+  const { splitView, toggleSplitView, viewMode, setViewMode } =
+    useEditorStore();
+
+  // Editor Setting Store - Typewriter mode & Focus mode
+  const typewriterMode = useEditorSettingStore(
+    (state) => state.behavior.typewriterMode
+  );
+  const toggleTypewriterMode = useEditorSettingStore(
+    (state) => state.toggleTypewriterMode
+  );
+  const isTypewriterMode = typewriterMode !== "off";
+
+  // Focus mode from settings store
+  const isFocusMode = useEditorSettingStore(
+    (state) => state.behavior.focusMode
+  );
+  const toggleFocusMode = useEditorSettingStore(
+    (state) => state.toggleFocusMode
+  );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
   const { id: urlProjectId } = useParams<{ id: string }>();
@@ -486,7 +497,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // ============================================================
 
   return (
-    <div className={cn("flex flex-col", isDemo ? "h-screen" : "h-full")}>
+    <div
+      className={cn(
+        "flex flex-col bg-background text-foreground",
+        isDemo ? "h-screen" : "h-full"
+      )}
+    >
       {/* Demo Header */}
       {isDemo && (
         <DemoHeader isTourCompleted={isTourCompleted} onStartTour={startTour} />
@@ -495,22 +511,47 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       {/* Project Header moved to ProjectLayout for global consistency */}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Sidebar */}
-        <EditorLeftSidebar
-          chapters={chapterTreeData}
-          selectedChapterId={selectedSectionId || selectedFolderId}
-          onSelectChapter={handleSelectFolder}
-          onAddChapter={handleAddChapter}
-          onRenameChapter={handleRenameChapter}
-          onDeleteChapter={handleDeleteChapter}
-          onReorderChapter={handleReorderChapter}
-          onMoveToFolder={handleMoveToFolder}
-          isOpen={isSidebarVisible}
-          onToggle={toggleSidebar}
-        />
+        {/* Left Sidebar - In focus mode, hover trigger on left edge */}
+        {isFocusMode ? (
+          <div
+            className="group absolute left-0 top-0 bottom-0 z-40"
+            style={{ width: "8px" }}
+          >
+            {/* Hover trigger zone */}
+            <div className="absolute inset-0 hover:cursor-pointer" />
+            {/* Sidebar appears on hover - with focus mode styling to hide drag handles */}
+            <div className="absolute left-0 top-0 bottom-0 w-64 bg-card/95 backdrop-blur-sm border-r border-border shadow-2xl transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out overflow-hidden focus-mode-sidebar">
+              <EditorLeftSidebar
+                chapters={chapterTreeData}
+                selectedChapterId={selectedSectionId || selectedFolderId}
+                onSelectChapter={handleSelectFolder}
+                onAddChapter={handleAddChapter}
+                onRenameChapter={handleRenameChapter}
+                onDeleteChapter={handleDeleteChapter}
+                onReorderChapter={handleReorderChapter}
+                onMoveToFolder={handleMoveToFolder}
+                isOpen={true}
+                onToggle={() => {}}
+              />
+            </div>
+          </div>
+        ) : (
+          <EditorLeftSidebar
+            chapters={chapterTreeData}
+            selectedChapterId={selectedSectionId || selectedFolderId}
+            onSelectChapter={handleSelectFolder}
+            onAddChapter={handleAddChapter}
+            onRenameChapter={handleRenameChapter}
+            onDeleteChapter={handleDeleteChapter}
+            onReorderChapter={handleReorderChapter}
+            onMoveToFolder={handleMoveToFolder}
+            isOpen={isSidebarVisible}
+            onToggle={toggleSidebar}
+          />
+        )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-w-0 bg-white">
+        <main className="flex-1 flex flex-col min-w-0 bg-card">
           {/* Toolbar */}
           {/* Toolbar */}
           {!isFocusMode && (
@@ -596,7 +637,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               }}
               documents={documents}
               isDemo={isDemo}
-              isTypewriterMode={isTypewriterMode}
             />
           </div>
 
@@ -604,14 +644,16 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               to minimize distractions and maintain writer focus */}
         </main>
 
-        {/* Right Sidebar */}
-        <EditorRightSidebar
-          isOpen={rightSidebarOpen}
-          onClose={toggleRightSidebar}
-          activeTab={rightSidebarTab}
-          onTabChange={setRightSidebarTab}
-          documentId={selectedSectionId}
-        />
+        {/* Right Sidebar - Hidden in focus mode */}
+        {!isFocusMode && (
+          <EditorRightSidebar
+            isOpen={rightSidebarOpen}
+            onClose={toggleRightSidebar}
+            activeTab={rightSidebarTab}
+            onTabChange={setRightSidebarTab}
+            documentId={selectedSectionId}
+          />
+        )}
 
         {/* Snapshot Panel */}
         <SnapshotPanel
@@ -633,25 +675,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           title={currentSectionTitle}
         />
 
-        {/* Right Sidebar Toggle (when closed) */}
-        {!rightSidebarOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleRightSidebar}
-            className="absolute right-2 top-2 z-10"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </Button>
-        )}
+        {/* Right Sidebar Toggle removed - already handled in EditorToolbar */}
       </div>
 
       {/* Tour Prompt */}
       {showTourPrompt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95">
+          <div className="bg-card rounded-2xl p-6 max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-sage-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">✨</span>
               </div>
               <h2 className="text-xl font-bold mb-2">StoLink 둘러보기</h2>

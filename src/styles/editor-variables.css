@@ -1,0 +1,223 @@
+/* ============================================
+   StoLink Editor CSS Variables
+   ============================================ */
+
+:root {
+  /* Typography */
+  --st-editor-font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --st-editor-font-size: 16px;
+  --st-editor-line-height: 1.8;
+  --st-editor-letter-spacing: 0em;
+  --st-editor-text-indent: 0;
+  --st-editor-paragraph-spacing: 0.5em;
+
+  /* Colors */
+  --st-editor-bg-color: #F8F8F7;
+  --st-editor-text-color: #2D2A28;
+  --st-editor-caret-color: #6366f1;
+  --st-editor-selection-color: rgba(99, 102, 241, 0.2);
+  --st-editor-current-line-bg: rgba(99, 102, 241, 0.05);
+
+  /* Layout */
+  --st-editor-width: 720px;
+  --st-editor-padding-x: 1.5rem;
+  --st-editor-padding-y: 1.5rem;
+
+  /* Focus Mode */
+  --st-editor-unfocused-opacity: 0.3;
+  --st-editor-focus-transition: opacity 0.2s ease;
+}
+
+/* ============================================
+   Theme: Default (Light / Stolink)
+   ============================================ */
+.theme-stolink,
+.theme-light {
+  --st-editor-bg-color: #F8F8F7;
+  --st-editor-text-color: #2D2A28;
+  --st-editor-caret-color: #5F7D5F;
+  --st-editor-selection-color: rgba(95, 125, 95, 0.2);
+  --st-editor-current-line-bg: rgba(95, 125, 95, 0.05);
+}
+
+/* ============================================
+   Theme: Dark
+   ============================================ */
+.theme-dark {
+  --st-editor-bg-color: #2D2D2D;
+  --st-editor-text-color: #E5E5E5;
+  --st-editor-caret-color: #82A182;
+  --st-editor-selection-color: rgba(130, 161, 130, 0.3);
+  --st-editor-current-line-bg: rgba(130, 161, 130, 0.08);
+}
+
+/* ============================================
+   Theme: Sepia
+   ============================================ */
+.theme-sepia {
+  --st-editor-bg-color: #F4ECD8;
+  --st-editor-text-color: #5C4033;
+  --st-editor-caret-color: #8B7355;
+  --st-editor-selection-color: rgba(139, 115, 85, 0.25);
+  --st-editor-current-line-bg: rgba(139, 115, 85, 0.08);
+}
+
+/* ============================================
+   Theme: Eye-care (Paper)
+   ============================================ */
+.theme-eye-care {
+  --st-editor-bg-color: #FAF9F6;
+  --st-editor-text-color: #3D3D3D;
+  --st-editor-caret-color: #5F7D5F;
+  --st-editor-selection-color: rgba(95, 125, 95, 0.2);
+  --st-editor-current-line-bg: rgba(95, 125, 95, 0.05);
+}
+
+/* ============================================
+   Theme: True Black (OLED)
+   ============================================ */
+.theme-true-black {
+  --st-editor-bg-color: #000000;
+  --st-editor-text-color: #CCCCCC;
+  --st-editor-caret-color: #82A182;
+  --st-editor-selection-color: rgba(130, 161, 130, 0.35);
+  --st-editor-current-line-bg: rgba(130, 161, 130, 0.1);
+}
+
+/* ============================================
+   Editor Width Classes
+   ============================================ */
+.editor-width-narrow {
+  --st-editor-width: 640px;
+}
+
+.editor-width-standard {
+  --st-editor-width: 720px;
+}
+
+.editor-width-wide {
+  --st-editor-width: 960px;
+}
+
+.editor-width-full {
+  --st-editor-width: 100%;
+}
+
+/* ============================================
+   Font Family Classes
+   ============================================ */
+.editor-font-system {
+  --st-editor-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+.editor-font-pretendard {
+  --st-editor-font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+.editor-font-noto-sans-kr {
+  --st-editor-font-family: "Noto Sans KR", sans-serif;
+}
+
+.editor-font-spoqa-han-sans {
+  --st-editor-font-family: "Spoqa Han Sans Neo", sans-serif;
+}
+
+.editor-font-ridi-batang {
+  --st-editor-font-family: "RIDIBatang", serif;
+}
+
+.editor-font-nanum-myeongjo {
+  --st-editor-font-family: "Nanum Myeongjo", serif;
+}
+
+.editor-font-kopub-batang {
+  --st-editor-font-family: "KoPub Batang", serif;
+}
+
+.editor-font-source-han-serif {
+  --st-editor-font-family: "Source Han Serif K", serif;
+}
+
+.editor-font-d2coding {
+  --st-editor-font-family: "D2Coding", monospace;
+}
+
+.editor-font-jetbrains-mono {
+  --st-editor-font-family: "JetBrains Mono", monospace;
+}
+
+/* ============================================
+   Apply Variables to Editor
+   ============================================ */
+.stolink-editor {
+  font-family: var(--st-editor-font-family);
+  font-size: var(--st-editor-font-size);
+  line-height: var(--st-editor-line-height);
+  letter-spacing: var(--st-editor-letter-spacing);
+  color: var(--st-editor-text-color);
+  background-color: var(--st-editor-bg-color);
+  max-width: var(--st-editor-width);
+  margin: 0 auto;
+  padding: var(--st-editor-padding-y) var(--st-editor-padding-x);
+  caret-color: var(--st-editor-caret-color);
+}
+
+.stolink-editor ::selection {
+  background-color: var(--st-editor-selection-color);
+}
+
+.stolink-editor p {
+  text-indent: var(--st-editor-text-indent);
+  margin-bottom: var(--st-editor-paragraph-spacing);
+}
+
+/* Don't apply text-indent to headings */
+.stolink-editor h1,
+.stolink-editor h2,
+.stolink-editor h3,
+.stolink-editor h4,
+.stolink-editor h5,
+.stolink-editor h6 {
+  text-indent: 0;
+}
+
+/* ============================================
+   Focus Mode Styles
+   ============================================ */
+.stolink-editor.focus-mode-active .unfocused-node {
+  opacity: var(--st-editor-unfocused-opacity);
+  transition: var(--st-editor-focus-transition);
+}
+
+.stolink-editor.focus-mode-active .focused-node {
+  opacity: 1;
+  transition: var(--st-editor-focus-transition);
+}
+
+/* ============================================
+   Typewriter Mode Styles
+   ============================================ */
+.stolink-editor.typewriter-mode-center {
+  padding-top: 40vh;
+  padding-bottom: 60vh;
+}
+
+.stolink-editor.typewriter-mode-top {
+  padding-top: 20vh;
+  padding-bottom: 70vh;
+}
+
+.stolink-editor.typewriter-mode-bottom {
+  padding-top: 60vh;
+  padding-bottom: 30vh;
+}
+
+/* ============================================
+   Current Line Highlight
+   ============================================ */
+.stolink-editor .current-line-highlight {
+  background-color: var(--st-editor-current-line-bg);
+  border-radius: 2px;
+  margin: 0 -0.5rem;
+  padding: 0 0.5rem;
+}

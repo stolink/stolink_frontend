@@ -32,8 +32,8 @@ function ActivityBarItem({ to, icon: Icon, label, onClick }: ActivityBarItemProp
         cn(
           "relative flex items-center justify-center w-full h-12 group transition-colors",
           isActive
-            ? "text-sage-600"
-            : "text-stone-500 hover:text-sage-600"
+            ? "text-primary"
+            : "text-muted-foreground hover:text-primary"
         )
       }
       title={label}
@@ -44,11 +44,11 @@ function ActivityBarItem({ to, icon: Icon, label, onClick }: ActivityBarItemProp
 
           {/* Active indicator */}
           {isActive && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-sage-600 rounded-r" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r" />
           )}
 
           {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-stone-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-border shadow-md">
             {label}
           </div>
         </>
@@ -71,22 +71,22 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
 
   return (
     <aside
-      className="w-16 bg-stone-100 border-r border-stone-200 flex flex-col items-center shrink-0"
+      className="w-16 bg-secondary border-r border-border flex flex-col items-center shrink-0"
       role="navigation"
       aria-label="주요 네비게이션"
     >
       {/* Top: Home (Library) */}
-      <div className="w-full border-b border-stone-200">
+      <div className="w-full border-b border-border">
         <button
           onClick={() => navigate("/library")}
-          className="flex items-center justify-center w-full h-14 text-stone-500 hover:text-sage-600 hover:bg-stone-50 transition-colors group relative"
+          className="flex items-center justify-center w-full h-14 text-muted-foreground hover:text-primary hover:bg-accent transition-colors group relative"
           title="서재로 이동"
           aria-label="서재로 이동"
         >
           <Home className="h-5 w-5" />
 
           {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-stone-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-border shadow-md">
             서재
           </div>
         </button>
@@ -105,21 +105,21 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
       </nav>
 
       {/* Bottom: User */}
-      <div className="w-full border-t border-stone-200 py-2">
+      <div className="w-full border-t border-border py-2">
         <button
           onClick={() => navigate("/library")}
-          className="flex items-center justify-center w-full h-12 hover:bg-stone-50 transition-colors group relative"
+          className="flex items-center justify-center w-full h-12 hover:bg-accent transition-colors group relative"
           title={user?.nickname || "사용자"}
           aria-label="사용자 메뉴"
         >
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="text-xs bg-sage-200 text-sage-700">
+            <AvatarFallback className="text-xs bg-primary/20 text-primary">
               {user?.nickname?.[0]?.toUpperCase() || "ME"}
             </AvatarFallback>
           </Avatar>
 
           {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-stone-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-border shadow-md">
             {user?.nickname || "사용자"}
           </div>
         </button>

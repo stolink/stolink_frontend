@@ -26,7 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Toggle } from "@/components/ui/toggle";
+import { Switch } from "@/components/ui/switch";
 import { SettingRow } from "@/components/ui/setting-row";
 import {
   AlertDialog,
@@ -92,7 +92,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-paper">
+    <div className="h-full overflow-y-auto bg-background text-foreground">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <PageHeader
@@ -112,13 +112,13 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <SettingRow title="자동 저장" description="30초마다 자동 저장">
-              <Toggle checked={autoSave} onChange={setAutoSave} />
+              <Switch checked={autoSave} onChange={setAutoSave} />
             </SettingRow>
             <SettingRow title="맞춤법 검사" description="실시간 맞춤법 표시">
-              <Toggle checked={spellCheck} onChange={setSpellCheck} />
+              <Switch checked={spellCheck} onChange={setSpellCheck} />
             </SettingRow>
             <SettingRow title="타이핑 사운드" description="타자기 효과음">
-              <Toggle checked={typingSound} onChange={setTypingSound} />
+              <Switch checked={typingSound} onChange={setTypingSound} />
             </SettingRow>
           </CardContent>
         </Card>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
               title="집필 목표 알림"
               description="일일 목표 달성 알림"
             >
-              <Toggle
+              <Switch
                 checked={goalNotification}
                 onChange={setGoalNotification}
               />
@@ -146,7 +146,7 @@ export default function SettingsPage() {
               title="미회수 복선 알림"
               description="일정 기간 미회수 복선 알림"
             >
-              <Toggle
+              <Switch
                 checked={foreshadowingNotification}
                 onChange={setForeshadowingNotification}
               />
@@ -168,12 +168,12 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             {isLoadingShare ? (
               <div className="flex justify-center p-4">
-                <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : shareSettings ? (
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Input value={shareUrl} readOnly className="bg-stone-50" />
+                  <Input value={shareUrl} readOnly className="bg-secondary" />
                   <Button
                     variant="outline"
                     size="icon"
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-muted-foreground bg-stone-50 p-3 rounded-md">
+                <div className="flex items-center justify-between text-sm text-muted-foreground bg-secondary p-3 rounded-md">
                   <span>
                     만료일:{" "}
                     {shareSettings.expiresAt
@@ -212,7 +212,7 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-muted-foreground">
                   아직 생성된 공유 링크가 없습니다. 링크를 생성하면 누구나 이
                   작품을 읽을 수 있습니다.
                 </p>

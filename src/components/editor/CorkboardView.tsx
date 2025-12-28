@@ -134,7 +134,7 @@ export default function CorkboardView({
     newOrder.splice(dragIndex, 1);
     newOrder.splice(targetIndex, 0, draggedId);
 
-    await reorderDocuments(newOrder);
+    await reorderDocuments(folderId, newOrder);
     setDraggedId(null);
   };
 
@@ -144,7 +144,7 @@ export default function CorkboardView({
 
   if (cards.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-stone-400 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8">
         <LayoutGrid className="w-12 h-12 mb-3 opacity-50" />
         <p className="text-sm">이 폴더에 문서가 없습니다</p>
         <p className="text-xs mt-1">왼쪽 사이드바에서 새 문서를 추가하세요</p>
@@ -153,12 +153,14 @@ export default function CorkboardView({
   }
 
   return (
-    <div className="flex-1 overflow-auto p-6 bg-stone-50/50">
+    <div className="flex-1 overflow-auto p-6 bg-muted/50/50">
       {/* 헤더 */}
       <div className="flex items-center gap-2 mb-4">
-        <LayoutGrid className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-semibold text-stone-700">코르크보드</h2>
-        <span className="text-xs text-stone-400">{cards.length}개 카드</span>
+        <LayoutGrid className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">코르크보드</h2>
+        <span className="text-xs text-muted-foreground">
+          {cards.length}개 카드
+        </span>
       </div>
 
       {/* 카드 그리드 */}
@@ -197,7 +199,7 @@ export default function CorkboardView({
                     card.type === "folder" ? "text-amber-600" : "text-amber-500"
                   )}
                 />
-                <h3 className="text-sm font-medium text-stone-800 line-clamp-2 flex-1">
+                <h3 className="text-sm font-medium text-foreground line-clamp-2 flex-1">
                   {card.title}
                 </h3>
               </div>
@@ -214,13 +216,13 @@ export default function CorkboardView({
                     value={editingSynopsis}
                     onChange={(e) => setEditingSynopsis(e.target.value)}
                     placeholder="시놉시스를 입력하세요..."
-                    className="flex-1 w-full resize-none bg-white border border-amber-300 rounded p-2 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    className="flex-1 w-full resize-none bg-card border border-amber-300 rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400"
                     autoFocus
                   />
                   <div className="flex gap-1 mt-2 justify-end">
                     <button
                       onClick={handleCancelEdit}
-                      className="p-1 rounded hover:bg-amber-200/50 text-stone-500"
+                      className="p-1 rounded hover:bg-amber-200/50 text-muted-foreground"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -234,9 +236,9 @@ export default function CorkboardView({
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-stone-600 line-clamp-4">
+                  <p className="text-xs text-foreground line-clamp-4">
                     {card.synopsis || (
-                      <span className="text-stone-400 italic">
+                      <span className="text-muted-foreground italic">
                         시놉시스 없음
                       </span>
                     )}
