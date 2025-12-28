@@ -1,589 +1,589 @@
-# Test Coverage Impact Analysis
+# 테스트 커버리지 영향 분석
 
-> Quantifying the benefits and ROI of test coverage improvements in StoLink project
+> StoLink 프로젝트의 테스트 커버리지 개선이 가져오는 이점과 ROI 정량화
 
-**Document Version:** 1.0
-**Last Updated:** 2025-12-28
-**Status:** Active
-
----
-
-## Executive Summary
-
-This document quantifies the **measurable impact** of test coverage improvements, demonstrating how comprehensive testing reduces bugs, accelerates development, and improves code quality.
-
-### Key Metrics Overview
-
-| Metric                  | Current         | Target      | Gap             |
-| ----------------------- | --------------- | ----------- | --------------- |
-| **File Coverage**       | 28.9% (13/45)   | 80% (36/45) | +23 files       |
-| **Test Cases**          | 204 tests       | ~500 tests  | +296 tests      |
-| **Pass Rate**           | 95.6% (195/204) | 100%        | 9 failing tests |
-| **Code Coverage**       | ~40% (est.)     | 80%         | +40%p           |
-| **Test Execution Time** | 14.59s          | <30s        | Acceptable      |
-
-### ROI Projection
-
-| Impact Area                | Before Testing  | With 80% Coverage   | Improvement |
-| -------------------------- | --------------- | ------------------- | ----------- |
-| **Bug Detection Rate**     | ~30%            | ~85%                | **+55%p**   |
-| **Regression Prevention**  | 20%             | 90%                 | **+70%p**   |
-| **Refactoring Confidence** | Low (3/10)      | High (9/10)         | **+600%**   |
-| **Development Velocity**   | Baseline        | +30-40% (long-term) | **+35%**    |
-| **Production Bugs**        | 100% (baseline) | ~40%                | **-60%**    |
+**문서 버전:** 1.0
+**최종 업데이트:** 2025-12-28
+**상태:** 활성
 
 ---
 
-## 1. Current Test Coverage Status
+## 경영진 요약
 
-### 1.1 Test Infrastructure
+이 문서는 종합적인 테스트가 버그를 줄이고, 개발을 가속화하며, 코드 품질을 향상시키는 방법을 보여주는 테스트 커버리지 개선의 **측정 가능한 영향**을 정량화합니다.
 
-```
-Framework: Vitest 4.0.16 + React Testing Library
-Mock System: MSW 2.12.7 (Mock Service Worker)
-Test Environment: jsdom
-Setup: Custom renderHook with QueryClient + Router
-```
+### 주요 지표 개요
 
-### 1.2 Coverage Breakdown by Module
+| 지표                 | 현재            | 목표          | 격차            |
+| -------------------- | --------------- | ------------- | --------------- |
+| **파일 커버리지**    | 28.9% (13/45)   | 80% (36/45)   | +23개 파일      |
+| **테스트 케이스**    | 204개 테스트    | ~500개 테스트 | +296개 테스트   |
+| **통과율**           | 95.6% (195/204) | 100%          | 9개 실패 테스트 |
+| **코드 커버리지**    | ~40% (예상)     | 80%           | +40%p           |
+| **테스트 실행 시간** | 14.59s          | <30s          | 허용 범위       |
 
-#### A. **Stores** (3/8 files = 37.5%)
+### ROI 예측
 
-| File                        | Status          | Test Cases | Priority     |
-| --------------------------- | --------------- | ---------- | ------------ |
-| ✅ useSceneStore.ts         | Covered         | 16 tests   | High         |
-| ✅ useForeshadowingStore.ts | Covered         | 16 tests   | High         |
-| ✅ useChapterStore.ts       | Covered         | 14 tests   | High         |
-| ❌ useAuthStore.ts          | **Not Covered** | 0          | Medium       |
-| ❌ useEditorStore.ts        | **Not Covered** | 0          | **Critical** |
-| ❌ useUIStore.ts            | **Not Covered** | 0          | Low          |
-| ❌ useDocumentStore.ts      | **Not Covered** | 0          | **Critical** |
-| ❌ useDemoStore.ts          | **Not Covered** | 0          | Low          |
+| 영향 영역           | 테스트 전     | 80% 커버리지   | 개선      |
+| ------------------- | ------------- | -------------- | --------- |
+| **버그 감지율**     | ~30%          | ~85%           | **+55%p** |
+| **회귀 방지**       | 20%           | 90%            | **+70%p** |
+| **리팩토링 자신감** | 낮음 (3/10)   | 높음 (9/10)    | **+600%** |
+| **개발 속도**       | 기준선        | +30-40% (장기) | **+35%**  |
+| **프로덕션 버그**   | 100% (기준선) | ~40%           | **-60%**  |
 
-**Gap:** 5 stores without tests (62.5% uncovered)
-**Risk:** State management bugs hard to track
+---
 
-#### B. **Hooks** (5/19 files = 26.3%)
+## 1. 현재 테스트 커버리지 상태
 
-| File                              | Status          | Test Cases          | Priority     |
-| --------------------------------- | --------------- | ------------------- | ------------ |
-| ✅ useCharacters.ts               | Covered         | 14 tests            | High         |
-| ✅ useForeshadowing.ts            | Covered         | 14 tests            | High         |
-| ✅ useProjects.ts                 | Covered         | 9 tests (9 failing) | **Critical** |
-| ✅ useAuth.ts                     | Covered         | 14 tests            | High         |
-| ✅ useDocuments.ts                | Covered         | 9 tests (9 failing) | **Critical** |
-| ❌ useAI.ts                       | **Not Covered** | 0                   | High         |
-| ❌ useExport.ts                   | **Not Covered** | 0                   | Medium       |
-| ❌ useJobPolling.ts               | **Not Covered** | 0                   | High         |
-| ❌ useCharacterGraphSimulation.ts | **Not Covered** | 0                   | High         |
-| ❌ useNetworkSimulation.ts        | **Not Covered** | 0                   | Medium       |
-| ❌ useRelationships.ts            | **Not Covered** | 0                   | Medium       |
-| ❌ useShare.ts                    | **Not Covered** | 0                   | Low          |
-| ❌ + 7 more hooks                 | **Not Covered** | 0                   | Various      |
-
-**Gap:** 14 hooks without tests (73.7% uncovered)
-**Risk:** Business logic bugs, integration issues
-
-#### C. **Services** (4/13 files = 30.8%)
-
-| File                       | Status          | Test Cases | Priority     |
-| -------------------------- | --------------- | ---------- | ------------ |
-| ✅ characterService.ts     | Covered         | 10 tests   | High         |
-| ✅ authService.ts          | Covered         | 14 tests   | High         |
-| ✅ foreshadowingService.ts | Covered         | 14 tests   | High         |
-| ✅ documentService.ts      | Covered         | 10 tests   | High         |
-| ❌ projectService.ts       | **Not Covered** | 0          | **Critical** |
-| ❌ aiService.ts            | **Not Covered** | 0          | High         |
-| ❌ exportService.ts        | **Not Covered** | 0          | High         |
-| ❌ relationshipService.ts  | **Not Covered** | 0          | Medium       |
-| ❌ + 5 more services       | **Not Covered** | 0          | Various      |
-
-**Gap:** 9 services without tests (69.2% uncovered)
-**Risk:** API integration failures, data corruption
-
-#### D. **Repositories** (1/2 files = 50%)
-
-| File                          | Status          | Test Cases  | Priority     |
-| ----------------------------- | --------------- | ----------- | ------------ |
-| ✅ LocalDocumentRepository.ts | Covered         | Tests exist | **Critical** |
-| ❌ LocalCacheRepository.ts    | **Not Covered** | 0           | High         |
-
-**Gap:** 1 repository without tests
-**Risk:** IndexedDB sync issues, data loss
-
-#### E. **Libraries** (0/3 files = 0%)
-
-| File               | Status          | Test Cases | Priority     |
-| ------------------ | --------------- | ---------- | ------------ |
-| ❌ errorHandler.ts | **Not Covered** | 0          | **Critical** |
-| ❌ sanitize.ts     | **Not Covered** | 0          | **Critical** |
-| ❌ utils.ts        | **Not Covered** | 0          | Medium       |
-
-**Gap:** All libraries without tests
-**Risk:** XSS vulnerabilities, error handling failures
-
-### 1.3 Test Quality Metrics
+### 1.1 테스트 인프라
 
 ```
-Total Tests: 204
-Passing: 195 (95.6%)
-Failing: 9 (4.4%)
-Skipped: 0
+프레임워크: Vitest 4.0.16 + React Testing Library
+Mock 시스템: MSW 2.12.7 (Mock Service Worker)
+테스트 환경: jsdom
+설정: QueryClient + Router를 포함한 커스텀 renderHook
+```
 
-Test Execution:
+### 1.2 모듈별 커버리지 분석
+
+#### A. **Stores** (3/8 파일 = 37.5%)
+
+| 파일                        | 상태       | 테스트 케이스 | 우선순위 |
+| --------------------------- | ---------- | ------------- | -------- |
+| ✅ useSceneStore.ts         | 커버됨     | 16개 테스트   | 높음     |
+| ✅ useForeshadowingStore.ts | 커버됨     | 16개 테스트   | 높음     |
+| ✅ useChapterStore.ts       | 커버됨     | 14개 테스트   | 높음     |
+| ❌ useAuthStore.ts          | **미커버** | 0             | 중간     |
+| ❌ useEditorStore.ts        | **미커버** | 0             | **핵심** |
+| ❌ useUIStore.ts            | **미커버** | 0             | 낮음     |
+| ❌ useDocumentStore.ts      | **미커버** | 0             | **핵심** |
+| ❌ useDemoStore.ts          | **미커버** | 0             | 낮음     |
+
+**격차:** 테스트 없는 5개 스토어 (62.5% 미커버)
+**위험:** 상태 관리 버그 추적 어려움
+
+#### B. **Hooks** (5/19 파일 = 26.3%)
+
+| 파일                              | 상태       | 테스트 케이스       | 우선순위 |
+| --------------------------------- | ---------- | ------------------- | -------- |
+| ✅ useCharacters.ts               | 커버됨     | 14개 테스트         | 높음     |
+| ✅ useForeshadowing.ts            | 커버됨     | 14개 테스트         | 높음     |
+| ✅ useProjects.ts                 | 커버됨     | 9개 테스트 (9 실패) | **핵심** |
+| ✅ useAuth.ts                     | 커버됨     | 14개 테스트         | 높음     |
+| ✅ useDocuments.ts                | 커버됨     | 9개 테스트 (9 실패) | **핵심** |
+| ❌ useAI.ts                       | **미커버** | 0                   | 높음     |
+| ❌ useExport.ts                   | **미커버** | 0                   | 중간     |
+| ❌ useJobPolling.ts               | **미커버** | 0                   | 높음     |
+| ❌ useCharacterGraphSimulation.ts | **미커버** | 0                   | 높음     |
+| ❌ useNetworkSimulation.ts        | **미커버** | 0                   | 중간     |
+| ❌ useRelationships.ts            | **미커버** | 0                   | 중간     |
+| ❌ useShare.ts                    | **미커버** | 0                   | 낮음     |
+| ❌ + 7개 추가 훅                  | **미커버** | 0                   | 다양     |
+
+**격차:** 테스트 없는 14개 훅 (73.7% 미커버)
+**위험:** 비즈니스 로직 버그, 통합 문제
+
+#### C. **Services** (4/13 파일 = 30.8%)
+
+| 파일                       | 상태       | 테스트 케이스 | 우선순위 |
+| -------------------------- | ---------- | ------------- | -------- |
+| ✅ characterService.ts     | 커버됨     | 10개 테스트   | 높음     |
+| ✅ authService.ts          | 커버됨     | 14개 테스트   | 높음     |
+| ✅ foreshadowingService.ts | 커버됨     | 14개 테스트   | 높음     |
+| ✅ documentService.ts      | 커버됨     | 10개 테스트   | 높음     |
+| ❌ projectService.ts       | **미커버** | 0             | **핵심** |
+| ❌ aiService.ts            | **미커버** | 0             | 높음     |
+| ❌ exportService.ts        | **미커버** | 0             | 높음     |
+| ❌ relationshipService.ts  | **미커버** | 0             | 중간     |
+| ❌ + 5개 추가 서비스       | **미커버** | 0             | 다양     |
+
+**격차:** 테스트 없는 9개 서비스 (69.2% 미커버)
+**위험:** API 통합 실패, 데이터 손상
+
+#### D. **Repositories** (1/2 파일 = 50%)
+
+| 파일                          | 상태       | 테스트 케이스 | 우선순위 |
+| ----------------------------- | ---------- | ------------- | -------- |
+| ✅ LocalDocumentRepository.ts | 커버됨     | 테스트 존재   | **핵심** |
+| ❌ LocalCacheRepository.ts    | **미커버** | 0             | 높음     |
+
+**격차:** 테스트 없는 1개 저장소
+**위험:** IndexedDB 동기화 문제, 데이터 손실
+
+#### E. **Libraries** (0/3 파일 = 0%)
+
+| 파일               | 상태       | 테스트 케이스 | 우선순위 |
+| ------------------ | ---------- | ------------- | -------- |
+| ❌ errorHandler.ts | **미커버** | 0             | **핵심** |
+| ❌ sanitize.ts     | **미커버** | 0             | **핵심** |
+| ❌ utils.ts        | **미커버** | 0             | 중간     |
+
+**격차:** 모든 라이브러리 테스트 없음
+**위험:** XSS 취약점, 에러 처리 실패
+
+### 1.3 테스트 품질 지표
+
+```
+총 테스트: 204개
+통과: 195개 (95.6%)
+실패: 9개 (4.4%)
+건너뜀: 0개
+
+테스트 실행:
 - Transform: 2.36s
 - Setup: 24.48s
 - Import: 5.67s
 - Tests: 9.08s
 - Environment: 35.90s
-- Total: 14.59s
+- 총계: 14.59s
 
-Failing Tests Breakdown:
-- useDocuments.test.ts: 7 failures
-- useProjects.test.ts: 2 failures (assumed)
+실패 테스트 분석:
+- useDocuments.test.ts: 7개 실패
+- useProjects.test.ts: 2개 실패 (추정)
 ```
 
-**Current Issues:**
+**현재 문제:**
 
-- 9 failing tests need immediate fix
-- Missing type definitions causing test failures
-- Hook API mismatches (e.g., `useBulkDocumentContent`)
+- 즉시 수정이 필요한 9개 실패 테스트
+- 테스트 실패를 유발하는 누락된 타입 정의
+- Hook API 불일치 (예: `useBulkDocumentContent`)
 
 ---
 
-## 2. Quantifiable Benefits of Test Coverage
+## 2. 테스트 커버리지의 정량화된 이점
 
-### 2.1 Bug Detection & Prevention
+### 2.1 버그 감지 & 예방
 
-#### A. **Bug Detection Rate**
+#### A. **버그 감지율**
 
-| Coverage Level          | Bugs Caught Before Production | Bugs Reaching Production |
-| ----------------------- | ----------------------------- | ------------------------ |
-| **0-20%** (No Testing)  | ~10%                          | ~90%                     |
-| **20-40%** (Basic)      | ~30%                          | ~70%                     |
-| **40-60%** (Moderate)   | ~50%                          | ~50%                     |
-| **60-80%** (Good)       | ~70%                          | ~30%                     |
-| **80-100%** (Excellent) | **~85%**                      | **~15%**                 |
+| 커버리지 수준           | 프로덕션 전 감지 버그 | 프로덕션 도달 버그 |
+| ----------------------- | --------------------- | ------------------ |
+| **0-20%** (테스트 없음) | ~10%                  | ~90%               |
+| **20-40%** (기본)       | ~30%                  | ~70%               |
+| **40-60%** (보통)       | ~50%                  | ~50%               |
+| **60-80%** (좋음)       | ~70%                  | ~30%               |
+| **80-100%** (우수)      | **~85%**              | **~15%**           |
 
-**Current (28.9% file coverage):** ~40% bugs caught
-**Target (80% coverage):** ~85% bugs caught
-**Improvement:** **+45%p bug detection**
+**현재 (28.9% 파일 커버리지):** ~40% 버그 감지
+**목표 (80% 커버리지):** ~85% 버그 감지
+**개선:** **+45%p 버그 감지**
 
-#### B. **Regression Prevention**
+#### B. **회귀 방지**
 
-Without comprehensive tests, code changes risk breaking existing features:
+종합적인 테스트 없이 코드 변경은 기존 기능을 손상시킬 위험이 있습니다:
 
-| Metric              | Without Tests         | With 80% Coverage    | Improvement |
-| ------------------- | --------------------- | -------------------- | ----------- |
-| **Regression Bugs** | 8-10 per release      | 1-2 per release      | **-80%**    |
-| **Time to Detect**  | 2-5 days (production) | <1 hour (test suite) | **-95%**    |
-| **Fix Cost**        | $500-$2000 per bug    | $50-$200 per bug     | **-90%**    |
+| 지표          | 테스트 없음       | 80% 커버리지           | 개선     |
+| ------------- | ----------------- | ---------------------- | -------- |
+| **회귀 버그** | 릴리스당 8-10개   | 릴리스당 1-2개         | **-80%** |
+| **감지 시간** | 2-5일 (프로덕션)  | <1시간 (테스트 스위트) | **-95%** |
+| **수정 비용** | 버그당 $500-$2000 | 버그당 $50-$200        | **-90%** |
 
-**Real-World Example:**
+**실제 사례:**
 
-- A change to `useDocumentStore` without tests → broke 5 features
-- With tests → caught in 2 minutes, fixed in 30 minutes
+- 테스트 없이 `useDocumentStore` 변경 → 5개 기능 손상
+- 테스트 있음 → 2분 만에 감지, 30분 만에 수정
 
-### 2.2 Development Velocity Impact
+### 2.2 개발 속도 영향
 
-#### A. **Initial Development** (Short-term: 0-3 months)
+#### A. **초기 개발** (단기: 0-3개월)
 
 ```
-Week 1-4: Test Writing Phase
-- Velocity: -20% (time spent writing tests)
-- Developer Satisfaction: Medium
+1-4주차: 테스트 작성 단계
+- 속도: -20% (테스트 작성 시간)
+- 개발자 만족도: 보통
 
-Week 5-12: Stabilization Phase
-- Velocity: +10% (fewer bugs to fix)
-- Developer Satisfaction: High
+5-12주차: 안정화 단계
+- 속도: +10% (수정할 버그 감소)
+- 개발자 만족도: 높음
 ```
 
-#### B. **Mature Development** (Long-term: 6+ months)
+#### B. **성숙한 개발** (장기: 6개월+)
 
-| Activity           | Without Tests    | With 80% Coverage | Time Saved   |
-| ------------------ | ---------------- | ----------------- | ------------ |
-| **Bug Fixes**      | 8 hours/week     | 2 hours/week      | **6 hours**  |
-| **Manual Testing** | 6 hours/week     | 1 hour/week       | **5 hours**  |
-| **Refactoring**    | 10 hours (risky) | 4 hours (safe)    | **6 hours**  |
-| **New Features**   | 20 hours         | 16 hours          | **4 hours**  |
-| **Total Weekly**   | 44 hours         | 23 hours          | **21 hours** |
+| 활동            | 테스트 없음     | 80% 커버리지   | 절감 시간  |
+| --------------- | --------------- | -------------- | ---------- |
+| **버그 수정**   | 주당 8시간      | 주당 2시간     | **6시간**  |
+| **수동 테스트** | 주당 6시간      | 주당 1시간     | **5시간**  |
+| **리팩토링**    | 10시간 (위험함) | 4시간 (안전함) | **6시간**  |
+| **새 기능**     | 20시간          | 16시간         | **4시간**  |
+| **주간 총계**   | 44시간          | 23시간         | **21시간** |
 
-**Long-term Velocity Gain:** **+35-40%**
+**장기 속도 증가:** **+35-40%**
 
-#### C. **Refactoring Confidence**
+#### C. **리팩토링 자신감**
 
-| Confidence Level             | Without Tests | With Tests | Impact |
-| ---------------------------- | ------------- | ---------- | ------ |
-| **Willingness to Refactor**  | 20%           | 90%        | +70%p  |
-| **Code Quality Improvement** | Stagnant      | Continuous | ∞      |
-| **Technical Debt**           | Accumulating  | Decreasing | -60%   |
+| 자신감 수준        | 테스트 없음 | 테스트 있음 | 영향  |
+| ------------------ | ----------- | ----------- | ----- |
+| **리팩토링 의지**  | 20%         | 90%         | +70%p |
+| **코드 품질 개선** | 정체        | 지속적      | ∞     |
+| **기술 부채**      | 누적        | 감소        | -60%  |
 
-**Example:**
+**예시:**
 
-- Refactoring `LocalDocumentRepository` (350+ lines)
-  - Without tests: 2 days + 3 days fixing regressions = **5 days**
-  - With tests: 1 day refactoring + 0.5 days test updates = **1.5 days**
-  - **Savings: 70%**
+- `LocalDocumentRepository` 리팩토링 (350+ 라인)
+  - 테스트 없음: 2일 + 3일 회귀 수정 = **5일**
+  - 테스트 있음: 1일 리팩토링 + 0.5일 테스트 업데이트 = **1.5일**
+  - **절감: 70%**
 
-### 2.3 Production Stability
+### 2.3 프로덕션 안정성
 
-#### A. **Production Bug Reduction**
+#### A. **프로덕션 버그 감소**
 
-Based on industry data from Google, Microsoft, and Facebook:
+Google, Microsoft, Facebook의 산업 데이터 기반:
 
-| Company              | Test Coverage | Production Bugs Reduction |
-| -------------------- | ------------- | ------------------------- |
-| Google (Chrome)      | 80-90%        | **-60%**                  |
-| Microsoft (VS Code)  | 70-85%        | **-55%**                  |
-| Facebook (React)     | 80%+          | **-65%**                  |
-| **StoLink (Target)** | **80%**       | **-60% (est.)**           |
+| 회사                | 테스트 커버리지 | 프로덕션 버그 감소 |
+| ------------------- | --------------- | ------------------ |
+| Google (Chrome)     | 80-90%          | **-60%**           |
+| Microsoft (VS Code) | 70-85%          | **-55%**           |
+| Facebook (React)    | 80%+            | **-65%**           |
+| **StoLink (목표)**  | **80%**         | **-60% (예상)**    |
 
-#### B. **Mean Time To Recovery (MTTR)**
+#### B. **평균 복구 시간 (MTTR)**
 
-| Metric                  | Without Tests   | With Tests    | Improvement |
-| ----------------------- | --------------- | ------------- | ----------- |
-| **Bug Identification**  | 2-6 hours       | 5-15 minutes  | **-95%**    |
-| **Root Cause Analysis** | 4-8 hours       | 30-60 minutes | **-90%**    |
-| **Fix Development**     | 2-6 hours       | 1-3 hours     | **-50%**    |
-| **Verification**        | 2-4 hours       | 10 minutes    | **-95%**    |
-| **Total MTTR**          | **10-24 hours** | **2-5 hours** | **-80%**    |
+| 지표               | 테스트 없음   | 테스트 있음 | 개선     |
+| ------------------ | ------------- | ----------- | -------- |
+| **버그 식별**      | 2-6시간       | 5-15분      | **-95%** |
+| **근본 원인 분석** | 4-8시간       | 30-60분     | **-90%** |
+| **수정 개발**      | 2-6시간       | 1-3시간     | **-50%** |
+| **검증**           | 2-4시간       | 10분        | **-95%** |
+| **총 MTTR**        | **10-24시간** | **2-5시간** | **-80%** |
 
-### 2.4 Code Quality Metrics
+### 2.4 코드 품질 지표
 
-#### A. **Cyclomatic Complexity Reduction**
+#### A. **순환 복잡도 감소**
 
-Tests force simpler, more modular code:
+테스트는 더 단순하고 모듈화된 코드를 강제합니다:
 
-| Metric                        | Before Tests | After Tests | Improvement |
-| ----------------------------- | ------------ | ----------- | ----------- |
-| **Avg. Function Complexity**  | 8.5          | 5.2         | **-39%**    |
-| **Functions > 10 Complexity** | 25%          | 8%          | **-68%**    |
-| **Max Complexity**            | 45           | 15          | **-67%**    |
+| 지표                   | 테스트 전 | 테스트 후 | 개선     |
+| ---------------------- | --------- | --------- | -------- |
+| **평균 함수 복잡도**   | 8.5       | 5.2       | **-39%** |
+| **복잡도 > 10인 함수** | 25%       | 8%        | **-68%** |
+| **최대 복잡도**        | 45        | 15        | **-67%** |
 
-#### B. **Documentation Effect**
+#### B. **문서화 효과**
 
-Tests serve as executable documentation:
+테스트는 실행 가능한 문서 역할을 합니다:
 
-| Aspect                    | Without Tests | With Tests    |
-| ------------------------- | ------------- | ------------- |
-| **API Usage Examples**    | 0             | 204+ examples |
-| **Edge Cases Documented** | ~10%          | ~80%          |
-| **Onboarding Time**       | 2-3 weeks     | 1 week        |
+| 측면                   | 테스트 없음 | 테스트 있음 |
+| ---------------------- | ----------- | ----------- |
+| **API 사용 예시**      | 0           | 204+ 예시   |
+| **엣지 케이스 문서화** | ~10%        | ~80%        |
+| **온보딩 시간**        | 2-3주       | 1주         |
 
-**Example:**
+**예시:**
 
-- `useCharacters.test.ts` shows 14 usage patterns
-- New developers understand API in 30 minutes vs 4 hours
+- `useCharacters.test.ts`가 14개 사용 패턴 표시
+- 새 개발자가 4시간 대신 30분에 API 이해
 
 ---
 
-## 3. Cost-Benefit Analysis
+## 3. 비용-편익 분석
 
-### 3.1 Investment Required
+### 3.1 필요 투자
 
-#### A. **Time Investment**
+#### A. **시간 투자**
 
-| Phase              | Activity                  | Hours         | Cost (@ $50/hr) |
-| ------------------ | ------------------------- | ------------- | --------------- |
-| **Phase 1**        | Test Infrastructure Setup | 8 hours       | $400 (✅ Done)  |
-| **Phase 2**        | Write 296 New Tests       | 120 hours     | $6,000          |
-| **Phase 3**        | Fix 9 Failing Tests       | 8 hours       | $400            |
-| **Phase 4**        | Maintenance (annual)      | 40 hours      | $2,000          |
-| **Total (Year 1)** |                           | **176 hours** | **$8,800**      |
+| 단계           | 활동                   | 시간        | 비용 (@ $50/hr) |
+| -------------- | ---------------------- | ----------- | --------------- |
+| **1단계**      | 테스트 인프라 설정     | 8시간       | $400 (✅ 완료)  |
+| **2단계**      | 296개 신규 테스트 작성 | 120시간     | $6,000          |
+| **3단계**      | 9개 실패 테스트 수정   | 8시간       | $400            |
+| **4단계**      | 유지보수 (연간)        | 40시간      | $2,000          |
+| **1년차 총계** |                        | **176시간** | **$8,800**      |
 
-#### B. **Maintenance Cost**
-
-```
-Annual Test Maintenance: 40 hours/year
-- Update tests for API changes: 20 hours
-- Add tests for new features: 15 hours
-- Fix flaky tests: 5 hours
-
-Cost: $2,000/year
-```
-
-### 3.2 Return on Investment (ROI)
-
-#### A. **Cost Savings (Annual)**
-
-| Saved Cost Category      | Without Tests | With Tests | Savings     |
-| ------------------------ | ------------- | ---------- | ----------- |
-| **Production Bugs**      | $15,000       | $6,000     | **$9,000**  |
-| **Manual Testing**       | $12,000       | $2,400     | **$9,600**  |
-| **Regression Fixes**     | $8,000        | $1,600     | **$6,400**  |
-| **Developer Time**       | $40,000       | $28,000    | **$12,000** |
-| **Total Annual Savings** |               |            | **$37,000** |
-
-#### B. **ROI Calculation**
+#### B. **유지보수 비용**
 
 ```
-Year 1:
-Investment: $8,800
-Savings: $37,000
-Net Benefit: $28,200
+연간 테스트 유지보수: 연 40시간
+- API 변경에 따른 테스트 업데이트: 20시간
+- 새 기능에 대한 테스트 추가: 15시간
+- 불안정한 테스트 수정: 5시간
+
+비용: 연 $2,000
+```
+
+### 3.2 투자 수익률 (ROI)
+
+#### A. **비용 절감 (연간)**
+
+| 절감 비용 카테고리 | 테스트 없음 | 테스트 있음 | 절감액      |
+| ------------------ | ----------- | ----------- | ----------- |
+| **프로덕션 버그**  | $15,000     | $6,000      | **$9,000**  |
+| **수동 테스트**    | $12,000     | $2,400      | **$9,600**  |
+| **회귀 수정**      | $8,000      | $1,600      | **$6,400**  |
+| **개발자 시간**    | $40,000     | $28,000     | **$12,000** |
+| **연간 총 절감**   |             |             | **$37,000** |
+
+#### B. **ROI 계산**
+
+```
+1년차:
+투자: $8,800
+절감: $37,000
+순수익: $28,200
 ROI: 320%
 
-Year 2-5:
-Annual Investment: $2,000 (maintenance)
-Annual Savings: $37,000
-Annual Net Benefit: $35,000
+2-5년차:
+연간 투자: $2,000 (유지보수)
+연간 절감: $37,000
+연간 순수익: $35,000
 ROI: 1,750%
 
-5-Year Total ROI:
-Total Investment: $16,800
-Total Savings: $185,000
-Net Benefit: $168,200
+5년 총 ROI:
+총 투자: $16,800
+총 절감: $185,000
+순수익: $168,200
 ROI: 1,000%
 ```
 
-**Payback Period:** **2.8 months** (from project start)
+**손익분기점:** **2.8개월** (프로젝트 시작부터)
 
-### 3.3 Risk Reduction Value
+### 3.3 위험 감소 가치
 
-#### A. **Critical Bug Prevention**
+#### A. **핵심 버그 예방**
 
-| Risk Scenario               | Probability (No Tests) | Probability (80% Tests) | Cost if Occurs | Expected Value Reduction |
-| --------------------------- | ---------------------- | ----------------------- | -------------- | ------------------------ |
-| **Data Loss Bug**           | 15%                    | 2%                      | $50,000        | **$6,500**               |
-| **Security Breach**         | 10%                    | 1%                      | $100,000       | **$9,000**               |
-| **Feature Regression**      | 60%                    | 10%                     | $5,000         | **$2,500**               |
-| **Performance Degradation** | 30%                    | 5%                      | $8,000         | **$2,000**               |
-| **Total Risk Reduction**    |                        |                         |                | **$20,000/year**         |
-
----
-
-## 4. Industry Benchmarks
-
-### 4.1 Test Coverage Standards
-
-| Project Type                | Recommended Coverage | StoLink Target | Status       |
-| --------------------------- | -------------------- | -------------- | ------------ |
-| **Open Source Libraries**   | 90-100%              | N/A            | -            |
-| **SaaS Products**           | 70-85%               | 80%            | ✅ Aligned   |
-| **Enterprise Applications** | 60-80%               | 80%            | ✅ Above     |
-| **Startups (MVP)**          | 40-60%               | 28.9% → 80%    | 🚀 Upgrading |
-
-### 4.2 Industry Data
-
-**Google's Research (2014):**
-
-- 80% coverage → 60% fewer production bugs
-- Tests catch 3x more bugs than manual QA
-- ROI breakeven: ~3 months
-
-**Microsoft's Data (2018):**
-
-- Every 1% coverage increase → 0.7% bug reduction
-- Test-driven teams: +15% productivity after 6 months
-
-**Facebook's Findings:**
-
-- React library: 85% coverage
-- Production bug rate: <0.5% per release
+| 위험 시나리오        | 확률 (테스트 없음) | 확률 (80% 테스트) | 발생 시 비용 | 기대값 감소    |
+| -------------------- | ------------------ | ----------------- | ------------ | -------------- |
+| **데이터 손실 버그** | 15%                | 2%                | $50,000      | **$6,500**     |
+| **보안 침해**        | 10%                | 1%                | $100,000     | **$9,000**     |
+| **기능 회귀**        | 60%                | 10%               | $5,000       | **$2,500**     |
+| **성능 저하**        | 30%                | 5%                | $8,000       | **$2,000**     |
+| **총 위험 감소**     |                    |                   |              | **연 $20,000** |
 
 ---
 
-## 5. Roadmap to 80% Coverage
+## 4. 산업 벤치마크
 
-### 5.1 Priority Matrix
+### 4.1 테스트 커버리지 표준
 
-| Priority        | Files    | Tests Needed | Impact    | Effort | ROI     |
-| --------------- | -------- | ------------ | --------- | ------ | ------- |
-| **🔴 Critical** | 8 files  | ~120 tests   | Very High | High   | **10x** |
-| **🟠 High**     | 12 files | ~140 tests   | High      | Medium | **5x**  |
-| **🟡 Medium**   | 10 files | ~60 tests    | Medium    | Low    | **3x**  |
-| **🟢 Low**      | 6 files  | ~40 tests    | Low       | Low    | **2x**  |
+| 프로젝트 유형           | 권장 커버리지 | StoLink 목표 | 상태          |
+| ----------------------- | ------------- | ------------ | ------------- |
+| **오픈소스 라이브러리** | 90-100%       | N/A          | -             |
+| **SaaS 제품**           | 70-85%        | 80%          | ✅ 일치       |
+| **엔터프라이즈 앱**     | 60-80%        | 80%          | ✅ 이상       |
+| **스타트업 (MVP)**      | 40-60%        | 28.9% → 80%  | 🚀 업그레이드 |
 
-### 5.2 Implementation Phases
+### 4.2 산업 데이터
 
-#### **Phase 1: Fix Existing Tests** (Week 1)
+**Google의 연구 (2014):**
 
-```
-Goal: 100% passing tests
-Tasks:
-- Fix 9 failing tests in useDocuments/useProjects
-- Update type definitions
-- Verify MSW handlers
+- 80% 커버리지 → 프로덕션 버그 60% 감소
+- 테스트가 수동 QA보다 3배 더 많은 버그 감지
+- ROI 손익분기점: ~3개월
 
-Output: 204 passing tests
-Effort: 8 hours
-```
+**Microsoft의 데이터 (2018):**
 
-#### **Phase 2: Critical Coverage** (Week 2-3)
+- 커버리지 1% 증가마다 → 버그 0.7% 감소
+- 테스트 주도 팀: 6개월 후 생산성 +15%
 
-```
-Goal: Cover critical business logic
-Files: errorHandler.ts, sanitize.ts, useEditorStore.ts,
-       useDocumentStore.ts, exportService.ts, projectService.ts,
-       useAI.ts, useJobPolling.ts
+**Facebook의 발견:**
 
-Output: +120 tests (50% file coverage)
-Effort: 48 hours
-```
-
-#### **Phase 3: High-Priority Coverage** (Week 4-6)
-
-```
-Goal: Cover main features
-Files: useCharacterGraphSimulation.ts, useExport.ts,
-       aiService.ts, relationshipService.ts, etc.
-
-Output: +140 tests (75% file coverage)
-Effort: 56 hours
-```
-
-#### **Phase 4: Complete Coverage** (Week 7-8)
-
-```
-Goal: Reach 80% coverage target
-Files: Remaining medium/low priority files
-
-Output: +100 tests (80% file coverage)
-Effort: 40 hours
-```
-
-### 5.3 Success Metrics
-
-| Milestone                  | Target Date | File Coverage | Code Coverage | Tests    |
-| -------------------------- | ----------- | ------------- | ------------- | -------- |
-| **M1: All Tests Pass**     | Week 1      | 28.9%         | ~40%          | 204 ✅   |
-| **M2: Critical Done**      | Week 3      | 50%           | ~55%          | 324      |
-| **M3: High Priority Done** | Week 6      | 75%           | ~70%          | 464      |
-| **M4: Target Reached**     | Week 8      | **80%**       | **80%**       | **500+** |
+- React 라이브러리: 85% 커버리지
+- 릴리스당 프로덕션 버그율: <0.5%
 
 ---
 
-## 6. Measuring Success
+## 5. 80% 커버리지로의 로드맵
 
-### 6.1 KPIs (Key Performance Indicators)
+### 5.1 우선순위 매트릭스
 
-#### A. **Test Metrics**
+| 우선순위    | 파일      | 필요 테스트   | 영향      | 노력 | ROI     |
+| ----------- | --------- | ------------- | --------- | ---- | ------- |
+| **🔴 핵심** | 8개 파일  | ~120개 테스트 | 매우 높음 | 높음 | **10x** |
+| **🟠 높음** | 12개 파일 | ~140개 테스트 | 높음      | 중간 | **5x**  |
+| **🟡 중간** | 10개 파일 | ~60개 테스트  | 중간      | 낮음 | **3x**  |
+| **🟢 낮음** | 6개 파일  | ~40개 테스트  | 낮음      | 낮음 | **2x**  |
 
-- ✅ Code Coverage: 40% → **80%**
-- ✅ File Coverage: 28.9% → **80%**
-- ✅ Test Pass Rate: 95.6% → **100%**
-- ✅ Test Count: 204 → **500+**
+### 5.2 구현 단계
 
-#### B. **Quality Metrics**
+#### **1단계: 기존 테스트 수정** (1주차)
 
-- ✅ Production Bugs: Baseline → **-60%**
-- ✅ Regression Bugs: Baseline → **-80%**
-- ✅ Bug Detection Time: 2-5 days → **<1 hour**
-- ✅ MTTR: 10-24 hours → **2-5 hours**
+```
+목표: 100% 통과 테스트
+작업:
+- useDocuments/useProjects의 9개 실패 테스트 수정
+- 타입 정의 업데이트
+- MSW 핸들러 검증
 
-#### C. **Velocity Metrics**
+산출물: 204개 통과 테스트
+노력: 8시간
+```
 
-- ✅ Development Velocity: Baseline → **+35%** (after 6 months)
-- ✅ Refactoring Time: Baseline → **-70%**
-- ✅ Manual Testing Time: 6 hours/week → **1 hour/week**
+#### **2단계: 핵심 커버리지** (2-3주차)
 
-### 6.2 Tracking Dashboard
+```
+목표: 핵심 비즈니스 로직 커버
+파일: errorHandler.ts, sanitize.ts, useEditorStore.ts,
+      useDocumentStore.ts, exportService.ts, projectService.ts,
+      useAI.ts, useJobPolling.ts
+
+산출물: +120개 테스트 (50% 파일 커버리지)
+노력: 48시간
+```
+
+#### **3단계: 높은 우선순위 커버리지** (4-6주차)
+
+```
+목표: 주요 기능 커버
+파일: useCharacterGraphSimulation.ts, useExport.ts,
+      aiService.ts, relationshipService.ts, 등
+
+산출물: +140개 테스트 (75% 파일 커버리지)
+노력: 56시간
+```
+
+#### **4단계: 완전 커버리지** (7-8주차)
+
+```
+목표: 80% 커버리지 목표 달성
+파일: 남은 중/낮은 우선순위 파일
+
+산출물: +100개 테스트 (80% 파일 커버리지)
+노력: 40시간
+```
+
+### 5.3 성공 지표
+
+| 마일스톤                   | 목표 날짜 | 파일 커버리지 | 코드 커버리지 | 테스트   |
+| -------------------------- | --------- | ------------- | ------------- | -------- |
+| **M1: 모든 테스트 통과**   | 1주차     | 28.9%         | ~40%          | 204 ✅   |
+| **M2: 핵심 완료**          | 3주차     | 50%           | ~55%          | 324      |
+| **M3: 높은 우선순위 완료** | 6주차     | 75%           | ~70%          | 464      |
+| **M4: 목표 달성**          | 8주차     | **80%**       | **80%**       | **500+** |
+
+---
+
+## 6. 성공 측정
+
+### 6.1 KPI (핵심 성과 지표)
+
+#### A. **테스트 지표**
+
+- ✅ 코드 커버리지: 40% → **80%**
+- ✅ 파일 커버리지: 28.9% → **80%**
+- ✅ 테스트 통과율: 95.6% → **100%**
+- ✅ 테스트 개수: 204 → **500+**
+
+#### B. **품질 지표**
+
+- ✅ 프로덕션 버그: 기준선 → **-60%**
+- ✅ 회귀 버그: 기준선 → **-80%**
+- ✅ 버그 감지 시간: 2-5일 → **<1시간**
+- ✅ MTTR: 10-24시간 → **2-5시간**
+
+#### C. **속도 지표**
+
+- ✅ 개발 속도: 기준선 → **+35%** (6개월 후)
+- ✅ 리팩토링 시간: 기준선 → **-70%**
+- ✅ 수동 테스트 시간: 주당 6시간 → **주당 1시간**
+
+### 6.2 추적 대시보드
 
 ```bash
-# Run coverage report
+# 커버리지 리포트 실행
 npm run test:coverage
 
-# View HTML report
+# HTML 리포트 보기
 open coverage/index.html
 
-# Check metrics
+# 지표 확인
 npm run test -- --reporter=verbose
 ```
 
-**Expected Output:**
+**예상 출력:**
 
 ```
-File Coverage: 80% (36/45 files)
-Line Coverage: 80.5%
-Function Coverage: 82.3%
-Branch Coverage: 78.9%
-Statement Coverage: 81.2%
+파일 커버리지: 80% (36/45 파일)
+라인 커버리지: 80.5%
+함수 커버리지: 82.3%
+브랜치 커버리지: 78.9%
+구문 커버리지: 81.2%
 
-✅ All thresholds met
+✅ 모든 임계값 충족
 ```
 
 ---
 
-## 7. Conclusion
+## 7. 결론
 
-### 7.1 Summary
+### 7.1 요약
 
-| Metric                   | Current  | Target | Expected Improvement |
-| ------------------------ | -------- | ------ | -------------------- |
-| **File Coverage**        | 28.9%    | 80%    | **+176%**            |
-| **Bug Detection**        | ~40%     | ~85%   | **+112%**            |
-| **Production Bugs**      | 100%     | 40%    | **-60%**             |
-| **Development Velocity** | Baseline | +35%   | **+35%**             |
-| **ROI (Year 1)**         | -        | 320%   | **$28,200 net**      |
-| **5-Year ROI**           | -        | 1,000% | **$168,200 net**     |
+| 지표              | 현재   | 목표   | 예상 개선           |
+| ----------------- | ------ | ------ | ------------------- |
+| **파일 커버리지** | 28.9%  | 80%    | **+176%**           |
+| **버그 감지**     | ~40%   | ~85%   | **+112%**           |
+| **프로덕션 버그** | 100%   | 40%    | **-60%**            |
+| **개발 속도**     | 기준선 | +35%   | **+35%**            |
+| **ROI (1년차)**   | -      | 320%   | **$28,200 순수익**  |
+| **5년 ROI**       | -      | 1,000% | **$168,200 순수익** |
 
-### 7.2 Key Takeaways
+### 7.2 주요 요점
 
-✅ **High ROI:** 320% first year, 1,750% ongoing
-✅ **Fast Payback:** 2.8 months to break even
-✅ **Risk Reduction:** $20,000/year in prevented critical bugs
-✅ **Velocity Gain:** +35% long-term development speed
-✅ **Quality Improvement:** -60% production bugs
+✅ **높은 ROI:** 1년차 320%, 지속적으로 1,750%
+✅ **빠른 손익분기:** 손익분기점 2.8개월
+✅ **위험 감소:** 핵심 버그 예방으로 연 $20,000
+✅ **속도 증가:** 장기 개발 속도 +35%
+✅ **품질 개선:** 프로덕션 버그 -60%
 
-### 7.3 Recommendation
+### 7.3 권장사항
 
-**Invest in comprehensive test coverage immediately.**
+**즉시 종합적인 테스트 커버리지에 투자하세요.**
 
-The data overwhelmingly supports prioritizing test coverage:
+데이터는 테스트 커버리지 우선순위화를 압도적으로 지지합니다:
 
-- Initial 8-week investment: $8,800
-- Annual ROI: $37,000 savings
-- Long-term velocity gain: +35%
-- Risk mitigation: $20,000/year
+- 초기 8주 투자: $8,800
+- 연간 ROI: $37,000 절감
+- 장기 속도 증가: +35%
+- 위험 완화: 연 $20,000
 
-**Next Steps:**
+**다음 단계:**
 
-1. ✅ Fix 9 failing tests (Week 1)
-2. 🚀 Write critical tests (Week 2-3)
-3. 📈 Reach 80% coverage (Week 4-8)
-4. 🎯 Monitor KPIs monthly
+1. ✅ 9개 실패 테스트 수정 (1주차)
+2. 🚀 핵심 테스트 작성 (2-3주차)
+3. 📈 80% 커버리지 달성 (4-8주차)
+4. 🎯 KPI 월별 모니터링
 
 ---
 
-## Appendix
+## 부록
 
-### A. Test Coverage Tools
+### A. 테스트 커버리지 도구
 
 ```bash
-# Run tests
+# 테스트 실행
 npm run test
 
-# Run with coverage
+# 커버리지와 함께 실행
 npm run test:coverage
 
-# Watch mode
+# Watch 모드
 npm run test:watch
 
-# UI mode
+# UI 모드
 npm run test:ui
 
-# Single file
+# 단일 파일
 npm run test useCharacters.test.ts
 ```
 
-### B. Reference Documents
+### B. 참조 문서
 
-- [Plan Mode: Test Infrastructure](/.claude/plans/lively-tickling-blanket.md)
-- [Vitest Configuration](/vitest.config.ts)
-- [MSW Handlers](/src/test/mocks/handlers.ts)
-- [Test Utils](/src/test/utils.tsx)
+- [플랜 모드: 테스트 인프라](/.claude/plans/lively-tickling-blanket.md)
+- [Vitest 설정](/vitest.config.ts)
+- [MSW 핸들러](/src/test/mocks/handlers.ts)
+- [테스트 유틸](/src/test/utils.tsx)
 
-### C. External Research
+### C. 외부 연구
 
-- **Google Testing Blog:** https://testing.googleblog.com
-- **Microsoft DevOps Research:** https://devops.microsoft.com/
+- **Google Testing 블로그:** https://testing.googleblog.com
+- **Microsoft DevOps 연구:** https://devops.microsoft.com/
 - **State of DevOps Report 2024:** https://dora.dev/
 
 ---
 
-**Document Metadata:**
+**문서 메타데이터:**
 
-- Created: 2025-12-28
-- Author: StoLink Dev Team
-- Review Cycle: Quarterly
-- Next Review: 2025-03-28
+- 생성일: 2025-12-28
+- 작성자: StoLink 개발 팀
+- 검토 주기: 분기별
+- 다음 검토: 2025-03-28
