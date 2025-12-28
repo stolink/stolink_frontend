@@ -25,14 +25,10 @@ interface ApiError {
 }
 
 const isValidDocumentNode = (item: unknown): item is DocumentNode => {
+  if (typeof item !== "object" || item === null) return false;
+  const obj = item as Record<string, unknown>;
   return (
-    typeof item === "object" &&
-    item !== null &&
-    "id" in item &&
-    "title" in item &&
-    "type" in item &&
-    typeof (item as any).id === "string" && // eslint-disable-line @typescript-eslint/no-explicit-any
-    typeof (item as any).title === "string" // eslint-disable-line @typescript-eslint/no-explicit-any
+    typeof obj.id === "string" && typeof obj.title === "string" && "type" in obj
   );
 };
 
@@ -57,7 +53,7 @@ export default function SharedProjectPage() {
 
   // Flatten the document tree into a linear list of chapters
   const chapters = useMemo<Chapter[]>(() => {
-    if (!project?.documents) return [];
+    if (!project?.documents || !Array.isArray(project.documents)) return [];
 
     const result: Chapter[] = [];
 
@@ -94,11 +90,19 @@ export default function SharedProjectPage() {
     return result;
   }, [project]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  if (!shareId) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-paper text-stone-500">
+        잘못된 접근입니다. (공유 ID 누락)
+      </div>
+    );
+  }
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassword(passwordInput);
     // Retry fetching with new password
-    setTimeout(() => refetch(), 0);
+    await refetch();
   };
 
   const handleClose = () => {
