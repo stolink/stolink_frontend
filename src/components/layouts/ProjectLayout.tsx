@@ -195,7 +195,7 @@ export function ProjectLayout() {
                   )}
                 />
                 <span className="text-[10px] text-muted-foreground">
-                  {saveStatus === "saved" && "자동 저장"}
+                  {saveStatus === "saved" && "저장 완료"}
                   {saveStatus === "saving" && "저장 중..."}
                   {saveStatus === "unsaved" && "편집 중"}
                 </span>
