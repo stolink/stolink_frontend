@@ -90,7 +90,7 @@ export default function ForeshadowingPanel() {
           <div
             key={item.id}
             className={cn(
-              "p-3 rounded-lg border cursor-pointer hover:bg-stone-50 transition-colors",
+              "p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors",
               item.status === "recovered" && "opacity-60",
             )}
           >

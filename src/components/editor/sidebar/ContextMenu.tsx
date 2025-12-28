@@ -58,12 +58,12 @@ export function ContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-[160px] bg-white rounded-lg shadow-xl border border-stone-200 py-1.5 animate-in fade-in-0 zoom-in-95 duration-150"
+      className="fixed z-50 min-w-[160px] bg-card rounded-lg shadow-xl border border-border py-1.5 animate-in fade-in-0 zoom-in-95 duration-150"
       style={{ left: adjustedPosition.x, top: adjustedPosition.y }}
     >
       {items.map((item, idx) =>
         "type" in item ? (
-          <div key={idx} className="h-px bg-stone-100 my-1.5 mx-2" />
+          <div key={idx} className="h-px bg-muted my-1.5 mx-2" />
         ) : (
           <button
             key={idx}
@@ -75,13 +75,13 @@ export function ContextMenu({
               "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors text-left",
               item.danger
                 ? "text-red-600 hover:bg-red-50"
-                : "text-stone-700 hover:bg-stone-100",
+                : "text-foreground hover:bg-muted",
             )}
           >
             <item.icon className="h-4 w-4 shrink-0" />
             <span className="flex-1">{item.label}</span>
             {item.shortcut && (
-              <span className="text-xs text-stone-400">{item.shortcut}</span>
+              <span className="text-xs text-muted-foreground">{item.shortcut}</span>
             )}
           </button>
         ),

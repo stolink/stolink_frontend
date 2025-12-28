@@ -34,7 +34,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
               avatar={character.imageUrl}
             />
           ) : (
-            <div className="p-2 text-sm text-stone-500">캐릭터 정보 없음</div>
+            <div className="p-2 text-sm text-muted-foreground">캐릭터 정보 없음</div>
           )
         }
         interactive={true}

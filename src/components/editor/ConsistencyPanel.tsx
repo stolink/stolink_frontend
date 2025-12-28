@@ -98,9 +98,9 @@ export default function ConsistencyPanel() {
               </span>
             </div>
 
-            <div className="text-sm text-stone-700 space-y-1 mb-2">
+            <div className="text-sm text-foreground space-y-1 mb-2">
               <p>{issue.description}</p>
-              <p className="text-stone-500">→ {issue.detail}</p>
+              <p className="text-muted-foreground">→ {issue.detail}</p>
             </div>
 
             <div className="flex items-center gap-2">

@@ -26,10 +26,6 @@ interface EditorState {
     secondaryDocumentId: string | null;
   };
 
-  // UX Features
-  isFocusMode: boolean;
-  isTypewriterMode: boolean;
-
   // Actions
   setCurrentProject: (projectId: string) => void;
   setCurrentChapter: (chapterId: string) => void;
@@ -45,8 +41,6 @@ interface EditorState {
   toggleSplitView: () => void;
   setSplitDirection: (direction: "horizontal" | "vertical") => void;
   setSecondaryDocument: (docId: string | null) => void;
-  toggleFocusMode: () => void;
-  toggleTypewriterMode: () => void;
   setViewMode: (
     mode: "editor" | "scrivenings" | "outline" | "corkboard"
   ) => void;
@@ -71,9 +65,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     direction: "vertical",
     secondaryDocumentId: null,
   },
-
-  isFocusMode: false,
-  isTypewriterMode: false,
 
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
 
@@ -178,8 +169,5 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
     })),
 
-  toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
-  toggleTypewriterMode: () =>
-    set((state) => ({ isTypewriterMode: !state.isTypewriterMode })),
   setViewMode: (mode) => set({ viewMode: mode }),
 }));

@@ -248,7 +248,7 @@ const ScriveningsEditor = forwardRef<
 
   if (isLoading || !editor) {
     return (
-      <div className="flex-1 flex items-center justify-center text-stone-400 italic">
+      <div className="flex-1 flex items-center justify-center text-muted-foreground italic">
         문서를 불러오는 중...
       </div>
     );
@@ -256,14 +256,14 @@ const ScriveningsEditor = forwardRef<
 
   if (documents.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-stone-50/30">
-        <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-          <Folder className="w-8 h-8 text-stone-300" />
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-muted/50/30">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Folder className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-stone-700 mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           통합 편집할 섹션이 없습니다
         </h3>
-        <p className="text-stone-500 max-w-md">
+        <p className="text-muted-foreground max-w-md">
           왼쪽 사이드바에서 섹션을 추가하세요.
         </p>
       </div>
@@ -271,7 +271,7 @@ const ScriveningsEditor = forwardRef<
   }
 
   return (
-    <div className="flex flex-col h-full relative group bg-white">
+    <div className="flex flex-col h-full relative group bg-card">
       <EditorToolbar editor={editor} />
 
       {/* Folder Title Header - 통합뷰 최상단 챕터 제목 */}
@@ -291,11 +291,11 @@ const ScriveningsEditor = forwardRef<
             </div>
           </div>
           {folderDoc.synopsis && (
-            <p className="text-sm text-stone-600 italic pl-13">
+            <p className="text-sm text-foreground italic pl-13">
               {folderDoc.synopsis}
             </p>
           )}
-          <div className="text-xs text-stone-500 mt-3 pl-13">
+          <div className="text-xs text-muted-foreground mt-3 pl-13">
             {documents.length}개 섹션 통합 편집 중
           </div>
         </div>

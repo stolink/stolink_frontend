@@ -74,7 +74,7 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
     }
 
     return (
-      <div className="flex flex-col p-1 bg-white rounded-md shadow-lg border border-stone-200 overflow-hidden min-w-[200px]">
+      <div className="flex flex-col p-1 bg-card rounded-md shadow-lg border border-border overflow-hidden min-w-[200px]">
         {props.items.map((item, index) => (
           <button
             key={index}
@@ -82,11 +82,11 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
               "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
               index === selectedIndex
                 ? "bg-sage-100 text-sage-900"
-                : "text-stone-600 hover:bg-stone-50",
+                : "text-foreground hover:bg-muted/50",
             )}
             onClick={() => selectItem(index)}
           >
-            <div className="flex items-center justify-center w-5 h-5 text-stone-500">
+            <div className="flex items-center justify-center w-5 h-5 text-muted-foreground">
               {item.icon}
             </div>
             <span className="font-medium">{item.title}</span>

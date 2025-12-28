@@ -71,7 +71,7 @@ export const SuggestionList = forwardRef<
   }
 
   return (
-    <div className="flex flex-col p-1 bg-white rounded-md shadow-lg border border-stone-200 overflow-hidden min-w-[180px]">
+    <div className="flex flex-col p-1 bg-card rounded-md shadow-lg border border-border overflow-hidden min-w-[180px]">
       {props.items.map((item, index) => (
         <button
           key={item.id}
@@ -79,7 +79,7 @@ export const SuggestionList = forwardRef<
             "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
             index === selectedIndex
               ? "bg-sage-100 text-sage-900"
-              : "text-stone-600 hover:bg-stone-50",
+              : "text-foreground hover:bg-muted/50",
           )}
           onClick={() => selectItem(index)}
         >
@@ -90,13 +90,13 @@ export const SuggestionList = forwardRef<
               className="w-5 h-5 rounded-full object-cover"
             />
           ) : (
-            <div className="w-5 h-5 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-500 font-bold">
+            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-bold">
               {item.name[0]}
             </div>
           )}
           <span className="font-medium">{item.name}</span>
           {item.role && (
-            <span className="text-xs text-stone-400 ml-auto">{item.role}</span>
+            <span className="text-xs text-muted-foreground ml-auto">{item.role}</span>
           )}
         </button>
       ))}

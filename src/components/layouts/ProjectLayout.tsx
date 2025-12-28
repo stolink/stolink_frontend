@@ -28,17 +28,17 @@ export function ProjectLayout() {
   const projectTitle = project?.title || "제목 없음";
 
   return (
-    <div className="flex flex-col h-screen bg-paper min-w-[1024px]">
+    <div className="flex flex-col h-screen bg-background text-foreground min-w-[1024px]">
       {/* Global Header - 모든 페이지 공통 */}
       {!isDemo && (
-        <header className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm">
+        <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6 shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <BookOpen className="w-5 h-5 text-sage-600" />
+            <BookOpen className="w-5 h-5 text-primary" />
             <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-stone-900">
+              <h1 className="text-sm font-semibold text-foreground">
                 {projectTitle}
               </h1>
-              <div className="flex items-center gap-2 text-xs text-stone-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   {saveStatus === "saved" && (
                     <>
@@ -59,7 +59,7 @@ export function ProjectLayout() {
                     </>
                   )}
                   {lastSavedAt && saveStatus === "saved" && (
-                    <span className="text-stone-400">
+                    <span className="text-muted-foreground/70">
                       • {new Date(lastSavedAt).toLocaleString("ko-KR", {
                         month: "short",
                         day: "numeric",

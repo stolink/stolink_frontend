@@ -18,21 +18,21 @@ export function PrimarySidebar({ children, className }: PrimarySidebarProps) {
   return (
     <aside
       className={cn(
-        "w-64 bg-stone-50/50 border-r border-stone-200 flex flex-col h-full shrink-0",
+        "w-64 bg-secondary/50 border-r border-border flex flex-col h-full shrink-0",
         className
       )}
       role="complementary"
       aria-label="보조 네비게이션"
     >
       {/* Close button (optional) */}
-      <div className="flex items-center justify-end p-2 border-b border-stone-200">
+      <div className="flex items-center justify-end p-2 border-b border-border">
         <button
           onClick={toggleLeftSidebar}
-          className="p-1.5 hover:bg-stone-200 rounded transition-colors"
+          className="p-1.5 hover:bg-accent rounded transition-colors"
           aria-label="사이드바 닫기"
           title="사이드바 닫기 (Ctrl+B)"
         >
-          <X className="h-4 w-4 text-stone-500" />
+          <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
 

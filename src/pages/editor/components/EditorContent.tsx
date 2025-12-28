@@ -30,7 +30,6 @@ interface EditorContentProps {
   onSynopsisUpdate?: (id: string, synopsis: string) => void; // 개요 뷰에서 시놉시스 편집
   documents: Document[];
   isDemo: boolean;
-  isTypewriterMode?: boolean; // 타자기 모드
 }
 
 export interface EditorContentHandle {
@@ -70,7 +69,6 @@ export const EditorContent = forwardRef<
       onSynopsisUpdate,
       documents,
       isDemo,
-      isTypewriterMode = false,
     },
     ref
   ) => {
@@ -144,7 +142,6 @@ export const EditorContent = forwardRef<
                   onCreateSection={onCreateSection}
                   initialContent={currentContent}
                   hideToolbar={isFocusMode}
-                  isTypewriterMode={isTypewriterMode}
                 />
               </div>
             </ResizablePanel>
@@ -177,7 +174,6 @@ export const EditorContent = forwardRef<
             onCreateSection={onCreateSection}
             initialContent={currentContent}
             hideToolbar={isFocusMode}
-            isTypewriterMode={isTypewriterMode}
           />
         </div>
       );

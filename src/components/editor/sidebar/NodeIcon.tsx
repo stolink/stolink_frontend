@@ -25,6 +25,6 @@ export function NodeIcon({
     case "section":
     default:
       // Files (Sections)
-      return <FileText className="h-4 w-4 text-stone-500" />;
+      return <FileText className="h-4 w-4 text-muted-foreground" />;
   }
 }

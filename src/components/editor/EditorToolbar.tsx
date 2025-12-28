@@ -60,7 +60,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "h-8 w-8 p-0 text-stone-600 hover:text-stone-900",
+        "h-8 w-8 p-0 text-foreground hover:text-foreground",
         isActive && "bg-sage-100 text-sage-800 hover:bg-sage-200"
       )}
       title={tooltip}
@@ -87,7 +87,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-0.5 px-3 py-2 border-b bg-stone-50/80 backdrop-blur sticky top-0 z-10 flex-wrap",
+        "flex items-center gap-0.5 px-3 py-2 border-b bg-muted/50/80 backdrop-blur sticky top-0 z-10 flex-wrap",
         className
       )}
     >
@@ -109,7 +109,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </ToolbarButton>
       </div>
 
-      <div className="w-px h-5 bg-stone-200 mx-1" />
+      <div className="w-px h-5 bg-muted mx-1" />
 
       {/* Heading Dropdown */}
       <DropdownMenu>
@@ -161,7 +161,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-stone-200 mx-1" />
+      <div className="w-px h-5 bg-muted mx-1" />
 
       {/* Basic Formatting */}
       <ToolbarButton
@@ -200,7 +200,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <Code className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-stone-200 mx-1" />
+      <div className="w-px h-5 bg-muted mx-1" />
 
       {/* Highlight Colors */}
       <DropdownMenu>
@@ -270,7 +270,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-stone-200 mx-1" />
+      <div className="w-px h-5 bg-muted mx-1" />
 
       {/* Alignment */}
       <ToolbarButton
@@ -295,7 +295,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-stone-200 mx-1" />
+      <div className="w-px h-5 bg-muted mx-1" />
 
       {/* Lists & Blocks */}
       <ToolbarButton

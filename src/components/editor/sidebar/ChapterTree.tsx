@@ -396,13 +396,13 @@ export function ChapterTree({
     >
       {chapters.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
-            <Folder className="h-6 w-6 text-stone-300" />
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Folder className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-stone-600 mb-1">
+          <p className="text-sm font-medium text-foreground mb-1">
             챕터가 비어있습니다
           </p>
-          <p className="text-xs text-stone-400 mb-4">
+          <p className="text-xs text-muted-foreground mb-4">
             우클릭하여 새 문서를 만드세요
           </p>
           <Button
@@ -482,7 +482,7 @@ export function ChapterTree({
             className="h-6 w-6 shrink-0"
             onClick={handleCancel}
           >
-            <X className="h-3.5 w-3.5 text-stone-400" />
+            <X className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
         </div>
       )}
@@ -492,7 +492,7 @@ export function ChapterTree({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-stone-500 mt-2 ml-0 mr-1 hover:text-sage-600 hover:bg-sage-50"
+          className="w-full justify-start text-muted-foreground mt-2 ml-0 mr-1 hover:text-sage-600 hover:bg-sage-50"
           onClick={() => setIsAdding(true)}
         >
           <Plus className="h-4 w-4 mr-2" />새 챕터 추가
