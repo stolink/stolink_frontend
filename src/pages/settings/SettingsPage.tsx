@@ -51,8 +51,7 @@ export default function SettingsPage() {
   }
 
   const handleCreateShare = () => {
-    if (!projectId) return;
-    createShare.mutate({ projectId });
+    createShare.mutate({ projectId: projectId! });
   };
 
   const handleDeleteShare = () => {
@@ -62,7 +61,7 @@ export default function SettingsPage() {
         "정말로 공유 링크를 삭제하시겠습니까? 더 이상 이 링크로 접근할 수 없습니다.",
       )
     ) {
-      deleteShare.mutate(projectId);
+      deleteShare.mutate(projectId!);
     }
   };
 

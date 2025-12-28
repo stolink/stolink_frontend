@@ -8,6 +8,13 @@ import { BookReaderModal } from "@/components/reader/BookReaderModal";
 import type { Chapter } from "@/components/reader/hooks/useBookReader";
 
 // Define a type for the document structure from the API
+interface DocumentNode {
+  id: string;
+  title: string;
+  type: string;
+  content?: string;
+  children?: DocumentNode[];
+}
 
 // Define ApiError type for better type safety
 interface ApiError {
@@ -27,7 +34,7 @@ export default function SharedProjectPage() {
     isLoading,
     error,
   } = useSharedProject(shareId || "", password, {
-    enabled: !!shareId && (password !== "" || !error), // Enable if shareId exists, and handle password retry logic if needed
+    enabled: !!shareId, // Fetch initially to check if password is required
     retry: (failureCount, error) => {
       // Don't retry on 403 (passowrd required)
       return (error as ApiError)?.response?.status !== 403 && failureCount < 1;
@@ -47,9 +54,7 @@ export default function SharedProjectPage() {
       for (const doc of docs) {
         if (!doc || typeof doc !== "object") continue;
 
-        // Type guardish check
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const item = doc as any;
+        const item = doc as DocumentNode;
 
         // We only treat "text" type as readable chapters
         if (
