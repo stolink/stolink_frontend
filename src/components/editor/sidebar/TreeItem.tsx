@@ -7,7 +7,6 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
-import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
   SortableContext,
@@ -82,29 +81,18 @@ export const TreeItem = memo(function TreeItem({
   const {
     attributes,
     listeners,
-    setNodeRef: setSortableRef,
+    setNodeRef,
     transform,
     transition,
     isDragging,
   } = useSortable({
     id: node.id,
     animateLayoutChanges: () => false, // 드래그 중 레이아웃 애니메이션 비활성화
+    data: {
+      type: node.id,
+      isFolder,
+    },
   });
-
-  // Droppable hook - 폴더만 드롭 타겟 (폴더 간 이동용)
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: `folder-drop-${node.id}`,
-    disabled: !isFolder,
-    data: { folderId: node.id },
-  });
-
-  // Combine refs
-  const setNodeRef = (element: HTMLDivElement | null) => {
-    setSortableRef(element);
-    if (isFolder) {
-      setDroppableRef(element);
-    }
-  };
 
   // Style: 드래그 중인 아이템만 움직임, 다른 아이템은 고정
   const style = useMemo(
@@ -197,8 +185,9 @@ export const TreeItem = memo(function TreeItem({
           isSelected && "bg-sage-50",
           isDragging && "shadow-lg ring-2 ring-sage-400 bg-white",
           // 폴더 드래그 오버 상태 - 강화된 하이라이트
-          (showDropInside ||
-            (isOver && isFolder && !isDragging && !isParentOfActive)) &&
+          showDropInside &&
+            !isDragging &&
+            !isParentOfActive &&
             "bg-emerald-100 ring-2 ring-emerald-500",
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
@@ -224,7 +213,7 @@ export const TreeItem = memo(function TreeItem({
         )}
 
         {/* Drop target indicator for folders */}
-        {isOver && isFolder && !isDragging && !isParentOfActive && (
+        {showDropInside && !isDragging && !isParentOfActive && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
             여기에 놓기
           </div>
@@ -232,7 +221,7 @@ export const TreeItem = memo(function TreeItem({
 
         {/* Status indicator */}
         {node.status &&
-          !(isOver && isFolder && !isDragging && !isParentOfActive) && (
+          !(showDropInside && !isDragging && !isParentOfActive) && (
             <div
               className={cn(
                 "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",

@@ -50,16 +50,15 @@ function findParentId(
   nodes: ChapterNode[],
   id: string,
   parentId: string | null = null,
-): string | null {
+): string | null | undefined {
   for (const node of nodes) {
     if (node.id === id) return parentId;
     if (node.children) {
       const found = findParentId(node.children, id, node.id);
-      if (found !== undefined && found !== null) return found;
-      if (node.children.some((c) => c.id === id)) return node.id;
+      if (found !== undefined) return found;
     }
   }
-  return null;
+  return undefined;
 }
 
 // Helper: 순환 참조 확인 (targetId가 itemId의 하위에 있는지)
@@ -238,24 +237,8 @@ export function ChapterTree({
       if (overNode.type === "chapter" || overNode.type === "part") {
         setDropIndicator({ id: overId, position: "inside" });
       } else {
-        // 섹션인 경우 -> before 또는 after
-        const overRect = over.rect;
-        const activeRect = active.rect.current.translated;
-
-        if (overRect && activeRect) {
-          // 드래그 중인 아이템의 중앙 Y 좌표
-          const activeMidY = activeRect.top + activeRect.height / 2;
-          // 타겟 아이템의 중앙 Y 좌표
-          const overMidY = overRect.top + overRect.height / 2;
-
-          if (activeMidY < overMidY) {
-            setDropIndicator({ id: overId, position: "before" });
-          } else {
-            setDropIndicator({ id: overId, position: "after" });
-          }
-        } else {
-          setDropIndicator({ id: overId, position: "after" });
-        }
+        // 섹션인 경우 -> 간단하게 after로 처리 (안정성 우선)
+        setDropIndicator({ id: overId, position: "after" });
       }
     },
     [chapters],
@@ -283,6 +266,8 @@ export function ChapterTree({
 
     const activeParentId = findParentId(chapters, activeIdValue);
     const overParentId = findParentId(chapters, overIdValue);
+
+    if (activeParentId === undefined || overParentId === undefined) return;
 
     // Case 1: 폴더 위에 드롭 → 폴더 안으로 이동
     if (overNode.type === "chapter" || overNode.type === "part") {
