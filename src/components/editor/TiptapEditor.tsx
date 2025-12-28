@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Editor } from "@tiptap/core";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -6,7 +7,15 @@ import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Bold, Italic, Clapperboard, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,9 +29,15 @@ import "./editor-prose.css";
 export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
   onContentChange?: (content: string) => void;
+  onCreateSection?: (title: string) => void; // 슬래시 커맨드로 섹션 생성
   initialContent?: string;
   readOnly?: boolean;
   hideToolbar?: boolean;
+  isTypewriterMode?: boolean; // 타자기 모드 - 커서를 화면 중앙에 고정
+}
+
+export interface TiptapEditorHandle {
+  getSplitContent: () => { before: string; after: string } | null;
 }
 
 const DEFAULT_CONTENT = `
@@ -42,307 +57,404 @@ const MAX_ZOOM = 200;
 const DEFAULT_ZOOM = 100;
 const ZOOM_STEP = 10;
 
-export default function TiptapEditor({
-  onUpdate,
-  onContentChange,
-  initialContent,
-  readOnly = false,
-  hideToolbar = false,
-}: TiptapEditorProps) {
-  const navigate = useNavigate();
-  const { id: projectId } = useParams<{ id: string }>();
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-
-  // Use refs for callbacks to avoid dependency issues
-  const onUpdateRef = useRef(onUpdate);
-  const onContentChangeRef = useRef(onContentChange);
-
-  // Update refs when callbacks change
-  useEffect(() => {
-    onUpdateRef.current = onUpdate;
-  }, [onUpdate]);
-
-  useEffect(() => {
-    onContentChangeRef.current = onContentChange;
-  }, [onContentChange]);
-  const [showZoomControls, setShowZoomControls] = useState(false);
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-  const scrollPositionRef = useRef<number>(0);
-
-  // Memoize extensions to prevent duplicate registration
-  const extensions = useMemo(() => {
-    const exts = [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-      }),
-      Placeholder.configure({
-        placeholder: "마크다운(#, ##, > 등)으로 자유롭게 내용을 입력하세요...",
-      }),
-      Highlight.configure({
-        multicolor: true,
-      }),
-      CharacterCount,
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
-      Underline,
-      CharacterMention,
-      SlashCommandExtension,
-    ];
-
-    return exts;
-  }, []); // Empty deps - extensions are static
-
-  const editor = useEditor(
+const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
+  (
     {
-      editable: !readOnly,
-      extensions,
-      content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
-      editorProps: {
-        attributes: {
-          class: cn(
-            // Remove prose class - use direct styling for full width
-            "w-full",
-            "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80",
-          ),
-          spellcheck: "false",
-        },
-        handleDOMEvents: {
-          beforeinput: () => {
-            if (editorContainerRef.current) {
-              scrollPositionRef.current = editorContainerRef.current.scrollTop;
-            }
-            return false;
+      onUpdate,
+      onContentChange,
+      onCreateSection,
+      initialContent,
+      readOnly = false,
+      hideToolbar = false,
+      isTypewriterMode = false,
+    },
+    ref
+  ) => {
+    const navigate = useNavigate();
+    const { id: projectId } = useParams<{ id: string }>();
+    const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+
+    // Use refs for callbacks to avoid dependency issues
+    const onUpdateRef = useRef(onUpdate);
+    const onContentChangeRef = useRef(onContentChange);
+    const onCreateSectionRef = useRef(onCreateSection);
+
+    // Update refs when callbacks change
+    useEffect(() => {
+      onUpdateRef.current = onUpdate;
+    }, [onUpdate]);
+
+    useEffect(() => {
+      onContentChangeRef.current = onContentChange;
+    }, [onContentChange]);
+
+    useEffect(() => {
+      onCreateSectionRef.current = onCreateSection;
+    }, [onCreateSection]);
+
+    // Ref for typewriter mode to avoid stale closure
+    const isTypewriterModeRef = useRef(isTypewriterMode);
+    useEffect(() => {
+      isTypewriterModeRef.current = isTypewriterMode;
+    }, [isTypewriterMode]);
+
+    const [showZoomControls, setShowZoomControls] = useState(false);
+    const editorContainerRef = useRef<HTMLDivElement>(null);
+    const scrollPositionRef = useRef<number>(0);
+
+    // Memoize extensions to prevent duplicate registration
+    const extensions = useMemo(() => {
+      const exts = [
+        StarterKit.configure({
+          heading: {
+            levels: [1, 2, 3],
+          },
+        }),
+        Placeholder.configure({
+          placeholder:
+            "마크다운(#, ##, > 등)으로 자유롭게 내용을 입력하세요...",
+        }),
+        Highlight.configure({
+          multicolor: true,
+        }),
+        CharacterCount,
+        TextAlign.configure({
+          types: ["heading", "paragraph"],
+        }),
+        Underline,
+        CharacterMention,
+        SlashCommandExtension.configure({
+          onCreateSection: (title: string) => {
+            onCreateSectionRef.current?.(title);
+          },
+        }),
+      ];
+
+      return exts;
+    }, []); // No dependencies - stable reference
+
+    const editor = useEditor(
+      {
+        editable: !readOnly,
+        extensions,
+        content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
+        editorProps: {
+          attributes: {
+            class: cn(
+              // Remove prose class - use direct styling for full width
+              "w-full",
+              "focus:outline-none min-h-[500px] px-6 py-6",
+              readOnly && "pointer-events-none opacity-80"
+            ),
+            spellcheck: "false",
+          },
+          handleDOMEvents: {
+            beforeinput: () => {
+              if (editorContainerRef.current) {
+                scrollPositionRef.current =
+                  editorContainerRef.current.scrollTop;
+              }
+              return false;
+            },
           },
         },
-      },
-      onUpdate: ({ editor }) => {
-        if (onUpdateRef.current) {
-          onUpdateRef.current(editor.storage.characterCount.characters());
-        }
-        if (onContentChangeRef.current) {
-          onContentChangeRef.current(editor.getHTML());
-        }
-      },
-      onTransaction: () => {
-        requestAnimationFrame(() => {
-          if (editorContainerRef.current && scrollPositionRef.current > 0) {
-            editorContainerRef.current.scrollTop = scrollPositionRef.current;
+        onUpdate: ({ editor }) => {
+          if (onUpdateRef.current) {
+            onUpdateRef.current(editor.storage.characterCount.characters());
           }
-        });
+          if (onContentChangeRef.current) {
+            onContentChangeRef.current(editor.getHTML());
+          }
+
+          // 타자기 모드: 커서 위치를 화면 중앙으로 스크롤
+          if (isTypewriterModeRef.current && editorContainerRef.current) {
+            requestAnimationFrame(() => {
+              const { view } = editor;
+              const { from } = view.state.selection;
+              try {
+                const coords = view.coordsAtPos(from);
+                const container = editorContainerRef.current;
+                if (!container) return;
+
+                const containerRect = container.getBoundingClientRect();
+                const centerY = containerRect.height / 2;
+                const cursorRelativeY = coords.top - containerRect.top;
+                const scrollOffset = cursorRelativeY - centerY;
+
+                // 절대 위치로 스크롤 (현재 스크롤 + 오프셋)
+                container.scrollTop = container.scrollTop + scrollOffset;
+              } catch {
+                // coordsAtPos may fail in some edge cases
+              }
+            });
+          }
+        },
+        onTransaction: () => {
+          // 타자기 모드일 때는 스크롤 위치 복원 건너뛰기
+          if (isTypewriterModeRef.current) return;
+
+          requestAnimationFrame(() => {
+            if (editorContainerRef.current && scrollPositionRef.current > 0) {
+              editorContainerRef.current.scrollTop = scrollPositionRef.current;
+            }
+          });
+        },
       },
-    },
-    [extensions], // Add dependency array to prevent recreation
-  );
+      [extensions] // Add dependency array to prevent recreation
+    );
 
-  // Smooth zoom with bounds
-  const adjustZoom = useCallback((delta: number) => {
-    setZoom((prev) => {
-      const newZoom = Math.round(prev + delta);
-      return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-    });
-    setShowZoomControls(true);
-  }, []);
+    // Expose split functionality via ref
+    useImperativeHandle(ref, () => ({
+      getSplitContent: () => {
+        if (!editor) return null;
 
-  const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
-  const handleZoomOut = useCallback(() => adjustZoom(-ZOOM_STEP), [adjustZoom]);
+        const { from } = editor.state.selection;
+        const json = editor.getJSON();
 
-  // Hide zoom controls after inactivity
-  useEffect(() => {
-    if (showZoomControls) {
-      const timer = setTimeout(() => setShowZoomControls(false), 2500);
-      return () => clearTimeout(timer);
+        // Create a temporary headless editor to safely update content
+        // This ensures HTML structure is preserved when splitting
+        // Note: Using the same extensions configuration
+        const tempEditor = new Editor({
+          extensions,
+          content: json,
+        });
+
+        const totalSize = tempEditor.state.doc.content.size;
+
+        // 1. Get content AFTER cursor (Back Part)
+        // Delete everything before cursor
+        tempEditor.commands.deleteRange({ from: 0, to: from });
+        const after = tempEditor.getHTML();
+
+        // Reset temporary editor
+        tempEditor.commands.setContent(json);
+
+        // 2. Get content BEFORE cursor (Front Part)
+        // Delete everything after cursor
+        // Note: from is now the end point
+        tempEditor.commands.deleteRange({ from: from, to: totalSize });
+        const before = tempEditor.getHTML();
+
+        // Destroy temporary editor to free resources
+        tempEditor.destroy();
+
+        return { before, after };
+      },
+    }));
+
+    // Smooth zoom with bounds
+    const adjustZoom = useCallback((delta: number) => {
+      setZoom((prev) => {
+        const newZoom = Math.round(prev + delta);
+        return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+      });
+      setShowZoomControls(true);
+    }, []);
+
+    const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
+    const handleZoomOut = useCallback(
+      () => adjustZoom(-ZOOM_STEP),
+      [adjustZoom]
+    );
+
+    // Hide zoom controls after inactivity
+    useEffect(() => {
+      if (showZoomControls) {
+        const timer = setTimeout(() => setShowZoomControls(false), 2500);
+        return () => clearTimeout(timer);
+      }
+    }, [showZoomControls, zoom]);
+
+    // Trackpad pinch-to-zoom & Ctrl+scroll (smooth)
+    useEffect(() => {
+      const container = editorContainerRef.current;
+      if (!container) return;
+
+      const handleWheel = (e: WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          // Smooth zoom based on wheel delta
+          const delta = -e.deltaY * 0.5; // Smaller multiplier for smoother zoom
+          adjustZoom(delta);
+        }
+      };
+
+      container.addEventListener("wheel", handleWheel, { passive: false });
+      return () => container.removeEventListener("wheel", handleWheel);
+    }, [adjustZoom]);
+
+    useEffect(() => {
+      if (editor) {
+        editor.setEditable(!readOnly);
+      }
+    }, [editor, readOnly]);
+
+    useEffect(() => {
+      if (editor && onUpdateRef.current) {
+        requestAnimationFrame(() => {
+          onUpdateRef.current?.(editor.storage.characterCount.characters());
+        });
+      }
+    }, [editor]);
+
+    useEffect(() => {
+      if (editor && initialContent !== undefined) {
+        const currentHTML = editor.getHTML();
+        const sanitizedContent = sanitizeEditorContent(initialContent);
+        const isDifferent = currentHTML !== sanitizedContent;
+        const isFocused = editor.isFocused;
+
+        // Only update if content is different AND editor is not focused
+        // If focused, we assume the user is typing and we shouldn't overwrite with old server data
+        if (isDifferent && !isFocused) {
+          editor.commands.setContent(sanitizedContent);
+        }
+      }
+    }, [editor, initialContent]);
+
+    if (!editor) {
+      return null;
     }
-  }, [showZoomControls, zoom]);
 
-  // Trackpad pinch-to-zoom & Ctrl+scroll (smooth)
-  useEffect(() => {
-    const container = editorContainerRef.current;
-    if (!container) return;
+    const handleSendToStudio = () => {
+      const { from, to } = editor.state.selection;
+      const text = editor.state.doc.textBetween(from, to, " ");
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        // Smooth zoom based on wheel delta
-        const delta = -e.deltaY * 0.5; // Smaller multiplier for smoother zoom
-        adjustZoom(delta);
+      if (!text?.trim()) {
+        return;
+      }
+
+      if (projectId) {
+        navigate(`/projects/${projectId}/studio`, {
+          state: { selectedText: text },
+        });
       }
     };
 
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [adjustZoom]);
+    // Base font size at 100% = 18px (1.125rem)
+    const baseFontSize = 18;
+    const fontSize = (zoom / 100) * baseFontSize;
 
-  useEffect(() => {
-    if (editor) {
-      editor.setEditable(!readOnly);
-    }
-  }, [editor, readOnly]);
-
-  useEffect(() => {
-    if (editor && onUpdateRef.current) {
-      requestAnimationFrame(() => {
-        onUpdateRef.current?.(editor.storage.characterCount.characters());
-      });
-    }
-  }, [editor]);
-
-  useEffect(() => {
-    if (editor && initialContent !== undefined) {
-      const currentHTML = editor.getHTML();
-      const sanitizedContent = sanitizeEditorContent(initialContent);
-      const isDifferent = currentHTML !== sanitizedContent;
-      const isFocused = editor.isFocused;
-
-      // Only update if content is different AND editor is not focused
-      // If focused, we assume the user is typing and we shouldn't overwrite with old server data
-      if (isDifferent && !isFocused) {
-        editor.commands.setContent(sanitizedContent);
-      }
-    }
-  }, [editor, initialContent]);
-
-  if (!editor) {
-    return null;
-  }
-
-  const handleSendToStudio = () => {
-    const { from, to } = editor.state.selection;
-    const text = editor.state.doc.textBetween(from, to, " ");
-
-    if (!text?.trim()) {
-      return;
-    }
-
-    if (projectId) {
-      navigate(`/projects/${projectId}/studio`, {
-        state: { selectedText: text },
-      });
-    }
-  };
-
-  // Base font size at 100% = 18px (1.125rem)
-  const baseFontSize = 18;
-  const fontSize = (zoom / 100) * baseFontSize;
-
-  return (
-    <div className="flex flex-col h-full relative">
-      {/* Bubble Menu for Selection */}
-      {editor && !readOnly && (
-        <BubbleMenu
-          editor={editor}
-          className="flex overflow-hidden rounded-md border border-stone-200 bg-white shadow-md z-50"
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSendToStudio}
-            aria-label="Studio로 보내기"
-            className="flex items-center gap-1.5 h-8 px-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+    return (
+      <div className="flex flex-col h-full relative">
+        {/* Bubble Menu for Selection */}
+        {editor && !readOnly && (
+          <BubbleMenu
+            editor={editor}
+            className="flex overflow-hidden rounded-md border border-stone-200 bg-white shadow-md z-50"
           >
-            <Clapperboard className="w-3.5 h-3.5" />
-            Studio로 보내기
-          </Button>
-          <div className="w-px h-8 bg-stone-100" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            aria-label="굵게"
-            aria-pressed={editor.isActive("bold")}
-            className={cn(
-              "h-8 w-8 p-0",
-              editor.isActive("bold") && "bg-stone-100",
-            )}
-          >
-            <Bold className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            aria-label="기울임"
-            aria-pressed={editor.isActive("italic")}
-            className={cn(
-              "h-8 w-8 p-0",
-              editor.isActive("italic") && "bg-stone-100",
-            )}
-          >
-            <Italic className="w-3.5 h-3.5" />
-          </Button>
-        </BubbleMenu>
-      )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSendToStudio}
+              aria-label="Studio로 보내기"
+              className="flex items-center gap-1.5 h-8 px-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+              <Clapperboard className="w-3.5 h-3.5" />
+              Studio로 보내기
+            </Button>
+            <div className="w-px h-8 bg-stone-100" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              aria-label="굵게"
+              aria-pressed={editor.isActive("bold")}
+              className={cn(
+                "h-8 w-8 p-0",
+                editor.isActive("bold") && "bg-stone-100"
+              )}
+            >
+              <Bold className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              aria-label="기울임"
+              aria-pressed={editor.isActive("italic")}
+              className={cn(
+                "h-8 w-8 p-0",
+                editor.isActive("italic") && "bg-stone-100"
+              )}
+            >
+              <Italic className="w-3.5 h-3.5" />
+            </Button>
+          </BubbleMenu>
+        )}
 
-      {/* Toolbar */}
-      {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
+        {/* Toolbar */}
+        {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
 
-      {/* Editor Content - Full width with font-size based zoom */}
-      <div
-        ref={editorContainerRef}
-        role="region"
-        aria-label="편집 영역"
-        className="flex-1 overflow-y-auto w-full"
-        style={{
-          fontSize: `${fontSize}px`,
-          lineHeight: 1.75,
-        }}
-      >
-        <EditorContent editor={editor} className="w-full" />
-      </div>
-
-      {/* Minimal Zoom Indicator - Bottom right */}
-      {!hideToolbar && (
+        {/* Editor Content - Full width with font-size based zoom */}
         <div
-          className={cn(
-            "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
-            showZoomControls
-              ? "opacity-100 px-2 py-1.5"
-              : "opacity-50 hover:opacity-100 px-2 py-1",
-          )}
-          onMouseEnter={() => setShowZoomControls(true)}
-          onMouseLeave={() => setShowZoomControls(false)}
+          ref={editorContainerRef}
+          role="region"
+          aria-label="편집 영역"
+          className="flex-1 overflow-y-auto w-full"
+          style={{
+            fontSize: `${fontSize}px`,
+            lineHeight: 1.75,
+          }}
         >
-          {showZoomControls ? (
-            <>
-              <button
-                onClick={handleZoomOut}
-                disabled={zoom <= MIN_ZOOM}
-                aria-label="축소"
-                className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
-                title="축소 (Ctrl + 스크롤)"
-              >
-                <ZoomOut className="w-4 h-4 text-stone-600" />
-              </button>
-              <input
-                type="range"
-                min={MIN_ZOOM}
-                max={MAX_ZOOM}
-                value={zoom}
-                onChange={(e) => setZoom(parseInt(e.target.value))}
-                aria-label={`확대/축소: ${zoom}%`}
-                className="w-16 h-1 accent-sage-500 cursor-pointer"
-              />
-              <button
-                onClick={handleZoomIn}
-                disabled={zoom >= MAX_ZOOM}
-                aria-label="확대"
-                className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
-                title="확대 (Ctrl + 스크롤)"
-              >
-                <ZoomIn className="w-4 h-4 text-stone-600" />
-              </button>
-              <span className="text-xs text-stone-500 ml-1 min-w-[36px] text-right">
-                {zoom}%
-              </span>
-            </>
-          ) : (
-            <span className="text-xs text-stone-500">{zoom}%</span>
-          )}
+          <EditorContent editor={editor} className="w-full" />
         </div>
-      )}
-    </div>
-  );
-}
+
+        {/* Minimal Zoom Indicator - Bottom right */}
+        {!hideToolbar && (
+          <div
+            className={cn(
+              "absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-stone-200 rounded-lg shadow-sm transition-all duration-200",
+              showZoomControls
+                ? "opacity-100 px-2 py-1.5"
+                : "opacity-50 hover:opacity-100 px-2 py-1"
+            )}
+            onMouseEnter={() => setShowZoomControls(true)}
+            onMouseLeave={() => setShowZoomControls(false)}
+          >
+            {showZoomControls ? (
+              <>
+                <button
+                  onClick={handleZoomOut}
+                  disabled={zoom <= MIN_ZOOM}
+                  aria-label="축소"
+                  className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                  title="축소 (Ctrl + 스크롤)"
+                >
+                  <ZoomOut className="w-4 h-4 text-stone-600" />
+                </button>
+                <input
+                  type="range"
+                  min={MIN_ZOOM}
+                  max={MAX_ZOOM}
+                  value={zoom}
+                  onChange={(e) => setZoom(parseInt(e.target.value))}
+                  aria-label={`확대/축소: ${zoom}%`}
+                  className="w-16 h-1 accent-sage-500 cursor-pointer"
+                />
+                <button
+                  onClick={handleZoomIn}
+                  disabled={zoom >= MAX_ZOOM}
+                  aria-label="확대"
+                  className="p-1 hover:bg-stone-100 rounded disabled:opacity-30 transition-colors"
+                  title="확대 (Ctrl + 스크롤)"
+                >
+                  <ZoomIn className="w-4 h-4 text-stone-600" />
+                </button>
+                <span className="text-xs text-stone-500 ml-1 min-w-[36px] text-right">
+                  {zoom}%
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-stone-500">{zoom}%</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+
+TiptapEditor.displayName = "TiptapEditor";
+
+export default TiptapEditor;

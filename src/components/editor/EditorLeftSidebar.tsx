@@ -49,9 +49,8 @@ export default function EditorLeftSidebar({
 
   return (
     <aside className="w-64 min-w-[240px] max-w-xs border-r border-stone-200 bg-paper flex flex-col shrink-0">
-      {/* Header */}
-      <div className="h-12 px-3 border-b border-stone-100 flex items-center justify-between shrink-0">
-        <h2 className="font-semibold text-sm text-stone-800">챕터 목록</h2>
+      {/* Minimal Header - 닫기 버튼만 */}
+      <div className="h-10 px-2 border-b border-stone-100 flex items-center justify-end shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -64,7 +63,7 @@ export default function EditorLeftSidebar({
       </div>
 
       {/* Chapter Tree */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto pl-0 pr-2 py-2">
         <ChapterTree
           chapters={chapters}
           selectedChapterId={selectedChapterId || undefined}

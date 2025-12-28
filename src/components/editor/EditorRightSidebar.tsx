@@ -1,18 +1,30 @@
-import { PanelRightClose, FileText, Bot, CheckCircle } from "lucide-react";
+import {
+  PanelRightClose,
+  FileText,
+  Bot,
+  CheckCircle,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import ForeshadowingPanel from "@/components/editor/ForeshadowingPanel";
 import AIAssistantPanel from "@/components/editor/AIAssistantPanel";
 import ConsistencyPanel from "@/components/editor/ConsistencyPanel";
+import InspectorPanel from "@/components/editor/InspectorPanel";
 
-export type RightSidebarTab = "foreshadowing" | "ai" | "consistency";
+export type RightSidebarTab =
+  | "inspector"
+  | "foreshadowing"
+  | "ai"
+  | "consistency";
 
 interface EditorRightSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   activeTab: RightSidebarTab;
   onTabChange: (tab: RightSidebarTab) => void;
+  documentId?: string | null;
 }
 
 export default function EditorRightSidebar({
@@ -20,6 +32,7 @@ export default function EditorRightSidebar({
   onClose,
   activeTab,
   onTabChange,
+  documentId = null,
 }: EditorRightSidebarProps) {
   if (!isOpen) return null;
 
@@ -32,26 +45,34 @@ export default function EditorRightSidebar({
           onValueChange={(v) => onTabChange(v as RightSidebarTab)}
           className="flex-1"
         >
-          <TabsList className="grid w-full grid-cols-3 h-8">
+          <TabsList className="grid w-full grid-cols-4 h-8">
             <TabsTrigger
               value="foreshadowing"
-              className="text-xs px-2 h-7"
+              className="text-xs px-1.5 h-7"
               data-tour="foreshadowing-panel"
             >
-              <FileText className="h-3 w-3 mr-1" />
+              <FileText className="h-3 w-3 mr-0.5" />
               복선
             </TabsTrigger>
             <TabsTrigger
               value="ai"
-              className="text-xs px-2 h-7"
+              className="text-xs px-1.5 h-7"
               data-tour="ai-panel"
             >
-              <Bot className="h-3 w-3 mr-1" />
+              <Bot className="h-3 w-3 mr-0.5" />
               AI
             </TabsTrigger>
-            <TabsTrigger value="consistency" className="text-xs px-2 h-7">
-              <CheckCircle className="h-3 w-3 mr-1" />
+            <TabsTrigger value="consistency" className="text-xs px-1.5 h-7">
+              <CheckCircle className="h-3 w-3 mr-0.5" />
               체크
+            </TabsTrigger>
+            <TabsTrigger
+              value="inspector"
+              className="text-xs px-1.5 h-7"
+              data-tour="inspector-panel"
+            >
+              <Info className="h-3 w-3 mr-0.5" />
+              정보
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -69,9 +90,12 @@ export default function EditorRightSidebar({
       <div
         className={cn(
           "flex-1",
-          activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto",
+          activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto"
         )}
       >
+        {activeTab === "inspector" && (
+          <InspectorPanel documentId={documentId} />
+        )}
         {activeTab === "foreshadowing" && <ForeshadowingPanel />}
         {activeTab === "ai" && <AIAssistantPanel />}
         {activeTab === "consistency" && <ConsistencyPanel />}
