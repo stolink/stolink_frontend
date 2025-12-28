@@ -13,3 +13,4 @@
 | 2025-12-28 | PR #67 AI Review Round 5      | ✅ Resolved | Implemented `isPasswordSubmitted` state pattern, strict `useParams`, and `AlertDialog` for delete |
 | 2025-12-28 | Build Fix (SharedProjectPage) | ✅ Resolved | Updated `useSharedProject` hook signature to support `retry` option, fixing build failure         |
 | 2025-12-28 | PR #69 AI Review Fixes        | ✅ Resolved | Used `axios.isAxiosError` for type-safe 404 handling, added `onError` handler for cache strategy  |
+| 2025-12-28 | PR #69 AI Review Round 2      | ✅ Resolved | Moved 404 error handling to `shareService` layer, removed axios import from hook                  |

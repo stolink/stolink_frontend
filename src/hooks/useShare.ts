@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { shareService } from "@/services/shareService";
 
 // Query Keys
@@ -13,8 +12,8 @@ export const shareKeys = {
 };
 
 /**
- * Hook for fetching share settings
- * Returns null if share is not enabled (404)
+ * Hook for fetching share settings.
+ * Returns null if sharing is not enabled (404 response handled in shareService).
  */
 export function useShareSettings(
   projectId: string,
@@ -23,19 +22,11 @@ export function useShareSettings(
   return useQuery({
     queryKey: shareKeys.settings(projectId),
     queryFn: async () => {
-      try {
-        const response = await shareService.getSettings(projectId);
-        return response.data;
-      } catch (error) {
-        // Axios 에러의 404 상태 코드 처리: 공유 링크 미존재 시 null 반환
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          return null;
-        }
-        throw error;
-      }
+      const response = await shareService.getSettings(projectId);
+      return response.data;
     },
     enabled: options?.enabled !== false && !!projectId,
-    retry: false, // Don't retry if share is not enabled
+    retry: false, // 공유 미활성화는 재시도 불필요
   });
 }
 
