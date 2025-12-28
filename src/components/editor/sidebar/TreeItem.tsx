@@ -103,13 +103,13 @@ export const TreeItem = memo(function TreeItem({
       // 드래그 중인 원래 위치는 희미하게 표시
       opacity: isDragging ? 0.3 : 1,
     }),
-    [transform, transition, isDragging],
+    [transform, transition, isDragging]
   );
 
   // Child IDs for nested SortableContext
   const childIds = useMemo(
     () => node.children?.map((c) => c.id) ?? [],
-    [node.children],
+    [node.children]
   );
 
   // 1. 기본 상태 및 동작 훅
@@ -152,7 +152,7 @@ export const TreeItem = memo(function TreeItem({
 
   const nextParentLines = useMemo(
     () => [...parentLines, !isLast],
-    [parentLines, isLast],
+    [parentLines, isLast]
   );
 
   return (
@@ -181,14 +181,14 @@ export const TreeItem = memo(function TreeItem({
         ref={itemRef}
         className={cn(
           "relative flex items-center gap-1.5 py-1 pl-1 pr-2 rounded-md cursor-pointer group select-none transition-all duration-150",
-          "hover:bg-stone-50",
+          "hover:bg-muted/50",
           isSelected && "bg-sage-50",
-          isDragging && "shadow-lg ring-2 ring-sage-400 bg-white",
+          isDragging && "shadow-lg ring-2 ring-sage-400 bg-card",
           // 폴더 드래그 오버 상태 - 강화된 하이라이트
           showDropInside &&
             !isDragging &&
             !isParentOfActive &&
-            "bg-emerald-100 ring-2 ring-emerald-500",
+            "bg-emerald-100 ring-2 ring-emerald-500"
         )}
         style={{ marginLeft: `${level * 12}px` }}
         onClick={handleClick}
@@ -198,13 +198,13 @@ export const TreeItem = memo(function TreeItem({
         onMouseLeave={() => setIsHovered(false)}
         {...attributes}
       >
-        {/* Drag Handle */}
+        {/* Drag Handle - Absolute positioned to not take up space */}
         <div
           {...listeners}
-          className="p-0.5 cursor-grab active:cursor-grabbing hover:bg-stone-200 rounded transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 p-0.5 cursor-grab active:cursor-grabbing hover:bg-muted rounded transition-all opacity-0 group-hover:opacity-100 z-10"
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="h-3.5 w-3.5 text-stone-400" />
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
 
         {/* Selection indicator */}
@@ -225,7 +225,7 @@ export const TreeItem = memo(function TreeItem({
             <div
               className={cn(
                 "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
-                statusColors[node.status],
+                statusColors[node.status]
               )}
               title={getStatusTitle(node.status)}
             />
@@ -235,12 +235,12 @@ export const TreeItem = memo(function TreeItem({
         {hasChildren ? (
           <button
             onClick={toggleExpand}
-            className="p-0.5 hover:bg-stone-200 rounded transition-colors shrink-0"
+            className="p-0.5 hover:bg-muted rounded transition-colors shrink-0"
           >
             {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5 text-stone-500" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-stone-500" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </button>
         ) : (
@@ -261,7 +261,7 @@ export const TreeItem = memo(function TreeItem({
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={handleRenameSubmit}
               onKeyDown={handleRenameKeyDown}
-              className="w-full text-sm bg-white border border-sage-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-sage-500"
+              className="w-full text-sm bg-card border border-input rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-sage-500"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -269,15 +269,15 @@ export const TreeItem = memo(function TreeItem({
               <span
                 className={cn(
                   "text-sm truncate",
-                  isSelected ? "font-medium text-sage-900" : "text-stone-700",
-                  node.isPlot && "italic text-stone-500",
+                  isSelected ? "font-medium text-sage-900" : "text-foreground",
+                  node.isPlot && "italic text-muted-foreground"
                 )}
               >
                 {node.title}
               </span>
               {/* Character count */}
               {!isPart && (node.characterCount || 0) > 0 && (
-                <span className="text-[10px] text-stone-400 shrink-0 tabular-nums">
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                   {formatCharCount(node.characterCount!)}
                 </span>
               )}
@@ -301,9 +301,9 @@ export const TreeItem = memo(function TreeItem({
           )}
           <button
             onClick={handleMenuButtonClick}
-            className="p-1 hover:bg-stone-200 rounded transition-colors"
+            className="p-1 hover:bg-muted rounded transition-colors"
           >
-            <MoreHorizontal className="h-3.5 w-3.5 text-stone-500" />
+            <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </div>
       </div>
