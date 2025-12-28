@@ -14,6 +14,7 @@ interface EditorLeftSidebarProps {
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
   onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
+  onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -26,6 +27,7 @@ export default function EditorLeftSidebar({
   onRenameChapter,
   onDeleteChapter,
   onReorderChapter,
+  onMoveToFolder,
   isOpen,
   onToggle,
 }: EditorLeftSidebarProps) {
@@ -71,6 +73,7 @@ export default function EditorLeftSidebar({
           onRenameChapter={onRenameChapter}
           onDeleteChapter={onDeleteChapter}
           onReorderChapter={onReorderChapter}
+          onMoveToFolder={onMoveToFolder}
         />
       </div>
     </aside>

@@ -28,6 +28,10 @@ interface UseEditorHandlersOptions {
     parentId: string | null,
     orderedIds: string[],
   ) => Promise<void>;
+  moveDocument: (
+    itemId: string,
+    targetFolderId: string | null,
+  ) => Promise<void>;
 }
 
 /**
@@ -49,6 +53,7 @@ export function useEditorHandlers({
   createDocument,
   deleteDocument,
   reorderDocuments,
+  moveDocument,
 }: UseEditorHandlersOptions) {
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -296,6 +301,15 @@ export function useEditorHandlers({
     ],
   );
 
+  // Move item to different folder (uses optimistic update)
+  const handleMoveToFolder = useCallback(
+    async (itemId: string, targetFolderId: string | null) => {
+      if (isDemo) return;
+      await moveDocument(itemId, targetFolderId);
+    },
+    [isDemo, moveDocument],
+  );
+
   return {
     // Refs (exposed for keyboard handler)
     lastContentRef,
@@ -313,5 +327,6 @@ export function useEditorHandlers({
     handleRenameChapter,
     handleDeleteChapter,
     handleReorderChapter: reorderDocuments,
+    handleMoveToFolder,
   };
 }
