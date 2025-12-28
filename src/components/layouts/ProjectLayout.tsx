@@ -191,13 +191,13 @@ export function ProjectLayout() {
                     "w-1.5 h-1.5 rounded-full",
                     saveStatus === "saved" && "bg-green-500",
                     saveStatus === "saving" && "bg-yellow-500 animate-pulse",
-                    saveStatus === "unsaved" && "bg-orange-500",
+                    saveStatus === "unsaved" && "bg-amber-500",
                   )}
                 />
                 <span className="text-[10px] text-muted-foreground">
-                  {saveStatus === "saved" && "저장됨"}
+                  {saveStatus === "saved" && "자동 저장"}
                   {saveStatus === "saving" && "저장 중..."}
-                  {saveStatus === "unsaved" && "자동 저장 켜짐"}
+                  {saveStatus === "unsaved" && "편집 중"}
                 </span>
               </div>
             </div>
