@@ -1,45 +1,73 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { useEffect, useRef, useCallback, useMemo } from "react";
-import { FileText } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionDivider } from "./extensions/SectionDivider";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
 import {
-  useDescendantDocuments,
+  useDescendantDocumentsWithLevel,
   useBulkDocumentContent,
+  useDocument,
 } from "@/hooks/useDocuments";
 import { EditorToolbar } from "./EditorToolbar";
 
-interface ScriveningsEditorProps {
+export interface ScriveningsEditorProps {
   folderId: string | null;
   projectId: string;
   onUpdate?: (totalCount: number) => void;
+  onCreateSection?: (title: string) => void;
 }
 
-export default function ScriveningsEditor({
-  folderId,
-  projectId,
-  onUpdate,
-}: ScriveningsEditorProps) {
-  // Use new hook to get parent + all descendants
-  const { documents, isLoading } = useDescendantDocuments(folderId, projectId);
+export interface ScriveningsEditorHandle {
+  getSplitContent: () => {
+    before: string;
+    after: string;
+    targetDocId: string;
+  } | null;
+}
+
+const ScriveningsEditor = forwardRef<
+  ScriveningsEditorHandle,
+  ScriveningsEditorProps
+>(({ folderId, projectId, onUpdate, onCreateSection }, ref) => {
+  // Get folder info
+  const { document: folderDoc } = useDocument(folderId);
+
+  // Get all descendant documents recursively (재귀적 통합 편집)
+  const { documents, isLoading } = useDescendantDocumentsWithLevel(
+    folderId,
+    projectId,
+    { textOnly: true }
+  );
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onCreateSectionRef = useRef(onCreateSection);
+
+  useEffect(() => {
+    onCreateSectionRef.current = onCreateSection;
+  }, [onCreateSection]);
 
   // Combine content for initial editor state
   const getCombinedContent = useCallback(() => {
     return documents
       .map((doc) => {
-        // Divider now includes indentation level or hierarchy info?
-        // For now, keep it simple. Maybe add a visual indicator if it's nested?
-        const divider = `<div data-type="section-divider" data-document-id="${doc.id}" data-title="${doc.title}"></div>`;
+        // Include level information for hierarchical display
+        const divider = `<div data-type="section-divider" data-document-id="${doc.id}" data-title="${doc.title}" data-level="${doc.level}"></div>`;
         return `${divider}${doc.content || "<p></p>"}`;
       })
       .join("");
@@ -58,7 +86,10 @@ export default function ScriveningsEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       CharacterMention,
-      SlashCommandExtension,
+      CharacterMention,
+      SlashCommandExtension.configure({
+        onCreateSection: (title: string) => onCreateSectionRef.current?.(title),
+      }),
     ],
     [] // Empty deps - extensions are static
   );
@@ -88,6 +119,71 @@ export default function ScriveningsEditor({
     },
     [extensions] // Add dependency array to prevent recreation
   );
+
+  useImperativeHandle(ref, () => ({
+    getSplitContent: () => {
+      if (!editor) return null;
+
+      // Auto-save 타이머 클리어 (경쟁 상태 방지)
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+      const { from } = editor.state.selection;
+      let docId: string | null = null;
+      let startPos = 0;
+
+      // 1. Find the document "container" (current section)
+      editor.state.doc.nodesBetween(0, from, (node, pos) => {
+        if (node.type.name === "sectionDivider") {
+          docId = node.attrs.documentId;
+          startPos = pos + node.nodeSize;
+        }
+      });
+
+      if (!docId) return null;
+
+      // 2. Find the END of this document
+      let endPos = editor.state.doc.content.size;
+      editor.state.doc.nodesBetween(from, endPos, (node, pos) => {
+        if (node.type.name === "sectionDivider") {
+          endPos = pos;
+          return false;
+        }
+      });
+
+      // 3. Extract and Split
+      // Note: slice return a Slice object, we need to convert to JSON or use temporary editor
+      const slice = editor.state.doc.slice(startPos, endPos);
+      const json = slice.toJSON(); // Should be a valid doc content (Content Match?)
+      // Actually slice.toJSON() returns { content: [...], openStart, openEnd } if Slice?
+      // No, slice.toJSON() returns json of slice.
+      // But creating Editor with 'content: json' might expect Doc structure.
+      // We should check if 'json' is { type: 'doc', content: [...] } or just content array.
+      // Tiptap Slice.toJSON() returns { content: [...] } usually.
+
+      const tempEditor = new Editor({
+        extensions,
+        content: { type: "doc", content: json?.content || [] },
+      });
+
+      const relativeFrom = from - startPos;
+      const totalSize = tempEditor.state.doc.content.size;
+
+      // Split logic
+      tempEditor.commands.deleteRange({ from: 0, to: relativeFrom });
+      const after = tempEditor.getHTML();
+
+      tempEditor.commands.setContent({
+        type: "doc",
+        content: json?.content || [],
+      });
+      tempEditor.commands.deleteRange({ from: relativeFrom, to: totalSize });
+      const before = tempEditor.getHTML();
+
+      tempEditor.destroy();
+
+      return { before, after, targetDocId: docId! };
+    },
+  }));
 
   const saveAll = useCallback(async () => {
     if (!editor) return;
@@ -162,14 +258,13 @@ export default function ScriveningsEditor({
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-stone-50/30">
         <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-          <FileText className="w-8 h-8 text-stone-300" />
+          <Folder className="w-8 h-8 text-stone-300" />
         </div>
         <h3 className="text-lg font-semibold text-stone-700 mb-2">
           통합 편집할 섹션이 없습니다
         </h3>
         <p className="text-stone-500 max-w-md">
-          왼쪽 사이드바에서 섹션을 추가하거나, 하단의 섹션 스트립에서 '첫 섹션
-          만들기'를 클릭하세요.
+          왼쪽 사이드바에서 섹션을 추가하세요.
         </p>
       </div>
     );
@@ -178,9 +273,40 @@ export default function ScriveningsEditor({
   return (
     <div className="flex flex-col h-full relative group bg-white">
       <EditorToolbar editor={editor} />
+
+      {/* Folder Title Header - 통합뷰 최상단 챕터 제목 */}
+      {folderDoc && (
+        <div className="border-b border-sage-200/50 bg-gradient-to-b from-sage-50 to-white px-12 py-8 shrink-0">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-sage-100 flex items-center justify-center">
+              <Folder className="w-5 h-5 text-sage-600" />
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-sage-600 uppercase tracking-wider mb-1">
+                {folderDoc.type === "folder" ? "챕터" : "섹션"}
+              </div>
+              <h1 className="text-2xl font-bold text-sage-800">
+                {folderDoc.title}
+              </h1>
+            </div>
+          </div>
+          {folderDoc.synopsis && (
+            <p className="text-sm text-stone-600 italic pl-13">
+              {folderDoc.synopsis}
+            </p>
+          )}
+          <div className="text-xs text-stone-500 mt-3 pl-13">
+            {documents.length}개 섹션 통합 편집 중
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto w-full scrivenings-view">
         <EditorContent editor={editor} />
       </div>
     </div>
   );
-}
+});
+
+ScriveningsEditor.displayName = "ScriveningsEditor";
+export default ScriveningsEditor;
