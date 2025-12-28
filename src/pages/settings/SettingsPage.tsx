@@ -1,5 +1,21 @@
 import { useState } from "react";
-import { Share2, Trash2, Settings, Bell, Palette, Lock } from "lucide-react";
+import { useParams } from "react-router-dom";
+import {
+  Share2,
+  Trash2,
+  Settings,
+  Bell,
+  Palette,
+  Lock,
+  Copy,
+  Loader2,
+  ExternalLink,
+} from "lucide-react";
+import {
+  useShareSettings,
+  useCreateShareLink,
+  useDeleteShareLink,
+} from "@/hooks/useShare";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,12 +30,48 @@ import { Toggle } from "@/components/ui/toggle";
 import { SettingRow } from "@/components/ui/setting-row";
 
 export default function SettingsPage() {
+  const { id: projectId } = useParams<{ id: string }>();
+
+  // Share Hooks
+  const { data: shareSettings, isLoading: isLoadingShare } = useShareSettings(
+    projectId || "",
+  );
+  const createShare = useCreateShareLink();
+  const deleteShare = useDeleteShareLink();
+
   const [autoSave, setAutoSave] = useState(true);
   const [spellCheck, setSpellCheck] = useState(true);
   const [typingSound, setTypingSound] = useState(false);
   const [goalNotification, setGoalNotification] = useState(true);
   const [foreshadowingNotification, setForeshadowingNotification] =
     useState(true);
+
+  const handleCreateShare = () => {
+    if (!projectId) return;
+    createShare.mutate({ projectId });
+  };
+
+  const handleDeleteShare = () => {
+    if (!projectId) return;
+    if (
+      confirm(
+        "정말로 공유 링크를 삭제하시겠습니까? 더 이상 이 링크로 접근할 수 없습니다.",
+      )
+    ) {
+      deleteShare.mutate(projectId);
+    }
+  };
+
+  const shareUrl = shareSettings
+    ? `${window.location.origin}/share/${shareSettings.shareId}`
+    : "";
+
+  const copyToClipboard = () => {
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      // Optional: Add toast notification if available
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto bg-paper">
@@ -96,16 +148,70 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-3">
-              <Input placeholder="공유 링크가 여기에 표시됩니다" readOnly />
-              <Button className="flex items-center gap-2">
-                <Share2 className="h-4 w-4" />
-                링크 생성
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              생성된 링크는 선택한 기간 동안만 유효합니다
-            </p>
+            {isLoadingShare ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
+              </div>
+            ) : shareSettings ? (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input value={shareUrl} readOnly className="bg-stone-50" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={copyToClipboard}
+                    title="링크 복사"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(shareUrl, "_blank")}
+                    title="새 탭에서 열기"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-muted-foreground bg-stone-50 p-3 rounded-md">
+                  <span>
+                    만료일:{" "}
+                    {shareSettings.expiresAt
+                      ? new Date(shareSettings.expiresAt).toLocaleDateString()
+                      : "무제한"}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 h-auto p-0 px-2"
+                    onClick={handleDeleteShare}
+                    disabled={deleteShare.isPending}
+                  >
+                    {deleteShare.isPending ? "삭제 중..." : "링크 삭제"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-stone-500">
+                  아직 생성된 공유 링크가 없습니다. 링크를 생성하면 누구나 이
+                  작품을 읽을 수 있습니다.
+                </p>
+                <Button
+                  onClick={handleCreateShare}
+                  className="w-full sm:w-auto flex items-center gap-2"
+                  disabled={createShare.isPending}
+                >
+                  {createShare.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
+                  링크 생성하기
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -15,6 +15,7 @@ const StatsPage = lazy(() => import("@/pages/stats/StatsPage"));
 const ExportPage = lazy(() => import("@/pages/export/ExportPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 const StudioPage = lazy(() => import("@/pages/studio/StudioPage"));
+const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
 
 import { TextureOverlay } from "@/components/ui/TextureOverlay";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
@@ -47,6 +48,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/share/:shareId" element={<SharedProjectPage />} />
 
               {/* Demo Route - No Auth Required */}
               <Route path="/demo" element={<EditorPage isDemo={true} />} />
