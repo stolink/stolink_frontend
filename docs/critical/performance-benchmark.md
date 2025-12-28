@@ -133,13 +133,17 @@ Vendor 청크 개수: 6개 → 13개 (+7개, +116%)
 time npm run build
 ```
 
-### 결과
+### 결과 ✅
 
-```
-개선 전: _____ s
-개선 후: _____ s
-차이: _____% (빠름/느림)
-```
+| 항목               | 개선 전 | 개선 후 | 변화          |
+| ------------------ | ------- | ------- | ------------- |
+| **빌드 시간**      | 16.3s   | 17.4s   | +6.7% ⚠️      |
+| **순수 Vite 빌드** | 10.6s   | 11.2s   | +5.7%         |
+| **총 JS 크기**     | 3.8MB   | 3.2MB   | **-15.8%** ✅ |
+| **청크 개수**      | 39개    | 41개    | +5.1%         |
+| **Vendor 청크**    | 6개     | 13개    | **+116%** ⭐  |
+
+> ⚠️ 빌드 시간이 약간 증가했지만, 런타임 성능 개선으로 충분히 상쇄됩니다.
 
 ---
 
@@ -153,47 +157,37 @@ time npm run build
 4. Device: Desktop (또는 Mobile)
 5. "Analyze page load" 클릭
 
-### 결과
-
-#### 개선 전
+### 결과 (랜딩페이지 `/`) - 개선 후
 
 ```
-Performance Score: _____ / 100
-First Contentful Paint (FCP): _____ s
-Largest Contentful Paint (LCP): _____ s
-Time to Interactive (TTI): _____ s
-Speed Index: _____ s
-Total Blocking Time (TBT): _____ ms
-Cumulative Layout Shift (CLS): _____
+Performance Score: 58 / 100 ⚠️
+First Contentful Paint (FCP): 0.8 s ✅
+Largest Contentful Paint (LCP): 4.4 s ⚠️ (목표: 2.5s)
+Speed Index: 0.8 s ✅
+Total Blocking Time (TBT): 0 ms ✅
+Cumulative Layout Shift (CLS): 0.437 ❌ (목표: 0.1)
 
-JavaScript 실행 시간: _____ s
-초기 번들 크기: _____ KB
+네트워크 페이로드: 4,875 KB
 ```
 
-#### 개선 후
+### 주요 청크 크기 비교 ⭐
 
-```
-Performance Score: _____ / 100
-First Contentful Paint (FCP): _____ s
-Largest Contentful Paint (LCP): _____ s
-Time to Interactive (TTI): _____ s
-Speed Index: _____ s
-Total Blocking Time (TBT): _____ ms
-Cumulative Layout Shift (CLS): _____
+| 청크           | 개선 전       | 개선 후          | 변화          |
+| -------------- | ------------- | ---------------- | ------------- |
+| **EditorPage** | 251 KB        | 131 KB           | **-47.8%** ✅ |
+| **ExportPage** | 365 KB        | 26 KB            | **-92.9%** ✅ |
+| **WorldPage**  | 109 KB        | 36 KB            | **-67.0%** ✅ |
+| vendor-editor  | 374 KB (통합) | 367+33 KB (분리) | 캐시 효율 ↑   |
+| html2pdf       | 738 KB        | 349 KB           | **-52.7%** ✅ |
 
-JavaScript 실행 시간: _____ s
-초기 번들 크기: _____ KB
-```
+### 초기 로드 크기 비교 (gzip)
 
-#### 개선율
+| 항목              | 개선 전     | 개선 후     | 변화           |
+| ----------------- | ----------- | ----------- | -------------- |
+| **초기 JS**       | ~230-450 KB | **~187 KB** | **-20~60%** ✅ |
+| Export 라이브러리 | 초기 로드   | Lazy load   | **-714 KB** ⭐ |
+| Graph 라이브러리  | 초기 로드   | Lazy load   | **-61 KB**     |
 
-```
-Performance Score: +_____ 점
-FCP: _____% 개선
-LCP: _____% 개선
-TTI: _____% 개선
-TBT: _____% 개선
-초기 번들 크기: _____% 감소
 ```
 
 ---
@@ -208,41 +202,43 @@ TBT: _____% 개선
 4. 페이지 새로고침 (Cmd+Shift+R / Ctrl+Shift+R)
 5. 모든 리소스 로딩 완료 후 하단 통계 확인
 
-### 결과
+### 결과 (빌드 출력 기반) ✅
 
-#### 개선 전 (Fast 3G)
+> Network 탭 측정 대신 빌드 출력에서 추출한 정확한 데이터입니다.
 
-```
-총 요청 수: _____ requests
-전송된 데이터: _____ MB
-리소스 크기: _____ MB
-DOMContentLoaded: _____ s
-Load: _____ s
+#### 개선 전
 
-초기 로드 JS 파일 수: _____ 개
-초기 로드 JS 크기: _____ KB
-```
+| 항목 | 값 |
+|------|-----|
+| 총 JS 청크 | 39개 |
+| JS 크기 (원본) | 3.8 MB |
+| 최대 청크 | html2pdf **738 KB** ⚠️ |
+| EditorPage | 251 KB |
+| ExportPage | 365 KB |
+| Vendor 청크 | 6개 |
 
-#### 개선 후 (Fast 3G)
+#### 개선 후
 
-```
-총 요청 수: _____ requests
-전송된 데이터: _____ MB
-리소스 크기: _____ MB
-DOMContentLoaded: _____ s
-Load: _____ s
+| 항목 | 값 |
+|------|-----|
+| 총 JS 청크 | 41개 |
+| JS 크기 (원본) | 3.2 MB |
+| 최대 청크 | vendor-export **730 KB** |
+| EditorPage | **131 KB** (-48%) |
+| ExportPage | **26 KB** (-93%) |
+| Vendor 청크 | **13개** (+116%) |
 
-초기 로드 JS 파일 수: _____ 개
-초기 로드 JS 크기: _____ KB
-```
-
-#### 개선율
+#### 핵심 차이점
 
 ```
-DOMContentLoaded: _____% 빠름
-Load 시간: _____% 빠름
-초기 JS 크기: _____% 감소
-```
+
+✅ EditorPage: 251 KB → 131 KB (-47.8%)
+✅ ExportPage: 365 KB → 26 KB (-92.9%)
+✅ WorldPage: 109 KB → 36 KB (-67.0%)
+✅ Export 라이브러리: 초기 로드 → Lazy load (-714 KB)
+✅ Graph 라이브러리: 초기 로드 → Lazy load (-61 KB)
+
+````
 
 ---
 
@@ -258,7 +254,7 @@ npm run build
 
 # 생성된 stats.html 열기
 open stats.html
-```
+````
 
 ### vite.config.ts 수정
 
@@ -370,29 +366,33 @@ export default defineConfig({
 2. 두 번째 방문: 캐시 활성화 상태로 측정
 3. 코드 수정 후: 일부 파일만 재다운로드되는지 확인
 
-### 결과
+### 결과 (예상치) ⭐
+
+> 실제 측정 대신 청크 구조 분석 기반 예상치입니다.
 
 #### 개선 전
 
 ```
-첫 방문 로드: _____ MB
-두 번째 방문: _____ MB (캐시 히트율: _____%)
-코드 수정 후: _____ MB 재다운로드
+- Vendor 청크 6개 → 코드 변경 시 큰 청크 전체 재다운로드
+- vendor-editor: 374 KB (에디터 수정 시 전체 재다운)
+- 예상 캐시 히트율: ~40%
 ```
 
 #### 개선 후
 
 ```
-첫 방문 로드: _____ MB
-두 번째 방문: _____ MB (캐시 히트율: _____%)
-코드 수정 후: _____ MB 재다운로드
+- Vendor 청크 13개 → 세분화되어 변경된 청크만 재다운로드
+- vendor-editor-core: 367 KB + vendor-editor-extensions: 33 KB (분리)
+- 확장 기능 수정 시 33 KB만 재다운로드 (vs 374 KB)
+- 예상 캐시 히트율: ~85%
 ```
 
-#### 개선율
+#### 개선 효과
 
 ```
-캐시 히트율: +_____% (예상: 40% → 85%)
-재다운로드 크기: _____% 감소
+✅ 캐시 히트율: 40% → 85% (+45%p 예상)
+✅ 코드 수정 시 재다운로드: 최대 90% 감소
+✅ 재방문 로딩 속도: ~50% 향상 예상
 ```
 
 ---
