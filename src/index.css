@@ -105,6 +105,83 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
 }
 
+/* ============================================
+   Paper Texture Effects (Version 4)
+   ============================================ */
+
+/* Paper texture overlay - subtle grain effect */
+.paper-texture-overlay {
+  position: relative;
+}
+
+.paper-texture-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  z-index: 1;
+}
+
+/* Light version for headers/nav */
+.paper-texture-light::before {
+  opacity: 0.015;
+}
+
+/* Brush stroke underline effect - pure SVG */
+.brush-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.brush-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: -5%;
+  width: 110%;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 20' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='rough'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='2'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M5,10 C30,5 60,15 100,10 S150,15 195,10' stroke='%235F7D5F' stroke-width='6' fill='none' stroke-linecap='round' filter='url(%23rough)' opacity='0.6'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+/* Interactive light shimmer on hover */
+@keyframes lightShimmer {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}
+
+.interactive-light-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.interactive-light-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.06),
+    transparent 40%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.interactive-light-hover:hover::before {
+  opacity: 1;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;

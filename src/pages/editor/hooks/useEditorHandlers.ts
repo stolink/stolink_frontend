@@ -11,26 +11,29 @@ interface UseEditorHandlersOptions {
   setSelectedFolderId: (id: string | null) => void;
   setSelectedSectionId: (id: string | null) => void;
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
-  setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
+  setViewMode: (
+    mode: "editor" | "scrivenings" | "outline" | "corkboard"
+  ) => void;
   saveContent: (content: string) => Promise<void>;
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
     id: string,
-    updates: Partial<Document>,
+    updates: Partial<Document>
   ) => Promise<unknown>;
   createDocument: (data: {
     type: "folder" | "text";
     title: string;
     parentId?: string;
+    order?: number;
   }) => Promise<Document | null>;
   deleteDocument: (id: string) => Promise<void>;
   reorderDocuments: (
     parentId: string | null,
-    orderedIds: string[],
+    orderedIds: string[]
   ) => Promise<void>;
   moveDocument: (
     itemId: string,
-    targetFolderId: string | null,
+    targetFolderId: string | null
   ) => Promise<void>;
 }
 
@@ -58,7 +61,7 @@ export function useEditorHandlers({
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
   const lastContentRef = useRef<string>("");
   const saveContentRef = useRef(saveContent);
@@ -114,7 +117,7 @@ export function useEditorHandlers({
     }
   }, [isDemo]);
 
-  // Select folder
+  // Select folder (Scrivener 방식: 선택만, 뷰 모드는 사용자가 결정)
   const handleSelectFolder = useCallback(
     async (id: string) => {
       await forceSave();
@@ -129,31 +132,42 @@ export function useEditorHandlers({
       }
 
       const hasChildren = documents.some((d) => d.parentId === id);
-      const isContainer = hasChildren || doc.type === "folder";
+      const isFolder = doc.type === "folder";
 
-      if (isContainer) {
+      if (isFolder || hasChildren) {
+        // 폴더 선택: selectedFolderId만 업데이트
         setSelectedFolderId(id);
-        setSelectedSectionId(id);
-        if (hasChildren && viewMode !== "outline") {
-          setViewMode("scrivenings");
+
+        // 단일 뷰일 경우: 첫 번째 자식 섹션 자동 선택
+        if (viewMode === "editor" && hasChildren) {
+          const firstChild = documents
+            .filter((d) => d.parentId === id && d.type === "text")
+            .sort((a, b) => a.order - b.order)[0];
+
+          if (firstChild) {
+            setSelectedSectionId(firstChild.id);
+          } else {
+            setSelectedSectionId(id); // 자식 없으면 폴더 자체
+          }
+        } else {
+          setSelectedSectionId(id);
         }
       } else {
+        // 섹션(text) 선택: 그 섹션만 선택
         setSelectedFolderId(doc.parentId || id);
         setSelectedSectionId(id);
-        if (viewMode !== "outline") {
-          setViewMode("editor");
-        }
       }
+
+      // 뷰 모드는 자동으로 바꾸지 않음 - 사용자가 명시적으로 선택
     },
     [
       documents,
       forceSave,
       isDemo,
       viewMode,
-      setViewMode,
       setSelectedFolderId,
       setSelectedSectionId,
-    ],
+    ]
   );
 
   // Select section
@@ -164,7 +178,7 @@ export function useEditorHandlers({
       }
       setSelectedSectionId(id);
     },
-    [selectedSectionId, forceSave, setSelectedSectionId],
+    [selectedSectionId, forceSave, setSelectedSectionId]
   );
 
   // Content change with debounce
@@ -191,7 +205,7 @@ export function useEditorHandlers({
         }
       }, 500);
     },
-    [isDemo],
+    [isDemo]
   );
 
   // Character count change with debounce
@@ -206,7 +220,7 @@ export function useEditorHandlers({
         wordCountTimeoutRef.current = setTimeout(() => {
           // Get current metadata and update only wordCount
           const currentDoc = documents.find(
-            (d) => d.id === selectedSectionIdRef.current,
+            (d) => d.id === selectedSectionIdRef.current
           );
           if (currentDoc) {
             const updates: Partial<Document> = {
@@ -217,38 +231,74 @@ export function useEditorHandlers({
         }, 1000);
       }
     },
-    [isDemo, documents],
+    [isDemo, documents]
   );
 
   // Add chapter
   const handleAddChapter = useCallback(
-    (
+    async (
       title: string,
       parentId?: string,
-      type: "chapter" | "section" = "chapter",
+      type: "chapter" | "section" = "chapter"
     ) => {
-      if (isDemo) return;
-      createDocument({
+      if (isDemo) return null;
+      return createDocument({
         type: type === "chapter" ? "folder" : "text",
         title,
         parentId,
       });
     },
-    [isDemo, createDocument],
+    [isDemo, createDocument]
   );
 
   // Add section
-  const handleAddSection = useCallback(async () => {
-    if (isDemo) return;
-    const newDoc = await createDocument({
-      type: "text",
-      title: "새 섹션",
-      parentId: selectedFolderId ?? undefined,
-    });
-    if (newDoc) {
-      setSelectedSectionId(newDoc.id);
-    }
-  }, [isDemo, createDocument, selectedFolderId, setSelectedSectionId]);
+  const handleAddSection = useCallback(
+    async (title?: string, isSubSection = false) => {
+      if (isDemo) return;
+
+      let parentId: string | null | undefined = selectedFolderId ?? undefined;
+      let insertAfterOrder: number | undefined;
+
+      if (isSubSection && selectedSectionId) {
+        // 하위 섹션: 현재 섹션을 부모로 설정
+        const currentDoc = documents.find((d) => d.id === selectedSectionId);
+        if (currentDoc) {
+          parentId = currentDoc.id; // 현재 섹션이 부모
+          // order는 첫 번째 자식으로 (insertAfterOrder undefined로 두면 자동 설정)
+        }
+      } else {
+        // 형제 섹션: 현재 섹션과 같은 레벨의 다음 섹션
+        // 현재 섹션의 parentId를 물려받고, order는 현재 섹션 다음
+        if (selectedSectionId) {
+          const currentDoc = documents.find((d) => d.id === selectedSectionId);
+          if (currentDoc) {
+            parentId = currentDoc.parentId ?? undefined; // 같은 부모
+            insertAfterOrder = currentDoc.order; // 현재 섹션 다음
+          }
+        }
+      }
+
+      const newDoc = await createDocument({
+        type: "text",
+        title: title || (isSubSection ? "새 하위 섹션" : "새 섹션"),
+        parentId,
+        order:
+          insertAfterOrder !== undefined ? insertAfterOrder + 1 : undefined,
+      });
+      if (newDoc) {
+        setSelectedSectionId(newDoc.id);
+      }
+      return newDoc;
+    },
+    [
+      isDemo,
+      createDocument,
+      selectedFolderId,
+      selectedSectionId,
+      documents,
+      setSelectedSectionId,
+    ]
+  );
 
   // Rename chapter
   const handleRenameChapter = useCallback(
@@ -272,7 +322,7 @@ export function useEditorHandlers({
         }
       }
     },
-    [isDemo, updateDocumentMutation],
+    [isDemo, updateDocumentMutation]
   );
 
   // Delete chapter
@@ -298,7 +348,7 @@ export function useEditorHandlers({
       selectedSectionId,
       setSelectedFolderId,
       setSelectedSectionId,
-    ],
+    ]
   );
 
   // Move item to different folder (uses optimistic update)
@@ -307,7 +357,69 @@ export function useEditorHandlers({
       if (isDemo) return;
       await moveDocument(itemId, targetFolderId);
     },
-    [isDemo, moveDocument],
+    [isDemo, moveDocument]
+  );
+
+  // View mode change with auto-save and state synchronization
+  const handleViewModeChange = useCallback(
+    async (
+      newMode: "editor" | "scrivenings" | "outline" | "corkboard",
+      currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
+    ) => {
+      // 1. 전환 전 자동 저장
+      await forceSave();
+
+      // 2. 뷰 모드별 상태 동기화
+      if (newMode === "editor") {
+        // 단일 뷰로 전환: 폴더의 첫 번째 섹션 선택
+        if (
+          (currentMode === "scrivenings" || currentMode === "outline") &&
+          selectedFolderId
+        ) {
+          const firstChild = documents
+            .filter((d) => d.parentId === selectedFolderId && d.type === "text")
+            .sort((a, b) => a.order - b.order)[0];
+
+          if (firstChild) {
+            setSelectedSectionId(firstChild.id);
+          } else {
+            // 섹션 없으면 폴더 자체 선택
+            setSelectedSectionId(selectedFolderId);
+          }
+        }
+      } else if (newMode === "scrivenings" || newMode === "outline") {
+        // 통합/개요 뷰로 전환: 현재 섹션의 부모 폴더 선택
+        if (currentMode === "editor" && selectedSectionId) {
+          const currentDoc = documents.find((d) => d.id === selectedSectionId);
+          if (currentDoc?.parentId) {
+            setSelectedFolderId(currentDoc.parentId);
+          }
+        }
+
+        // 폴더 미선택 시 첫 번째 폴더 선택
+        if (!selectedFolderId) {
+          const firstFolder = documents
+            .filter((d) => d.type === "folder" && !d.parentId)
+            .sort((a, b) => a.order - b.order)[0];
+
+          if (firstFolder) {
+            setSelectedFolderId(firstFolder.id);
+          }
+        }
+      }
+
+      // 3. 뷰 모드 변경
+      setViewMode(newMode);
+    },
+    [
+      forceSave,
+      selectedFolderId,
+      selectedSectionId,
+      documents,
+      setSelectedFolderId,
+      setSelectedSectionId,
+      setViewMode,
+    ]
   );
 
   return {
@@ -328,5 +440,6 @@ export function useEditorHandlers({
     handleDeleteChapter,
     handleReorderChapter: reorderDocuments,
     handleMoveToFolder,
+    handleViewModeChange,
   };
 }

@@ -452,7 +452,7 @@ export function ChapterTree({
 
       {/* Add Form */}
       {isAdding && (
-        <div className="flex items-center gap-2 px-2 py-1.5 mt-2 bg-sage-50 rounded-md border border-sage-200 mx-1">
+        <div className="flex items-center gap-2 px-2 py-1.5 mt-2 bg-sage-50 rounded-md border border-sage-200 ml-0 mr-1">
           <FileText className="h-4 w-4 text-sage-400 shrink-0" />
           <Input
             ref={inputRef}
@@ -492,7 +492,7 @@ export function ChapterTree({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-stone-500 mt-2 mx-1 hover:text-sage-600 hover:bg-sage-50"
+          className="w-full justify-start text-stone-500 mt-2 ml-0 mr-1 hover:text-sage-600 hover:bg-sage-50"
           onClick={() => setIsAdding(true)}
         >
           <Plus className="h-4 w-4 mr-2" />새 챕터 추가

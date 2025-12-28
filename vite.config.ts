@@ -42,15 +42,11 @@ export default defineConfig({
             "@radix-ui/react-progress",
           ],
 
-          // Tiptap core
-          "vendor-editor-core": [
+          // Tiptap editor (모든 관련 패키지를 하나로 통합하여 순환 참조 방지)
+          "vendor-editor": [
             "@tiptap/core",
             "@tiptap/react",
             "@tiptap/starter-kit",
-          ],
-
-          // Tiptap extensions (lazy load 가능)
-          "vendor-editor-extensions": [
             "@tiptap/extension-bubble-menu",
             "@tiptap/extension-character-count",
             "@tiptap/extension-highlight",

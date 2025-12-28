@@ -572,6 +572,54 @@ export function useDescendantDocuments(
   };
 }
 
+/**
+ * Hook for fetching a document and all its descendants with level information
+ * Useful for hierarchical rendering (e.g., Scrivenings view with indentation)
+ */
+export function useDescendantDocumentsWithLevel(
+  parentId: string | null,
+  projectId: string,
+  options?: { textOnly?: boolean },
+) {
+  const documents = useDocumentStore((state) => state.documents);
+
+  const flatDocuments = useMemo(() => {
+    if (!parentId) return [];
+
+    type DocumentWithLevel = Document & { level: number };
+    const result: DocumentWithLevel[] = [];
+
+    const traverse = (currentId: string, level: number) => {
+      const children = Object.values(documents)
+        .filter((d) => d.parentId === currentId && d.projectId === projectId)
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        // textOnly 옵션이면 folder 제외 (하위 탐색은 계속)
+        if (options?.textOnly && child.type === "folder") {
+          traverse(child.id, level + 1);
+          continue;
+        }
+
+        result.push({ ...child, level });
+
+        // 폴더인 경우 하위 탐색
+        if (child.type === "folder") {
+          traverse(child.id, level + 1);
+        }
+      }
+    };
+
+    traverse(parentId, 0);
+    return result;
+  }, [documents, parentId, projectId, options?.textOnly]);
+
+  return {
+    documents: flatDocuments,
+    isLoading: false,
+  };
+}
+
 function buildTree(documents: Document[]): DocumentTreeNode[] {
   const map = new Map<string, DocumentTreeNode>();
   const roots: DocumentTreeNode[] = [];

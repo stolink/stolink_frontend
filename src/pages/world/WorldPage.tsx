@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, MapPin, Sword } from "lucide-react";
+import { Users, MapPin, Sword, Sparkles } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
 import type { Character, RelationType, RelationshipLink } from "@/types";
 import { roleLabels } from "./constants";
@@ -20,6 +20,7 @@ import { useCharacters } from "@/hooks/useCharacters";
 // Components
 import { NetworkControlsD3 } from "./components/NetworkControlsD3";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
+import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 
 // Mock Places
 const places = [
@@ -103,9 +104,10 @@ export default function WorldPage() {
   }
 
   return (
-    <div className="h-full">
+    <div className="h-full w-full flex flex-col bg-paper">
       <Tabs defaultValue="graph" className="h-full flex flex-col">
-        <div className="px-4 py-2 border-b bg-paper">
+        {/* Tab Header */}
+        <div className="px-6 py-3 border-b bg-white shrink-0">
           <TabsList>
             <TabsTrigger value="graph" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -123,12 +125,16 @@ export default function WorldPage() {
               <Sword className="h-4 w-4" />
               아이템
             </TabsTrigger>
+            <TabsTrigger value="foreshadowing" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              복선
+            </TabsTrigger>
           </TabsList>
         </div>
 
         {/* Character Graph - D3.js */}
-        <TabsContent value="graph" className="flex-1 m-0">
-          <div className="h-full relative">
+        <TabsContent value="graph" className="flex-1 m-0 overflow-hidden">
+          <div className="h-full w-full relative">
             {/* Controls & Legend */}
             <NetworkControlsD3
               relationTypeFilter={relationTypeFilter}
@@ -158,9 +164,9 @@ export default function WorldPage() {
         {/* Characters List */}
         <TabsContent
           value="characters"
-          className="flex-1 m-0 p-4 overflow-y-auto"
+          className="flex-1 m-0 overflow-y-auto"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {characters.map((character) => (
               <Card
                 key={character.id}
@@ -219,8 +225,8 @@ export default function WorldPage() {
         </TabsContent>
 
         {/* Places */}
-        <TabsContent value="places" className="flex-1 m-0 p-4 overflow-y-auto">
-          <div className="space-y-2">
+        <TabsContent value="places" className="flex-1 m-0 overflow-y-auto">
+          <div className="p-6 space-y-2 max-w-4xl mx-auto">
             {places.map((place) => (
               <Card key={place.id} className="cursor-pointer hover:bg-stone-50">
                 <CardContent className="p-4 flex items-center justify-between">
@@ -243,8 +249,8 @@ export default function WorldPage() {
         </TabsContent>
 
         {/* Items */}
-        <TabsContent value="items" className="flex-1 m-0 p-4 overflow-y-auto">
-          <div className="space-y-2">
+        <TabsContent value="items" className="flex-1 m-0 overflow-y-auto">
+          <div className="p-6 space-y-2 max-w-4xl mx-auto">
             {items.map((item) => (
               <Card key={item.id} className="cursor-pointer hover:bg-stone-50">
                 <CardContent className="p-4 flex items-center justify-between">
@@ -264,6 +270,11 @@ export default function WorldPage() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Foreshadowing */}
+        <TabsContent value="foreshadowing" className="flex-1 m-0">
+          <ForeshadowingPanel projectId={projectId} />
         </TabsContent>
       </Tabs>
 

@@ -56,6 +56,7 @@ export interface CreateDocumentInput {
   title: string;
   synopsis?: string;
   targetWordCount?: number;
+  order?: number; // 섹션 삽입 위치 지정용
 }
 
 export interface UpdateDocumentInput {

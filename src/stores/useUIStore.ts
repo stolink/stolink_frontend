@@ -4,7 +4,7 @@ interface UIState {
   // Sidebar states
   leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
-  rightSidebarTab: "foreshadowing" | "ai" | "consistency";
+  rightSidebarTab: "inspector" | "foreshadowing" | "ai" | "consistency";
 
   // Modal states
 
@@ -16,7 +16,9 @@ interface UIState {
   // Actions
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
-  setRightSidebarTab: (tab: "foreshadowing" | "ai" | "consistency") => void;
+  setRightSidebarTab: (
+    tab: "inspector" | "foreshadowing" | "ai" | "consistency"
+  ) => void;
 
   setCreateChapterModalOpen: (open: boolean) => void;
   setTheme: (theme: "light" | "dark") => void;

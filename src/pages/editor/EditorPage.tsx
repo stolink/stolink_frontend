@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { PanelRightOpen, Minimize2 } from "lucide-react";
 
@@ -14,6 +14,10 @@ import {
 } from "@/data/demoData";
 import { useEditorStore } from "@/stores";
 import { type ChapterNode } from "@/components/editor/sidebar";
+import { BookReaderModal } from "@/components/common/BookReaderModal";
+import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { useProject } from "@/hooks/useProjects";
+import type { Document } from "@/types/document";
 
 // New Document-based imports
 import {
@@ -29,8 +33,10 @@ import { SAMPLE_PROJECT_ID } from "@/data/sampleDocuments";
 // Refactored Components
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
+import SnapshotPanel from "@/components/editor/SnapshotPanel";
+import ExportModal from "@/components/editor/ExportModal";
 import DemoHeader from "@/components/editor/DemoHeader";
-import SectionStrip from "@/components/editor/SectionStrip";
+// SectionStrip removed - minimizing distractions for writer focus
 // ScriveningsEditor & OutlineView removed (moved to EditorContent)
 
 // Refactored Hooks
@@ -40,7 +46,12 @@ import { useEditorEffects } from "./hooks/useEditorEffects";
 
 // Refactored Components
 import { EditorToolbar } from "./components/EditorToolbar";
-import { EditorContent } from "./components/EditorContent";
+import {
+  EditorContent,
+  type EditorContentHandle,
+} from "./components/EditorContent";
+import { CreateSectionModal } from "./components/CreateSectionModal";
+import { useBulkDocumentContent } from "@/hooks/useDocuments";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -56,7 +67,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -130,14 +141,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Local State
   const [characterCount, setCharacterCount] = useState(0);
+  const prevCountRef = useRef(0); // 통계용 이전 글자 수
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null,
+    isDemo ? "chapter-1" : null
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -147,6 +159,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     toggleSplitView,
     isFocusMode,
     toggleFocusMode,
+    isTypewriterMode,
+    toggleTypewriterMode,
     viewMode,
     setViewMode,
   } = useEditorStore();
@@ -156,12 +170,51 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
 
   // ============================================================
+  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
+  // ============================================================
+  const [showReader, setShowReader] = useState(false);
+  const [showSnapshot, setShowSnapshot] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const { data: project } = useProject(projectId, { enabled: !isDemo });
+  const allDocuments = useDocumentStore((state) => state.documents);
+  const localDocuments = useMemo(
+    () =>
+      isDemo
+        ? []
+        : Object.values(allDocuments).filter(
+            (doc) => doc.projectId === projectId
+          ),
+    [allDocuments, projectId, isDemo]
+  );
+
+  const previewChapters = useMemo(() => {
+    if (isDemo) return [];
+    return (localDocuments ?? [])
+      .filter((doc): doc is Document => doc?.type === "text")
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        content: doc.content ?? "",
+      }));
+  }, [localDocuments, isDemo]);
+
+  const projectTitle = useMemo(() => {
+    if (isDemo) return "데모 작품";
+    if (project?.title) return project.title;
+    const folder = localDocuments?.find(
+      (doc: Document) => doc.type === "folder"
+    );
+    return folder?.title || "내 작품";
+  }, [project?.title, localDocuments, isDemo]);
+
+  // ============================================================
   // Document Hooks (for non-demo mode)
   // ============================================================
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
+    isDemo ? null : selectedSectionId
   );
   const {
     createDocument,
@@ -190,6 +243,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     handleDeleteChapter,
     handleReorderChapter,
     handleMoveToFolder,
+    handleViewModeChange,
   } = useEditorHandlers({
     isDemo,
     documents,
@@ -256,6 +310,25 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return doc?.title || "";
   }, [isDemo, selectedSectionId, documents]);
 
+  // Section breadcrumb path (from root to current section)
+  const sectionPath = useMemo(() => {
+    if (isDemo || !selectedSectionId) return [];
+
+    const path: Array<{ id: string; title: string }> = [];
+    let currentId: string | null = selectedSectionId;
+
+    // Traverse from current section to root
+    while (currentId) {
+      const doc = documents.find((d) => d.id === currentId);
+      if (!doc) break;
+
+      path.unshift({ id: doc.id, title: doc.title });
+      currentId = doc.parentId || null;
+    }
+
+    return path;
+  }, [isDemo, selectedSectionId, documents]);
+
   // Current content
   const currentContent = useMemo(() => {
     if (isDemo && selectedSectionId) {
@@ -274,9 +347,20 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // Wrapper for handleCharacterCountChange to include setCharacterCount
   const onCharacterCountChange = useCallback(
     (count: number) => {
+      // 집필 통계 기록 (Delta > 0 이고 100자 미만일 때만 - 로딩/붙여넣기 제외)
+      const delta = count - prevCountRef.current;
+      if (delta > 0 && delta < 100) {
+        import("@/stores/useWritingStatsStore").then(
+          ({ useWritingStatsStore }) => {
+            useWritingStatsStore.getState().recordActivity(delta);
+          }
+        );
+      }
+      prevCountRef.current = count;
+
       handleCharacterCountChange(count, setCharacterCount);
     },
-    [handleCharacterCountChange],
+    [handleCharacterCountChange]
   );
 
   // ============================================================
@@ -295,6 +379,109 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   });
 
   // ============================================================
+  // Split & Create Section Logic
+  // ============================================================
+  const editorContentRef = useRef<EditorContentHandle>(null);
+  const { bulkSaveContent } = useBulkDocumentContent();
+  const [createSectionModalOpen, setCreateSectionModalOpen] = useState(false);
+  const [splitState, setSplitState] = useState<{
+    before: string;
+    after: string;
+    parentId?: string;
+    order?: number;
+    title?: string;
+    targetDocId?: string;
+  } | null>(null);
+
+  const handleRequestAddSection = useCallback(
+    (title?: string) => {
+      // 1. Split 동작 수행 (Single & Scrivenings)
+      if (editorContentRef.current) {
+        const split = editorContentRef.current.getSplitContent();
+
+        // 2. 커서 위치 기반 분할 가능 여부 확인
+        if (split) {
+          // viewMode에 따라 대상 ID 결정
+          const targetId = split.targetDocId || selectedSectionId;
+
+          if (targetId) {
+            const currentDoc = documents.find((d) => d.id === targetId);
+            if (currentDoc) {
+              const parentId = currentDoc.parentId ?? undefined;
+              const insertAfterOrder = currentDoc.order;
+
+              setSplitState({
+                before: split.before,
+                after: split.after,
+                parentId,
+                order:
+                  insertAfterOrder !== undefined
+                    ? insertAfterOrder + 1
+                    : undefined,
+                title,
+                targetDocId: targetId,
+              });
+              setCreateSectionModalOpen(true);
+              return;
+            }
+          }
+        }
+      }
+
+      // 3. Fallback: 분할 불가능하거나 다른 모드일 경우 일반 생성 (모달 오픈)
+      setSplitState(null); // 일반 생성 모드
+      setCreateSectionModalOpen(true);
+    },
+    [selectedSectionId, documents]
+  );
+
+  const handleConfirmCreateSection = async (title: string) => {
+    // 1. Split 모드
+    if (splitState) {
+      const { before, after, parentId, order, targetDocId } = splitState;
+      const updateId = targetDocId || selectedSectionId;
+
+      if (updateId) {
+        // Auto-save 타이머 클리어 (경쟁 상태 방지)
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+
+        // 현재 문서 내용 수동 업데이트 (Before Part) - Single View용 체크
+        if (updateId === selectedSectionId) {
+          lastContentRef.current = before;
+        }
+
+        // 새 문서 생성
+        const newDoc = await createDocument({
+          type: "text",
+          title,
+          parentId,
+          order,
+        });
+
+        if (newDoc) {
+          // Bulk Update: 현재 문서(Before) + 새 문서(After)
+          await bulkSaveContent({
+            [updateId]: before,
+            [newDoc.id]: after,
+          });
+
+          // 새 문서로 이동 (Scrivenings에서도 강조 표시를 위해 선택)
+          setSelectedSectionId(newDoc.id);
+        }
+      }
+    }
+    // 2. 일반 생성 모드
+    else {
+      await handleAddSection(title);
+    }
+
+    setCreateSectionModalOpen(false);
+    setSplitState(null);
+  };
+
+  // ============================================================
   // Render
   // ============================================================
 
@@ -304,6 +491,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       {isDemo && (
         <DemoHeader isTourCompleted={isTourCompleted} onStartTour={startTour} />
       )}
+
+      {/* Project Header moved to ProjectLayout for global consistency */}
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left Sidebar */}
@@ -330,6 +519,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleSidebar={toggleSidebar}
               currentFolderTitle={currentFolderTitle}
               currentSectionTitle={currentSectionTitle}
+              sectionPath={sectionPath}
               isEditingTitle={isEditingTitle}
               editedTitle={editedTitle}
               onEditedTitleChange={setEditedTitle}
@@ -354,23 +544,29 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               selectedSectionId={selectedSectionId}
               characterCount={characterCount}
               viewMode={viewMode}
-              onViewModeChange={setViewMode}
+              onViewModeChange={handleViewModeChange}
               splitViewEnabled={splitView.enabled}
               onToggleSplitView={toggleSplitView}
               onToggleFocusMode={toggleFocusMode}
+              isTypewriterMode={isTypewriterMode}
+              onToggleTypewriterMode={toggleTypewriterMode}
               rightSidebarOpen={rightSidebarOpen}
               onToggleRightSidebar={toggleRightSidebar}
+              onShowReader={isDemo ? undefined : () => setShowReader(true)}
+              onToggleSnapshot={() => setShowSnapshot(true)}
+              onExport={() => setShowExport(true)}
             />
           )}
 
           {/* Focus Mode Exit Button */}
           {isFocusMode && (
-            <div className="absolute top-4 right-4 z-50 opacity-0 hover:opacity-100 transition-opacity">
+            <div className="absolute top-4 right-4 z-50">
               <button
                 onClick={toggleFocusMode}
-                className="bg-white/90 shadow-md border px-3 py-1.5 rounded-full text-xs font-medium text-stone-600 hover:text-stone-900 flex items-center gap-1.5 backdrop-blur-sm"
+                className="bg-sage-600 hover:bg-sage-700 shadow-lg border border-sage-500 px-4 py-2 rounded-full text-sm font-semibold text-white flex items-center gap-2 transition-all hover:scale-105"
+                title="집중 모드 종료 (ESC)"
               >
-                <Minimize2 className="w-3.5 h-3.5" />
+                <Minimize2 className="w-4 h-4" />
                 집중 모드 종료
               </button>
             </div>
@@ -389,23 +585,23 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               currentSectionTitle={currentSectionTitle}
               onCharacterCountChange={onCharacterCountChange}
               onContentChange={handleContentChange}
+              ref={editorContentRef}
+              onCreateSection={handleRequestAddSection}
+              onSelectSection={(id) => {
+                setSelectedSectionId(id);
+                setViewMode("editor");
+              }}
+              onSynopsisUpdate={async (id, synopsis) => {
+                await updateDocumentMutation(id, { synopsis });
+              }}
               documents={documents}
               isDemo={isDemo}
+              isTypewriterMode={isTypewriterMode}
             />
           </div>
 
-          {/* Section Strip (Bottom) */}
-          {!isFocusMode && (
-            <SectionStrip
-              selectedFolderId={selectedFolderId}
-              selectedSectionId={selectedSectionId}
-              onSelect={handleSelectSection}
-              onAdd={handleAddSection}
-              projectId={projectId}
-              isDemo={isDemo}
-              liveWordCount={characterCount}
-            />
-          )}
+          {/* Section Strip removed - use left sidebar for section navigation
+              to minimize distractions and maintain writer focus */}
         </main>
 
         {/* Right Sidebar */}
@@ -414,6 +610,27 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           onClose={toggleRightSidebar}
           activeTab={rightSidebarTab}
           onTabChange={setRightSidebarTab}
+          documentId={selectedSectionId}
+        />
+
+        {/* Snapshot Panel */}
+        <SnapshotPanel
+          documentId={selectedSectionId}
+          currentContent={currentContent}
+          documentTitle={currentSectionTitle}
+          onRestore={(content) => {
+            handleContentChange(content);
+          }}
+          isOpen={showSnapshot}
+          onClose={() => setShowSnapshot(false)}
+        />
+
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={showExport}
+          onClose={() => setShowExport(false)}
+          content={currentContent}
+          title={currentSectionTitle}
         />
 
         {/* Right Sidebar Toggle (when closed) */}
@@ -471,6 +688,27 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         isOpen={isTourActive}
         onClose={endTour}
         onComplete={completeTour}
+      />
+
+      {/* Book Reader Modal - 로컬 데이터 실시간 반영 */}
+      {!isDemo && (
+        <BookReaderModal
+          isOpen={showReader}
+          onClose={() => setShowReader(false)}
+          chapters={previewChapters}
+          bookTitle={projectTitle}
+        />
+      )}
+
+      {/* Create Section Modal (Split UI) */}
+      <CreateSectionModal
+        isOpen={createSectionModalOpen}
+        onClose={() => {
+          setCreateSectionModalOpen(false);
+          setSplitState(null);
+        }}
+        onCreate={handleConfirmCreateSection}
+        defaultTitle={splitState?.title}
       />
     </div>
   );

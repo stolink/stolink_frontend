@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLogin, useRegister } from "@/hooks/useAuth";
+import { PaperTexture } from "@/components/effects";
 
 // Validation schemas
 const loginSchema = z.object({
@@ -80,7 +81,7 @@ export default function AuthPage() {
             )?.response?.data?.error?.message || "로그인에 실패했습니다";
           setApiError(errorMsg);
         },
-      },
+      }
     );
   };
 
@@ -102,13 +103,15 @@ export default function AuthPage() {
             )?.response?.data?.error?.message || "회원가입에 실패했습니다";
           setApiError(errorMsg);
         },
-      },
+      }
     );
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {/* Ver.4: 미묘한 종이 질감 배경 */}
+      <PaperTexture opacity={1} />
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center mb-8">
           <img

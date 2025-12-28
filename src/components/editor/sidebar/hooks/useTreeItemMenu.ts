@@ -36,12 +36,12 @@ export function useTreeItemMenu({
   const menuItems: MenuItemType[] = [
     {
       icon: FolderPlus,
-      label: "새 폴더 만들기",
+      label: "새 하위 폴더",
       onClick: () => onAddChild?.(node.id, "chapter"),
     },
     {
       icon: FilePlus,
-      label: "새 섹션 만들기",
+      label: "새 하위 섹션",
       onClick: () => onAddChild?.(node.id, "section"),
     },
     { type: "divider" },
