@@ -186,19 +186,6 @@
     font-family: "DM Serif Display", "Pretendard", serif;
   }
 }
-
-.noise-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 40;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
-}
-
 /* Focus Mode Sidebar - Hide drag handles and action buttons for cleaner look */
 .focus-mode-sidebar [data-tree-item] .cursor-grab,
 .focus-mode-sidebar [data-tree-item] button:not([data-toggle-expand]) {
@@ -208,38 +195,6 @@
 .focus-mode-sidebar [data-tree-item]:hover .cursor-grab,
 .focus-mode-sidebar [data-tree-item]:hover button:not([data-toggle-expand]) {
   display: none !important;
-}
-
-/* ============================================
-   Paper Texture Effects (Version 4)
-   ============================================ */
-
-/* Paper texture overlay - subtle grain effect */
-.paper-texture-overlay {
-  position: relative;
-}
-
-.paper-texture-overlay::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
-  mix-blend-mode: multiply;
-  z-index: 1;
-}
-
-/* Light version for headers/nav */
-.paper-texture-light::before {
-  opacity: 0.015;
-}
-
-/* Dark mode - reduce paper texture intensity by 50% */
-.theme-dark .paper-texture-overlay::before,
-.theme-true-black .paper-texture-overlay::before,
-.dark .paper-texture-overlay::before {
-  opacity: 0.0125;
 }
 
 /* Brush stroke underline effect - pure SVG */
