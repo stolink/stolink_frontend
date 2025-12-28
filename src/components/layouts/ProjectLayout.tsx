@@ -33,7 +33,7 @@ export function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { isFocusMode } = useEditorStore();
+  const { isFocusMode, saveStatus } = useEditorStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showReader, setShowReader] = useState(false);
 
@@ -186,9 +186,18 @@ export function ProjectLayout() {
                 )}
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <div
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    saveStatus === "saved" && "bg-green-500",
+                    saveStatus === "saving" && "bg-yellow-500 animate-pulse",
+                    saveStatus === "unsaved" && "bg-orange-500",
+                  )}
+                />
                 <span className="text-[10px] text-muted-foreground">
-                  저장됨
+                  {saveStatus === "saved" && "저장됨"}
+                  {saveStatus === "saving" && "저장 중..."}
+                  {saveStatus === "unsaved" && "자동 저장 켜짐"}
                 </span>
               </div>
             </div>
