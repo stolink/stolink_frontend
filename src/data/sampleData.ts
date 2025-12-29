@@ -111,7 +111,7 @@ export const SAMPLE_CHAPTERS: Chapter[] = [
     title: "제1부: 시작의 장",
     content: "",
     order: 0,
-    type: "part",
+    type: "chapter", // 폴더 역할
     characterCount: 0,
     isPlot: false,
     createdAt: new Date().toISOString(),
@@ -175,7 +175,7 @@ export const SAMPLE_CHAPTERS: Chapter[] = [
     title: "제2부: 아르카디아",
     content: "",
     order: 1,
-    type: "part",
+    type: "chapter", // 폴더 역할
     characterCount: 0,
     isPlot: false,
     createdAt: new Date().toISOString(),
@@ -239,7 +239,7 @@ export const SAMPLE_CHAPTERS: Chapter[] = [
     title: "제3부: 전쟁",
     content: "",
     order: 2,
-    type: "part",
+    type: "chapter", // 폴더 역할
     characterCount: 0,
     isPlot: true,
     createdAt: new Date().toISOString(),
@@ -303,7 +303,7 @@ export const SAMPLE_CHAPTERS: Chapter[] = [
     title: "제4부: 결말",
     content: "",
     order: 3,
-    type: "part",
+    type: "chapter", // 폴더 역할
     characterCount: 0,
     isPlot: true,
     createdAt: new Date().toISOString(),

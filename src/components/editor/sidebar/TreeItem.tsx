@@ -57,9 +57,8 @@ export const TreeItem = memo(function TreeItem({
   forceExpanded,
 }: TreeItemProps) {
   const hasChildren = (node.children?.length || 0) > 0;
-  const isPart = node.type === "part";
   const isSelected = node.id === selectedId;
-  const isFolder = node.type === "chapter" || node.type === "part";
+  const isFolder = node.type === "chapter"; // chapter = 폴더 역할
 
   // 현재 이 폴더가 드래그 중인 아이템의 부모인지 확인
   const isParentOfActive = useMemo(() => {
@@ -105,13 +104,13 @@ export const TreeItem = memo(function TreeItem({
       // 드래그 중인 원래 위치는 희미하게 표시
       opacity: isDragging ? 0.3 : 1,
     }),
-    [transform, transition, isDragging]
+    [transform, transition, isDragging],
   );
 
   // Child IDs for nested SortableContext
   const childIds = useMemo(
     () => node.children?.map((c) => c.id) ?? [],
-    [node.children]
+    [node.children],
   );
 
   // 1. 기본 상태 및 동작 훅
@@ -132,7 +131,7 @@ export const TreeItem = memo(function TreeItem({
   } = useTreeItem({
     initialTitle: node.title,
     nodeId: node.id,
-    isPart,
+    isFolder,
     onSelect,
     onRename,
     forceExpanded,
@@ -155,7 +154,7 @@ export const TreeItem = memo(function TreeItem({
 
   const nextParentLines = useMemo(
     () => [...parentLines, !isLast],
-    [parentLines, isLast]
+    [parentLines, isLast],
   );
 
   return (
@@ -189,9 +188,9 @@ export const TreeItem = memo(function TreeItem({
           isDragging && "shadow-lg ring-2 ring-mocha-400 bg-card",
           // 폴더 드래그 오버 상태 - 강화된 하이라이트
           showDropInside &&
-          !isDragging &&
-          !isParentOfActive &&
-          "bg-emerald-100 ring-2 ring-emerald-500"
+            !isDragging &&
+            !isParentOfActive &&
+            "bg-emerald-100 ring-2 ring-emerald-500",
         )}
         style={{ marginLeft: `${level * 12}px` }}
         onClick={handleClick}
@@ -228,7 +227,7 @@ export const TreeItem = memo(function TreeItem({
             <div
               className={cn(
                 "absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ring-1 ring-white",
-                statusColors[node.status]
+                statusColors[node.status],
               )}
               title={getStatusTitle(node.status)}
             />
@@ -275,13 +274,13 @@ export const TreeItem = memo(function TreeItem({
                   isSelected
                     ? "font-medium text-espresso-900"
                     : "text-foreground",
-                  node.isPlot && "italic text-muted-foreground"
+                  node.isPlot && "italic text-muted-foreground",
                 )}
               >
                 {node.title}
               </span>
-              {/* Character count */}
-              {!isPart && (node.characterCount || 0) > 0 && (
+              {/* Character count - 섹션에서만 표시 */}
+              {!isFolder && (node.characterCount || 0) > 0 && (
                 <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                   {formatCharCount(node.characterCount!)}
                 </span>
@@ -292,15 +291,12 @@ export const TreeItem = memo(function TreeItem({
 
         {/* Action buttons (hover) */}
         <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {/* 폴더(chapter/part)에서만 섹션 추가 버튼 표시 */}
+          {/* 폴더(chapter)에서만 타입 선택 추가 버튼 표시 */}
           {isFolder && onAddChild && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddChild(node.id, "section");
-              }}
+              onClick={handleMenuButtonClick}
               className="p-1 hover:bg-mocha-400/10 rounded transition-colors"
-              title="추가"
+              title="추가 (폴더/섹션)"
             >
               <Plus className="h-3.5 w-3.5 text-mocha-500" />
             </button>
