@@ -11,8 +11,6 @@ interface UseZoomReturn {
   zoomState: ZoomState;
   zoomIn: () => void;
   zoomOut: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
   resetZoom: () => void;
   centerAt: (x: number, y: number, scale?: number) => void;
 }

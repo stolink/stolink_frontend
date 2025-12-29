@@ -32,7 +32,7 @@ import { type ChapterNode, type ChapterTreeProps } from "./types";
 // Helper: 전체 트리에서 노드 찾기
 function findNodeById(
   nodes: ChapterNode[],
-  id: string
+  id: string,
 ): ChapterNode | undefined {
   for (const node of nodes) {
     if (node.id === id) return node;
@@ -48,7 +48,7 @@ function findNodeById(
 function findParentId(
   nodes: ChapterNode[],
   id: string,
-  parentId: string | null = null
+  parentId: string | null = null,
 ): string | null | undefined {
   for (const node of nodes) {
     if (node.id === id) return parentId;
@@ -64,7 +64,7 @@ function findParentId(
 function isDescendant(
   nodes: ChapterNode[],
   itemId: string,
-  targetId: string
+  targetId: string,
 ): boolean {
   const item = findNodeById(nodes, itemId);
   if (!item || !item.children) return false;
@@ -78,9 +78,9 @@ function isDescendant(
 // 기본 Mock 데이터
 const defaultChapters: ChapterNode[] = [
   {
-    id: "part-1",
+    id: "chapter-1",
     title: "1부: 여정의 시작",
-    type: "part",
+    type: "chapter",
     children: [
       {
         id: "chapter-1-1",
@@ -107,9 +107,9 @@ const defaultChapters: ChapterNode[] = [
     ],
   },
   {
-    id: "part-2",
+    id: "chapter-2",
     title: "2부: 성장",
-    type: "part",
+    type: "chapter",
     children: [
       {
         id: "chapter-2-1",
@@ -135,7 +135,7 @@ export function ChapterTree({
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"chapter" | "section">(
-    "chapter"
+    "chapter",
   );
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export function ChapterTree({
 
   // 모두 접기/펼치기 상태 (undefined = 개별 제어, true/false = 강제 제어)
   const [forceExpandAll, setForceExpandAll] = useState<boolean | undefined>(
-    undefined
+    undefined,
   );
 
   // DnD Sensors
@@ -168,7 +168,7 @@ export function ChapterTree({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   useEffect(() => {
@@ -182,7 +182,7 @@ export function ChapterTree({
     onAddChapter?.(
       newChapterTitle.trim(),
       addingToParent || undefined,
-      addingType
+      addingType,
     );
     setNewChapterTitle("");
     setIsAdding(false);
@@ -191,7 +191,7 @@ export function ChapterTree({
 
   const handleStartAddChild = (
     parentId: string,
-    type: "chapter" | "section" = "chapter"
+    type: "chapter" | "section" = "chapter",
   ) => {
     setAddingToParent(parentId);
     setAddingType(type);
@@ -238,7 +238,7 @@ export function ChapterTree({
       }
 
       // 폴더인 경우 -> inside (폴더 안으로 이동)
-      if (overNode.type === "chapter" || overNode.type === "part") {
+      if (overNode.type === "chapter") {
         setDropIndicator({ id: overId, position: "inside" });
       } else {
         // 섹션인 경우: 드래그 방향(delta.y)으로 before/after 결정
@@ -251,7 +251,7 @@ export function ChapterTree({
         setDropIndicator({ id: overId, position });
       }
     },
-    [chapters]
+    [chapters],
   );
 
   // Drag End Handler - 순서 변경 + 폴더 이동 처리
@@ -280,7 +280,7 @@ export function ChapterTree({
     if (activeParentId === undefined || overParentId === undefined) return;
 
     // Case 1: 폴더 위에 드롭 → 폴더 안으로 이동
-    if (overNode.type === "chapter" || overNode.type === "part") {
+    if (overNode.type === "chapter") {
       // 순환 참조 방지
       if (isDescendant(chapters, activeIdValue, overIdValue)) {
         console.warn("Cannot move item into its own descendant");
@@ -293,7 +293,7 @@ export function ChapterTree({
         const parent = findNodeById(chapters, overIdValue);
         if (parent?.children) {
           const oldIndex = parent.children.findIndex(
-            (c) => c.id === activeIdValue
+            (c) => c.id === activeIdValue,
           );
           // 폴더 자체 위에 드롭한 경우이므로 첫 번째로 이동
           if (oldIndex !== -1 && oldIndex !== 0) {
@@ -302,7 +302,7 @@ export function ChapterTree({
             newOrder.unshift(removed);
             onReorderChapter?.(
               overIdValue,
-              newOrder.map((c) => c.id)
+              newOrder.map((c) => c.id),
             );
           }
         }

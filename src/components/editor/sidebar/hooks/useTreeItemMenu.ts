@@ -1,5 +1,5 @@
 import { useState, type MouseEvent } from "react";
-import { FilePlus, Pencil, Trash2 } from "lucide-react";
+import { FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import type { MenuItemType } from "../ContextMenu";
 import type { ChapterNode } from "../types";
 
@@ -33,21 +33,26 @@ export function useTreeItemMenu({
     setShowMenu(true);
   };
 
-  // 폴더(chapter/part)인 경우에만 하위 섹션 추가 가능
+  // 폴더(chapter)인 경우에만 하위 항목 추가 가능
   // 섹션(section)에서는 하위 항목 생성 불가
-  const isFolder = node.type === "chapter" || node.type === "part";
+  const isFolder = node.type === "chapter";
 
   const menuItems: MenuItemType[] = [
-    // 폴더일 때만 "새 하위 섹션" 메뉴 표시
+    // 폴더일 때 "새 하위 폴더"와 "새 하위 섹션" 메뉴 표시
     ...(isFolder && onAddChild
       ? [
-        {
-          icon: FilePlus,
-          label: "새 하위 섹션",
-          onClick: () => onAddChild(node.id, "section"),
-        },
-        { type: "divider" as const },
-      ]
+          {
+            icon: FolderPlus,
+            label: "새 하위 폴더",
+            onClick: () => onAddChild(node.id, "chapter"),
+          },
+          {
+            icon: FilePlus,
+            label: "새 하위 섹션",
+            onClick: () => onAddChild(node.id, "section"),
+          },
+          { type: "divider" as const },
+        ]
       : []),
     {
       icon: Pencil,

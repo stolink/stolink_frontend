@@ -181,7 +181,6 @@ export default function WorldPage() {
               links={links}
               onNodeClick={handleNodeClick}
               selectedNodeId={selectedCharacter?.id || null}
-              selectedNodeId={selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
               highlightedNodeIds={searchHighlightedIds}
               ref={graphRef}

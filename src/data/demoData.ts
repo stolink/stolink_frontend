@@ -98,12 +98,12 @@ export const DEMO_CHAPTER_CONTENTS: Record<string, string> = {
 // 데모용 챕터 트리 구조
 export const DEMO_CHAPTERS = [
   {
-    id: "part-1",
+    id: "chapter-demo-1",
     projectId: "demo",
     title: "제1부: 운명의 시작",
     content: "",
     order: 1,
-    type: "part" as const,
+    type: "chapter" as const,
     characterCount: 0,
     isPlot: false,
     createdAt: "2024-01-01",
@@ -112,7 +112,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-1",
     projectId: "demo",
-    parentId: "part-1",
+    parentId: "chapter-demo-1",
     title: "제1장: 만남",
     content: "",
     order: 1,
@@ -164,7 +164,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-2",
     projectId: "demo",
-    parentId: "part-1",
+    parentId: "chapter-demo-1",
     title: "제2장: 정령의 숲",
     content: "",
     order: 2,
@@ -201,12 +201,12 @@ export const DEMO_CHAPTERS = [
     updatedAt: "2024-01-01",
   },
   {
-    id: "part-2",
+    id: "chapter-demo-2",
     projectId: "demo",
     title: "제2부: 진실",
     content: "",
     order: 2,
-    type: "part" as const,
+    type: "chapter" as const,
     characterCount: 0,
     isPlot: true,
     createdAt: "2024-01-01",
@@ -215,7 +215,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-3",
     projectId: "demo",
-    parentId: "part-2",
+    parentId: "chapter-demo-2",
     title: "제3장: 대적",
     content: "",
     order: 1,

@@ -14,9 +14,8 @@ export function NodeIcon({
   }
 
   switch (node.type) {
-    case "part":
     case "chapter":
-      // Folders (Parts & Chapters)
+      // Folders (Chapters)
       return isExpanded ? (
         <FolderOpen className="h-4 w-4 text-mocha-500" />
       ) : (
