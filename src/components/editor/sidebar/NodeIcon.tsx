@@ -18,9 +18,9 @@ export function NodeIcon({
     case "chapter":
       // Folders (Parts & Chapters)
       return isExpanded ? (
-        <FolderOpen className="h-4 w-4 text-sage-600" />
+        <FolderOpen className="h-4 w-4 text-mocha-500" />
       ) : (
-        <Folder className="h-4 w-4 text-sage-600" />
+        <Folder className="h-4 w-4 text-mocha-500" />
       );
     case "section":
     default:

@@ -38,10 +38,10 @@ export function Switch({
       className={cn(
         "relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent",
         "transition-colors duration-200 ease-in-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mocha-500 focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         track,
-        checked ? "bg-sage-500" : "bg-muted"
+        checked ? "bg-mocha-500" : "bg-muted"
       )}
     >
       <span

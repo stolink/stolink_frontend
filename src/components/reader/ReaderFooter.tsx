@@ -85,7 +85,7 @@ interface HoverTriggerProps {
 }
 
 function HoverTrigger({ theme, onTrigger }: HoverTriggerProps) {
-  const bgColor = theme === "dark" ? "bg-stone-700" : "bg-stone-200";
+  const bgColor = theme === "dark" ? "bg-mocha-700" : "bg-mocha-200";
 
   return (
     <div

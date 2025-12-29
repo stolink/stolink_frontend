@@ -97,11 +97,13 @@ export default function SnapshotPanel({
       {/* 메인 패널 */}
       <div className="fixed inset-y-0 right-0 w-80 bg-card border-l border-border shadow-lg z-50 flex flex-col">
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">스냅샷</h2>
-            <span className="text-xs text-muted-foreground">({snapshots.length})</span>
+            <span className="text-xs text-muted-foreground">
+              ({snapshots.length})
+            </span>
           </div>
           <div className="flex gap-1">
             <Button
@@ -125,7 +127,7 @@ export default function SnapshotPanel({
 
         {/* 현재 문서 정보 */}
         {documentId && (
-          <div className="px-4 py-2 bg-muted/50/50 border-b border-stone-100">
+          <div className="px-4 py-2 bg-muted/50 border-b border-border">
             <p className="text-xs text-muted-foreground">현재 문서</p>
             <p className="text-sm font-medium text-foreground truncate">
               {documentTitle || "제목 없음"}
@@ -142,13 +144,15 @@ export default function SnapshotPanel({
           ) : snapshots.length === 0 ? (
             <div className="p-6 text-center">
               <History className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">저장된 스냅샷이 없습니다</p>
+              <p className="text-sm text-muted-foreground">
+                저장된 스냅샷이 없습니다
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 "저장" 버튼으로 현재 상태를 기록하세요
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-border">
               {[...snapshots].reverse().map((snapshot) => (
                 <div key={snapshot.id} className="group">
                   <button
@@ -179,7 +183,7 @@ export default function SnapshotPanel({
 
                   {/* 확장 콘텐츠 */}
                   {expandedId === snapshot.id && (
-                    <div className="px-4 py-3 bg-muted/50/50 border-t border-stone-100">
+                    <div className="px-4 py-3 bg-muted/50 border-t border-border">
                       {snapshot.description && (
                         <p className="text-xs text-foreground mb-3">
                           {snapshot.description}
@@ -228,7 +232,7 @@ export default function SnapshotPanel({
         </div>
 
         {/* 하단 안내 */}
-        <div className="px-4 py-2 border-t border-stone-100 bg-muted/50/30">
+        <div className="px-4 py-2 border-t border-border bg-muted/30">
           <p className="text-xs text-muted-foreground text-center">
             💡 스냅샷은 문서당 최대 10개 저장됩니다
           </p>
@@ -251,7 +255,7 @@ export default function SnapshotPanel({
                 value={newSnapshotName}
                 onChange={(e) => setNewSnapshotName(e.target.value)}
                 placeholder="예: 1차 수정 전"
-                className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sage-500/20 focus:border-sage-400"
+                className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400"
                 autoFocus
               />
             </div>
@@ -264,7 +268,7 @@ export default function SnapshotPanel({
                 onChange={(e) => setNewSnapshotDesc(e.target.value)}
                 placeholder="이 스냅샷에 대한 메모..."
                 rows={2}
-                className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sage-500/20 focus:border-sage-400"
+                className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400"
               />
             </div>
           </div>

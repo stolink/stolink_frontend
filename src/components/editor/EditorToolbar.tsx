@@ -61,7 +61,7 @@ function ToolbarButton({
       disabled={disabled}
       className={cn(
         "h-8 w-8 p-0 text-foreground hover:text-foreground",
-        isActive && "bg-sage-100 text-sage-800 hover:bg-sage-200"
+        isActive && "bg-mocha-400/20 text-mocha-700 hover:bg-mocha-400/30"
       )}
       title={tooltip}
     >
@@ -79,10 +79,10 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   const currentHeadingLevel = editor.isActive("heading", { level: 1 })
     ? 1
     : editor.isActive("heading", { level: 2 })
-    ? 2
-    : editor.isActive("heading", { level: 3 })
-    ? 3
-    : 0;
+      ? 2
+      : editor.isActive("heading", { level: 3 })
+        ? 3
+        : 0;
 
   return (
     <div
@@ -119,41 +119,45 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             size="sm"
             className={cn(
               "h-8 px-3 text-xs font-medium",
-              currentHeadingLevel > 0 && "bg-sage-100 text-sage-800"
+              currentHeadingLevel > 0 && "bg-mocha-400/20 text-mocha-700"
             )}
           >
             <Type className="h-3.5 w-3.5 mr-1.5" />
-            {currentHeadingLevel === 0
-              ? "본문"
-              : `제목 ${currentHeadingLevel}`}
+            {currentHeadingLevel === 0 ? "본문" : `제목 ${currentHeadingLevel}`}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40">
           <DropdownMenuItem
             onClick={() => editor.chain().focus().setParagraph().run()}
-            className={cn(!currentHeadingLevel && "bg-sage-50")}
+            className={cn(!currentHeadingLevel && "bg-cloud-50")}
           >
             <Pilcrow className="h-4 w-4 mr-2" />
             본문
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={cn(currentHeadingLevel === 1 && "bg-sage-50")}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
+            className={cn(currentHeadingLevel === 1 && "bg-cloud-50")}
           >
             <Heading1 className="h-4 w-4 mr-2" />
             제목 1
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={cn(currentHeadingLevel === 2 && "bg-sage-50")}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
+            className={cn(currentHeadingLevel === 2 && "bg-cloud-50")}
           >
             <Heading2 className="h-4 w-4 mr-2" />
             제목 2
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={cn(currentHeadingLevel === 3 && "bg-sage-50")}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+            className={cn(currentHeadingLevel === 3 && "bg-cloud-50")}
           >
             <Heading3 className="h-4 w-4 mr-2" />
             제목 3
@@ -210,7 +214,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             size="icon"
             className={cn(
               "h-8 w-8",
-              editor.isActive("highlight") && "bg-sage-100 text-sage-800"
+              editor.isActive("highlight") && "bg-mocha-400/20 text-mocha-700"
             )}
             title="하이라이트"
           >

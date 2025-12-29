@@ -53,9 +53,10 @@ export function StatusChip({
             // 호버 효과
             "hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1",
             // 상태별 스타일
+            isCompleted,
             isCompleted
-              ? "bg-green-100 text-green-700 hover:bg-green-200 focus:ring-green-300"
-              : "bg-sage-100 text-sage-700 hover:bg-sage-200 focus:ring-sage-300",
+              ? "bg-status-success/10 text-status-success hover:bg-status-success/20 focus:ring-status-success/30"
+              : "bg-mocha-400/10 text-mocha-700 hover:bg-mocha-400/20 focus:ring-mocha-400/30",
             // 비활성화 스타일
             disabled && "opacity-50 cursor-not-allowed"
           )}
@@ -64,7 +65,7 @@ export function StatusChip({
           <span
             className={cn(
               "h-1.5 w-1.5 rounded-full",
-              isCompleted ? "bg-green-500" : "bg-sage-500"
+              isCompleted ? "bg-status-success" : "bg-mocha-500"
             )}
           />
           {/* 상태 라벨 */}
@@ -93,10 +94,10 @@ export function StatusChip({
           className="flex items-center justify-between gap-2"
         >
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-sage-500" />
+            <span className="h-2 w-2 rounded-full bg-mocha-500" />
             <span>Writing</span>
           </div>
-          {status === "Writing" && <Check className="h-4 w-4 text-sage-600" />}
+          {status === "Writing" && <Check className="h-4 w-4 text-mocha-500" />}
         </DropdownMenuItem>
 
         {/* Complete 옵션 */}
@@ -108,11 +109,11 @@ export function StatusChip({
           className="flex items-center justify-between gap-2"
         >
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
+            <span className="h-2 w-2 rounded-full bg-status-success" />
             <span>Complete</span>
           </div>
           {status === "Complete" && (
-            <Check className="h-4 w-4 text-green-600" />
+            <Check className="h-4 w-4 text-status-success" />
           )}
         </DropdownMenuItem>
       </DropdownMenuContent>

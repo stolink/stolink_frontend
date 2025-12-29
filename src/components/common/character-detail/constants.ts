@@ -14,7 +14,7 @@ export const roleLabels: Record<
   },
   supporting: {
     label: "Supporting",
-    color: "bg-slate-100 text-slate-600 border-slate-200",
+    color: "bg-cloud-50 text-muted-foreground border-input",
   },
   mentor: {
     label: "Mentor",
@@ -26,7 +26,7 @@ export const roleLabels: Record<
   },
   other: {
     label: "Other",
-    color: "bg-stone-100 text-stone-600 border-stone-200",
+    color: "bg-cloud-50 text-muted-foreground border-input",
   },
 };
 

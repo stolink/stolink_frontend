@@ -32,7 +32,7 @@ import { type ChapterNode, type ChapterTreeProps } from "./types";
 // Helper: 전체 트리에서 노드 찾기
 function findNodeById(
   nodes: ChapterNode[],
-  id: string,
+  id: string
 ): ChapterNode | undefined {
   for (const node of nodes) {
     if (node.id === id) return node;
@@ -48,7 +48,7 @@ function findNodeById(
 function findParentId(
   nodes: ChapterNode[],
   id: string,
-  parentId: string | null = null,
+  parentId: string | null = null
 ): string | null | undefined {
   for (const node of nodes) {
     if (node.id === id) return parentId;
@@ -64,7 +64,7 @@ function findParentId(
 function isDescendant(
   nodes: ChapterNode[],
   itemId: string,
-  targetId: string,
+  targetId: string
 ): boolean {
   const item = findNodeById(nodes, itemId);
   if (!item || !item.children) return false;
@@ -135,7 +135,7 @@ export function ChapterTree({
   const chapters = useMemo(() => initialChapters, [initialChapters]);
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"chapter" | "section">(
-    "chapter",
+    "chapter"
   );
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [addingToParent, setAddingToParent] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export function ChapterTree({
 
   // 모두 접기/펼치기 상태 (undefined = 개별 제어, true/false = 강제 제어)
   const [forceExpandAll, setForceExpandAll] = useState<boolean | undefined>(
-    undefined,
+    undefined
   );
 
   // DnD Sensors
@@ -168,7 +168,7 @@ export function ChapterTree({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   useEffect(() => {
@@ -182,7 +182,7 @@ export function ChapterTree({
     onAddChapter?.(
       newChapterTitle.trim(),
       addingToParent || undefined,
-      addingType,
+      addingType
     );
     setNewChapterTitle("");
     setIsAdding(false);
@@ -191,7 +191,7 @@ export function ChapterTree({
 
   const handleStartAddChild = (
     parentId: string,
-    type: "chapter" | "section" = "chapter",
+    type: "chapter" | "section" = "chapter"
   ) => {
     setAddingToParent(parentId);
     setAddingType(type);
@@ -251,7 +251,7 @@ export function ChapterTree({
         setDropIndicator({ id: overId, position });
       }
     },
-    [chapters],
+    [chapters]
   );
 
   // Drag End Handler - 순서 변경 + 폴더 이동 처리
@@ -293,7 +293,7 @@ export function ChapterTree({
         const parent = findNodeById(chapters, overIdValue);
         if (parent?.children) {
           const oldIndex = parent.children.findIndex(
-            (c) => c.id === activeIdValue,
+            (c) => c.id === activeIdValue
           );
           // 폴더 자체 위에 드롭한 경우이므로 첫 번째로 이동
           if (oldIndex !== -1 && oldIndex !== 0) {
@@ -302,7 +302,7 @@ export function ChapterTree({
             newOrder.unshift(removed);
             onReorderChapter?.(
               overIdValue,
-              newOrder.map((c) => c.id),
+              newOrder.map((c) => c.id)
             );
           }
         }
@@ -456,8 +456,8 @@ export function ChapterTree({
 
       {/* Add Form */}
       {isAdding && (
-        <div className="flex items-center gap-2 px-2 py-1.5 mt-2 bg-sage-50 rounded-md border border-sage-200 ml-0 mr-1">
-          <FileText className="h-4 w-4 text-sage-400 shrink-0" />
+        <div className="flex items-center gap-2 px-2 py-1.5 mt-2 bg-cloud-50 rounded-md border border-input ml-0 mr-1">
+          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
           <Input
             ref={inputRef}
             value={newChapterTitle}
@@ -478,7 +478,7 @@ export function ChapterTree({
             onClick={handleAddChapter}
             disabled={!newChapterTitle.trim()}
           >
-            <Plus className="h-3.5 w-3.5 text-sage-600" />
+            <Plus className="h-3.5 w-3.5 text-mocha-700" />
           </Button>
           <Button
             size="icon"
@@ -496,7 +496,7 @@ export function ChapterTree({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground mt-2 ml-0 mr-1 hover:text-sage-600 hover:bg-sage-50"
+          className="w-full justify-start text-muted-foreground mt-2 ml-0 mr-1 hover:text-mocha-700 hover:bg-mocha-400/10"
           onClick={() => {
             setAddingType("chapter");
             setIsAdding(true);

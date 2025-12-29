@@ -130,7 +130,7 @@ function FontSizeControls({
   onDecrease,
 }: FontSizeControlsProps) {
   const borderColor =
-    theme === "dark" ? "border-stone-700" : "border-stone-200";
+    theme === "dark" ? "border-mocha-700" : "border-mocha-200";
 
   return (
     <div
@@ -181,7 +181,7 @@ function ThemeSwitcher({ currentTheme, onThemeChange }: ThemeSwitcherProps) {
           className={cn(
             "w-6 h-6 rounded-full border-2 transition-all",
             getThemeButtonStyle(key),
-            currentTheme === key && "ring-2 ring-sage-500 ring-offset-2"
+            currentTheme === key && "ring-2 ring-mocha-500 ring-offset-2"
           )}
           title={title}
         />

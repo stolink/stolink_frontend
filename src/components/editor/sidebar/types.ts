@@ -18,7 +18,7 @@ export interface ChapterTreeProps {
   onAddChapter?: (
     title: string,
     parentId?: string,
-    type?: "chapter" | "section",
+    type?: "chapter" | "section"
   ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
@@ -28,10 +28,10 @@ export interface ChapterTreeProps {
 
 // Status colors mapping
 export const statusColors: Record<string, string> = {
-  todo: "bg-stone-400",
-  inProgress: "bg-amber-400",
-  done: "bg-emerald-400",
-  revised: "bg-blue-400",
+  todo: "bg-relation-neutral",
+  inProgress: "bg-status-warning",
+  done: "bg-status-success",
+  revised: "bg-relation-family",
 };
 
 // Character count formatter

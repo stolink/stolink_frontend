@@ -185,8 +185,8 @@ export const TreeItem = memo(function TreeItem({
         className={cn(
           "relative flex items-center gap-1.5 py-1 pl-1 pr-2 rounded-md cursor-pointer group select-none transition-all duration-150",
           "hover:bg-muted/50",
-          isSelected && "bg-sage-50",
-          isDragging && "shadow-lg ring-2 ring-sage-400 bg-card",
+          isSelected && "bg-mocha-400/20",
+          isDragging && "shadow-lg ring-2 ring-mocha-400 bg-card",
           // 폴더 드래그 오버 상태 - 강화된 하이라이트
           showDropInside &&
           !isDragging &&
@@ -212,7 +212,7 @@ export const TreeItem = memo(function TreeItem({
 
         {/* Selection indicator */}
         {isSelected && (
-          <div className="absolute left-0 top-1 bottom-1 w-[3px] bg-sage-500 rounded-r" />
+          <div className="absolute left-0 top-1 bottom-1 w-[3px] bg-mocha-500 rounded-r" />
         )}
 
         {/* Drop target indicator for folders */}
@@ -264,7 +264,7 @@ export const TreeItem = memo(function TreeItem({
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={handleRenameSubmit}
               onKeyDown={handleRenameKeyDown}
-              className="w-full text-sm bg-card border border-input rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-sage-500"
+              className="w-full text-sm bg-card border border-input rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-mocha-500"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -272,7 +272,9 @@ export const TreeItem = memo(function TreeItem({
               <span
                 className={cn(
                   "text-sm truncate",
-                  isSelected ? "font-medium text-sage-900" : "text-foreground",
+                  isSelected
+                    ? "font-medium text-espresso-900"
+                    : "text-foreground",
                   node.isPlot && "italic text-muted-foreground"
                 )}
               >
@@ -297,10 +299,10 @@ export const TreeItem = memo(function TreeItem({
                 e.stopPropagation();
                 onAddChild(node.id, "section");
               }}
-              className="p-1 hover:bg-sage-100 rounded transition-colors"
-              title="섹션 추가"
+              className="p-1 hover:bg-mocha-400/10 rounded transition-colors"
+              title="추가"
             >
-              <Plus className="h-3.5 w-3.5 text-sage-600" />
+              <Plus className="h-3.5 w-3.5 text-mocha-500" />
             </button>
           )}
           <button

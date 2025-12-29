@@ -18,9 +18,9 @@ export function CharacterHeader({
   const roleInfo = roleLabels[character.role || "other"];
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 items-start mb-8 border-b border-stone-200 pb-8">
+    <div className="flex flex-col md:flex-row gap-8 items-start mb-8 border-b border-border pb-8">
       {/* Profile Image */}
-      <div className="h-32 w-32 rounded-lg shrink-0 border border-stone-200 shadow-sm ring-4 ring-stone-50 overflow-hidden bg-stone-100">
+      <div className="h-32 w-32 rounded-lg shrink-0 border border-input shadow-sm ring-4 ring-cloud-50 overflow-hidden bg-muted">
         {character.imageUrl ? (
           <img
             src={character.imageUrl}
@@ -28,7 +28,7 @@ export function CharacterHeader({
             className="w-full h-full object-cover transition-all duration-300 grayscale opacity-90 hover:grayscale-0 hover:opacity-100"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-stone-100 to-stone-200">
+          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-cloud-50 to-muted">
             {character.role === "protagonist"
               ? "🦸"
               : character.role === "antagonist"
@@ -45,7 +45,7 @@ export function CharacterHeader({
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-4xl font-bold text-stone-800 tracking-tight">
+              <h1 className="text-4xl font-bold text-foreground tracking-tight">
                 {character.name}
               </h1>
               <span
@@ -57,7 +57,7 @@ export function CharacterHeader({
                 {roleInfo.label}
               </span>
             </div>
-            <p className="text-sm text-stone-400 font-medium">
+            <p className="text-sm text-muted-foreground font-medium">
               마지막 업데이트:{" "}
               {new Date(character.updatedAt).toLocaleDateString("ko-KR")}
             </p>
@@ -76,7 +76,7 @@ export function CharacterHeader({
 
         {/* Description */}
         {description && (
-          <p className="mt-5 text-stone-600 font-serif leading-relaxed text-lg italic opacity-90">
+          <p className="mt-5 text-muted-foreground font-serif leading-relaxed text-lg italic opacity-90">
             "{description}"
           </p>
         )}

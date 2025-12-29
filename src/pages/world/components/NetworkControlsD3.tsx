@@ -26,7 +26,7 @@ export function NetworkControlsD3({
     <>
       {/* 좌측 컨트롤 패널 */}
       <div className="absolute left-4 top-4 z-10 bg-white rounded-lg border shadow-sm p-3 space-y-3">
-        <div className="text-xs font-medium text-stone-500 uppercase tracking-wider">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Controls
         </div>
         <DropdownMenu>
@@ -64,7 +64,7 @@ export function NetworkControlsD3({
 
       {/* 하단 범례 */}
       <div className="absolute left-4 bottom-4 z-10 bg-white rounded-lg border shadow-sm p-3">
-        <div className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
           Relationship Legend
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

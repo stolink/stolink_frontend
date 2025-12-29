@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
-import { InteractiveLightOverlay, PaperTexture } from "@/components/effects";
+import { InteractiveLightOverlay } from "@/components/effects";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -488,7 +488,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-sage-100 shadow-sm">
+      <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-border shadow-sm">
         {/* Ver.1: SVG 동적 광원 효과 */}
         <InteractiveLightOverlay id="library-header-light" intensity={0.1} />
         <div className="max-w-7xl mx-auto px-6 py-4 relative z-10">
@@ -507,7 +507,7 @@ export default function LibraryPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="제목으로 검색..."
-                    className="pl-9 h-9 w-[240px] bg-white border-stone-200 focus:border-sage-400 focus:ring-sage-200 transition-all text-sm rounded-full"
+                    className="pl-9 h-9 w-[240px] bg-white border-input focus:border-mocha-400 focus:ring-mocha-200 transition-all text-sm rounded-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -518,7 +518,7 @@ export default function LibraryPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 gap-2 bg-white border-stone-200 text-stone-600"
+                      className="h-9 gap-2 bg-white border-input text-muted-foreground"
                     >
                       <Filter className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">필터</span>
@@ -547,7 +547,7 @@ export default function LibraryPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 gap-2 bg-white border-stone-200 text-stone-600"
+                      className="h-9 gap-2 bg-white border-input text-muted-foreground"
                     >
                       <ArrowUpDown className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">정렬</span>
@@ -559,7 +559,7 @@ export default function LibraryPage() {
                         setSortBy("updatedAt");
                         setSortOrder("desc");
                       }}
-                      className={sortBy === "updatedAt" ? "bg-sage-50" : ""}
+                      className={sortBy === "updatedAt" ? "bg-mocha-50" : ""}
                     >
                       최근 수정순
                     </DropdownMenuItem>
@@ -568,7 +568,7 @@ export default function LibraryPage() {
                         setSortBy("createdAt");
                         setSortOrder("desc");
                       }}
-                      className={sortBy === "createdAt" ? "bg-sage-50" : ""}
+                      className={sortBy === "createdAt" ? "bg-mocha-50" : ""}
                     >
                       생성일순
                     </DropdownMenuItem>
@@ -577,7 +577,7 @@ export default function LibraryPage() {
                         setSortBy("title");
                         setSortOrder("asc");
                       }}
-                      className={sortBy === "title" ? "bg-sage-50" : ""}
+                      className={sortBy === "title" ? "bg-mocha-50" : ""}
                     >
                       이름순
                     </DropdownMenuItem>
@@ -590,7 +590,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-stone-200 text-stone-600"
+                    !isEditMode && "bg-white border-input text-muted-foreground"
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -607,32 +607,28 @@ export default function LibraryPage() {
                   )}
                 </Button>
 
-                <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
-
-                <div className="flex items-center rounded-full border border-stone-200 bg-white p-1">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
-                      viewMode === "grid"
-                        ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
-                    )}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-sage-200",
-                      viewMode === "list"
-                        ? "bg-sage-500 text-white shadow-sm"
-                        : "text-muted-foreground hover:text-sage-600"
-                    )}
-                  >
-                    <List className="h-4 w-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
+                    viewMode === "grid"
+                      ? "bg-mocha-500 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-mocha-600"
+                  )}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
+                    viewMode === "list"
+                      ? "bg-mocha-500 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-mocha-600"
+                  )}
+                >
+                  <List className="h-4 w-4" />
+                </button>
 
                 <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
 
@@ -641,9 +637,9 @@ export default function LibraryPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 w-9 rounded-full bg-sage-100 hover:bg-sage-200"
+                      className="h-9 w-9 rounded-full bg-mocha-100 hover:bg-mocha-200"
                     >
-                      <User className="h-4 w-4 text-sage-700" />
+                      <User className="h-4 w-4 text-mocha-700" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -675,7 +671,7 @@ export default function LibraryPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="제목으로 검색..."
-                className="pl-9 h-10 w-full bg-white border-stone-200 focus:bg-white transition-all text-sm"
+                className="pl-9 h-10 w-full bg-white border-input focus:bg-white transition-all text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -690,7 +686,7 @@ export default function LibraryPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h2 className="text-2xl font-heading font-bold text-ink inline-block brush-underline pb-1">
+          <h2 className="text-2xl font-heading font-bold text-foreground inline-block brush-underline pb-1">
             내 서재
           </h2>
         </motion.div>
@@ -724,10 +720,10 @@ export default function LibraryPage() {
                 variants={itemVariants}
                 className="h-full min-h-[320px]"
               >
-                <div className="bg-white rounded-xl border border-stone-200 p-6 h-full animate-pulse">
-                  <div className="h-32 bg-stone-200 rounded mb-4"></div>
-                  <div className="h-4 bg-stone-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-stone-200 rounded w-1/2"></div>
+                <div className="bg-white rounded-xl border border-input p-6 h-full animate-pulse">
+                  <div className="h-32 bg-muted rounded mb-4"></div>
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
                 </div>
               </motion.div>
             ))
@@ -736,10 +732,12 @@ export default function LibraryPage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-400">
                 <FileText className="h-8 w-8" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900">
+              <h3 className="text-lg font-semibold text-foreground">
                 프로젝트를 불러오는데 실패했습니다
               </h3>
-              <p className="text-stone-500">잠시 후 다시 시도해주세요.</p>
+              <p className="text-muted-foreground">
+                잠시 후 다시 시도해주세요.
+              </p>
             </div>
           ) : (
             filteredProjects.map((project) => (
@@ -794,10 +792,10 @@ export default function LibraryPage() {
 
         {filteredProjects.length === 0 && searchQuery && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4 text-stone-400">
+            <div className="w-16 h-16 bg-cloud-50 rounded-full flex items-center justify-center mb-4 text-muted-foreground">
               <Search className="h-8 w-8" />
             </div>
-            <h3 className="text-lg font-semibold text-stone-900">
+            <h3 className="text-lg font-semibold text-foreground">
               검색 결과가 없습니다
             </h3>
             <p className="text-stone-500">다른 검색어로 시도해보세요.</p>

@@ -69,20 +69,20 @@ export default function AIAssistantPanel() {
             key={message.id}
             className={cn(
               "flex gap-2",
-              message.role === "user" ? "flex-row-reverse" : "",
+              message.role === "user" ? "flex-row-reverse" : ""
             )}
           >
             {message.role === "assistant" && (
-              <div className="w-6 h-6 rounded-full bg-sage-100 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-sage-600" />
+              <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center flex-shrink-0">
+                <Bot className="h-4 w-4 text-mocha-600" />
               </div>
             )}
             <div
               className={cn(
                 "rounded-lg px-3 py-2 text-sm max-w-[85%]",
                 message.role === "user"
-                  ? "bg-sage-500 text-white"
-                  : "bg-muted text-foreground",
+                  ? "bg-mocha-500 text-white"
+                  : "bg-muted text-foreground"
               )}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -92,14 +92,14 @@ export default function AIAssistantPanel() {
 
         {isLoading && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-sage-100 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-sage-600" />
+            <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-mocha-600" />
             </div>
             <div className="bg-muted rounded-lg px-3 py-2">
               <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce [animation-delay:0.1s]" />
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce [animation-delay:0.2s]" />
+                <div className="w-2 h-2 rounded-full bg-mocha-400 animate-bounce" />
+                <div className="w-2 h-2 rounded-full bg-mocha-400 animate-bounce [animation-delay:0.1s]" />
+                <div className="w-2 h-2 rounded-full bg-mocha-400 animate-bounce [animation-delay:0.2s]" />
               </div>
             </div>
           </div>

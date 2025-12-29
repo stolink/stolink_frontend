@@ -13,8 +13,8 @@ export function Footer({ className = "" }: FooterProps) {
   return (
     <footer className={`bg-paper mt-auto ${className}`}>
       {/* Ver.4: 붓터치 형태의 상단 구분선 */}
-      <BrushStrokeDivider className="text-stone-300" height={10} />
-      <div className="py-6 px-6 border-t border-stone-100/50">
+      <BrushStrokeDivider className="text-border" height={10} />
+      <div className="py-6 px-6 border-t border-border/50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img
@@ -22,13 +22,13 @@ export function Footer({ className = "" }: FooterProps) {
               alt="Sto-Link"
               className="h-8 w-auto opacity-60"
             />
-            <span className="text-stone-400 text-xs">v1.0.0</span>
+            <span className="text-muted-foreground text-xs">v1.0.0</span>
           </div>
-          <div className="flex items-center gap-6 text-stone-400 text-xs">
-            <a href="#" className="hover:text-stone-600 transition-colors">
+          <div className="flex items-center gap-6 text-muted-foreground text-xs">
+            <a href="#" className="hover:text-foreground transition-colors">
               이용약관
             </a>
-            <a href="#" className="hover:text-stone-600 transition-colors">
+            <a href="#" className="hover:text-foreground transition-colors">
               개인정보처리방침
             </a>
             <span>© 2024 StoLink</span>

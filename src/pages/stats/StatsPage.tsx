@@ -54,11 +54,11 @@ export default function StatsPage() {
 
   // 히트맵 색상 결정
   const getLevelColor = (count: number) => {
-    if (count === 0) return "bg-stone-100";
-    if (count < dailyGoal * 0.25) return "bg-sage-200";
-    if (count < dailyGoal * 0.5) return "bg-sage-300";
-    if (count < dailyGoal * 1.0) return "bg-sage-400";
-    return "bg-sage-600";
+    if (count === 0) return "bg-cloud-50";
+    if (count < dailyGoal * 0.25) return "bg-mocha-400/20";
+    if (count < dailyGoal * 0.5) return "bg-mocha-400/50";
+    if (count < dailyGoal * 1.0) return "bg-mocha-500";
+    return "bg-mocha-700";
   };
 
   // 주 단위로 데이터 그룹화 (히트맵 그리드용 - ProductivityDashboard 로직 재사용)
@@ -109,9 +109,9 @@ export default function StatsPage() {
         {/* Goal & Streak Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 일일 목표 */}
-          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm relative overflow-hidden">
+          <div className="bg-white p-6 rounded-xl border border-border shadow-sm relative overflow-hidden">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2 text-stone-500">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Target className="w-5 h-5" />
                 <span className="text-sm font-semibold uppercase tracking-wider">
                   오늘 목표
@@ -123,12 +123,12 @@ export default function StatsPage() {
                     type="number"
                     value={tempGoal}
                     onChange={(e) => setTempGoal(e.target.value)}
-                    className="w-20 h-8 text-sm border border-sage-300 rounded px-2 focus:outline-none focus:ring-2 focus:ring-sage-500"
+                    className="w-20 h-8 text-sm border border-mocha-400 rounded px-2 focus:outline-none focus:ring-2 focus:ring-mocha-500"
                     autoFocus
                   />
                   <button
                     onClick={handleSaveGoal}
-                    className="text-sm text-sage-600 font-bold hover:underline"
+                    className="text-sm text-mocha-700 font-bold hover:underline"
                   >
                     저장
                   </button>
@@ -139,7 +139,7 @@ export default function StatsPage() {
                     setTempGoal(dailyGoal.toString());
                     setIsEditingGoal(true);
                   }}
-                  className="text-xs text-stone-400 hover:text-stone-600 transition-colors px-2 py-1 rounded hover:bg-stone-100"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-cloud-50"
                 >
                   목표 수정
                 </button>
@@ -147,33 +147,35 @@ export default function StatsPage() {
             </div>
 
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-4xl font-bold text-stone-800">
+              <span className="text-4xl font-bold text-foreground">
                 {todayCount.toLocaleString()}
               </span>
-              <span className="text-lg text-stone-500">
+              <span className="text-lg text-muted-foreground">
                 / {dailyGoal.toLocaleString()}자
               </span>
             </div>
 
             {/* 프로그레스 바 */}
-            <div className="mt-4 h-3 bg-stone-100 rounded-full overflow-hidden">
+            <div className="mt-4 h-3 bg-cloud-50 rounded-full overflow-hidden">
               <div
-                className="h-full bg-sage-500 rounded-full transition-all duration-500 ease-out"
+                className="h-full bg-mocha-500 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-sm text-stone-500 mt-2 text-right font-medium">
+            <p className="text-sm text-muted-foreground mt-2 text-right font-medium">
               {progress}% 달성
             </p>
           </div>
 
           {/* 스트릭 */}
-          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-2 text-stone-500 mb-2">
+          <div className="bg-white p-6 rounded-xl border border-border shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
               <Flame
                 className={cn(
                   "w-5 h-5",
-                  currentStreak > 0 ? "text-amber-500" : "text-stone-400"
+                  currentStreak > 0
+                    ? "text-status-warning"
+                    : "text-muted-foreground"
                 )}
               />
               <span className="text-sm font-semibold uppercase tracking-wider">
@@ -181,31 +183,33 @@ export default function StatsPage() {
               </span>
             </div>
             <div>
-              <span className="text-4xl font-bold text-stone-800">
+              <span className="text-4xl font-bold text-foreground">
                 {currentStreak}
               </span>
-              <span className="text-lg text-stone-500 ml-1">일 연속</span>
+              <span className="text-lg text-muted-foreground ml-1">
+                일 연속
+              </span>
             </div>
-            <p className="text-sm text-stone-400 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               매일 조금이라도 써보세요!
             </p>
           </div>
 
           {/* 최장 기록 */}
-          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-2 text-stone-500 mb-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+          <div className="bg-white p-6 rounded-xl border border-border shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <Trophy className="w-5 h-5 text-status-warning" />
               <span className="text-sm font-semibold uppercase tracking-wider">
                 최장 기록
               </span>
             </div>
             <div>
-              <span className="text-4xl font-bold text-stone-800">
+              <span className="text-4xl font-bold text-foreground">
                 {longestStreak}
               </span>
-              <span className="text-lg text-stone-500 ml-1">일</span>
+              <span className="text-lg text-muted-foreground ml-1">일</span>
             </div>
-            <p className="text-sm text-stone-400 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               나의 최고 기록을 깨보세요
             </p>
           </div>
@@ -216,17 +220,17 @@ export default function StatsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-stone-500" />
+                <Calendar className="w-5 h-5 text-muted-foreground" />
                 연간 집필 히트맵
               </CardTitle>
-              <div className="flex items-center gap-1 text-xs text-stone-400">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span>적음</span>
                 <div className="flex gap-0.5 mx-1">
-                  <div className="w-3 h-3 bg-stone-100 rounded-sm" />
-                  <div className="w-3 h-3 bg-sage-200 rounded-sm" />
-                  <div className="w-3 h-3 bg-sage-300 rounded-sm" />
-                  <div className="w-3 h-3 bg-sage-400 rounded-sm" />
-                  <div className="w-3 h-3 bg-sage-600 rounded-sm" />
+                  <div className="w-3 h-3 bg-cloud-50 rounded-sm" />
+                  <div className="w-3 h-3 bg-mocha-400/20 rounded-sm" />
+                  <div className="w-3 h-3 bg-mocha-400/50 rounded-sm" />
+                  <div className="w-3 h-3 bg-mocha-500 rounded-sm" />
+                  <div className="w-3 h-3 bg-mocha-700 rounded-sm" />
                 </div>
                 <span>많음</span>
               </div>
@@ -248,12 +252,12 @@ export default function StatsPage() {
                       >
                         {day.date && (
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 pointer-events-none whitespace-nowrap">
-                            <div className="bg-stone-800 text-white text-[10px] py-1 px-2 rounded flex items-center gap-1.5 shadow-xl">
+                            <div className="bg-espresso-900 text-white text-[10px] py-1 px-2 rounded flex items-center gap-1.5 shadow-xl">
                               <span className="font-medium">{day.date}</span>
-                              <span className="w-px h-2 bg-stone-600" />
+                              <span className="w-px h-2 bg-mocha-400" />
                               <span>{day.count.toLocaleString()}자</span>
                             </div>
-                            <div className="w-2 h-2 bg-stone-800 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
+                            <div className="w-2 h-2 bg-espresso-900 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2" />
                           </div>
                         )}
                       </div>
@@ -261,7 +265,7 @@ export default function StatsPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex justify-between text-xs text-stone-400 px-4">
+              <div className="mt-4 flex justify-between text-xs text-muted-foreground px-4">
                 <span>1년 전</span>
                 <span>오늘</span>
               </div>

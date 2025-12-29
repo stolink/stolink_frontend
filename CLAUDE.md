@@ -22,44 +22,43 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 
 <design_system>
 
-<!-- 인지 피로도 최소화 및 공학적 대비를 반영한 컬러 시스템 -->
+<!-- Mocha & Cloud Dancer Design System -->
 
-## Primary Palette
+## Target Color Palette
 
-| 이름      | HEX     | 용도                             | 대비비 (WCAG) |
-| --------- | ------- | -------------------------------- | ------------- |
-| Sage 500  | #5F7D5F | Primary 브랜드 색상 (버튼, 링크) | 4.5:1 (AA)    |
-| Sage 400  | #82A182 | Hover 상태 (형광 제거)           | -             |
-| Sage 700  | #3E523E | Dark 상태 (깊이감)               | 7:1 (AAA)     |
-| Stone 50  | #F8F8F7 | 배경 (Off-white, 눈 피로 감소)   | -             |
-| Stone 800 | #2D2A28 | 본문 텍스트 (잉크 번짐 방지)     | 13.5:1 (AAA)  |
-| Paper     | #F8F8F7 | 종이 질감 배경                   | -             |
-| Ink       | #2D2A28 | 텍스트 (가독성 최적화)           | 13.5:1 (AAA)  |
+### Primary (Mocha) & Surface (Cloud)
 
-## Relationship Colors (서사적 깊이)
+| 이름 (Token) | HEX     | 용도 및 특징               |
+| ------------ | ------- | -------------------------- |
+| Mocha 500    | #A47764 | 핵심 브랜드 색상           |
+| Mocha 400    | #BD9B8D | Hover 상태 (고휘도)        |
+| Mocha 700    | #7D5A4B | Dark/Active 상태           |
+| Cloud 50     | #F1F0EC | 메인 배경색 (Cloud Dancer) |
+| Espresso 900 | #3D302A | 본문 텍스트                |
 
-| 관계 유형 | HEX     | 설명                | 설계 전략               |
-| --------- | ------- | ------------------- | ----------------------- |
-| friendly  | #4B9F7D | 친밀 (Emerald 계열) | 신뢰감, 차분한 녹색     |
-| hostile   | #B14B4B | 적대 (Russet Red)   | 위기감, 톤 다운된 레드  |
-| romance   | #C4718A | 로맨스 (Muted Rose) | 성숙한 로맨스 상징      |
-| family    | #4A4E5A | 가족 (Deep Slate)   | 깊이 있는 네이비 그레이 |
-| neutral   | #8B929E | 중립 (Sharkskin)    | 명확한 존재감           |
+### Status Colors
 
-## Status Colors (즉각 피드백)
+| 이름    | HEX     | 용도                    |
+| ------- | ------- | ----------------------- |
+| Success | #5B7B4B | 성공/긍정 피드백        |
+| Warning | #B8860B | 경고 (가독성 확보 골드) |
+| Error   | #A33A3A | 오류 (공학용 레드)      |
 
-| 상태    | HEX     | 가시성 기준                       |
-| ------- | ------- | --------------------------------- |
-| success | #45A049 | Sage 50 배경에서 3:1 이상 대비    |
-| warning | #D9A406 | 흰색 텍스트와 함께 사용 시 가독성 |
-| error   | #D32F2F | 표준 공학용 레드 (잔상 최소화)    |
+### Relationship Colors (서사적 깊이)
 
-## 설계 원칙
+| 관계 유형 | HEX     | 설명            |
+| --------- | ------- | --------------- |
+| Friendly  | #7A8C6F | Muted Olive     |
+| Hostile   | #9C4A3F | Rust Red        |
+| Romance   | #B38B82 | Dusty Rose      |
+| Family    | #4F5861 | Steel Blue-Grey |
+| Neutral   | #8D8B88 | Warm Grey       |
 
-- **인지 부하 최소화**: 형광톤 제거, Munsell 중채도 영역 사용
-- **공학적 대비**: WCAG AAA (7:1) 이상 본문 텍스트
-- **장시간 집중**: 종이 질감(Paper) 배경으로 눈의 피로 감소
-- **서사적 일관성**: Pantone 기반 감정 색조로 스토리텔링 지원
+## 디자인 원칙
+
+- **Warm & Soft**: Mocha와 Cloud Colors를 사용하여 따뜻하고 부드러운 분위기 연출
+- **가독성 확보**: Cloud Dancer 배경 위 Espresso 900 텍스트로 12:1 이상 명도 대비 확보
+- **일관성**: 모든 UI 요소는 새로운 색체계를 준수하여 시각적 통일성 유지
 
 </design_system>
 
