@@ -12,59 +12,74 @@
 @layer base {
   :root,
   .theme-light {
-    /* Paper: #F8F8F7 (hsl(40 7% 97%)) */
-    /* Ink: #2D2A28 (hsl(20 6% 17%)) */
-    --background: 40 7% 97%;
-    --foreground: 20 6% 17%;
+    /* Cloud 50: #F1F0EC (hsl(48 15% 94%)) */
+    /* Espresso 900: #3D302A (hsl(19 18% 20%)) */
+    --background: 48 15% 94%;
+    --foreground: 19 18% 20%;
 
-    --card: 40 7% 97%;
-    --card-foreground: 20 6% 17%;
+    --card: 48 15% 94%;
+    --card-foreground: 19 18% 20%;
 
-    --popover: 40 7% 97%;
-    --popover-foreground: 20 6% 17%;
+    --popover: 48 15% 94%;
+    --popover-foreground: 19 18% 20%;
 
-    --primary: 120 14% 43%;
-    --primary-foreground: 40 7% 97%;
+    /* Mocha 500: #A47764 (hsl(26 25% 55%)) replaced with calculated 18 26 52 approx, using slightly adjusted values for better match if needed, but sticking to logic:
+       #A47764 -> H:18 S:26 L:52 */
+    --primary: 18 26% 52%;
+    --primary-foreground: 48 15% 94%;
 
-    --secondary: 40 4.8% 95.9%;
-    --secondary-foreground: 20 6% 17%;
+    /* Mocha 100/Cloud 200 equivalent for secondary */
+    --secondary: 48 15% 90%;
+    --secondary-foreground: 19 18% 20%;
 
-    --muted: 40 5% 96%;
-    --muted-foreground: 25 5% 45%;
+    --muted: 48 15% 90%;
+    --muted-foreground: 19 18% 40%;
 
-    --accent: 40 4.8% 95.9%;
-    --accent-foreground: 20 6% 17%;
+    --accent: 48 15% 90%;
+    --accent-foreground: 19 18% 20%;
 
-    --destructive: 0 62% 51%;
-    --destructive-foreground: 40 7% 97%;
+    /* Error #A33A3A */
+    --destructive: 0 47% 43%;
+    --destructive-foreground: 48 15% 94%;
 
-    --border: 20 6% 90%;
-    --input: 20 6% 90%;
-    --ring: 120 14% 43%;
+    /* Mocha 200? Or just darker Cloud: #BD9B8D is Mocha 400.
+       Let's use a soft border. #D6D3D1 (Stone 300) was used.
+       Let's use Neutral #8D8B88 -> H:40 S:2 L:55 */
+    --border: 40 2% 85%;
+    --input: 40 2% 85%;
+    --ring: 18 26% 52%;
     --radius: 0.5rem;
   }
 
   /* Theme: Dark (#2D2D2D bg, #E5E5E5 text) */
+  /* Theme: Dark (Mocha 700 base)
+     Mocha 700: #7D5A4B -> H:18 S:25 L:39
+     Background should be dark. Let's use Espresso 900 as background?
+     Or just a standard Dark Mode adaptation.
+     Instruction said: Mocha 700 is Dark/Active state.
+     Let's map Dark Theme to use Espresso 900 as bg.
+     #3D302A -> 19 18% 20%
+  */
   .theme-dark {
-    --background: 0 0% 18%;
-    --foreground: 0 0% 90%;
-    --card: 0 0% 20%;
-    --card-foreground: 0 0% 90%;
-    --popover: 0 0% 20%;
-    --popover-foreground: 0 0% 90%;
-    --primary: 115 16% 49%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 22%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 0 0% 22%;
-    --muted-foreground: 0 0% 80%;
-    --accent: 0 0% 28%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 90%;
-    --border: 0 0% 32%;
-    --input: 0 0% 28%;
-    --ring: 115 16% 49%;
+    --background: 19 18% 15%;
+    --foreground: 48 15% 90%;
+    --card: 19 18% 18%;
+    --card-foreground: 48 15% 90%;
+    --popover: 19 18% 18%;
+    --popover-foreground: 48 15% 90%;
+    --primary: 18 26% 52%;
+    --primary-foreground: 48 15% 94%;
+    --secondary: 19 18% 25%;
+    --secondary-foreground: 48 15% 90%;
+    --muted: 19 18% 25%;
+    --muted-foreground: 48 15% 70%;
+    --accent: 19 18% 25%;
+    --accent-foreground: 48 15% 90%;
+    --destructive: 0 47% 43%;
+    --destructive-foreground: 48 15% 90%;
+    --border: 19 18% 30%;
+    --input: 19 18% 30%;
+    --ring: 18 26% 52%;
   }
 
   /* Theme: Sepia (#F4ECD8 bg, #5C4033 text) */

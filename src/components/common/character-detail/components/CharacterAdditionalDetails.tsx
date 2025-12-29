@@ -23,8 +23,8 @@ export function CharacterAdditionalDetails({
   if (filteredExtras.length === 0) return null;
 
   return (
-    <div className="mt-8 pt-8 border-t border-stone-200">
-      <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+    <div className="mt-8 pt-8 border-t border-border">
+      <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
         <Sparkles className="h-4 w-4" /> Additional Details
       </h3>
       <div className="max-h-[320px] overflow-y-auto pr-1">
@@ -32,12 +32,12 @@ export function CharacterAdditionalDetails({
           {filteredExtras.map(([key, value]) => (
             <div
               key={key}
-              className="p-3 bg-stone-50 rounded-lg border border-stone-100"
+              className="p-3 bg-cloud-50 rounded-lg border border-input"
             >
-              <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
                 {key}
               </p>
-              <p className="text-sm font-medium text-stone-700 truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {Array.isArray(value) ? value.join(", ") : String(value)}
               </p>
             </div>

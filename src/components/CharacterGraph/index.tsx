@@ -14,6 +14,7 @@ import { useResize } from "@/hooks/useCharacterGraphResize";
 import { GROUP_COLORS } from "./constants";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
+import { TiledBackground } from "./TiledBackground";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -82,7 +83,7 @@ export function CharacterGraph({
   const { nodes, links, reheat, simulation } = useForceSimulation(
     initialNodes,
     initialLinks,
-    { width, height, enableGrouping },
+    { width, height, enableGrouping }
   );
 
   /**
@@ -98,12 +99,12 @@ export function CharacterGraph({
         if (g) acc[g] = (acc[g] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     // 2. 멤버가 1명 이상인 그룹만 추출합니다.
     const activeGroups = Object.keys(groupCounts).filter(
-      (groupName) => groupCounts[groupName] > 0,
+      (groupName) => groupCounts[groupName] > 0
     );
 
     return activeGroups.map((group, index) => ({
@@ -149,7 +150,7 @@ export function CharacterGraph({
       // Update Nodes
       g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
         "transform",
-        (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
+        (d) => (d ? `translate(${d.x}, ${d.y})` : "")
       );
 
       // 2. 부가 연산 업데이트 (스로틀링 적용 - 30fps)
@@ -279,7 +280,7 @@ export function CharacterGraph({
     };
   }, [simulation, enableGrouping, groupConfig]);
 
-  useZoom(svgRef, gRef);
+  const { zoomState, resetZoom } = useZoom(svgRef, gRef);
   const { dragBehavior } = useDrag({ reheat });
 
   const connectedNodeIds = useMemo(() => {
@@ -304,27 +305,25 @@ export function CharacterGraph({
       const char = characters.find((c) => c.id === node.id);
       if (char && onNodeClick) onNodeClick(char);
     },
-    [characters, onNodeClick],
+    [characters, onNodeClick]
   );
 
   const handleNodeHover = useCallback(
     (id: string | null) => setHoveredNodeId(id),
-    [],
+    []
   );
 
   return (
     <div ref={containerRef} className={cn("w-full h-full relative", className)}>
+      <TiledBackground
+        zoomState={zoomState}
+        className="absolute inset-0 z-0 pointer-events-none"
+      />
       <svg
         ref={svgRef}
         width={width}
         height={height}
-        className="cursor-grab active:cursor-grabbing"
-        style={{
-          backgroundColor: "#F8F8F7",
-          backgroundImage:
-            "linear-gradient(to right, rgba(215, 211, 209, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(215, 211, 209, 0.15) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
+        className="cursor-grab active:cursor-grabbing relative z-10"
       >
         <g ref={gRef}>
           {enableGrouping && (

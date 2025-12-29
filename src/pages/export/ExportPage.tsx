@@ -107,8 +107,8 @@ export default function ExportPage() {
       title: "텍스트 (TXT)",
       description: "순수 텍스트 파일",
       icon: FileText,
-      color: "text-stone-500",
-      bgColor: "bg-stone-50",
+      color: "text-muted-foreground",
+      bgColor: "bg-cloud-50",
     },
     {
       id: "markdown",
@@ -406,14 +406,14 @@ export default function ExportPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Download className="h-6 w-6 text-sage-500" />
+            <Download className="h-6 w-6 text-mocha-500" />
             내보내기 / 가져오기
           </h1>
           <p className="text-muted-foreground mt-1">
             작품을 다양한 형식으로 내보내거나 백업 파일을 가져오세요
           </p>
           {projectDocuments.length > 0 && (
-            <p className="text-sm text-stone-500 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               📄 {projectDocuments.filter((d) => d.type === "text").length}개
               문서 준비됨
             </p>
@@ -440,11 +440,11 @@ export default function ExportPage() {
                   disabled={
                     format.disabled || exportStatus[format.id] === "loading"
                   }
-                  className={`p-4 rounded-xl border-2 border-stone-200 hover:border-sage-300
+                  className={`p-4 rounded-xl border-2 border-input hover:border-mocha-300
                            hover:shadow-md transition-all text-left group
                            ${format.disabled ? "opacity-50 cursor-not-allowed" : ""}
-                           ${exportStatus[format.id] === "success" ? "border-green-300 bg-green-50/50" : ""}
-                           ${exportStatus[format.id] === "error" ? "border-red-300 bg-red-50/50" : ""}`}
+                           ${exportStatus[format.id] === "success" ? "border-status-success/50 bg-status-success/10" : ""}
+                           ${exportStatus[format.id] === "error" ? "border-status-error/50 bg-status-error/10" : ""}`}
                 >
                   <div
                     className={`w-12 h-12 ${format.bgColor} rounded-xl flex items-center justify-center mb-3
@@ -491,21 +491,19 @@ export default function ExportPage() {
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8
                         text-center transition-colors cursor-pointer
-                        ${importStatus === "success" ? "border-green-400 bg-green-50/50" : ""}
-                        ${importStatus === "error" ? "border-red-400 bg-red-50/50" : ""}
-                        ${importStatus === "idle" ? "border-stone-300 hover:border-sage-400 hover:bg-sage-50/50" : ""}
-                        ${importStatus === "loading" ? "border-sage-400 bg-sage-50/50" : ""}`}
+                        ${importStatus === "success" ? "border-status-success/50 bg-status-success/10" : ""}
+                        ${importStatus === "error" ? "border-status-error/50 bg-status-error/10" : ""}
+                        ${importStatus === "idle" ? "border-muted-foreground/30 hover:border-mocha-400 hover:bg-mocha-400/10" : ""}
+                        ${importStatus === "loading" ? "border-mocha-400 bg-mocha-400/10" : ""}`}
             >
-              <div className="w-16 h-16 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                {importStatus === "loading" ? (
-                  <Loader2 className="h-8 w-8 text-sage-500 animate-spin" />
-                ) : importStatus === "success" ? (
-                  <Check className="h-8 w-8 text-green-500" />
-                ) : importStatus === "error" ? (
-                  <AlertCircle className="h-8 w-8 text-red-500" />
-                ) : (
-                  <Archive className="h-8 w-8 text-stone-400" />
-                )}
+              <div className="w-16 h-16 bg-cloud-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  ) : importStatus === "success" ? (
+                    <Check className="h-8 w-8 text-status-success" />
+                  ) : importStatus === "error" ? (
+                    <AlertCircle className="h-8 w-8 text-status-error" />
+                  ) : (
+                    <Archive className="h-8 w-8 text-muted-foreground" />
+                  )}
               </div>
 
               {importStatus === "success" ? (

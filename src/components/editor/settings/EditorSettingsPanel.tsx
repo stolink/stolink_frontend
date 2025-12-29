@@ -216,7 +216,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                 max={32}
                 value={typography.fontSize}
                 onChange={(e) => setFontSize(parseInt(e.target.value))}
-                className="flex-1 h-2 accent-sage-500"
+                className="flex-1 h-2 accent-mocha-500"
               />
               <Button
                 variant="outline"
@@ -242,7 +242,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
               step={0.1}
               value={typography.lineHeight}
               onChange={(e) => setLineHeight(parseFloat(e.target.value))}
-              className="w-full h-2 accent-sage-500"
+              className="w-full h-2 accent-mocha-500"
             />
           </div>
 
@@ -259,7 +259,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
               step={0.5}
               value={typography.indent}
               onChange={(e) => setIndent(parseFloat(e.target.value))}
-              className="w-full h-2 accent-sage-500"
+              className="w-full h-2 accent-mocha-500"
             />
           </div>
         </TabsContent>
@@ -276,7 +276,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                   pressed={visual.theme === theme.value}
                   onPressedChange={() => setTheme(theme.value)}
                   size="sm"
-                  className="flex flex-col items-center gap-0.5 h-auto py-2 data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
                 >
                   <span className="text-sm font-medium">{theme.label}</span>
                   <span className="text-xs text-muted-foreground">
@@ -299,7 +299,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                   pressed={visual.width === width.value}
                   onPressedChange={() => setEditorWidth(width.value)}
                   size="sm"
-                  className="flex flex-col items-center gap-0.5 h-auto py-2 text-sm data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 text-sm data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
                 >
                   <span className="font-medium">{width.label}</span>
                   <span className="text-xs text-muted-foreground">
@@ -319,7 +319,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
               pressed={visual.highlightCurrentLine}
               onPressedChange={setHighlightCurrentLine}
               size="sm"
-              className="data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+              className="data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
             >
               {visual.highlightCurrentLine ? "켜짐" : "꺼짐"}
             </Toggle>
@@ -342,7 +342,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                   pressed={behavior.smartQuotes}
                   onPressedChange={setSmartQuotes}
                   size="sm"
-                  className="data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+                  className="data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
                 >
                   {behavior.smartQuotes ? "켜짐" : "꺼짐"}
                 </Toggle>
@@ -356,7 +356,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                   pressed={behavior.smartDashes}
                   onPressedChange={setSmartDashes}
                   size="sm"
-                  className="data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+                  className="data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
                 >
                   {behavior.smartDashes ? "켜짐" : "꺼짐"}
                 </Toggle>
@@ -370,7 +370,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                   pressed={behavior.smartEllipsis}
                   onPressedChange={setSmartEllipsis}
                   size="sm"
-                  className="data-[state=on]:bg-sage-100 data-[state=on]:text-sage-700"
+                  className="data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
                 >
                   {behavior.smartEllipsis ? "켜짐" : "꺼짐"}
                 </Toggle>

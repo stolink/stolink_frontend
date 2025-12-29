@@ -55,8 +55,8 @@ function App() {
         <BrowserRouter>
           <Suspense
             fallback={
-              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-sage-600 font-serif gap-4">
-                <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
+              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
+                <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
                 <p>Loading...</p>
               </div>
             }

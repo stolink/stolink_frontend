@@ -5,7 +5,7 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-sage-500 text-white shadow hover:bg-sage-600",
+        default: "bg-mocha-500 text-white shadow hover:bg-mocha-400",
         destructive:
           "bg-status-error text-white shadow-sm hover:bg-status-error/90",
         outline:
@@ -13,7 +13,7 @@ export const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-sage-500 underline-offset-4 hover:underline",
+        link: "text-mocha-500 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-5 py-2",
@@ -26,5 +26,5 @@ export const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  },
+  }
 );

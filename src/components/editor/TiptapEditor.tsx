@@ -460,8 +460,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           style={
             {
               backgroundColor:
-                cssVariables["--st-editor-bg-color"] || "#F8F8F7",
-              color: cssVariables["--st-editor-text-color"] || "#2D2A28",
+                cssVariables["--st-editor-bg-color"] || "#F1F0EC",
+              color: cssVariables["--st-editor-text-color"] || "#3D302A",
               "--st-editor-text-indent":
                 cssVariables["--st-editor-text-indent"],
               "--st-editor-paragraph-spacing":
@@ -518,7 +518,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                   value={zoom}
                   onChange={(e) => setZoom(parseInt(e.target.value))}
                   aria-label={`확대/축소: ${zoom}%`}
-                  className="w-16 h-1 accent-sage-500 cursor-pointer"
+                  className="w-16 h-1 accent-mocha-500 cursor-pointer"
                 />
                 <button
                   onClick={handleZoomIn}

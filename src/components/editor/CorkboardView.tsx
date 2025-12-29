@@ -267,7 +267,7 @@ export default function CorkboardView({
               <div
                 className={cn(
                   "w-2 h-2 rounded-full",
-                  card.synopsis ? "bg-green-400" : "bg-stone-300"
+                  card.synopsis ? "bg-status-success" : "bg-muted"
                 )}
                 title={card.synopsis ? "시놉시스 있음" : "시놉시스 없음"}
               />
