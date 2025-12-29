@@ -239,20 +239,12 @@ export function ChapterTree({
       if (overNode.type === "chapter" || overNode.type === "part") {
         setDropIndicator({ id: overId, position: "inside" });
       } else {
-        // 섹션인 경우: 드래그 중인 아이템의 현재 위치로 before/after 결정
-        const overRect = over.rect;
-        const activeRect = active.rect.current.translated;
-
-        if (overRect && activeRect) {
-          // 드래그 중인 아이템의 중심점이 타겟의 중심보다 위에 있으면 before
-          const activeCenterY = activeRect.top + activeRect.height / 2;
-          const overCenterY = overRect.top + overRect.height / 2;
-          const position = activeCenterY < overCenterY ? "before" : "after";
-          setDropIndicator({ id: overId, position });
-        } else {
-          // Fallback: after로 처리
-          setDropIndicator({ id: overId, position: "after" });
-        }
+        // 섹션인 경우: 드래그 방향(delta.y)으로 before/after 결정
+        // delta.y > 0: 아래로 드래그 (after)
+        // delta.y < 0: 위로 드래그 (before)
+        const deltaY = event.delta?.y ?? 0;
+        const position = deltaY < 0 ? "before" : "after";
+        setDropIndicator({ id: overId, position });
       }
     },
     [chapters],

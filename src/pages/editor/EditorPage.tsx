@@ -538,7 +538,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 onReorderChapter={handleReorderChapter}
                 onMoveToFolder={handleMoveToFolder}
                 isOpen={true}
-                onToggle={() => { }}
               />
             </div>
           </div>

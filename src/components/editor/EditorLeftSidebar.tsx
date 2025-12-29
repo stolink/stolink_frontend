@@ -16,7 +16,7 @@ interface EditorLeftSidebarProps {
   onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
   onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
   isOpen: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
 }
 
 export default function EditorLeftSidebar({
@@ -37,7 +37,7 @@ export default function EditorLeftSidebar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggle}
+          onClick={() => onToggle?.()}
           className="text-muted-foreground hover:text-foreground"
           title="사이드바 열기"
         >
@@ -54,7 +54,7 @@ export default function EditorLeftSidebar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggle}
+          onClick={() => onToggle?.()}
           className="h-7 w-7 text-muted-foreground hover:text-foreground"
           title="사이드바 닫기"
         >
