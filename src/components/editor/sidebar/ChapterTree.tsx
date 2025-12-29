@@ -155,7 +155,9 @@ export function ChapterTree({
   } | null>(null);
 
   // 모두 접기/펼치기 상태 (undefined = 개별 제어, true/false = 강제 제어)
-  const [forceExpandAll, setForceExpandAll] = useState<boolean | undefined>(undefined);
+  const [forceExpandAll, setForceExpandAll] = useState<boolean | undefined>(
+    undefined,
+  );
 
   // DnD Sensors
   const sensors = useSensors(
@@ -242,6 +244,8 @@ export function ChapterTree({
         // 섹션인 경우: 드래그 방향(delta.y)으로 before/after 결정
         // delta.y > 0: 아래로 드래그 (after)
         // delta.y < 0: 위로 드래그 (before)
+        // TODO: (UX 개선) delta.y 대신 노드의 높이 중심(50%)을 기준으로 판단하면 더 직관적임.
+        // 이를 위해서는 dnd-kit의 over.rect 또는 collisions 정보를 활용해야 함.
         const deltaY = event.delta?.y ?? 0;
         const position = deltaY < 0 ? "before" : "after";
         setDropIndicator({ id: overId, position });

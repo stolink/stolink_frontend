@@ -51,15 +51,17 @@ export default function EditorLeftSidebar({
     <aside className="w-64 min-w-[240px] max-w-xs border-r border-border bg-background flex flex-col shrink-0">
       {/* Minimal Header - 닫기 버튼만 */}
       <div className="h-10 px-2 border-b border-border/50 flex items-center justify-end shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onToggle?.()}
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          title="사이드바 닫기"
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
+        {onToggle && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onToggle()}
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title="사이드바 닫기"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Chapter Tree */}
