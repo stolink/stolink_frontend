@@ -5,6 +5,7 @@ import {
   useDocumentStore,
   localDocumentRepository,
 } from "@/repositories/LocalDocumentRepository";
+import { useEditorStore } from "@/stores/useEditorStore";
 import type {
   Document,
   DocumentTreeNode,
@@ -271,24 +272,37 @@ export function useDocumentContent(id: string | null) {
 
 /**
  * Hook for bulk document content operations (Scrivenings view)
+ * 통합 뷰에서 여러 섹션의 내용을 한 번에 저장
  */
 export function useBulkDocumentContent() {
+  // 저장 상태를 전역 스토어에서 가져옴 (단일 뷰와 동일한 UI 표시)
+  const setSaveStatus = useEditorStore((state) => state.setSaveStatus);
+
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
+      if (Object.keys(updates).length === 0) return;
+
+      setSaveStatus("saving");
       try {
         const { _setBulkContent } = useDocumentStore.getState();
+        // 1. 로컬 상태 업데이트 (Zustand)
         _setBulkContent(updates);
 
+        // 2. 백엔드 API 호출 (여러 섹션 동시 저장)
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
             documentService.updateContent(id, content),
           ),
         );
+        // 3. 저장 상태 업데이트 (Zustand)
+        setSaveStatus("saved");
       } catch (error) {
-        console.error("Bulk save failed:", error);
+        console.error("[bulkSaveContent] Save failed:", error);
+        // 에러 시에도 saved로 설정 (unsaved로 두면 계속 저장 시도)
+        setSaveStatus("unsaved");
       }
     },
-    [],
+    [setSaveStatus],
   );
 
   return {

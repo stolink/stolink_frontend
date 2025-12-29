@@ -38,6 +38,7 @@ export interface EditorContentHandle {
     after: string;
     targetDocId?: string;
   } | null;
+  saveAll: () => Promise<void>; // 통합 뷰 저장 강제 호출용
 }
 
 /**
@@ -84,6 +85,12 @@ export const EditorContent = forwardRef<
           return scriveningsRef.current.getSplitContent();
         }
         return null;
+      },
+      // 통합 뷰 저장 강제 호출 (섹션 클릭 전 저장용)
+      saveAll: async () => {
+        if (viewMode === "scrivenings" && scriveningsRef.current) {
+          await scriveningsRef.current.saveAll();
+        }
       },
     }));
 
@@ -155,7 +162,7 @@ export const EditorContent = forwardRef<
                 </div>
                 <TiptapEditor
                   initialContent={currentContent}
-                  onUpdate={() => {}}
+                  onUpdate={() => { }}
                   readOnly
                   hideToolbar
                 />

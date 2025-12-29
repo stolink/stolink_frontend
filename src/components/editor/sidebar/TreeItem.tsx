@@ -37,6 +37,7 @@ interface TreeItemProps {
     position: "before" | "after" | "inside";
   } | null;
   activeId?: string | null;
+  forceExpanded?: boolean; // 모두 접기/펼치기 제어용
 }
 
 export const TreeItem = memo(function TreeItem({
@@ -53,6 +54,7 @@ export const TreeItem = memo(function TreeItem({
   onMoveToFolder,
   dropIndicator,
   activeId,
+  forceExpanded,
 }: TreeItemProps) {
   const hasChildren = (node.children?.length || 0) > 0;
   const isPart = node.type === "part";
@@ -133,6 +135,7 @@ export const TreeItem = memo(function TreeItem({
     isPart,
     onSelect,
     onRename,
+    forceExpanded,
   });
 
   // 2. 컨텍스트 메뉴 훅
@@ -186,9 +189,9 @@ export const TreeItem = memo(function TreeItem({
           isDragging && "shadow-lg ring-2 ring-sage-400 bg-card",
           // 폴더 드래그 오버 상태 - 강화된 하이라이트
           showDropInside &&
-            !isDragging &&
-            !isParentOfActive &&
-            "bg-emerald-100 ring-2 ring-emerald-500"
+          !isDragging &&
+          !isParentOfActive &&
+          "bg-emerald-100 ring-2 ring-emerald-500"
         )}
         style={{ marginLeft: `${level * 12}px` }}
         onClick={handleClick}
@@ -287,14 +290,15 @@ export const TreeItem = memo(function TreeItem({
 
         {/* Action buttons (hover) */}
         <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {isPart && onAddChild && (
+          {/* 폴더(chapter/part)에서만 섹션 추가 버튼 표시 */}
+          {isFolder && onAddChild && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onAddChild(node.id);
+                onAddChild(node.id, "section");
               }}
               className="p-1 hover:bg-sage-100 rounded transition-colors"
-              title="추가"
+              title="섹션 추가"
             >
               <Plus className="h-3.5 w-3.5 text-sage-600" />
             </button>
@@ -340,6 +344,7 @@ export const TreeItem = memo(function TreeItem({
                 onMoveToFolder={onMoveToFolder}
                 dropIndicator={dropIndicator}
                 activeId={activeId}
+                forceExpanded={forceExpanded}
               />
             ))}
           </div>

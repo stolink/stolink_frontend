@@ -4,7 +4,6 @@ import {
   Folder,
   Plus,
   X,
-  FilePlus,
   FolderPlus,
   ChevronsUpDown,
 } from "lucide-react";
@@ -155,6 +154,9 @@ export function ChapterTree({
     position: "before" | "after" | "inside";
   } | null>(null);
 
+  // 모두 접기/펼치기 상태 (undefined = 개별 제어, true/false = 강제 제어)
+  const [forceExpandAll, setForceExpandAll] = useState<boolean | undefined>(undefined);
+
   // DnD Sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -209,7 +211,7 @@ export function ChapterTree({
     setDropIndicator(null);
   };
 
-  // Drag Over Handler - 드롭 위치 감지
+  // Drag Over Handler - 드롭 위치 감지 (before/after 양방향 처리)
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
       const { over, active } = event;
@@ -237,8 +239,20 @@ export function ChapterTree({
       if (overNode.type === "chapter" || overNode.type === "part") {
         setDropIndicator({ id: overId, position: "inside" });
       } else {
-        // 섹션인 경우 -> 간단하게 after로 처리 (안정성 우선)
-        setDropIndicator({ id: overId, position: "after" });
+        // 섹션인 경우: 드래그 중인 아이템의 현재 위치로 before/after 결정
+        const overRect = over.rect;
+        const activeRect = active.rect.current.translated;
+
+        if (overRect && activeRect) {
+          // 드래그 중인 아이템의 중심점이 타겟의 중심보다 위에 있으면 before
+          const activeCenterY = activeRect.top + activeRect.height / 2;
+          const overCenterY = overRect.top + overRect.height / 2;
+          const position = activeCenterY < overCenterY ? "before" : "after";
+          setDropIndicator({ id: overId, position });
+        } else {
+          // Fallback: after로 처리
+          setDropIndicator({ id: overId, position: "after" });
+        }
       }
     },
     [chapters],
@@ -361,19 +375,11 @@ export function ChapterTree({
     setShowContainerMenu(true);
   };
 
-  // 컨테이너 컨텍스트 메뉴 아이템
+  // 컨테이너 컨텍스트 메뉴 아이템 - 최상위는 챕터(폴더)만 생성 가능
   const containerMenuItems: MenuItemType[] = [
     {
-      icon: FilePlus,
-      label: "새 문서",
-      onClick: () => {
-        setAddingType("section");
-        setIsAdding(true);
-      },
-    },
-    {
       icon: FolderPlus,
-      label: "새 폴더",
+      label: "새 챕터",
       onClick: () => {
         setAddingType("chapter");
         setIsAdding(true);
@@ -382,9 +388,10 @@ export function ChapterTree({
     { type: "divider" },
     {
       icon: ChevronsUpDown,
-      label: "모두 접기/펼치기",
+      label: forceExpandAll === false ? "모두 펼치기" : "모두 접기",
       onClick: () => {
-        // TODO: Implement expand/collapse all
+        // 토글: undefined/true -> false (접기), false -> true (펼치기)
+        setForceExpandAll((prev) => (prev === false ? true : false));
       },
     },
   ];
@@ -443,6 +450,7 @@ export function ChapterTree({
                   onMoveToFolder={onMoveToFolder}
                   dropIndicator={dropIndicator}
                   activeId={activeId}
+                  forceExpanded={forceExpandAll}
                 />
               ))}
             </div>
@@ -487,13 +495,16 @@ export function ChapterTree({
         </div>
       )}
 
-      {/* Add button */}
+      {/* Add button - 최상위는 챕터(폴더)만 생성 */}
       {chapters.length > 0 && !isAdding && (
         <Button
           variant="ghost"
           size="sm"
           className="w-full justify-start text-muted-foreground mt-2 ml-0 mr-1 hover:text-sage-600 hover:bg-sage-50"
-          onClick={() => setIsAdding(true)}
+          onClick={() => {
+            setAddingType("chapter");
+            setIsAdding(true);
+          }}
         >
           <Plus className="h-4 w-4 mr-2" />새 챕터 추가
         </Button>
