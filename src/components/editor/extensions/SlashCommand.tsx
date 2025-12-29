@@ -21,7 +21,6 @@ import {
   ListOrdered,
   Quote,
   Minus,
-  User,
   FilePlus,
 } from "lucide-react";
 
@@ -79,22 +78,6 @@ const getSuggestionItems = ({
           editor.chain().focus().deleteRange(range).run();
           // Call the callback to create a new section (sibling)
           onCreateSection("새 섹션", false);
-        }
-      },
-    },
-    {
-      title: "새 하위 섹션",
-      icon: <FilePlus className="w-4 h-4 text-sage-600" />,
-      command: ({ editor, range }: SlashCommandParams) => {
-        const onCreateSection = editor.extensionManager.extensions.find(
-          (ext: any) => ext.name === "slashCommand"
-        )?.options?.onCreateSection;
-
-        if (onCreateSection) {
-          // Delete the slash command text
-          editor.chain().focus().deleteRange(range).run();
-          // Call the callback to create a new subsection (child)
-          onCreateSection("새 하위 섹션", true);
         }
       },
     },
@@ -160,13 +143,6 @@ const getSuggestionItems = ({
       icon: <Minus className="w-4 h-4" />,
       command: ({ editor, range }: SlashCommandParams) => {
         editor.chain().focus().deleteRange(range).setHorizontalRule().run();
-      },
-    },
-    {
-      title: "캐릭터 멘션",
-      icon: <User className="w-4 h-4" />,
-      command: ({ editor, range }: SlashCommandParams) => {
-        editor.chain().focus().deleteRange(range).insertContent("@").run();
       },
     },
   ];

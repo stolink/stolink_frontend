@@ -35,6 +35,8 @@ interface UseEditorHandlersOptions {
     itemId: string,
     targetFolderId: string | null
   ) => Promise<void>;
+  // 통합 뷰 저장 콜백 (섹션 클릭 전 저장용)
+  scriveningsSaveAll?: () => Promise<void>;
 }
 
 /**
@@ -57,6 +59,7 @@ export function useEditorHandlers({
   deleteDocument,
   reorderDocuments,
   moveDocument,
+  scriveningsSaveAll,
 }: UseEditorHandlersOptions) {
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,12 +156,19 @@ export function useEditorHandlers({
           setSelectedSectionId(id);
         }
       } else {
-        // 섹션(text) 선택: 그 섹션만 선택
+        // 섹션(text) 선택: 그 섹션만 선택하고 단일 뷰로 전환
+        // 통합 뷰에서 섹션 클릭 시 저장 후 전환 (데이터 손실 방지)
+        if (viewMode === "scrivenings" && scriveningsSaveAll) {
+          await scriveningsSaveAll();
+        }
+
         setSelectedFolderId(doc.parentId || id);
         setSelectedSectionId(id);
+        // 섹션 클릭 시 단일 뷰로 자동 전환
+        if (viewMode !== "editor") {
+          setViewMode("editor");
+        }
       }
-
-      // 뷰 모드는 자동으로 바꾸지 않음 - 사용자가 명시적으로 선택
     },
     [
       documents,
@@ -167,6 +177,8 @@ export function useEditorHandlers({
       viewMode,
       setSelectedFolderId,
       setSelectedSectionId,
+      setViewMode,
+      scriveningsSaveAll,
     ]
   );
 
@@ -251,36 +263,26 @@ export function useEditorHandlers({
     [isDemo, createDocument]
   );
 
-  // Add section
+  // Add section (형제 섹션만 생성 가능 - 하위 섹션 제거됨)
   const handleAddSection = useCallback(
-    async (title?: string, isSubSection = false) => {
+    async (title?: string) => {
       if (isDemo) return;
 
       let parentId: string | null | undefined = selectedFolderId ?? undefined;
       let insertAfterOrder: number | undefined;
 
-      if (isSubSection && selectedSectionId) {
-        // 하위 섹션: 현재 섹션을 부모로 설정
+      // 형제 섹션: 현재 섹션과 같은 레벨의 다음 위치에 생성
+      if (selectedSectionId) {
         const currentDoc = documents.find((d) => d.id === selectedSectionId);
         if (currentDoc) {
-          parentId = currentDoc.id; // 현재 섹션이 부모
-          // order는 첫 번째 자식으로 (insertAfterOrder undefined로 두면 자동 설정)
-        }
-      } else {
-        // 형제 섹션: 현재 섹션과 같은 레벨의 다음 섹션
-        // 현재 섹션의 parentId를 물려받고, order는 현재 섹션 다음
-        if (selectedSectionId) {
-          const currentDoc = documents.find((d) => d.id === selectedSectionId);
-          if (currentDoc) {
-            parentId = currentDoc.parentId ?? undefined; // 같은 부모
-            insertAfterOrder = currentDoc.order; // 현재 섹션 다음
-          }
+          parentId = currentDoc.parentId ?? undefined; // 같은 부모
+          insertAfterOrder = currentDoc.order; // 현재 섹션 다음
         }
       }
 
       const newDoc = await createDocument({
         type: "text",
-        title: title || (isSubSection ? "새 하위 섹션" : "새 섹션"),
+        title: title || "새 섹션",
         parentId,
         order:
           insertAfterOrder !== undefined ? insertAfterOrder + 1 : undefined,
@@ -369,6 +371,11 @@ export function useEditorHandlers({
       // 1. 전환 전 자동 저장
       await forceSave();
 
+      // 통합 뷰에서 전환 시 전체 저장 강제 호출 (데이터 손실 방지)
+      if (currentMode === "scrivenings" && scriveningsSaveAll) {
+        await scriveningsSaveAll();
+      }
+
       // 2. 뷰 모드별 상태 동기화
       if (newMode === "editor") {
         // 단일 뷰로 전환: 폴더의 첫 번째 섹션 선택
@@ -419,6 +426,7 @@ export function useEditorHandlers({
       setSelectedFolderId,
       setSelectedSectionId,
       setViewMode,
+      scriveningsSaveAll,
     ]
   );
 

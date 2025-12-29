@@ -6,6 +6,7 @@ interface UseTreeItemProps {
   isPart: boolean;
   onSelect?: (id: string) => void;
   onRename?: (id: string, newTitle: string) => void;
+  forceExpanded?: boolean; // 외부에서 모두 접기/펼치기 제어
 }
 
 export function useTreeItem({
@@ -14,6 +15,7 @@ export function useTreeItem({
   isPart,
   onSelect,
   onRename,
+  forceExpanded,
 }: UseTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -22,6 +24,13 @@ export function useTreeItem({
 
   const renameInputRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLDivElement>(null);
+
+  // forceExpanded가 변경되면 해당 값으로 동기화
+  useEffect(() => {
+    if (forceExpanded !== undefined) {
+      setIsExpanded(forceExpanded);
+    }
+  }, [forceExpanded]);
 
   // Rename input focus effect
   useEffect(() => {

@@ -24,6 +24,7 @@ import {
   useBulkDocumentContent,
   useDocument,
 } from "@/hooks/useDocuments";
+import { useEditorStore } from "@/stores/useEditorStore";
 import { EditorToolbar } from "./EditorToolbar";
 
 export interface ScriveningsEditorProps {
@@ -39,6 +40,7 @@ export interface ScriveningsEditorHandle {
     after: string;
     targetDocId: string;
   } | null;
+  saveAll: () => Promise<void>; // 외부에서 저장 강제 호출용
 }
 
 const ScriveningsEditor = forwardRef<
@@ -57,6 +59,9 @@ const ScriveningsEditor = forwardRef<
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCreateSectionRef = useRef(onCreateSection);
+
+  // 저장 상태 관리 (단일 뷰와 동일)
+  const setSaveStatus = useEditorStore((state) => state.setSaveStatus);
 
   useEffect(() => {
     onCreateSectionRef.current = onCreateSection;
@@ -111,9 +116,11 @@ const ScriveningsEditor = forwardRef<
           onUpdate(editor.storage.characterCount.characters());
         }
 
-        // Bulk Save logic
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        // 편집 중 상태 표시 (단일 뷰와 동일)
+        setSaveStatus("unsaved");
 
+        // Bulk Save logic - 1초 후 자동 저장
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(saveAll, 1000);
       },
     },
@@ -121,6 +128,11 @@ const ScriveningsEditor = forwardRef<
   );
 
   useImperativeHandle(ref, () => ({
+    // 외부에서 통합 뷰 저장 강제 호출
+    saveAll: async () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      await saveAll();
+    },
     getSplitContent: () => {
       if (!editor) return null;
 

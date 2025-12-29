@@ -145,6 +145,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [characterCount, setCharacterCount] = useState(0);
   const prevCountRef = useRef(0); // 통계용 이전 글자 수
   const [showTourPrompt, setShowTourPrompt] = useState(false);
+  // EditorContent ref (통합 뷰 저장 강제 호출용)
+  const editorContentRef = useRef<EditorContentHandle>(null);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
     isDemo ? "chapter-1" : null
@@ -193,8 +195,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId
-          ),
+          (doc) => doc.projectId === projectId
+        ),
     [allDocuments, projectId, isDemo]
   );
 
@@ -271,6 +273,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     deleteDocument,
     reorderDocuments,
     moveDocument,
+    // 통합 뷰 저장 콜백: 섹션 클릭 시 저장 후 뷰 전환
+    scriveningsSaveAll: useCallback(async () => {
+      if (editorContentRef.current) {
+        await editorContentRef.current.saveAll();
+      }
+    }, []),
   });
 
   // Title editing state
@@ -389,10 +397,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveTimeoutRef,
   });
 
-  // ============================================================
   // Split & Create Section Logic
   // ============================================================
-  const editorContentRef = useRef<EditorContentHandle>(null);
+  // editorContentRef는 상단에서 이미 선언됨 (통합 뷰 저장 강제 호출용)
   const { bulkSaveContent } = useBulkDocumentContent();
   const [createSectionModalOpen, setCreateSectionModalOpen] = useState(false);
   const [splitState, setSplitState] = useState<{
@@ -531,7 +538,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 onReorderChapter={handleReorderChapter}
                 onMoveToFolder={handleMoveToFolder}
                 isOpen={true}
-                onToggle={() => {}}
               />
             </div>
           </div>
