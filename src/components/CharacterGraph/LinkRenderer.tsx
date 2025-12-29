@@ -48,17 +48,17 @@ export const LinkRenderer = memo(function LinkRenderer({
   const color = RELATION_COLORS[link.type] || "#9ca3af";
 
   // 강도에 따른 선 두께
-  const baseWidth = 1 + (link.strength / 10) * 2;
+  const baseWidth = 1 + (link.strength / 10) * 4;
   const strokeWidth = isHighlighted ? baseWidth + 1.5 : baseWidth;
 
-  // 강도에 따른 기본 투명도
-  const baseOpacity = 0.3 + (link.strength / 10) * 0.4;
+  // 강도에 따른 기본 투명도 (가독성 위해 최소값 상향)
+  const baseOpacity = 0.6 + (link.strength / 10) * 0.4;
 
   // 투명도 계산 (가독성 개선)
   const getOpacity = () => {
-    if (isFiltered) return 0.03;
+    if (isFiltered) return 0.05;
     if (isDimmed) return ANIMATION.dimOpacity * 0.5;
-    if (isHighlighted) return 0.9;
+    if (isHighlighted) return 0.95;
     return baseOpacity;
   };
   const finalOpacity = getOpacity();
@@ -92,7 +92,7 @@ export const LinkRenderer = memo(function LinkRenderer({
         strokeWidth={strokeWidth}
         strokeOpacity={finalOpacity}
         strokeLinecap="round"
-        strokeDasharray={link.type === "enemy" ? "6,4" : undefined}
+        strokeDasharray={link.type === "hostile" ? "6,4" : undefined}
         style={{
           transition: `
             stroke-opacity ${ANIMATION.highlightDuration}ms ease,

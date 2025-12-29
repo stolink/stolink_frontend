@@ -1,26 +1,17 @@
 import type { CharacterRole } from "@/types";
 
-export type RelationType =
-  | "friendship"
-  | "conflict"
-  | "romance"
-  | "family"
-  | "neutral";
+export type RelationType = "friendly" | "hostile" | "romantic";
 
 export const relationshipColors: Record<RelationType, string> = {
-  friendship: "#22c55e", // 초록
-  conflict: "#ef4444", // 빨강
-  romance: "#ec4899", // 핑크
-  family: "#1f2937", // 검정
-  neutral: "#9ca3af", // 회색 (점선용)
+  friendly: "#15803D", // Green 700 (Deep Green)
+  hostile: "#B91C1C", // Red 700 (Deep Red)
+  romantic: "#BE185D", // Pink 700 (Deep Pink)
 };
 
 export const relationshipLabels: Record<RelationType, string> = {
-  friendship: "우정",
-  conflict: "갈등",
-  romance: "로맨스",
-  family: "가족",
-  neutral: "중립",
+  friendly: "우호",
+  hostile: "적대",
+  romantic: "로맨스",
 };
 
 export const roleLabels: Record<CharacterRole, string> = {

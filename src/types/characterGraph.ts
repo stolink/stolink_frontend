@@ -6,7 +6,8 @@ import type { CharacterRole } from "./character";
 // =====================================================
 
 // 관계 타입 (단순화: 3종)
-export type RelationType = "friend" | "lover" | "enemy";
+// 관계 타입 (BackendRelationshipType과 일치)
+export type RelationType = "friendly" | "hostile" | "romantic";
 
 // D3 시뮬레이션용 노드 타입
 export interface CharacterNode extends d3.SimulationNodeDatum {
