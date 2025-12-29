@@ -371,6 +371,11 @@ export function useEditorHandlers({
       // 1. 전환 전 자동 저장
       await forceSave();
 
+      // 통합 뷰에서 전환 시 전체 저장 강제 호출 (데이터 손실 방지)
+      if (currentMode === "scrivenings" && scriveningsSaveAll) {
+        await scriveningsSaveAll();
+      }
+
       // 2. 뷰 모드별 상태 동기화
       if (newMode === "editor") {
         // 단일 뷰로 전환: 폴더의 첫 번째 섹션 선택
@@ -421,6 +426,7 @@ export function useEditorHandlers({
       setSelectedFolderId,
       setSelectedSectionId,
       setViewMode,
+      scriveningsSaveAll,
     ]
   );
 

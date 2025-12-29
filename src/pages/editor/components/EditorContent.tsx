@@ -92,7 +92,7 @@ export const EditorContent = forwardRef<
           await scriveningsRef.current.saveAll();
         }
       },
-    }));
+    }), [viewMode]); // viewMode 의존성 추가
 
     // Empty State
     if (documents.length === 0 && !isDemo) {

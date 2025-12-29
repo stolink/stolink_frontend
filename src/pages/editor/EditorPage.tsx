@@ -274,11 +274,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     reorderDocuments,
     moveDocument,
     // 통합 뷰 저장 콜백: 섹션 클릭 시 저장 후 뷰 전환
-    scriveningsSaveAll: async () => {
+    scriveningsSaveAll: useCallback(async () => {
       if (editorContentRef.current) {
         await editorContentRef.current.saveAll();
       }
-    },
+    }, []),
   });
 
   // Title editing state
