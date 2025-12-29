@@ -195,7 +195,7 @@ export default function AuthPage() {
                   )}
 
                   <p className="text-center text-sm text-muted-foreground">
-                    <a href="#" className="hover:text-sage-500">
+                    <a href="#" className="hover:text-mocha-500">
                       비밀번호를 잊으셨나요?
                     </a>
                   </p>
@@ -278,11 +278,11 @@ export default function AuthPage() {
                       htmlFor="register-agree"
                       className="text-sm font-normal"
                     >
-                      <a href="#" className="text-sage-500 hover:underline">
+                      <a href="#" className="text-mocha-500 hover:underline">
                         이용약관
                       </a>{" "}
                       및{" "}
-                      <a href="#" className="text-sage-500 hover:underline">
+                      <a href="#" className="text-mocha-500 hover:underline">
                         개인정보처리방침
                       </a>
                       에 동의합니다

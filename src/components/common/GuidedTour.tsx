@@ -107,7 +107,7 @@ export default function GuidedTour({
         {/* Spotlight border */}
         {targetRect && (
           <div
-            className="absolute border-2 border-sage-400 rounded-lg pointer-events-none animate-pulse"
+            className="absolute border-2 border-mocha-400 rounded-lg pointer-events-none animate-pulse"
             style={{
               top: targetRect.top - 8,
               left: targetRect.left - 8,
@@ -123,18 +123,18 @@ export default function GuidedTour({
         {/* Header with step indicator */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-sage-100 rounded-lg flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-sage-600" />
+            <div className="w-8 h-8 bg-mocha-100/50 rounded-lg flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-mocha-600" />
             </div>
-            <span className="text-sm font-medium text-sage-600">
+            <span className="text-sm font-medium text-mocha-600">
               {currentStep + 1} / {steps.length}
             </span>
           </div>
 
           {/* Progress bar */}
-          <div className="flex-1 mx-4 h-1 bg-stone-100 rounded-full overflow-hidden">
+          <div className="flex-1 mx-4 h-1 bg-cloud-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-sage-500 transition-all duration-300"
+              className="h-full bg-mocha-500 transition-all duration-300"
               style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
             />
           </div>
@@ -169,7 +169,7 @@ export default function GuidedTour({
               onClick={handlePrev}
               disabled={currentStep === 0}
               className={cn(
-                currentStep === 0 && "opacity-50 cursor-not-allowed",
+                currentStep === 0 && "opacity-50 cursor-not-allowed"
               )}
             >
               <ChevronLeft className="h-4 w-4" />

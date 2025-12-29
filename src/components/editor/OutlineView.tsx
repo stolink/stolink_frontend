@@ -45,13 +45,13 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
               {Array.from({ length: doc.level }).map((_, i) => (
                 <div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-sage-300"
+                  className="w-1.5 h-1.5 rounded-full bg-mocha-300"
                   aria-hidden="true"
                 />
               ))}
             </div>
           )}
-          <FileText className="w-4 h-4 text-sage-500 shrink-0" />
+          <FileText className="w-4 h-4 text-mocha-500 shrink-0" />
           <span className="truncate">{doc.title}</span>
         </div>
       </TableCell>
@@ -77,7 +77,7 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
                 setSynopsis(doc.synopsis || "");
               }
             }}
-            className="w-full text-sm bg-card border border-sage-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sage-500"
+            className="w-full text-sm bg-card border border-mocha-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-mocha-500"
           />
         ) : (
           <span
@@ -143,8 +143,8 @@ export default function OutlineView({
         <header className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">아웃라인</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            섹션별 시놉시스와 진행 상태를 한눈에 파악합니다. 행을 클릭하면
-            단일 뷰로 전환됩니다.
+            섹션별 시놉시스와 진행 상태를 한눈에 파악합니다. 행을 클릭하면 단일
+            뷰로 전환됩니다.
           </p>
         </header>
 

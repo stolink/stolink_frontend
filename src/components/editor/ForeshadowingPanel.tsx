@@ -48,10 +48,10 @@ export default function ForeshadowingPanel() {
   const [foreshadowings] = useState<Foreshadowing[]>(mockForeshadowings);
 
   const pendingCount = foreshadowings.filter(
-    (f) => f.status === "pending",
+    (f) => f.status === "pending"
   ).length;
   const recoveredCount = foreshadowings.filter(
-    (f) => f.status === "recovered",
+    (f) => f.status === "recovered"
   ).length;
 
   return (
@@ -91,17 +91,17 @@ export default function ForeshadowingPanel() {
             key={item.id}
             className={cn(
               "p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors",
-              item.status === "recovered" && "opacity-60",
+              item.status === "recovered" && "opacity-60"
             )}
           >
             <div className="flex items-start justify-between gap-2 mb-1">
-              <span className="font-medium text-sage-700">#{item.tag}</span>
+              <span className="font-medium text-mocha-700">#{item.tag}</span>
               <span
                 className={cn(
                   "text-xs px-2 py-0.5 rounded",
                   item.status === "pending"
                     ? "bg-status-warning/10 text-status-warning"
-                    : "bg-status-success/10 text-status-success",
+                    : "bg-status-success/10 text-status-success"
                 )}
               >
                 {item.status === "pending" ? "미회수" : "회수됨"}

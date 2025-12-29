@@ -37,7 +37,7 @@ function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <section className="border-b border-stone-100 last:border-b-0">
+    <section className="border-b border-border last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 py-2.5 px-3 hover:bg-muted/50 transition-colors"
@@ -121,7 +121,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
   return (
     <div className="flex flex-col h-full">
       {/* 헤더 */}
-      <div className="px-3 py-2.5 border-b border-stone-100 bg-muted/50/50 shrink-0">
+      <div className="px-3 py-2.5 border-b border-border bg-muted/50/50 shrink-0">
         <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
           <BookOpen className="w-3.5 h-3.5" />
           레퍼런스
@@ -145,7 +145,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
                 placeholder="씬의 목적, 참고사항, 아이디어..."
-                className="w-full h-24 resize-none bg-card border border-border rounded-lg p-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sage-500/30 focus:border-sage-400"
+                className="w-full h-24 resize-none bg-card border border-border rounded-lg p-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-mocha-500/30 focus:border-mocha-400"
               />
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
@@ -155,7 +155,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                   <button
                     onClick={handleSaveNotes}
                     disabled={isSaving}
-                    className="flex items-center gap-1 text-xs text-sage-600 hover:text-sage-700 disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs text-mocha-700 hover:text-mocha-800 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -196,7 +196,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                           ? "bg-amber-500"
                           : char.role === "antagonist"
                             ? "bg-rose-500"
-                            : "bg-stone-400"
+                            : "bg-muted"
                       )}
                     >
                       {char.name[0]}
@@ -257,7 +257,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
       </div>
 
       {/* 하단 안내 */}
-      <div className="px-3 py-2 border-t border-stone-100 bg-muted/50/30 shrink-0">
+      <div className="px-3 py-2 border-t border-border bg-muted/50/30 shrink-0">
         <p className="text-xs text-muted-foreground text-center">
           💡 @멘션으로 캐릭터를 본문에 연결하세요
         </p>

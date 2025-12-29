@@ -39,23 +39,23 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
-          <div className="w-full max-w-md rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+        <div className="flex min-h-screen items-center justify-center bg-cloud-50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-input bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-red-600" />
-              <h2 className="text-xl font-semibold text-stone-800">
+              <h2 className="text-xl font-semibold text-foreground">
                 문제가 발생했습니다
               </h2>
             </div>
-            <p className="mb-4 text-sm text-stone-600">
+            <p className="mb-4 text-sm text-muted-foreground">
               예상치 못한 오류가 발생했습니다. 새로고침하거나 다시 시도해주세요.
             </p>
             {this.state.error && (
-              <details className="mb-4 rounded border border-stone-200 bg-stone-50 p-3">
-                <summary className="cursor-pointer text-sm font-medium text-stone-700">
+              <details className="mb-4 rounded border border-input bg-cloud-50 p-3">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
                   오류 상세 정보
                 </summary>
-                <pre className="mt-2 overflow-auto text-xs text-stone-600">
+                <pre className="mt-2 overflow-auto text-xs text-muted-foreground">
                   {this.state.error.message}
                   {"\n"}
                   {this.state.error.stack}

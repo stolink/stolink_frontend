@@ -81,9 +81,9 @@ function ScrollModeContent({
   theme,
   fontSize,
 }: ScrollModeContentProps) {
-  const titleColor = theme === "dark" ? "text-white" : "text-stone-800";
+  const titleColor = theme === "dark" ? "text-white" : "text-espresso-900";
   const dividerColor =
-    theme === "dark" ? "border-stone-700" : "border-stone-200";
+    theme === "dark" ? "border-mocha-700" : "border-mocha-200";
 
   return (
     <div
@@ -137,7 +137,7 @@ function BookModeContent({
   onNext,
   styles,
 }: BookModeContentProps) {
-  const arrowColor = theme === "dark" ? "text-stone-600" : "text-stone-300";
+  const arrowColor = theme === "dark" ? "text-mocha-400" : "text-mocha-300";
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-8">

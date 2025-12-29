@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,7 +9,11 @@ import type { Character, RelationType, RelationshipLink } from "@/types";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
-import { CharacterGraph } from "@/components/CharacterGraph";
+import {
+  CharacterGraph,
+  type CharacterGraphRef,
+} from "@/components/CharacterGraph";
+import { CharacterSearchOverlay } from "@/components/CharacterGraph/CharacterSearchOverlay";
 
 // Hooks
 import { useCharacters } from "@/hooks/useCharacters";
@@ -49,11 +53,16 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
+
+  const graphRef = useRef<CharacterGraphRef>(null);
+  const [searchHighlightedIds, setSearchHighlightedIds] = useState<
+    string[] | null
+  >(null);
 
   // ESC Key Handler (Optimized)
   useEffect(() => {
@@ -81,7 +90,7 @@ export default function WorldPage() {
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character
+      prev?.id === character.id ? null : character,
     );
   };
 
@@ -94,7 +103,7 @@ export default function WorldPage() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-sage-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">
             캐릭터 데이터를 불러오는 중...
           </p>
@@ -102,6 +111,12 @@ export default function WorldPage() {
       </div>
     );
   }
+
+  const handleSearchSelect = (character: Character) => {
+    setSelectedCharacter(character);
+    // 선택된 캐릭터로 줌 및 이동 (150% 확대)
+    graphRef.current?.focusNode(character.id);
+  };
 
   return (
     <div className="h-full w-full flex flex-col bg-paper">
@@ -125,7 +140,10 @@ export default function WorldPage() {
               <Sword className="h-4 w-4" />
               아이템
             </TabsTrigger>
-            <TabsTrigger value="foreshadowing" className="flex items-center gap-2">
+            <TabsTrigger
+              value="foreshadowing"
+              className="flex items-center gap-2"
+            >
               <Sparkles className="h-4 w-4" />
               복선
             </TabsTrigger>
@@ -135,6 +153,13 @@ export default function WorldPage() {
         {/* Character Graph - D3.js */}
         <TabsContent value="graph" className="flex-1 m-0 overflow-hidden">
           <div className="h-full w-full relative">
+            {/* Search Overlay */}
+            <CharacterSearchOverlay
+              characters={characters}
+              onSelect={handleSearchSelect}
+              onSearch={setSearchHighlightedIds}
+            />
+
             {/* Controls & Legend */}
             <NetworkControlsD3
               relationTypeFilter={relationTypeFilter}
@@ -156,16 +181,16 @@ export default function WorldPage() {
               links={links}
               onNodeClick={handleNodeClick}
               selectedNodeId={selectedCharacter?.id || null}
+              selectedNodeId={selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
+              highlightedNodeIds={searchHighlightedIds}
+              ref={graphRef}
             />
           </div>
         </TabsContent>
 
         {/* Characters List */}
-        <TabsContent
-          value="characters"
-          className="flex-1 m-0 overflow-y-auto"
-        >
+        <TabsContent value="characters" className="flex-1 m-0 overflow-y-auto">
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {characters.map((character) => (
               <Card
@@ -176,7 +201,7 @@ export default function WorldPage() {
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
                     {character.imageUrl ? (
-                      <div className="h-12 w-12 rounded-full overflow-hidden border border-stone-200 bg-stone-100 shrink-0">
+                      <div className="h-12 w-12 rounded-full overflow-hidden border border-input bg-muted shrink-0">
                         <img
                           src={character.imageUrl}
                           alt={character.name}
@@ -184,7 +209,7 @@ export default function WorldPage() {
                         />
                       </div>
                     ) : (
-                      <span className="text-3xl flex items-center justify-center w-12 h-12 bg-stone-50 rounded-full">
+                      <span className="text-3xl flex items-center justify-center w-12 h-12 bg-cloud-50 rounded-full">
                         {character.role === "protagonist"
                           ? "🦸"
                           : character.role === "antagonist"
@@ -213,7 +238,7 @@ export default function WorldPage() {
                       </p>
                     ))}
                   {Object.keys(character.extras || {}).length > 2 && (
-                    <p className="text-xs text-sage-500">
+                    <p className="text-xs text-mocha-500">
                       +{Object.keys(character.extras || {}).length - 2}개 항목
                       더보기
                     </p>
@@ -228,10 +253,10 @@ export default function WorldPage() {
         <TabsContent value="places" className="flex-1 m-0 overflow-y-auto">
           <div className="p-6 space-y-2 max-w-4xl mx-auto">
             {places.map((place) => (
-              <Card key={place.id} className="cursor-pointer hover:bg-stone-50">
+              <Card key={place.id} className="cursor-pointer hover:bg-cloud-50">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-sage-500" />
+                    <MapPin className="h-5 w-5 text-mocha-500" />
                     <div>
                       <p className="font-medium">{place.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -252,10 +277,10 @@ export default function WorldPage() {
         <TabsContent value="items" className="flex-1 m-0 overflow-y-auto">
           <div className="p-6 space-y-2 max-w-4xl mx-auto">
             {items.map((item) => (
-              <Card key={item.id} className="cursor-pointer hover:bg-stone-50">
+              <Card key={item.id} className="cursor-pointer hover:bg-cloud-50">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Sword className="h-5 w-5 text-sage-500" />
+                    <Sword className="h-5 w-5 text-mocha-500" />
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-muted-foreground">

@@ -39,7 +39,7 @@ export function NetworkDetailPanelD3({
     <div className="absolute right-4 top-4 bottom-4 w-72 z-10 bg-white rounded-lg border shadow-lg overflow-hidden flex flex-col">
       <div className="p-4 border-b flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-stone-100 flex items-center justify-center text-2xl border-2 border-stone-200">
+          <div className="w-14 h-14 rounded-full bg-cloud-50 flex items-center justify-center text-2xl border-2 border-border">
             {selectedCharacter.role === "protagonist"
               ? "🦸"
               : selectedCharacter.role === "antagonist"
@@ -68,7 +68,7 @@ export function NetworkDetailPanelD3({
       <div className="p-4 border-b">
         <div className="flex justify-around text-center">
           <div>
-            <div className="text-2xl font-bold text-stone-800">
+            <div className="text-2xl font-bold text-foreground">
               {connectedLinks.length}
             </div>
             <div className="text-xs text-muted-foreground uppercase">
@@ -76,7 +76,7 @@ export function NetworkDetailPanelD3({
             </div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-stone-800">-</div>
+            <div className="text-2xl font-bold text-foreground">-</div>
             <div className="text-xs text-muted-foreground uppercase">
               Scenes
             </div>
@@ -102,9 +102,9 @@ export function NetworkDetailPanelD3({
             return (
               <li
                 key={link.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-cloud-50"
               >
-                <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm">
+                <div className="w-8 h-8 rounded-full bg-cloud-50 flex items-center justify-center text-sm">
                   {otherChar?.role === "antagonist"
                     ? "🦹"
                     : otherChar?.role === "mentor"

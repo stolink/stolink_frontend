@@ -98,12 +98,11 @@ export function BookCard({
       className={cn(
         "group relative flex flex-col h-full bg-white rounded-lg border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer",
         // 기본 상태
-        !isEditMode &&
-          "border-stone-200 hover:shadow-md hover:border-primary/30",
+        !isEditMode && "border-input hover:shadow-md hover:border-primary/30",
         // 편집 모드 스타일
-        isEditMode && "border-sage-200 scale-[0.98]",
+        isEditMode && "border-mocha-200 scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary",
+        isSelected && "ring-2 ring-primary border-primary"
       )}
       onClick={handleCardClick}
     >
@@ -121,8 +120,8 @@ export function BookCard({
               "w-6 h-6 rounded-md flex items-center justify-center",
               "border-2 shadow-sm transition-all duration-200",
               isSelected
-                ? "border-green-500 bg-green-500"
-                : "bg-white border-stone-400 hover:border-green-500",
+                ? "border-status-success bg-status-success"
+                : "bg-white border-muted-foreground hover:border-status-success"
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -131,18 +130,18 @@ export function BookCard({
       )}
 
       {/* Cover Image Area */}
-      <div className="relative aspect-[3/2] w-full overflow-hidden bg-stone-100">
+      <div className="relative aspect-[3/2] w-full overflow-hidden bg-muted">
         {coverImage ? (
           <img
             src={coverImage}
             alt={title}
             className={cn(
               "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105",
+              !isEditMode && "group-hover:scale-105"
             )}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-stone-300">
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
             <BookOpen className="h-12 w-12 opacity-50" />
           </div>
         )}
@@ -158,7 +157,7 @@ export function BookCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white text-stone-600 rounded-full shadow-sm"
+                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white text-muted-foreground rounded-full shadow-sm"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -186,34 +185,34 @@ export function BookCard({
       <div className="flex flex-col flex-1 p-4 gap-3">
         {/* Title */}
         <div>
-          <h3 className="font-heading text-lg font-bold text-stone-900 leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-heading text-lg font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
             {title}
           </h3>
-          <p className="text-xs text-stone-400 font-medium">{author}</p>
+          <p className="text-xs text-muted-foreground font-medium">{author}</p>
         </div>
 
         {/* Genre Tags */}
         <div className="flex flex-wrap gap-1.5">
           {genre ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-stone-50 text-stone-500 border border-stone-100">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-cloud-50 text-muted-foreground border border-input">
               {genre}
             </span>
           ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-stone-50 text-stone-300 border border-stone-100">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-cloud-50 text-muted-foreground/50 border border-input">
               장르 없음
             </span>
           )}
         </div>
 
         {/* Last Edited */}
-        <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-auto">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-auto">
           <Clock className="w-3.5 h-3.5" />
           <span>수정: {lastEdited}</span>
         </div>
 
         {/* Status Line - StatusChip으로 교체 */}
         <div
-          className="pt-3 border-t border-stone-100 flex items-center justify-between"
+          className="pt-3 border-t border-border flex items-center justify-between"
           onClick={(e) => e.stopPropagation()}
         >
           {/* StatusChip (편집 모드가 아닐 때만 클릭 가능) */}
@@ -230,18 +229,20 @@ export function BookCard({
                 className={cn(
                   "h-2 w-2 rounded-full",
                   normalizedStatus === "Complete"
-                    ? "bg-green-500"
-                    : "bg-sage-500",
+                    ? "bg-status-success"
+                    : "bg-mocha-500"
                 )}
               />
-              <span className="text-xs font-semibold text-stone-600">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {normalizedStatus === "Complete" ? "완료" : "집필중"}
               </span>
             </div>
           )}
 
           {/* Words/Length */}
-          {length && <span className="text-xs text-stone-400">{length}</span>}
+          {length && (
+            <span className="text-xs text-muted-foreground">{length}</span>
+          )}
         </div>
       </div>
     </div>

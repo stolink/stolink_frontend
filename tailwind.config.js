@@ -5,47 +5,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        // StoLink Design System - Sage Green (Optimized for Low Visual Fatigue)
-        sage: {
-          50: "#F4F7F4",
-          100: "#E8EFE8",
-          200: "#C5D8C5",
-          300: "#A2C1A2",
-          400: "#82A182", // Light - reduced fluorescence
-          500: "#5F7D5F", // Primary - optimized contrast
-          600: "#5A7A5A",
-          700: "#3E523E", // Dark - enhanced readability
-          800: "#3A5A3A",
-          900: "#2A4A2A",
+        // StoLink Design System - Mocha & Cloud Dancer
+        mocha: {
+          400: "#BD9B8D", // Hover
+          500: "#A47764", // Primary - Mocha Mousse
+          700: "#7D5A4B", // Dark/Active
         },
-        stone: {
-          50: "#F8F8F7", // Off-white with reduced eye strain
-          100: "#F5F5F4",
-          200: "#E7E5E4",
-          300: "#D6D3D1",
-          400: "#A8A29E",
-          500: "#78716C",
-          600: "#57534E",
-          700: "#44403C",
-          800: "#2D2A28", // Body text - ink bleed prevention
-          900: "#1C1917",
+        cloud: {
+          50: "#F1F0EC", // Surface - Cloud Dancer
+        },
+        espresso: {
+          900: "#3D302A", // Text
         },
         // Premium/Crafted colors
-        paper: "#F8F8F7", // Warm off-white
-        ink: "#2D2A28", // Soft charcoal black (higher readability)
+        paper: "#F1F0EC", // Cloud 50
+        ink: "#3D302A", // Espresso 900
         // Relationship colors (Narrative-focused palette)
         relation: {
-          friendly: "#4B9F7D", // Emerald - trust and calmness
-          hostile: "#B14B4B", // Russet Red - tension without aggression
-          romance: "#C4718A", // Muted Rose - mature romance
-          family: "#4A4E5A", // Deep Slate - depth and stability
-          neutral: "#8B929E", // Sharkskin - clear presence
+          friendly: "#7A8C6F", // Muted Olive
+          hostile: "#9C4A3F", // Rust Red
+          romance: "#B38B82", // Dusty Rose
+          family: "#4F5861", // Steel Blue-Grey
+          neutral: "#8D8B88", // Warm Grey
         },
-        // Status colors (Engineering-grade visibility)
+        // Status colors
         status: {
-          success: "#45A049", // 3:1+ contrast on Sage 50
-          warning: "#D9A406", // Legible with white text
-          error: "#D32F2F", // Standard engineering red
+          success: "#5B7B4B",
+          warning: "#B8860B",
+          error: "#A33A3A",
         },
         // CSS Variable based colors for theme support
         border: "hsl(var(--border))",

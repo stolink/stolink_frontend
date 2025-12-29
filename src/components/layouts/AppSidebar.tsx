@@ -50,12 +50,12 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
 
   return (
     <aside
-      className="w-64 bg-stone-50/50 border-r border-stone-200 flex flex-col h-screen"
+      className="w-64 bg-cloud-50/50 border-r border-border flex flex-col h-screen"
       role="navigation"
       aria-label="메인 네비게이션"
     >
       {/* 상단: 로고 + 프로젝트 제목 */}
-      <div className="p-6 border-b border-stone-200">
+      <div className="p-6 border-b border-border">
         <NavLink to="/library" className="block">
           <img
             src={mainLogo}
@@ -63,7 +63,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
             className="h-8 mb-3 hover:opacity-80 transition-opacity"
           />
         </NavLink>
-        <h2 className="text-sm font-medium text-stone-700 truncate">
+        <h2 className="text-sm font-medium text-foreground truncate">
           {projectTitle || "내 작품"}
         </h2>
       </div>
@@ -78,14 +78,16 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-white text-sage-600 shadow-sm border border-stone-100"
-                  : "text-stone-600 hover:bg-white/60 hover:text-sage-600"
+                  ? "bg-white text-mocha-600 shadow-sm border border-cloud-100"
+                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600"
               )
             }
           >
             {({ isActive }) => (
               <>
-                <item.icon className={cn("h-4 w-4", isActive && "text-sage-600")} />
+                <item.icon
+                  className={cn("h-4 w-4", isActive && "text-mocha-600")}
+                />
                 {item.label}
               </>
             )}
@@ -94,7 +96,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
       </nav>
 
       {/* 하단: 유저 영역 */}
-      <div className="p-4 border-t border-stone-200">
+      <div className="p-4 border-t border-border">
         <NavLink
           to="/library"
           className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/60 cursor-pointer transition-colors mb-2"
@@ -105,10 +107,10 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-stone-700 truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {user?.nickname || "작가님"}
             </p>
-            <p className="text-xs text-stone-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {user?.email || "user@example.com"}
             </p>
           </div>
@@ -118,7 +120,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
 
         <button
           onClick={handleSettings}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-stone-600 hover:bg-white/60 hover:text-sage-600 rounded-lg transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:bg-white/60 hover:text-mocha-600 rounded-lg transition-colors"
         >
           <User className="h-4 w-4" />
           개인 설정
