@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,7 +9,11 @@ import type { Character, RelationType, RelationshipLink } from "@/types";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
-import { CharacterGraph } from "@/components/CharacterGraph";
+import {
+  CharacterGraph,
+  type CharacterGraphRef,
+} from "@/components/CharacterGraph";
+import { CharacterSearchOverlay } from "@/components/CharacterGraph/CharacterSearchOverlay";
 
 // Hooks
 import { useCharacters } from "@/hooks/useCharacters";
@@ -49,11 +53,16 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
+
+  const graphRef = useRef<CharacterGraphRef>(null);
+  const [searchHighlightedIds, setSearchHighlightedIds] = useState<
+    string[] | null
+  >(null);
 
   // ESC Key Handler (Optimized)
   useEffect(() => {
@@ -81,7 +90,7 @@ export default function WorldPage() {
 
   const handleNodeClick = (character: Character) => {
     setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character
+      prev?.id === character.id ? null : character,
     );
   };
 
@@ -102,6 +111,12 @@ export default function WorldPage() {
       </div>
     );
   }
+
+  const handleSearchSelect = (character: Character) => {
+    setSelectedCharacter(character);
+    // 선택된 캐릭터로 줌 및 이동 (150% 확대)
+    graphRef.current?.focusNode(character.id);
+  };
 
   return (
     <div className="h-full w-full flex flex-col bg-paper">
@@ -138,6 +153,13 @@ export default function WorldPage() {
         {/* Character Graph - D3.js */}
         <TabsContent value="graph" className="flex-1 m-0 overflow-hidden">
           <div className="h-full w-full relative">
+            {/* Search Overlay */}
+            <CharacterSearchOverlay
+              characters={characters}
+              onSelect={handleSearchSelect}
+              onSearch={setSearchHighlightedIds}
+            />
+
             {/* Controls & Legend */}
             <NetworkControlsD3
               relationTypeFilter={relationTypeFilter}
@@ -159,7 +181,10 @@ export default function WorldPage() {
               links={links}
               onNodeClick={handleNodeClick}
               selectedNodeId={selectedCharacter?.id || null}
+              selectedNodeId={selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
+              highlightedNodeIds={searchHighlightedIds}
+              ref={graphRef}
             />
           </div>
         </TabsContent>

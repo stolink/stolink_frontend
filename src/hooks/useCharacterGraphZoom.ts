@@ -11,7 +11,10 @@ interface UseZoomReturn {
   zoomState: ZoomState;
   zoomIn: () => void;
   zoomOut: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
   resetZoom: () => void;
+  centerAt: (x: number, y: number, scale?: number) => void;
 }
 
 /**
@@ -20,7 +23,7 @@ interface UseZoomReturn {
 export function useZoom(
   svgRef: React.RefObject<SVGSVGElement | null>,
   gRef: React.RefObject<SVGGElement | null>,
-  options: UseZoomOptions = {}
+  options: UseZoomOptions = {},
 ): UseZoomReturn {
   const { onZoomChange } = options;
 
@@ -107,10 +110,36 @@ export function useZoom(
       .call(zoom.transform, d3.zoomIdentity);
   }, [svgRef]);
 
+  const centerAt = useCallback(
+    (x: number, y: number, targetScale: number = 1.0) => {
+      const svg = svgRef.current;
+      const zoom = zoomBehaviorRef.current;
+      if (!svg || !zoom) return;
+
+      const width = svg.clientWidth || svg.getBoundingClientRect().width;
+      const height = svg.clientHeight || svg.getBoundingClientRect().height;
+
+      // Calculate translation to center the point (x, y)
+      // transform = translate(cx, cy) * scale(k) * translate(-x, -y)
+      const t = d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(targetScale)
+        .translate(-x, -y);
+
+      d3.select(svg)
+        .transition()
+        .duration(750)
+        .ease(d3.easeCubicOut)
+        .call(zoom.transform, t);
+    },
+    [svgRef],
+  );
+
   return {
     zoomState,
     zoomIn,
     zoomOut,
     resetZoom,
+    centerAt,
   };
 }

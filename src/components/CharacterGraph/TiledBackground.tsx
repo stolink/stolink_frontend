@@ -19,17 +19,14 @@ export function TiledBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Use WebGL2
     const gl = canvas.getContext("webgl2", { alpha: false });
     if (!gl) {
       console.error("[TiledBackground] WebGL2 not supported");
       return;
     }
 
-    // Flag to prevent operations on destroyed context
     let isDestroyed = false;
 
-    // GLSL 3.00 ES Shader sources (High Precision)
     const vsSource = `#version 300 es
       in vec2 aPosition;
       void main() {
@@ -40,32 +37,20 @@ export function TiledBackground({
     const fsSource = `#version 300 es
       precision highp float;
       uniform vec2 uResolution;
-      uniform vec3 uTransform; // x, y, scale
+      uniform vec3 uTransform;
       uniform sampler2D uTexture;
+      uniform float uTexSize;
       out vec4 fragColor;
 
       void main() {
-        // 1. Calculate UV based on Fragment Coordinates vs Transform
-        // uTransform.xy is translation in screen pixels.
-        // uTransform.z is zoom scale.
-
-        // (ScreenPos - Translate) / Scale = WorldPos
         vec2 worldPos = (gl_FragCoord.xy - uTransform.xy) / uTransform.z;
-
-        // Normalize WorldPos to UV space (1024px = 1 tile)
-        // Adjust for WebGL coordinates (Y is Up, but D3/DOM Y is Down)
-        // If we want texture to align with DOM content, we might need to flip Y.
-
-        vec2 uv = worldPos / 1024.0;
-
-        // User Suggestion: uv.y = -uv.y to match coordinate systems
+        vec2 uv = worldPos / 1000.0;
         uv.y = -uv.y;
-
-        fragColor = texture(uTexture, uv);
+        vec4 texColor = texture(uTexture, uv);
+        fragColor = vec4(texColor.rgb, 1.0);
       }
     `;
 
-    // Compile shaders
     const compileShader = (type: number, source: string) => {
       if (isDestroyed) return null;
       const shader = gl.createShader(type);
@@ -95,7 +80,6 @@ export function TiledBackground({
       return;
     }
 
-    // Full screen quad
     const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
 
     const buffer = gl.createBuffer();
@@ -106,11 +90,9 @@ export function TiledBackground({
     gl.enableVertexAttribArray(aPosition);
     gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
 
-    // Texture setup
     const texture = gl.createTexture();
     const image = new Image();
 
-    // Uniform locations
     const uResolution = gl.getUniformLocation(program, "uResolution");
     const uTransform = gl.getUniformLocation(program, "uTransform");
     const uTexture = gl.getUniformLocation(program, "uTexture");
@@ -127,18 +109,13 @@ export function TiledBackground({
     };
 
     renderRef.current = (z: ZoomState) => {
-      // Prevent rendering if texture not ready or context destroyed
       if (!isTextureLoaded.current || isDestroyed) return;
 
       resize();
-
       gl.useProgram(program);
 
-      // Explicit Texture Unit Binding
       gl.uniform1i(uTexture, 0);
       gl.activeTexture(gl.TEXTURE0);
-
-      // Guard against using deleted texture
       if (gl.isTexture(texture)) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
       } else {
@@ -152,33 +129,65 @@ export function TiledBackground({
     };
 
     image.onload = () => {
-      if (isDestroyed) return; // Cleanup guard
+      if (isDestroyed) return;
 
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        image
-      );
+      const cropMargin = 5;
+      const targetWidth = Math.max(1, image.width - cropMargin * 2);
+      const targetHeight = Math.max(1, image.height - cropMargin * 2);
 
-      // Use REPEAT (Standard)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      const offscreen = document.createElement("canvas");
+      offscreen.width = targetWidth;
+      offscreen.height = targetHeight;
+      const ctx = offscreen.getContext("2d");
+
+      if (ctx) {
+        ctx.drawImage(
+          image,
+          cropMargin,
+          cropMargin,
+          targetWidth,
+          targetHeight,
+          0,
+          0,
+          targetWidth,
+          targetHeight,
+        );
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
+
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          offscreen,
+        );
+      } else {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          image,
+        );
+      }
+
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
       gl.texParameteri(
         gl.TEXTURE_2D,
         gl.TEXTURE_MIN_FILTER,
-        gl.LINEAR_MIPMAP_LINEAR
+        gl.LINEAR_MIPMAP_LINEAR,
       );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
       gl.generateMipmap(gl.TEXTURE_2D);
 
       isTextureLoaded.current = true;
-
-      // Initial draw
       if (renderRef.current) renderRef.current(zoomStateRef.current);
     };
 
@@ -190,16 +199,15 @@ export function TiledBackground({
     image.src = "/assets/seamless_parchment_background.png";
 
     return () => {
-      isDestroyed = true; // Set flag immediately
+      isDestroyed = true;
       isTextureLoaded.current = false;
-
       gl.deleteProgram(program);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       if (gl.isTexture(texture)) gl.deleteTexture(texture);
       gl.deleteBuffer(buffer);
     };
-  }, []); // Run once to setup GL
+  }, []);
 
   useEffect(() => {
     zoomStateRef.current = zoomState;
