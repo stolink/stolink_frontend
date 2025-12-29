@@ -3,7 +3,7 @@
 export interface ChapterNode {
   id: string;
   title: string;
-  type: "part" | "chapter" | "section";
+  type: "chapter" | "section"; // chapter = 폴더 역할 (하위 폴더/섹션 포함 가능)
   characterCount?: number;
   isPlot?: boolean;
   isModified?: boolean;
@@ -18,7 +18,7 @@ export interface ChapterTreeProps {
   onAddChapter?: (
     title: string,
     parentId?: string,
-    type?: "chapter" | "section"
+    type?: "chapter" | "section",
   ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;

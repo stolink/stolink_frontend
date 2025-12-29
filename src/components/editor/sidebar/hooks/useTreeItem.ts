@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, type MouseEvent } from "react";
 interface UseTreeItemProps {
   initialTitle: string;
   nodeId: string;
-  isPart: boolean;
+  isFolder: boolean; // chapter = 폴더 역할
   onSelect?: (id: string) => void;
   onRename?: (id: string, newTitle: string) => void;
   forceExpanded?: boolean; // 외부에서 모두 접기/펼치기 제어
@@ -12,7 +12,7 @@ interface UseTreeItemProps {
 export function useTreeItem({
   initialTitle,
   nodeId,
-  isPart,
+  isFolder,
   onSelect,
   onRename,
   forceExpanded,
@@ -26,11 +26,10 @@ export function useTreeItem({
   const itemRef = useRef<HTMLDivElement>(null);
 
   // forceExpanded가 변경되면 해당 값으로 동기화
-  useEffect(() => {
-    if (forceExpanded !== undefined) {
-      setIsExpanded(forceExpanded);
-    }
-  }, [forceExpanded]);
+  // 초기값으로 forceExpanded 사용, 이후 변경 시에만 동기화
+  if (forceExpanded !== undefined && forceExpanded !== isExpanded) {
+    setIsExpanded(forceExpanded);
+  }
 
   // Rename input focus effect
   useEffect(() => {
@@ -55,7 +54,7 @@ export function useTreeItem({
 
   const handleClick = () => {
     if (isRenaming) return;
-    if (isPart) {
+    if (isFolder) {
       setIsExpanded(!isExpanded);
     } else {
       onSelect?.(nodeId);

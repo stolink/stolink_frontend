@@ -70,13 +70,13 @@ export default function ExportPage() {
   // Filter documents for current project
   // If no documents found for projectId, fall back to sample project
   let projectDocuments = documents.filter(
-    (doc: Document) => doc.projectId === projectId
+    (doc: Document) => doc.projectId === projectId,
   );
 
   // Fallback to sample project if no documents found
   if (projectDocuments.length === 0) {
     projectDocuments = documents.filter(
-      (doc: Document) => doc.projectId === SAMPLE_PROJECT_ID
+      (doc: Document) => doc.projectId === SAMPLE_PROJECT_ID,
     );
   }
 
@@ -164,7 +164,7 @@ export default function ExportPage() {
                 projectId,
                 documents: projectDocuments,
               },
-              projectTitle
+              projectTitle,
             );
             break;
           case "epub":
@@ -194,7 +194,7 @@ export default function ExportPage() {
         }, 3000);
       }
     },
-    [projectDocuments, projectTitle, projectId]
+    [projectDocuments, projectTitle, projectId],
   );
 
   const handleImportClick = () => {
@@ -262,7 +262,7 @@ export default function ExportPage() {
       (doc) =>
         doc.projectId === targetProjectId &&
         doc.type === "folder" &&
-        doc.title === "가져온 문서"
+        doc.title === "가져온 문서",
     )?.id;
 
     if (!importFolderId) {
@@ -360,7 +360,7 @@ export default function ExportPage() {
       console.error("Import error:", error);
       setImportStatus("error");
       setImportError(
-        error instanceof Error ? error.message : "가져오기에 실패했습니다."
+        error instanceof Error ? error.message : "가져오기에 실패했습니다.",
       );
       setTimeout(() => {
         setImportStatus("idle");
@@ -452,7 +452,7 @@ export default function ExportPage() {
                   >
                     {getButtonIcon(
                       format.id,
-                      exportStatus[format.id] || "idle"
+                      exportStatus[format.id] || "idle",
                     )}
                   </div>
                   <h3 className="font-medium">{format.title}</h3>
@@ -497,13 +497,15 @@ export default function ExportPage() {
                         ${importStatus === "loading" ? "border-mocha-400 bg-mocha-400/10" : ""}`}
             >
               <div className="w-16 h-16 bg-cloud-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  ) : importStatus === "success" ? (
-                    <Check className="h-8 w-8 text-status-success" />
-                  ) : importStatus === "error" ? (
-                    <AlertCircle className="h-8 w-8 text-status-error" />
-                  ) : (
-                    <Archive className="h-8 w-8 text-muted-foreground" />
-                  )}
+                {importStatus === "loading" ? (
+                  <Loader2 className="h-8 w-8 text-mocha-500 animate-spin" />
+                ) : importStatus === "success" ? (
+                  <Check className="h-8 w-8 text-status-success" />
+                ) : importStatus === "error" ? (
+                  <AlertCircle className="h-8 w-8 text-status-error" />
+                ) : (
+                  <Archive className="h-8 w-8 text-muted-foreground" />
+                )}
               </div>
 
               {importStatus === "success" ? (

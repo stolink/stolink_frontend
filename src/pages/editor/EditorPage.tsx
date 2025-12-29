@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Minimize2 } from "lucide-react";
 
@@ -37,9 +37,9 @@ import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import SnapshotPanel from "@/components/editor/SnapshotPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import DemoHeader from "@/components/editor/DemoHeader";
-import { EditorSettingsPanel } from "@/components/editor/settings/EditorSettingsPanel";
 // SectionStrip removed - minimizing distractions for writer focus
 // ScriveningsEditor & OutlineView removed (moved to EditorContent)
+// EditorSettingsPanel removed (not currently used)
 
 // Refactored Hooks
 import { useEditorHandlers } from "./hooks/useEditorHandlers";
@@ -62,14 +62,14 @@ import { useBulkDocumentContent } from "@/hooks/useDocuments";
 interface DemoChapterTreeNode {
   id: string;
   title: string;
-  type: "part" | "chapter" | "section";
+  type: "chapter" | "section"; // chapter = 폴더 역할
   characterCount?: number;
   isPlot?: boolean;
   children?: DemoChapterTreeNode[];
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -149,11 +149,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const editorContentRef = useRef<EditorContentHandle>(null);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null
+    isDemo ? "chapter-1" : null,
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -163,19 +163,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode
+    (state) => state.behavior.typewriterMode,
   );
   const toggleTypewriterMode = useEditorSettingStore(
-    (state) => state.toggleTypewriterMode
+    (state) => state.toggleTypewriterMode,
   );
   const isTypewriterMode = typewriterMode !== "off";
 
   // Focus mode from settings store
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode
+    (state) => state.behavior.focusMode,
   );
   const toggleFocusMode = useEditorSettingStore(
-    (state) => state.toggleFocusMode
+    (state) => state.toggleFocusMode,
   );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
@@ -195,9 +195,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-          (doc) => doc.projectId === projectId
-        ),
-    [allDocuments, projectId, isDemo]
+            (doc) => doc.projectId === projectId,
+          ),
+    [allDocuments, projectId, isDemo],
   );
 
   const previewChapters = useMemo(() => {
@@ -216,7 +216,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     if (isDemo) return "데모 작품";
     if (project?.title) return project.title;
     const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder"
+      (doc: Document) => doc.type === "folder",
     );
     return folder?.title || "내 작품";
   }, [project?.title, localDocuments, isDemo]);
@@ -227,7 +227,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
   const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId
+    isDemo ? null : selectedSectionId,
   );
   const {
     createDocument,
@@ -247,7 +247,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveContentRef,
     saveTimeoutRef,
     handleSelectFolder,
-    handleSelectSection,
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
@@ -372,14 +371,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         import("@/stores/useWritingStatsStore").then(
           ({ useWritingStatsStore }) => {
             useWritingStatsStore.getState().recordActivity(delta);
-          }
+          },
         );
       }
       prevCountRef.current = count;
 
       handleCharacterCountChange(count, setCharacterCount);
     },
-    [handleCharacterCountChange]
+    [handleCharacterCountChange],
   );
 
   // ============================================================
@@ -450,7 +449,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       setSplitState(null); // 일반 생성 모드
       setCreateSectionModalOpen(true);
     },
-    [selectedSectionId, documents]
+    [selectedSectionId, documents],
   );
 
   const handleConfirmCreateSection = async (title: string) => {
@@ -507,7 +506,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full"
+        isDemo ? "h-screen" : "h-full",
       )}
     >
       {/* Demo Header */}
