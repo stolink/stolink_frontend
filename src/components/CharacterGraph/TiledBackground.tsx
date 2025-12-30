@@ -97,21 +97,28 @@ export function TiledBackground({
     const uTransform = gl.getUniformLocation(program, "uTransform");
     const uTexture = gl.getUniformLocation(program, "uTexture");
 
-    const resize = () => {
-      if (!canvas || isDestroyed) return;
-      const displayWidth = canvas.clientWidth;
-      const displayHeight = canvas.clientHeight;
-      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-        gl.viewport(0, 0, canvas.width, canvas.height);
+    // ResizeObserver를 사용하여 크기 변경 감지 (Reflow 방지)
+    const observer = new ResizeObserver((entries) => {
+      if (isDestroyed || !canvas) return;
+      for (const entry of entries) {
+        const width = Math.floor(entry.contentRect.width);
+        const height = Math.floor(entry.contentRect.height);
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+          gl.viewport(0, 0, width, height);
+          // 크기가 바뀌면 즉시 재렌더링
+          if (renderRef.current && zoomStateRef.current) {
+            renderRef.current(zoomStateRef.current);
+          }
+        }
       }
-    };
+    });
+    observer.observe(canvas);
 
     renderRef.current = (z: ZoomState) => {
       if (!isTextureLoaded.current || isDestroyed) return;
 
-      resize();
       gl.useProgram(program);
 
       gl.uniform1i(uTexture, 0);
@@ -200,6 +207,7 @@ export function TiledBackground({
 
     return () => {
       isDestroyed = true;
+      observer.disconnect();
       isTextureLoaded.current = false;
       gl.deleteProgram(program);
       gl.deleteShader(vs);
@@ -215,7 +223,6 @@ export function TiledBackground({
   useEffect(() => {
     zoomStateRef.current = zoomState;
 
-    // 성능 최적화: RAF 중복 호출 방지 (이미 예약된 프레임이 있으면 스킵)
     if (renderRef.current && !pendingRafRef.current) {
       pendingRafRef.current = requestAnimationFrame(() => {
         renderRef.current?.(zoomStateRef.current);

@@ -12,12 +12,12 @@ interface UseZoomReturn {
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;
-  centerAt: (x: number, y: number, scale?: number) => void;
+  centerAt: (x: number, y: number, scale?: number) => Promise<void>;
 }
 
 /**
  * D3 Zoom 동작을 관리하는 훅
- * 성능 최적화: RAF 기반 상태 업데이트 스로틀링
+ * 성능 최적화: RAF 스로틀링, 단 transition 중에는 즉시 업데이트
  */
 export function useZoom(
   svgRef: React.RefObject<SVGSVGElement | null>,
@@ -33,10 +33,12 @@ export function useZoom(
     y: 0,
   });
 
-  // 최신 줌 상태를 ref로 유지 (RAF 콜백에서 사용)
-  const zoomStateRef = useRef<ZoomState>(zoomState);
-  // RAF 스로틀링용 ref
-  const rafRef = useRef<number | null>(null);
+  // 최신 상태 ref (RAF 콜백에서 사용)
+  const latestStateRef = useRef<ZoomState>(zoomState);
+  // RAF 스로틀링 ref
+  const rafIdRef = useRef<number | null>(null);
+  // Transition 중 플래그 (transition 중에는 스로틀링 비활성화)
+  const isTransitioningRef = useRef(false);
 
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<
     SVGSVGElement,
@@ -68,20 +70,27 @@ export function useZoom(
         // D3 DOM 직접 조작 (즉시, 끊김 없음)
         d3.select(g).attr("transform", transform.toString());
 
-        // 최신 상태 ref에 저장
-        zoomStateRef.current = {
+        // 최신 상태를 ref에 즉시 저장
+        const newState: ZoomState = {
           scale: transform.k,
           x: transform.x,
           y: transform.y,
         };
+        latestStateRef.current = newState;
 
-        // RAF 스로틀링: 이미 예약된 프레임 있으면 스킵 (끊김 방지)
-        if (!rafRef.current) {
-          rafRef.current = requestAnimationFrame(() => {
-            setZoomState({ ...zoomStateRef.current });
-            onZoomChange?.(zoomStateRef.current);
-            rafRef.current = null;
-          });
+        // Transition 중이면 즉시 업데이트 (부드러운 애니메이션을 위해)
+        if (isTransitioningRef.current) {
+          setZoomState(newState);
+          onZoomChange?.(newState);
+        } else {
+          // 일반 줌은 RAF 스로틀링 적용
+          if (rafIdRef.current === null) {
+            rafIdRef.current = requestAnimationFrame(() => {
+              setZoomState({ ...latestStateRef.current });
+              onZoomChange?.(latestStateRef.current);
+              rafIdRef.current = null;
+            });
+          }
         }
       });
 
@@ -89,9 +98,9 @@ export function useZoom(
     zoomBehaviorRef.current = zoom;
 
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
       }
       d3.select(svg).on(".zoom", null);
     };
@@ -103,7 +112,14 @@ export function useZoom(
     const zoom = zoomBehaviorRef.current;
     if (!svg || !zoom) return;
 
-    d3.select(svg).transition().duration(300).call(zoom.scaleBy, 1.3);
+    isTransitioningRef.current = true;
+    d3.select(svg)
+      .transition()
+      .duration(300)
+      .call(zoom.scaleBy, 1.3)
+      .on("end", () => {
+        isTransitioningRef.current = false;
+      });
   }, [svgRef]);
 
   // 줌 아웃
@@ -112,7 +128,14 @@ export function useZoom(
     const zoom = zoomBehaviorRef.current;
     if (!svg || !zoom) return;
 
-    d3.select(svg).transition().duration(300).call(zoom.scaleBy, 0.7);
+    isTransitioningRef.current = true;
+    d3.select(svg)
+      .transition()
+      .duration(300)
+      .call(zoom.scaleBy, 0.7)
+      .on("end", () => {
+        isTransitioningRef.current = false;
+      });
   }, [svgRef]);
 
   // 줌 리셋
@@ -121,33 +144,44 @@ export function useZoom(
     const zoom = zoomBehaviorRef.current;
     if (!svg || !zoom) return;
 
+    isTransitioningRef.current = true;
     d3.select(svg)
       .transition()
       .duration(500)
-      .call(zoom.transform, d3.zoomIdentity);
+      .call(zoom.transform, d3.zoomIdentity)
+      .on("end", () => {
+        isTransitioningRef.current = false;
+      });
   }, [svgRef]);
 
   const centerAt = useCallback(
     (x: number, y: number, targetScale: number = 1.0) => {
       const svg = svgRef.current;
       const zoom = zoomBehaviorRef.current;
-      if (!svg || !zoom) return;
+      if (!svg || !zoom) return Promise.resolve();
 
-      const width = svg.clientWidth || svg.getBoundingClientRect().width;
-      const height = svg.clientHeight || svg.getBoundingClientRect().height;
+      return new Promise<void>((resolve) => {
+        const width = svg.clientWidth || svg.getBoundingClientRect().width;
+        const height = svg.clientHeight || svg.getBoundingClientRect().height;
 
-      // Calculate translation to center the point (x, y)
-      // transform = translate(cx, cy) * scale(k) * translate(-x, -y)
-      const t = d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(targetScale)
-        .translate(-x, -y);
+        // Calculate translation to center the point (x, y)
+        // transform = translate(cx, cy) * scale(k) * translate(-x, -y)
+        const t = d3.zoomIdentity
+          .translate(width / 2, height / 2)
+          .scale(targetScale)
+          .translate(-x, -y);
 
-      d3.select(svg)
-        .transition()
-        .duration(750)
-        .ease(d3.easeCubicOut)
-        .call(zoom.transform, t);
+        isTransitioningRef.current = true;
+        d3.select(svg)
+          .transition()
+          .duration(750)
+          .ease(d3.easeCubicInOut)
+          .call(zoom.transform, t)
+          .on("end", () => {
+            isTransitioningRef.current = false;
+            resolve();
+          });
+      });
     },
     [svgRef],
   );

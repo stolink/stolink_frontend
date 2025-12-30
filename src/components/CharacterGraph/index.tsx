@@ -35,7 +35,7 @@ interface CharacterGraphProps {
 }
 
 export interface CharacterGraphRef {
-  focusNode: (nodeId: string) => void;
+  focusNode: (nodeId: string) => Promise<void>;
 }
 
 export const CharacterGraph = forwardRef<
@@ -154,45 +154,25 @@ export const CharacterGraph = forwardRef<
     useEffect(() => {
       if (!simulation || !gRef.current) return;
 
-      // 성능 최적화: D3 선택자를 tick 외부에서 한 번만 생성
       const g = d3.select(gRef.current);
-      let linkSelection: d3.Selection<
-        SVGLineElement,
-        RelationshipLink,
-        SVGGElement,
-        unknown
-      > | null = null;
-      let nodeSelection: d3.Selection<
-        SVGGElement,
-        CharacterNode,
-        SVGGElement,
-        unknown
-      > | null = null;
 
       // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
       let frameCount = 0;
       simulation.on("tick", () => {
         frameCount++;
 
-        // 선택자 캐싱 (첫 tick에서만 초기화)
-        if (!linkSelection) {
-          linkSelection = g.selectAll<SVGLineElement, RelationshipLink>(
-            ".link-line",
-          );
-        }
-        if (!nodeSelection) {
-          nodeSelection = g.selectAll<SVGGElement, CharacterNode>(
-            ".node-group",
-          );
-        }
+        // 매 tick마다 새로운 선택자 사용 (React 리렌더 시 stale 방지)
+        const linkSel = g.selectAll<SVGLineElement, RelationshipLink>(
+          ".link-line",
+        );
+        const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
         // 1. 필수 업데이트 - 링크 위치 (매 프레임)
-        linkSelection.each(function (d) {
+        linkSel.each(function (d) {
           if (!d) return;
           const source = d.source as unknown as CharacterNode;
           const target = d.target as unknown as CharacterNode;
-          const line = d3.select(this);
-          line
+          d3.select(this)
             .attr("x1", source.x ?? 0)
             .attr("y1", source.y ?? 0)
             .attr("x2", target.x ?? 0)
@@ -200,7 +180,7 @@ export const CharacterGraph = forwardRef<
         });
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
-        nodeSelection.attr("transform", (d) =>
+        nodeSel.attr("transform", (d) =>
           d ? `translate(${d.x}, ${d.y})` : "",
         );
 
@@ -349,8 +329,9 @@ export const CharacterGraph = forwardRef<
         focusNode: (nodeId: string) => {
           const node = nodes.find((n) => n.id === nodeId);
           if (node && node.x !== undefined && node.y !== undefined) {
-            centerAt(node.x, node.y, 1.35);
+            return centerAt(node.x, node.y, 1.35);
           }
+          return Promise.resolve();
         },
       }),
       [nodes, centerAt],
@@ -412,13 +393,8 @@ export const CharacterGraph = forwardRef<
             shapeRendering: "geometricPrecision",
           }}
         >
-          {/* 줌/패닝용 그룹 - GPU 레이어로 분리하여 페인트 플래시 방지 */}
-          <g
-            ref={gRef}
-            style={{
-              willChange: "transform",
-            }}
-          >
+          {/* 줌/패닝용 그룹 */}
+          <g ref={gRef}>
             {/* Always available shared defs */}
             <defs>
               <radialGradient
