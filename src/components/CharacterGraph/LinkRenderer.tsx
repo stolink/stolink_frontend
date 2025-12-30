@@ -120,7 +120,7 @@ export const LinkRenderer = memo(function LinkRenderer({
           // Hover uses bright Mocha color for highlights, Highlighted uses relation color
           stroke={isHovered ? MOCHA_COLORS[400] : color}
           strokeWidth={strokeWidth + (isHovered ? 6 : 4)} // Wider glow on hover
-          strokeOpacity={isHovered ? 0.6 : 0.15} // Much stronger opacity on hover (was 0.2/0.08)
+          strokeOpacity={isHovered ? 0.6 : 0.15} // Much stronger opacity on hover
           strokeLinecap="round"
         />
       )}

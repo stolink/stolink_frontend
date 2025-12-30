@@ -6,7 +6,7 @@ import { ANIMATION } from "@/components/CharacterGraph/constants";
 interface UseDragOptions {
   onDragStart?: (node: CharacterNode) => void;
   onDragEnd?: (node: CharacterNode) => void;
-  simulation?: d3.Simulation<CharacterNode, undefined> | null;
+  simulation?: d3.Simulation<CharacterNode, unknown> | null;
 }
 
 /**
