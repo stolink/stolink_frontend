@@ -169,10 +169,7 @@ export const NodeRenderer = memo(function NodeRenderer({
             clipPath={`url(#clip-${node.id})`}
             preserveAspectRatio="xMidYMid slice"
             style={{
-              filter:
-                isDimmed || (!isHighlighted && !isSelected)
-                  ? "grayscale(80%) brightness(0.9)"
-                  : "none",
+              filter: isDimmed ? "grayscale(80%) brightness(0.9)" : "none",
               transition: `filter ${ANIMATION.highlightDuration}ms ease`,
             }}
           />

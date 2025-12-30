@@ -4,18 +4,18 @@ import type { RelationType, CharacterRole } from "@/types";
 // 🎨 색상 설정
 // =====================================================
 
-// 관계 타입별 색상 (서사적 깊이, 형광 톤 제거)
+// 관계 타입별 색상 (서사적 깊이)
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friend: "#4B9F7D", // Emerald - 신뢰감, 차분한 녹색
-  lover: "#C4718A", // Muted Rose - 성숙한 로맨스
-  enemy: "#B14B4B", // Russet Red - 위기감, 톤 다운된 레드
+  friendly: "#15803D", // Green 700 (Deep Green)
+  hostile: "#B91C1C", // Red 700 (Deep Red)
+  romantic: "#BE185D", // Pink 700 (Deep Pink)
 };
 
 // 관계 타입별 라벨 (한글)
 export const RELATION_LABELS: Record<RelationType, string> = {
-  friend: "친구",
-  lover: "연인",
-  enemy: "적대",
+  friendly: "우호",
+  hostile: "적대",
+  romantic: "로맨스",
 };
 
 // 역할별 라벨

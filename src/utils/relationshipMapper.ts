@@ -1,25 +1,34 @@
-import type { Character, BackendRelationshipType } from "@/types/character";
+import type { Character } from "@/types/character";
 import type { RelationType, RelationshipLink } from "@/types/characterGraph";
 
 /**
- * 백엔드 RelationshipType → D3 그래프 RelationType 변환
- *
- * @param backendType - 백엔드에서 사용하는 관계 타입 (5종)
- * @returns D3 그래프에서 사용하는 관계 타입 (3종: friend/lover/enemy)
+ * 관계 타입 정규화 (백엔드 데이터 불일치 대응)
+ * legacy: friendship, conflict, family, neutral (removed)
+ * new: friendly, hostile, romantic
  */
-export function toGraphRelationType(
-  backendType: BackendRelationshipType | string
-): RelationType {
-  const mapping: Record<string, RelationType> = {
-    friendly: "friend",
-    romantic: "lover",
-    hostile: "enemy",
-    family: "friend", // 가족 → 친구 관계로 표시
-    neutral: "friend", // 중립 → 친구 관계로 표시
-  };
-  return mapping[backendType] || "friend"; // Fallback for unexpected types
-}
+export function normalizeRelationType(type: string): RelationType {
+  const normalized = type.toLowerCase();
 
+  const mapping: Record<string, RelationType> = {
+    // Standard
+    friendly: "friendly",
+    hostile: "hostile",
+    romantic: "romantic",
+
+    // Legacy / Aliases / Mapping for removed types
+    family: "friendly", // 가족 -> 우호로 편입
+    neutral: "friendly", // 중립 -> 우호로 편입
+
+    friendship: "friendly",
+    friend: "friendly",
+    conflict: "hostile",
+    enemy: "hostile",
+    lover: "romantic",
+    romance: "romantic",
+  };
+
+  return mapping[normalized] || "friendly";
+}
 /**
  * Character.relationships를 D3 그래프용 Link 배열로 변환
  *
@@ -32,7 +41,7 @@ export function toGraphRelationType(
  * <CharacterGraph characters={characters} links={links} />
  */
 export function extractRelationshipLinks(
-  characters: Character[]
+  characters: Character[],
 ): RelationshipLink[] {
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
@@ -41,7 +50,7 @@ export function extractRelationshipLinks(
     // 타입 가드: relationships가 배열인지 확인
     if (!Array.isArray(char.relationships)) {
       console.warn(
-        `Character ${char.id} (${char.name}) missing relationships array`
+        `Character ${char.id} (${char.name}) missing relationships array`,
       );
       return;
     }
@@ -53,7 +62,7 @@ export function extractRelationshipLinks(
       // target ID 검증
       if (!targetId) {
         console.warn(
-          `Invalid relationship for character ${char.id}: missing target`
+          `Invalid relationship for character ${char.id}: missing target`,
         );
         return;
       }
@@ -71,7 +80,7 @@ export function extractRelationshipLinks(
         id: String(rel.id),
         source: sourceId,
         target: targetId,
-        type: toGraphRelationType(rel.type),
+        type: normalizeRelationType(rel.type),
         strength: rel.strength,
         label: rel.label ?? undefined,
       });

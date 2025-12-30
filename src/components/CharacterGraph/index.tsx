@@ -494,7 +494,7 @@ export const CharacterGraph = forwardRef<
           </g>
         </svg>
 
-        <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2">
+        <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2 z-20">
           <input
             type="checkbox"
             id="grouping-toggle"
