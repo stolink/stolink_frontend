@@ -192,7 +192,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       ];
 
       return exts;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+       
     }, []);
 
     const editor = useEditor({

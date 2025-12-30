@@ -79,7 +79,7 @@ export function RelationshipEventTooltip({
               <Badge
                 className={cn(
                   "px-2 py-0.5 text-xs font-medium capitalize",
-                  RELATION_COLORS[type] || "bg-stone-500",
+                  RELATION_COLORS[type] || "bg-stone-500"
                 )}
               >
                 {type}
@@ -96,7 +96,7 @@ export function RelationshipEventTooltip({
                         "w-1.5 h-1.5 rounded-full transition-colors",
                         i < Math.round(strength / 2)
                           ? "bg-mocha-500"
-                          : "bg-stone-200",
+                          : "bg-stone-200"
                       )}
                     />
                   ))}
@@ -137,7 +137,7 @@ export function RelationshipEventTooltip({
                     variant="outline"
                     className={cn(
                       "text-[10px] px-1.5 py-0 h-5",
-                      RELATION_COLORS[event.type] || "bg-stone-400",
+                      RELATION_COLORS[event.type] || "bg-stone-400"
                     )}
                   >
                     {event.type}
@@ -149,6 +149,6 @@ export function RelationshipEventTooltip({
         </CardContent>
       </Card>
     </div>,
-    document.body,
+    document.body
   );
 }

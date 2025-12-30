@@ -86,6 +86,7 @@ export function RelationshipDetailSheet({
     type,
     strength,
     description,
+    label: relationLabel,
     evolved_from,
     bidirectional,
     since,
@@ -159,9 +160,15 @@ export function RelationshipDetailSheet({
               <h4 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">
                 관계 설명
               </h4>
-              <p className="text-stone-800 leading-relaxed whitespace-pre-wrap font-sans text-base">
-                {description || "관계에 대한 설명이 없습니다."}
-              </p>
+              {relationLabel || description ? (
+                <p className="text-stone-800 leading-relaxed whitespace-pre-wrap font-sans text-base">
+                  {relationLabel || description}
+                </p>
+              ) : (
+                <p className="text-stone-400 italic text-sm">
+                  관계에 대한 설명이 없습니다.
+                </p>
+              )}
             </div>
 
             {/* Strength Gauge */}
@@ -182,20 +189,20 @@ export function RelationshipDetailSheet({
                 <div
                   className={cn(
                     "h-full transition-all duration-500",
-                    colorClass,
+                    colorClass
                   )}
                   style={{ width: `${(strength / 10) * 100}%` }}
                 />
               </div>
             </div>
 
-            {/* Relationship History Timeline (New Feature) */}
-            {history && history.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  관계 변천사
-                </h4>
+            {/* Relationship History Timeline */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                관계 변천사
+              </h4>
+              {history && history.length > 0 ? (
                 <div className="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-200">
                   {history.map((event, idx) => {
                     const eventColor =
@@ -208,7 +215,7 @@ export function RelationshipDetailSheet({
                         <div
                           className={cn(
                             "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200",
-                            eventColor.split(" ")[0], // Extract bg class
+                            eventColor.split(" ")[0] // Extract bg class
                           )}
                         />
 
@@ -245,11 +252,15 @@ export function RelationshipDetailSheet({
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-stone-400 italic">
+                  관계 변천사가 아직 기록되지 않았습니다.
+                </p>
+              )}
+            </div>
 
             {/* Legacy Evolution History (Fallback) */}
-            {!history && evolved_from && (
+            {evolved_from && (
               <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-2">
                 <div className="flex items-center gap-2 text-stone-500 mb-2">
                   <Activity className="w-4 h-4" />

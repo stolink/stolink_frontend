@@ -14,7 +14,7 @@ export interface BackendRelationship {
   description?: string;
   bidirectional?: boolean;
   evolved_from?: BackendRelationshipType;
-  history?: RelationshipEvent[]; // 관계 변천사
+  history?: RelationshipEvent[] | string; // 관계 변천사 (배열 또는 JSON 문자열)
 }
 
 export interface RelationshipEvent {

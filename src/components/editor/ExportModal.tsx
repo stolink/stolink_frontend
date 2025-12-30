@@ -93,7 +93,7 @@ export default function ExportModal({
     const { styles } = preset;
 
     // <p> 태그에 스타일 적용
-    let styledContent = content
+    const styledContent = content
       .replace(
         /<p>/g,
         `<p style="text-indent: ${styles.textIndent}; margin-bottom: ${styles.paragraphSpacing};">`

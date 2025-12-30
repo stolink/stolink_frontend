@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number },
+    coords?: { x: number; y: number }
   ) => void;
   onClick?: (link: RelationshipLink) => void;
 }
@@ -57,8 +57,8 @@ export const LinkRenderer = memo(function LinkRenderer({
 
   const color = RELATION_COLORS[link.type] || "#9ca3af";
 
-  // 강도에 따른 선 두께
-  const baseWidth = 1 + (link.strength / 10) * 4;
+  // 강도에 따른 선 두께 (strength 1-10, 1:10 = 1:4.5 비율)
+  const baseWidth = 2 + ((link.strength - 1) / 9) * 7; // 2px ~ 9px (4.5배 차이)
   // Hover increases width significantly for feedback
   const hoverWidthBonus = isHovered ? 2.5 : 0;
   const strokeWidth = isHighlighted

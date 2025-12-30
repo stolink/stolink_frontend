@@ -44,15 +44,13 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 | Warning | #B8860B | 경고 (가독성 확보 골드) |
 | Error   | #A33A3A | 오류 (공학용 레드)      |
 
-### Relationship Colors (서사적 깊이)
+### Relationship Colors (TW3K/CK3 스타일)
 
-| 관계 유형 | HEX     | 설명            |
-| --------- | ------- | --------------- |
-| Friendly  | #7A8C6F | Muted Olive     |
-| Hostile   | #9C4A3F | Rust Red        |
-| Romance   | #B38B82 | Dusty Rose      |
-| Family    | #4F5861 | Steel Blue-Grey |
-| Neutral   | #8D8B88 | Warm Grey       |
+| 관계 유형 | HEX     | 설명        |
+| --------- | ------- | ----------- |
+| Friendly  | #047857 | Emerald 700 |
+| Hostile   | #DC2626 | Red 600     |
+| Romantic  | #EC4899 | Pink 500    |
 
 ## 디자인 원칙
 
