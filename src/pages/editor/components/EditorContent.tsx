@@ -18,6 +18,7 @@ import type { Document } from "@/types/document";
 interface EditorContentProps {
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   selectedFolderId: string | null;
+  selectedSectionId: string | null; // 섹션 전환 시 에디터 재생성용 key
   projectId: string;
   splitView: { enabled: boolean; direction: "horizontal" | "vertical" };
   isFocusMode: boolean;
@@ -58,6 +59,7 @@ export const EditorContent = forwardRef<
     {
       viewMode,
       selectedFolderId,
+      selectedSectionId,
       projectId,
       splitView,
       isFocusMode,
@@ -71,28 +73,32 @@ export const EditorContent = forwardRef<
       documents,
       isDemo,
     },
-    ref
+    ref,
   ) => {
     const editorRef = useRef<TiptapEditorHandle>(null);
     const scriveningsRef = useRef<ScriveningsEditorHandle>(null);
 
-    useImperativeHandle(ref, () => ({
-      getSplitContent: () => {
-        if (viewMode === "editor" && editorRef.current) {
-          return editorRef.current.getSplitContent();
-        }
-        if (viewMode === "scrivenings" && scriveningsRef.current) {
-          return scriveningsRef.current.getSplitContent();
-        }
-        return null;
-      },
-      // 통합 뷰 저장 강제 호출 (섹션 클릭 전 저장용)
-      saveAll: async () => {
-        if (viewMode === "scrivenings" && scriveningsRef.current) {
-          await scriveningsRef.current.saveAll();
-        }
-      },
-    }), [viewMode]); // viewMode 의존성 추가
+    useImperativeHandle(
+      ref,
+      () => ({
+        getSplitContent: () => {
+          if (viewMode === "editor" && editorRef.current) {
+            return editorRef.current.getSplitContent();
+          }
+          if (viewMode === "scrivenings" && scriveningsRef.current) {
+            return scriveningsRef.current.getSplitContent();
+          }
+          return null;
+        },
+        // 통합 뷰 저장 강제 호출 (섹션 클릭 전 저장용)
+        saveAll: async () => {
+          if (viewMode === "scrivenings" && scriveningsRef.current) {
+            await scriveningsRef.current.saveAll();
+          }
+        },
+      }),
+      [viewMode],
+    ); // viewMode 의존성 추가
 
     // Empty State
     if (documents.length === 0 && !isDemo) {
@@ -143,6 +149,7 @@ export const EditorContent = forwardRef<
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full overflow-hidden">
                 <TiptapEditor
+                  key={selectedSectionId || "default"}
                   ref={editorRef}
                   onUpdate={onCharacterCountChange}
                   onContentChange={onContentChange}
@@ -162,7 +169,7 @@ export const EditorContent = forwardRef<
                 </div>
                 <TiptapEditor
                   initialContent={currentContent}
-                  onUpdate={() => { }}
+                  onUpdate={() => {}}
                   readOnly
                   hideToolbar
                 />
@@ -175,6 +182,7 @@ export const EditorContent = forwardRef<
       return (
         <div className="h-full overflow-hidden">
           <TiptapEditor
+            key={selectedSectionId || "default"}
             ref={editorRef}
             onUpdate={onCharacterCountChange}
             onContentChange={onContentChange}
@@ -187,7 +195,7 @@ export const EditorContent = forwardRef<
     }
 
     return null;
-  }
+  },
 );
 
 EditorContent.displayName = "EditorContent";
