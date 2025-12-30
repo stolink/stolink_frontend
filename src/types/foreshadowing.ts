@@ -1,51 +1,71 @@
 // Foreshadowing (복선) Types with flexible extras pattern
 
+// 작가가 직접 관리하는 상태값: 설정됨(setup) -> 회수됨(resolved) 또는 폐기됨(dropped)
+export type ForeshadowingStatus = "setup" | "resolved" | "dropped";
+export type ForeshadowingCategory =
+  | "dialogue"
+  | "props"
+  | "scene"
+  | "symbol"
+  | "other";
+
+export interface ForeshadowLocation {
+  documentId: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+  quote?: string;
+  chapterName?: string;
+  desc?: string; // 추가 설명
+}
+
 export interface Foreshadowing {
-  // === 필수 필드 ===
   id: string;
   projectId: string;
-  tag: string; // e.g., "전설의검"
+
+  // === Manual Management Fields ===
+  title: string; // 식별용 제목 (ex: "회중시계의 이니셜")
+  description?: string; // 작가 메모/설명
+
   status: ForeshadowingStatus;
+  importance: number; // 1~5 별점
+  category?: ForeshadowingCategory;
 
-  // === 주요 선택 필드 ===
-  description?: string;
-  importance?: ForeshadowingImportance; // 중요도
-  relatedCharacterIds?: string[]; // 관련 캐릭터
+  // === Connections ===
+  relatedEntities: {
+    characterIds?: string[];
+    placeIds?: string[];
+    itemIds?: string[];
+  };
 
-  // === 동적 추가 정보 ===
-  extras?: Record<string, string | number | boolean>;
-
-  // === 등장 위치들 ===
-  appearances: ForeshadowingAppearance[];
+  // === Locations ===
+  createdIn?: ForeshadowLocation; // 투척(Setup) 위치
+  resolvedIn?: ForeshadowLocation; // 회수(Payoff) 위치
 
   createdAt: string;
   updatedAt: string;
 }
 
-export type ForeshadowingStatus = "pending" | "recovered" | "ignored";
-export type ForeshadowingImportance = "major" | "minor";
-
-export interface ForeshadowingAppearance {
-  sceneId?: string; // Scene 레벨 추적 (신규)
-  chapterId: string;
-  chapterTitle: string;
-  line: number;
-  context: string; // 주변 텍스트
-  isRecovery: boolean; // 회수 지점인지
-
-  // 동적 추가 정보
-  extras?: Record<string, string | number | boolean>;
-}
-
 export interface CreateForeshadowingInput {
   projectId: string;
-  tag: string;
+  title: string;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
+  status?: ForeshadowingStatus;
+  importance?: number;
+  category?: ForeshadowingCategory;
+  createdIn?: ForeshadowLocation;
 }
 
 export interface UpdateForeshadowingInput {
-  status?: ForeshadowingStatus;
+  title?: string;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
+  status?: ForeshadowingStatus;
+  importance?: number;
+  category?: ForeshadowingCategory;
+  relatedEntities?: {
+    characterIds?: string[];
+    placeIds?: string[];
+    itemIds?: string[];
+  };
+  createdIn?: ForeshadowLocation;
+  resolvedIn?: ForeshadowLocation;
 }
