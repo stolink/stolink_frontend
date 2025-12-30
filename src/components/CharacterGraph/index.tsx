@@ -60,6 +60,7 @@ export const CharacterGraph = forwardRef<
 
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [enableGrouping, setEnableGrouping] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     const { width, height } = useResize(containerRef);
 
@@ -181,10 +182,29 @@ export const CharacterGraph = forwardRef<
           const source = d.source as unknown as CharacterNode;
           const target = d.target as unknown as CharacterNode;
 
-          this.setAttribute("x1", String(source.x ?? 0));
-          this.setAttribute("y1", String(source.y ?? 0));
-          this.setAttribute("x2", String(target.x ?? 0));
-          this.setAttribute("y2", String(target.y ?? 0));
+          const x1 = source.x;
+          const y1 = source.y;
+          const x2 = target.x;
+          const y2 = target.y;
+
+          // 좌표가 유효하지 않으면 업데이트 건너뜀 (깜빡임 방지)
+          if (
+            x1 === undefined ||
+            y1 === undefined ||
+            x2 === undefined ||
+            y2 === undefined ||
+            Number.isNaN(x1) ||
+            Number.isNaN(y1) ||
+            Number.isNaN(x2) ||
+            Number.isNaN(y2)
+          ) {
+            return;
+          }
+
+          this.setAttribute("x1", String(x1));
+          this.setAttribute("y1", String(y1));
+          this.setAttribute("x2", String(x2));
+          this.setAttribute("y2", String(y2));
         });
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
@@ -329,7 +349,16 @@ export const CharacterGraph = forwardRef<
     }, [simulation, enableGrouping, groupConfig]);
 
     const { zoomState, centerAt } = useZoom(svgRef, gRef);
-    const { dragBehavior } = useDrag({ simulation });
+
+    // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
+    const onDragStart = useCallback(() => setIsDragging(true), []);
+    const onDragEnd = useCallback(() => setIsDragging(false), []);
+
+    const { dragBehavior } = useDrag({
+      simulation,
+      onDragStart,
+      onDragEnd,
+    });
 
     useImperativeHandle(
       ref,
@@ -377,8 +406,11 @@ export const CharacterGraph = forwardRef<
     );
 
     const handleNodeHover = useCallback(
-      (id: string | null) => setHoveredNodeId(id),
-      [],
+      (id: string | null) => {
+        if (isDragging) return;
+        setHoveredNodeId(id);
+      },
+      [isDragging],
     );
 
     return (

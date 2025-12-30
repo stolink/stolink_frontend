@@ -217,25 +217,14 @@ export function TiledBackground({
     };
   }, []);
 
-  // RAF 중복 호출 방지용 ref
-  const pendingRafRef = useRef<number | null>(null);
-
+  // RAF 중복 호출 제거: 상위 useZoom에서 이미 스로틀링된 상태를 받음
   useEffect(() => {
     zoomStateRef.current = zoomState;
 
-    if (renderRef.current && !pendingRafRef.current) {
-      pendingRafRef.current = requestAnimationFrame(() => {
-        renderRef.current?.(zoomStateRef.current);
-        pendingRafRef.current = null;
-      });
+    // 즉시 렌더링 (지연 방지)
+    if (renderRef.current) {
+      renderRef.current(zoomState);
     }
-
-    return () => {
-      if (pendingRafRef.current) {
-        cancelAnimationFrame(pendingRafRef.current);
-        pendingRafRef.current = null;
-      }
-    };
   }, [zoomState]);
 
   return (

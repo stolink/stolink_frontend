@@ -78,19 +78,14 @@ export function useZoom(
         };
         latestStateRef.current = newState;
 
-        // Transition 중이면 즉시 업데이트 (부드러운 애니메이션을 위해)
-        if (isTransitioningRef.current) {
-          setZoomState(newState);
-          onZoomChange?.(newState);
-        } else {
-          // 일반 줌은 RAF 스로틀링 적용
-          if (rafIdRef.current === null) {
-            rafIdRef.current = requestAnimationFrame(() => {
-              setZoomState({ ...latestStateRef.current });
-              onZoomChange?.(latestStateRef.current);
-              rafIdRef.current = null;
-            });
-          }
+        // 항상 RAF 스로틀링 적용 (성능 최적화 및 일관된 부드러움)
+        // Transition 중에도 React 상태 업데이트를 스로틀링하여 메인 스레드 부하 감소
+        if (rafIdRef.current === null) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            setZoomState({ ...latestStateRef.current });
+            onZoomChange?.(latestStateRef.current);
+            rafIdRef.current = null;
+          });
         }
       });
 

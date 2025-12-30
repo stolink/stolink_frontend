@@ -48,6 +48,10 @@ useEffect(() => {
 
 `ANIMATION.reheatStrength` 상수 추가 및 적용.
 
+### 4. DOM Optimization (`NodeRenderer.tsx`)
+
+개별 노드마다 생성되던 `<radialGradient>`를 `node-gradient-common` 하나로 통합하여 DOM 노드 수 감소 및 렌더링 효율 증대.
+
 ## Outcome
 
 - **상태**: ✅ 해결됨

@@ -127,22 +127,10 @@ export const NodeRenderer = memo(function NodeRenderer({
         pointerEvents="none"
       />
 
-      {/* 메인 원 - 그라디언트 효과 (자연스러운 종이 질감, 개별 그라디언트 사용) */}
-      <defs>
-        <radialGradient
-          id={`node-gradient-${node.id}`}
-          cx="35%"
-          cy="35%"
-          r="65%"
-        >
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.98" />
-          <stop offset="50%" stopColor="#F8F8F7" stopOpacity="1" />
-          <stop offset="100%" stopColor="#E7E5E4" stopOpacity="1" />
-        </radialGradient>
-      </defs>
+      {/* 메인 원 - 그라디언트 효과 (자연스러운 종이 질감, 공용 그라디언트 사용) */}
       <circle
         r={radius}
-        fill={`url(#node-gradient-${node.id})`}
+        fill="url(#node-gradient-common)"
         stroke={roleColor}
         strokeWidth={isProtagonist ? 3 : 2}
         style={{
