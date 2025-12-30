@@ -146,6 +146,13 @@ export const CharacterGraph = forwardRef<
       >
     >(new Map());
 
+    // Cleanup cache on unmount
+    useEffect(() => {
+      return () => {
+        groupSelectionCache.current.clear();
+      };
+    }, []);
+
     // Clear cache when group config changes
     useEffect(() => {
       groupSelectionCache.current.clear();
@@ -168,15 +175,16 @@ export const CharacterGraph = forwardRef<
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
         // 1. 필수 업데이트 - 링크 위치 (매 프레임)
+        // 성능 최적화: d3.select(this) 대신 setAttribute 직접 사용 (Override reduction)
         linkSel.each(function (d) {
           if (!d) return;
           const source = d.source as unknown as CharacterNode;
           const target = d.target as unknown as CharacterNode;
-          d3.select(this)
-            .attr("x1", source.x ?? 0)
-            .attr("y1", source.y ?? 0)
-            .attr("x2", target.x ?? 0)
-            .attr("y2", target.y ?? 0);
+
+          this.setAttribute("x1", String(source.x ?? 0));
+          this.setAttribute("y1", String(source.y ?? 0));
+          this.setAttribute("x2", String(target.x ?? 0));
+          this.setAttribute("y2", String(target.y ?? 0));
         });
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)

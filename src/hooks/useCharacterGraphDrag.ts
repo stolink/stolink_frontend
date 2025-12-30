@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
+import { ANIMATION } from "@/components/CharacterGraph/constants";
 
 interface UseDragOptions {
   onDragStart?: (node: CharacterNode) => void;
@@ -26,7 +27,7 @@ export function useDrag(options: UseDragOptions) {
     ) => {
       // 시뮬레이션 활성화 (드래그한 노드만 이동 - alphaTarget으로 부하 제어)
       if (simulation) {
-        simulation.alphaTarget(0.3).restart();
+        simulation.alphaTarget(ANIMATION.reheatStrength).restart();
       }
 
       isDraggingRef.current = true;

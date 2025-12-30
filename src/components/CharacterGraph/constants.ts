@@ -107,6 +107,9 @@ export const ANIMATION = {
 
   // 호버
   hoverTransition: 150,
+
+  // 시뮬레이션
+  reheatStrength: 0.3,
 } as const;
 
 // =====================================================

@@ -15,3 +15,4 @@
 | 2025-12-28 | PR #69 AI Review Fixes        | ✅ Resolved | Used `axios.isAxiosError` for type-safe 404 handling, added `onError` handler for cache strategy  |
 | 2025-12-28 | PR #69 AI Review Round 2      | ✅ Resolved | Moved 404 error handling to `shareService` layer, removed axios import from hook                  |
 | 2025-12-29 | PR #73 AI Review Fixes        | ✅ Resolved | Fixed critical missing `onToggle` prop in `EditorLeftSidebar` and added DnD UX improvement TODO   |
+| 2025-12-30 | Graph Opt & Review Fixes      | ✅ Resolved | D3 perf opt (setAttribute), Memory leak fixes, Constant extraction                                |
