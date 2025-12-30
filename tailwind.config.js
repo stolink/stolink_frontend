@@ -14,6 +14,16 @@ export default {
         cloud: {
           50: "#F1F0EC", // Surface - Cloud Dancer
         },
+        // 복선(Foreshadowing) 테마 - Sage Green
+        sage: {
+          50: "#F0F4EF",   // 옅은 세이지 그린 (배경)
+          100: "#E1E9E0",
+          200: "#C3D3C1",
+          400: "#7A9878",
+          500: "#5F7D5F",  // 편집기 캐럿/선택 색상과 동일
+          600: "#4E6B4E",
+          700: "#3E4C3E",  // 딥 그린 (텍스트)
+        },
         espresso: {
           900: "#3D302A", // Text
         },

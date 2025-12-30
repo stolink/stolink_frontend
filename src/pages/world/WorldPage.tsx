@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,7 @@ import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   // Fetch Characters
   // projectId is guaranteed to be string here
@@ -315,7 +316,15 @@ export default function WorldPage() {
 
         {/* Foreshadowing */}
         <TabsContent value="foreshadowing" className="flex-1 m-0">
-          <ForeshadowingPanel projectId={projectId} />
+          <ForeshadowingPanel
+            projectId={projectId}
+            onNavigateToSection={(documentId) => {
+              // 해당 섹션을 선택한 상태로 에디터 페이지로 이동
+              navigate(`/projects/${projectId}/editor`, {
+                state: { selectedSectionId: documentId }
+              });
+            }}
+          />
         </TabsContent>
       </Tabs>
 
@@ -324,7 +333,7 @@ export default function WorldPage() {
         character={selectedCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={() => {}} // Read-only in this view for now
+        onSave={() => { }} // Read-only in this view for now
       />
     </div>
   );

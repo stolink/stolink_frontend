@@ -155,6 +155,8 @@ export const EditorContent = forwardRef<
                   onContentChange={onContentChange}
                   onCreateSection={onCreateSection}
                   initialContent={currentContent}
+                  documentId={selectedSectionId}
+                  sectionTitle={currentSectionTitle}
                   hideToolbar={isFocusMode}
                 />
               </div>
@@ -169,7 +171,7 @@ export const EditorContent = forwardRef<
                 </div>
                 <TiptapEditor
                   initialContent={currentContent}
-                  onUpdate={() => {}}
+                  onUpdate={() => { }}
                   readOnly
                   hideToolbar
                 />
@@ -188,6 +190,8 @@ export const EditorContent = forwardRef<
             onContentChange={onContentChange}
             onCreateSection={onCreateSection}
             initialContent={currentContent}
+            documentId={selectedSectionId}
+            sectionTitle={currentSectionTitle}
             hideToolbar={isFocusMode}
           />
         </div>

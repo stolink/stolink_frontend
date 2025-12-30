@@ -76,3 +76,76 @@
   height: 0;
   pointer-events: none;
 }
+
+/* =====================================================
+   복선(Foreshadowing) 태그 스타일
+   - 색상: 세이지 그린 (#F0F4EF 배경 / #3E4C3E 텍스트)
+   - 캐릭터(블루), 아이템(앰버)와 구분되는 그린 계열
+   ===================================================== */
+
+/* 기본 복선 태그 (미회수 상태) */
+.ProseMirror .foreshadowing-tag {
+  background: linear-gradient(135deg, #F0F4EF 0%, #E1E9E0 100%);
+  border: 1px solid #7A9878;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 2px;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #3E4C3E;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ProseMirror .foreshadowing-tag::before {
+  content: "✦";
+  font-size: 0.8em;
+  opacity: 0.7;
+  color: #5F7D5F;
+}
+
+.ProseMirror .foreshadowing-tag:hover {
+  background: linear-gradient(135deg, #E1E9E0 0%, #C3D3C1 100%);
+  box-shadow: 0 2px 8px rgba(95, 125, 95, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 회수된 복선 태그 */
+.ProseMirror .foreshadowing-tag.recovered,
+.ProseMirror .foreshadowing-tag[data-recovered="true"] {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: #10b981;
+  color: #047857;
+}
+
+.ProseMirror .foreshadowing-tag.recovered::before,
+.ProseMirror .foreshadowing-tag[data-recovered="true"]::before {
+  content: "✓";
+  color: #10b981;
+}
+
+/* 캐릭터 멘션 스타일 개선 */
+.ProseMirror .character-mention {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border: 1px solid #6366f1;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 0 2px;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #4338ca;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror .character-mention:hover {
+  background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
