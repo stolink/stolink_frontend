@@ -6,6 +6,7 @@ import {
   localDocumentRepository,
 } from "@/repositories/LocalDocumentRepository";
 import { useEditorStore } from "@/stores/useEditorStore";
+import { useForeshadowingStore } from "@/stores/useForeshadowingStore";
 import type {
   Document,
   DocumentTreeNode,
@@ -449,6 +450,9 @@ export function useDocumentMutations(projectId: string) {
         queryClient.invalidateQueries({
           queryKey: documentKeys.tree(projectId),
         });
+
+        // 6. 섹션 삭제 시 해당 섹션에 연결된 복선도 삭제 (고아 데이터 방지)
+        useForeshadowingStore.getState().deleteByDocumentId(id);
       }
     },
     [projectId, queryClient],

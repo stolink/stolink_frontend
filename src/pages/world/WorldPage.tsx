@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   // Fetch Characters
   // projectId is guaranteed to be string here
@@ -60,7 +61,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -309,7 +310,7 @@ export default function WorldPage() {
 
     // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
     await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve))
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
     );
 
     // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
@@ -502,7 +503,15 @@ export default function WorldPage() {
 
         {/* Foreshadowing */}
         <TabsContent value="foreshadowing" className="flex-1 m-0">
-          <ForeshadowingPanel projectId={projectId} />
+          <ForeshadowingPanel
+            projectId={projectId}
+            onNavigateToSection={(documentId) => {
+              // 해당 섹션을 선택한 상태로 에디터 페이지로 이동
+              navigate(`/projects/${projectId}/editor`, {
+                state: { selectedSectionId: documentId },
+              });
+            }}
+          />
         </TabsContent>
       </Tabs>
 

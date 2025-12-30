@@ -1,91 +1,53 @@
 // Foreshadowing (복선) Types with flexible extras pattern
 
-// 작가가 직접 관리하는 상태값: 설정됨(setup) -> 회수됨(resolved) 또는 폐기됨(dropped)
-export type ForeshadowingStatus =
-  | "setup"
-  | "resolved"
-  | "dropped"
-  | "pending"
-  | "ignored"
-  | "recovered"; // Expanded to support legacy store values
-export type ForeshadowingImportance = "major" | "minor"; // Added missing type
-
-export type ForeshadowingCategory =
-  | "dialogue"
-  | "props"
-  | "scene"
-  | "symbol"
-  | "other";
-
-export interface ForeshadowLocation {
-  documentId: string;
-  selectionStart?: number;
-  selectionEnd?: number;
-  quote?: string;
-  chapterName?: string;
-  desc?: string; // 추가 설명
-}
-
-export interface ForeshadowingAppearance {
-  sceneId: string;
-  chapterId: string;
-  chapterTitle: string;
-  line: number;
-  context: string;
-  isRecovery: boolean;
-}
-
 export interface Foreshadowing {
+  // === 필수 필드 ===
   id: string;
   projectId: string;
-
-  // === Manual Management Fields ===
-  title: string; // 식별용 제목 (ex: "회중시계의 이니셜")
-  description?: string; // 작가 메모/설명
-
+  tag: string; // e.g., "전설의검"
   status: ForeshadowingStatus;
-  importance: ForeshadowingImportance;
-  category?: ForeshadowingCategory;
 
-  // === Connections ===
-  relatedEntities: {
-    characterIds?: string[];
-    placeIds?: string[];
-    itemIds?: string[];
-  };
-  // Legacy/Store support
-  relatedCharacterIds?: string[];
-  appearances: ForeshadowingAppearance[]; // Made required to match store usage
+  // === 주요 선택 필드 ===
+  description?: string;
+  importance?: ForeshadowingImportance; // 중요도
+  relatedCharacterIds?: string[]; // 관련 캐릭터
 
-  // === Locations ===
-  createdIn?: ForeshadowLocation; // 투척(Setup) 위치
-  resolvedIn?: ForeshadowLocation; // 회수(Payoff) 위치
+  // === 동적 추가 정보 ===
+  extras?: Record<string, string | number | boolean>;
 
+  // === 등장 위치들 ===
+  appearances: ForeshadowingAppearance[];
   createdAt: string;
   updatedAt: string;
 }
 
+export type ForeshadowingStatus = "pending" | "recovered" | "ignored";
+export type ForeshadowingImportance = "major" | "minor";
+
+export interface ForeshadowingAppearance {
+  // === 위치 정보 ===
+  sectionTitle: string; // 섹션 제목 (필수)
+  documentId?: string; // 섹션 ID (선택, 레거시)
+
+  // === 상태 ===
+  isRecovery: boolean; // 회수 지점인지
+
+  // === 레거시 호환 ===
+  sceneId?: string;
+  chapterId?: string;
+  chapterTitle?: string;
+}
+
 export interface CreateForeshadowingInput {
   projectId: string;
-  title: string;
+  tag: string;
   description?: string;
-  status?: ForeshadowingStatus;
-  importance?: number;
-  category?: ForeshadowingCategory;
-  createdIn?: ForeshadowLocation;
+  extras?: Record<string, string | number | boolean>;
 }
 
 export interface UpdateForeshadowingInput {
-  title?: string;
-  description?: string;
+  tag?: string;
   status?: ForeshadowingStatus;
-  importance?: number;
-  category?: ForeshadowingCategory;
-  relatedEntities?: {
-    characterIds?: string[];
-    placeIds?: string[];
-    itemIds?: string[];
-  };
-  createdIn?: ForeshadowLocation;
-  resolvedIn?: ForeshadowLocation;
+  description?: string;
+  extras?: Record<string, string | number | boolean>;
 }

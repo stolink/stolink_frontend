@@ -16,16 +16,18 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { Bold, Italic, Clapperboard, ZoomIn, ZoomOut } from "lucide-react";
+import { Bold, Italic, Clapperboard, ZoomIn, ZoomOut, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
+import { ForeshadowingSuggest } from "./extensions/ForeshadowingSuggest";
 import { TypewriterScroll } from "./extensions/TypewriterScroll";
 import { FocusMode } from "./extensions/FocusMode";
 import { SmartPunctuation } from "./extensions/SmartPunctuation";
+import { useForeshadowingStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { getEditorCSSVariables } from "@/lib/editor-styles";
 import { sanitizeEditorContent } from "@/lib/sanitize";
@@ -35,10 +37,12 @@ export interface TiptapEditorProps {
   onUpdate?: (characterCount: number) => void;
   onContentChange?: (content: string) => void;
   onCreateSection?: (title: string) => void; // 슬래시 커맨드로 섹션 생성
+  onForeshadowingCreated?: (foreshadowingId: string) => void; // 복선 생성 후 포커스 이동용 콜백
   initialContent?: string;
   readOnly?: boolean;
   hideToolbar?: boolean;
-  // Note: isTypewriterMode prop removed - now handled by useEditorSettingStore + TypewriterScroll extension
+  documentId?: string | null;
+  sectionTitle?: string; // 현재 섹션 제목 (복선 위치 정보용)
 }
 
 export interface TiptapEditorHandle {
@@ -68,9 +72,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       onUpdate,
       onContentChange,
       onCreateSection,
+      onForeshadowingCreated,
       initialContent,
       readOnly = false,
       hideToolbar = false,
+      documentId = null,
+      sectionTitle = "",
     },
     ref
   ) => {
@@ -100,6 +107,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const scrollPositionRef = useRef<number>(0);
 
+    // 복선 태그 삭제 감지용 ref (에디터 본문에서 #복선태그 삭제 시 미회수 상태로 복구)
+    const prevForeshadowingIdsRef = useRef<Set<string>>(new Set());
+
     // Get settings from the store
     const typography = useEditorSettingStore((s) => s.typography);
     const visual = useEditorSettingStore((s) => s.visual);
@@ -107,9 +117,13 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Destructure behavior settings
     const typewriterMode = behavior?.typewriterMode ?? "off";
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const focusModeEnabled = behavior?.focusMode ?? false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const smartQuotes = behavior?.smartQuotes ?? true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const smartDashes = behavior?.smartDashes ?? true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const smartEllipsis = behavior?.smartEllipsis ?? true;
 
     // Get CSS variables and theme class from settings
@@ -171,29 +185,26 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         CharacterMention,
         SlashCommandExtension.configure({
           onCreateSection: (title: string) => {
+            // eslint-disable-next-line
             onCreateSectionRef.current?.(title);
           },
         }),
+        ForeshadowingSuggest.configure({
+          projectId: projectId ?? null,
+          documentId: documentId ?? null,
+          sectionTitle: sectionTitle ?? null, // 복선 위치 정보용
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any),
         TypewriterScroll.configure({
           position: "off",
           smoothScroll: true,
           threshold: 5,
         }),
-        // FocusMode and SmartPunctuation disabled due to type compatibility issues
-        // TODO: Fix these extensions in a future update
-        // FocusMode.configure({
-        //   enabled: false,
-        // }),
-        // SmartPunctuation.configure({
-        //   smartQuotes,
-        //   smartDashes,
-        //   smartEllipsis,
-        // }),
       ];
 
       return exts;
-       
-    }, []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId, documentId, sectionTitle]);
 
     const editor = useEditor({
       editable: !readOnly,
@@ -220,6 +231,28 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         },
       },
       onUpdate: ({ editor }) => {
+        // 복선 태그 삭제 감지: 현재 에디터에 존재하는 복선 태그 ID 목록 추출
+        const currentIds = new Set<string>();
+        editor.state.doc.descendants((node) => {
+          if (node.type.name === "foreshadowingSuggest" && node.attrs.id) {
+            currentIds.add(node.attrs.id);
+          }
+        });
+
+        // 이전 상태와 비교하여 삭제된 태그 확인 및 미회수 상태로 복구
+        const store = useForeshadowingStore.getState();
+        prevForeshadowingIdsRef.current.forEach((id) => {
+          if (!currentIds.has(id)) {
+            // 태그가 삭제됨 - 회수 완료 상태였다면 미회수로 되돌림
+            const fs = store.foreshadowings[id];
+            if (fs?.status === "recovered") {
+              store.markAsPending(id);
+            }
+          }
+        });
+        prevForeshadowingIdsRef.current = currentIds;
+
+        // 기존 콜백 호출
         if (onUpdateRef.current) {
           onUpdateRef.current(editor.storage.characterCount.characters());
         }
@@ -239,25 +272,16 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Apply typewriter mode setting when it changes
     useEffect(() => {
-      if (editor && editor.commands.setTypewriterPosition) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (editor && (editor.commands as any).setTypewriterPosition) {
         try {
-          editor.commands.setTypewriterPosition(typewriterMode);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.commands as any).setTypewriterPosition(typewriterMode);
         } catch (e) {
           console.warn("Failed to set typewriter position:", e);
         }
       }
     }, [editor, typewriterMode]);
-
-    // Focus mode useEffect disabled - extension commented out
-    // useEffect(() => {
-    //   if (editor && editor.commands.setFocusMode) {
-    //     try {
-    //       editor.commands.setFocusMode(focusModeEnabled);
-    //     } catch (e) {
-    //       console.warn("Failed to set focus mode:", e);
-    //     }
-    //   }
-    // }, [editor, focusModeEnabled]);
 
     // Expose split functionality via ref
     useImperativeHandle(ref, () => ({
@@ -387,6 +411,39 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       }
     };
 
+    const handleSaveAsForeshadowing = () => {
+      const text = editor.state.doc.textBetween(
+        editor.state.selection.from,
+        editor.state.selection.to,
+        " ",
+      );
+
+      if (!text?.trim() || !projectId) {
+        return;
+      }
+
+      const store = useForeshadowingStore.getState();
+      const nextNumber = store.getNextTagNumber(projectId);
+
+      // 복선 생성: 드래그 텍스트는 description, 제목은 "복선 N" 자동 생성
+      const newFs = store.createForeshadowing({
+        projectId,
+        tag: `복선 ${nextNumber}`,
+        description: text.trim(),
+      });
+
+      // 생성 즉시 appearance 추가 (섹션 이동용)
+      // sectionTitle이 "알 수 없음"이 되는 것을 방지하기 위해 prop을 직접 사용
+      store.addAppearance(newFs.id, {
+        documentId: documentId || "unknown",
+        sectionTitle: sectionTitle || "알 수 없음",
+        isRecovery: false,
+      });
+
+      // 콜백 호출: 사이드바 포커스 이동
+      onForeshadowingCreated?.(newFs.id);
+    };
+
     // Apply zoom to the base font size from settings
     const baseFontSize = editorSettings.typography.fontSize;
     const fontSize = (zoom / 100) * baseFontSize;
@@ -408,6 +465,17 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             editor={editor}
             className="flex overflow-hidden rounded-md border border-border bg-card shadow-md z-50"
           >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSaveAsForeshadowing}
+              aria-label="복선 저장"
+              className="flex items-center gap-1.5 h-8 px-2 text-xs font-medium text-mocha-600 hover:bg-mocha-50 hover:text-mocha-700"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              복선 저장
+            </Button>
+            <div className="w-px h-8 bg-muted" />
             <Button
               variant="ghost"
               size="sm"

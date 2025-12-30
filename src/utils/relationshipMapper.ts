@@ -42,7 +42,7 @@ export function normalizeRelationType(type: string): RelationType {
  * <CharacterGraph characters={characters} links={links} />
  */
 export function extractRelationshipLinks(
-  characters: Character[]
+  characters: Character[],
 ): RelationshipLink[] {
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
@@ -51,7 +51,7 @@ export function extractRelationshipLinks(
     // 타입 가드: relationships가 배열인지 확인
     if (!Array.isArray(char.relationships)) {
       console.warn(
-        `Character ${char.id} (${char.name}) missing relationships array`
+        `Character ${char.id} (${char.name}) missing relationships array`,
       );
       return;
     }
@@ -63,7 +63,7 @@ export function extractRelationshipLinks(
       // target ID 검증
       if (!targetId) {
         console.warn(
-          `Invalid relationship for character ${char.id}: missing target`
+          `Invalid relationship for character ${char.id}: missing target`,
         );
         return;
       }
@@ -90,7 +90,8 @@ export function extractRelationshipLinks(
 
       // Normalize history event types
       if (Array.isArray(parsedHistory)) {
-        parsedHistory = parsedHistory.map((event) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        parsedHistory = (parsedHistory as any).map((event: any) => ({
           ...event,
           type: normalizeRelationType(event.type),
         }));
@@ -109,7 +110,7 @@ export function extractRelationshipLinks(
           ? normalizeRelationType(rel.evolved_from)
           : undefined,
         since: rel.since ?? undefined,
-        history: parsedHistory,
+        history: parsedHistory as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       });
     });
   });

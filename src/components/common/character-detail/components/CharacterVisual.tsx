@@ -19,7 +19,7 @@ export function CharacterVisual({ extras }: CharacterVisualProps) {
   if (!extras) return null;
 
   const visualEntries = Object.entries(extras).filter(([key]) =>
-    APPEARANCE_KEYS.some((k) => key.toLowerCase().includes(k.toLowerCase()))
+    APPEARANCE_KEYS.some((k) => key.toLowerCase().includes(k.toLowerCase())),
   );
 
   if (visualEntries.length === 0) return null;

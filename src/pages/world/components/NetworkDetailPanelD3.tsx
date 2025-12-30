@@ -187,7 +187,7 @@ export function NetworkDetailPanelD3({
                         variant="outline"
                         className={cn(
                           "mt-1 text-[10px] px-1.5 py-0 h-5 gap-1",
-                          RELATION_BADGE_COLORS[relType]
+                          RELATION_BADGE_COLORS[relType],
                         )}
                       >
                         {RELATION_ICONS[relType]}
