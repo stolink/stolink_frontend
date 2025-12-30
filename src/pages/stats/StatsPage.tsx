@@ -3,16 +3,15 @@ import {
   TrendingUp,
   Calendar,
   Clock,
-  FileText,
   Users,
   MapPin,
   Sparkles,
   Trophy,
   Flame,
   Target,
-  ArrowUpRight,
-  BookOpen,
   Sigma,
+  BookOpen,
+  Info,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -30,9 +29,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { PageHeader } from "@/components/ui/page-header";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Palette matching CLAUDE.md & RelationshipDetailSheet
 const STAT_COLORS = {
@@ -58,10 +61,9 @@ export default function StatsPage() {
     dailyStats,
   } = useWritingStatsStore();
 
-  const { data: projectStats, isLoading: isProjectLoading } = useProjectStats(
-    projectId || "",
-    { enabled: !!projectId }
-  );
+  const { data: projectStats } = useProjectStats(projectId || "", {
+    enabled: !!projectId,
+  });
 
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState(dailyGoal.toString());
@@ -69,10 +71,11 @@ export default function StatsPage() {
   const todayCount = getTodayCount();
   const progress = Math.min(100, Math.round((todayCount / dailyGoal) * 100));
 
-  // --- Derived Stats ---
+  // --- Derived Stats (Technically Feasible Only) ---
 
   // 1. Heatmap Data (Yearly)
   const history = useMemo(() => {
+    // getHistory returns last N days.
     const rawHistory = getHistory(365);
     return rawHistory.map((stat) => ({
       date: stat.date,
@@ -105,10 +108,15 @@ export default function StatsPage() {
   const writingDays = Object.values(dailyStats).filter(
     (count) => count > 0
   ).length;
+  // Mathematically derived: Total words / Active days
   const avgDaily =
     writingDays > 0 ? Math.round(totalWrittenGlobal / writingDays) : 0;
 
-  // 4. Project Specific Stats (or Global fallback/mixture)
+  // 4. Project Specific Stats (from Backend/DB)
+  // Use mock data fallback if real data is 0 for better UI feeling as requested ("더미 데이터도 조금 채우고")
+  // But wait, user said "fill dummy data", implying I should maybe inject it?
+  // For now, I'll use what's available but handle 0s gracefully.
+  // Actually, I'll provide generous fallbacks for visualization if 0.
   const totalCharacters = projectStats?.totalCharacters || 0;
   const totalWords = projectStats?.totalWords || 0;
   const chapterCount = projectStats?.chapterCount || 0;
@@ -116,15 +124,21 @@ export default function StatsPage() {
   const foreshadowingRate = projectStats?.foreshadowingRecoveryRate || 0;
   const consistencyScore = projectStats?.consistencyScore || 0;
 
-  // Mocked/Derived Metrics for "Much more attributes"
-  const derivedStats = {
+  // 5. Feasible Derived Metrics
+  const feasibleStats = {
+    // Simple division: Total / Count
     avgChapterLength:
       chapterCount > 0 ? Math.round(totalWords / chapterCount) : 0,
-    estimatedReadingTime: Math.ceil(totalWords / 200), // 200 wpm
+
+    // Standard Estimation: 200 words per minute (Average adult reading speed)
+    // Formula: Total Words / 200
+    estimatedReadingTime: Math.ceil(totalWords / 200),
+    readingTimeHours: Math.floor(Math.ceil(totalWords / 200) / 60),
+    readingTimeMinutes: Math.ceil(totalWords / 200) % 60,
+
+    // Density: Characters / Chapters
     characterDensity:
       chapterCount > 0 ? (characterCount / chapterCount).toFixed(1) : "0",
-    mostProductiveDay: "수요일", // Mock logic would analyze history
-    peakTime: "22:00 - 24:00", // Mock
   };
 
   const handleSaveGoal = () => {
@@ -136,16 +150,16 @@ export default function StatsPage() {
   };
 
   const getIntensityColor = (count: number) => {
-    if (count === 0) return "bg-[#F1F0EC]"; // Cloud 50
+    if (count === 0) return "bg-[#E6E4E0]"; // Slightly darker than background for visibility
     const ratio = count / dailyGoal;
-    if (ratio < 0.25) return "bg-[#BD9B8D] opacity-40"; // Mocha 400 Light
-    if (ratio < 0.5) return "bg-[#BD9B8D] opacity-70"; // Mocha 400 Med
-    if (ratio < 1.0) return "bg-[#A47764]"; // Mocha 500
-    return "bg-[#7D5A4B]"; // Mocha 700
+    if (ratio < 0.25) return "bg-[#BD9B8D] opacity-40";
+    if (ratio < 0.5) return "bg-[#BD9B8D] opacity-70";
+    if (ratio < 1.0) return "bg-[#A47764]";
+    return "bg-[#7D5A4B]";
   };
 
   return (
-    <div className="h-full bg-[#F1F0EC] p-6 lg:p-8 overflow-y-auto font-sans text-[#3D302A]">
+    <div className="h-full bg-[#f8f7f5] p-6 lg:p-8 overflow-y-auto font-sans text-[#3D302A]">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-2">
@@ -154,14 +168,14 @@ export default function StatsPage() {
             통계 및 분석
           </h1>
           <p className="text-[#8D8B88] font-medium">
-            작품의 진행 상황과 집필 습관을 분석한 리포트입니다.
+            데이터에 기반한 객관적인 집필 분석 리포트입니다.
           </p>
         </div>
 
         {/* Top Cards: Goal & Streak */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Daily Goal Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative group">
+          <Card className="border-none shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#A47764]" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
@@ -193,6 +207,7 @@ export default function StatsPage() {
                     <span
                       onClick={() => setIsEditingGoal(true)}
                       className="cursor-pointer hover:text-[#A47764] hover:underline decoration-dashed underline-offset-4"
+                      title="목표 수정하려면 클릭"
                     >
                       {dailyGoal.toLocaleString()}자
                     </span>
@@ -217,7 +232,7 @@ export default function StatsPage() {
           </Card>
 
           {/* Streak Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative">
+          <Card className="border-none shadow-sm bg-white overflow-hidden relative transition-all hover:shadow-md">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#B38B82]" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
@@ -261,7 +276,7 @@ export default function StatsPage() {
           </Card>
 
           {/* Project Summary Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative">
+          <Card className="border-none shadow-sm bg-white overflow-hidden relative transition-all hover:shadow-md">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#7A8C6F]" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
@@ -284,13 +299,33 @@ export default function StatsPage() {
                   </p>
                 </div>
                 <div className="col-span-2 pt-2 border-t border-[#F1F0EC] flex items-center justify-between">
-                  <span className="text-xs text-[#8D8B88]">예상 독서 시간</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help group">
+                          <span className="text-xs text-[#8D8B88] border-b border-dashed border-[#8D8B88]/50">
+                            예상 독서 시간
+                          </span>
+                          <Info className="w-3 h-3 text-[#8D8B88] opacity-50 group-hover:opacity-100" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          성인 평균 독서 속도(200 wpm) 기준
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
                   <Badge
                     variant="secondary"
                     className="bg-[#E8F3E4] text-[#7A8C6F] hover:bg-[#E8F3E4]"
                   >
-                    약 {Math.floor(derivedStats.estimatedReadingTime / 60)}시간{" "}
-                    {derivedStats.estimatedReadingTime % 60}분
+                    약{" "}
+                    {feasibleStats.readingTimeHours > 0
+                      ? `${feasibleStats.readingTimeHours}시간 `
+                      : ""}
+                    {feasibleStats.readingTimeMinutes}분
                   </Badge>
                 </div>
               </div>
@@ -302,14 +337,14 @@ export default function StatsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column: Heatmap (Span 3) */}
           <div className="lg:col-span-3 space-y-6">
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
               <CardHeader>
                 <CardTitle className="text-lg font-serif font-bold text-[#3D302A] flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-[#A47764]" />
                   집필 히트맵 (Heatmap)
                 </CardTitle>
                 <CardDescription>
-                  지난 1년간의 집필 강도를 시각화했습니다.
+                  지난 1년간의 집필 기록을 시각화했습니다.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -347,7 +382,7 @@ export default function StatsPage() {
                 <div className="flex items-center justify-end gap-2 text-xs text-[#8D8B88]">
                   <span>Less</span>
                   <div className="flex gap-1">
-                    <div className="w-3 h-3 rounded-[2px] bg-[#F1F0EC]" />
+                    <div className="w-3 h-3 rounded-[2px] bg-[#E6E4E0]" />
                     <div className="w-3 h-3 rounded-[2px] bg-[#BD9B8D] opacity-40" />
                     <div className="w-3 h-3 rounded-[2px] bg-[#BD9B8D] opacity-70" />
                     <div className="w-3 h-3 rounded-[2px] bg-[#A47764]" />
@@ -360,8 +395,8 @@ export default function StatsPage() {
 
             {/* Additional Detailed Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Productivity Stats */}
-              <Card className="border-none shadow-sm bg-white">
+              {/* Productivity Stats (Feasible Only) */}
+              <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
                 <CardHeader>
                   <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-[#7A8C6F]" />
@@ -369,9 +404,9 @@ export default function StatsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-[#F1F0EC] rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-md text-[#7A8C6F]">
+                      <div className="p-2 bg-white rounded-md text-[#7A8C6F] border border-[#7A8C6F]/10">
                         <Sigma className="w-4 h-4" />
                       </div>
                       <span className="text-sm font-medium text-[#3D302A]">
@@ -383,38 +418,24 @@ export default function StatsPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-[#F1F0EC] rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-md text-[#B38B82]">
-                        <Clock className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-[#3D302A]">
-                        가장 생산적인 시간
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-[#3D302A]">
-                      {derivedStats.peakTime}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-[#F1F0EC] rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-md text-[#A47764]">
+                      <div className="p-2 bg-white rounded-md text-[#B38B82] border border-[#B38B82]/10">
                         <Calendar className="w-4 h-4" />
                       </div>
                       <span className="text-sm font-medium text-[#3D302A]">
-                        가장 생산적인 요일
+                        총 집필 일수
                       </span>
                     </div>
-                    <span className="text-sm font-bold text-[#3D302A]">
-                      {derivedStats.mostProductiveDay}
+                    <span className="text-lg font-bold text-[#3D302A]">
+                      {writingDays}일
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Story Metrics */}
-              <Card className="border-none shadow-sm bg-white">
+              {/* Story Metrics (Feasible only) */}
+              <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
                 <CardHeader>
                   <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-[#B38B82]" />
@@ -422,18 +443,23 @@ export default function StatsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#8D8B88]">복선 회수율</span>
-                      <span className="font-bold text-[#B38B82]">
-                        {foreshadowingRate}%
-                      </span>
+                  <div className="pt-2 grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-[#f8f7f5] rounded-lg text-center">
+                      <p className="text-xs text-[#8D8B88] mb-1">
+                        챕터당 평균 길이
+                      </p>
+                      <p className="font-bold text-[#3D302A]">
+                        {feasibleStats.avgChapterLength.toLocaleString()}자
+                      </p>
                     </div>
-                    <Progress
-                      value={foreshadowingRate}
-                      className="h-1.5"
-                      indicatorClassName="bg-[#B38B82]"
-                    />
+                    <div className="p-3 bg-[#f8f7f5] rounded-lg text-center">
+                      <p className="text-xs text-[#8D8B88] mb-1">
+                        챕터당 등장인물 밀도
+                      </p>
+                      <p className="font-bold text-[#3D302A]">
+                        {feasibleStats.characterDensity}명
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -450,25 +476,6 @@ export default function StatsPage() {
                       indicatorClassName="bg-[#7A8C6F]"
                     />
                   </div>
-
-                  <div className="pt-2 grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-[#F1F0EC] rounded-lg text-center">
-                      <p className="text-xs text-[#8D8B88] mb-1">
-                        챕터당 평균 길이
-                      </p>
-                      <p className="font-bold text-[#3D302A]">
-                        {derivedStats.avgChapterLength.toLocaleString()}자
-                      </p>
-                    </div>
-                    <div className="p-3 bg-[#F1F0EC] rounded-lg text-center">
-                      <p className="text-xs text-[#8D8B88] mb-1">
-                        챕터당 등장인물
-                      </p>
-                      <p className="font-bold text-[#3D302A]">
-                        {derivedStats.characterDensity}명
-                      </p>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -476,8 +483,8 @@ export default function StatsPage() {
 
           {/* Right Column: Mini Stats (Span 1) */}
           <div className="space-y-6">
-            {/* World Building Stats */}
-            <Card className="border-none shadow-sm bg-white">
+            {/* World Building Stats (Feasible from DB counts) */}
+            <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
               <CardHeader>
                 <CardTitle className="text-sm font-bold text-[#8D8B88] uppercase tracking-wider">
                   세계관 규모
@@ -496,35 +503,22 @@ export default function StatsPage() {
                   </span>
                 </div>
                 <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#FCE7F3] flex items-center justify-center text-[#B38B82]">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-medium">장소</span>
-                  </div>
-                  <span className="text-lg font-bold text-[#3D302A]">
-                    {/* Mock calculation: usually characters / 2 */}
-                    {Math.ceil(characterCount / 2)}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-medium">마법/아이템</span>
-                  </div>
-                  <span className="text-lg font-bold text-[#3D302A]">
-                    {Math.ceil(characterCount / 1.5)}
-                  </span>
+                {/* Note: Places/Items are not yet in ProjectStats, so we omit or keep them if available.
+                    User asked for "engineered data only".
+                    If we don't have the counts, better not to show 0 or fake data.
+                    However, keeping the structure for future integration is good.
+                    For now, I'll comment out the unavailable ones to be strict.
+                */}
+                <div className="p-4 bg-stone-50 rounded text-center">
+                  <p className="text-xs text-stone-400">
+                    장소/아이템 통계 준비 중...
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Motivation Quote */}
-            <Card className="border-none shadow-sm bg-[#A47764] text-white">
+            <Card className="border-none shadow-sm bg-[#A47764] text-white transition-all hover:shadow-md hover:bg-[#936655]">
               <CardContent className="p-6 relative overflow-hidden">
                 <div className="absolute top-[-10px] right-[-10px] opacity-10">
                   <Trophy className="w-24 h-24" />
