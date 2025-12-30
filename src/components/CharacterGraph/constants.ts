@@ -53,10 +53,10 @@ export const NODE_SIZES = {
 // =====================================================
 
 export const FORCE_CONFIG = {
-  // 노드 간 반발력 (더 강하게)
-  charge: -400,
-  chargeDistanceMin: 50,
-  chargeDistanceMax: 500,
+  // 노드 간 반발력 (최적화: 거리 제한으로 연산 감소)
+  charge: -350,
+  chargeDistanceMin: 60,
+  chargeDistanceMax: 400, // 줄여서 먼 거리 연산 감소
 
   // 링크 설정 (소프트 스프링)
   linkDistance: 150,
@@ -70,10 +70,10 @@ export const FORCE_CONFIG = {
   collisionPadding: 20,
   collisionStrength: 0.7,
 
-  // 수렴 (빠른 안정화)
-  alphaDecay: 0.02, // 빠른 수렴 = 안정화 빨라짐 (기본값: 0.0228)
-  alphaMin: 0.005, // 더 높은 최소값 = 조기 정지
-  velocityDecay: 0.3, // 낮은 마찰 = 더 유동적
+  // 수렴 (더 빠른 안정화)
+  alphaDecay: 0.03, // 더 빠른 수렴 (기존 0.02)
+  alphaMin: 0.008, // 조기 정지 (기존 0.005)
+  velocityDecay: 0.35, // 약간 높인 마찰 = 더 빠른 안정화
 } as const;
 
 // =====================================================

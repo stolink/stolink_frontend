@@ -17,6 +17,7 @@ interface UseZoomReturn {
 
 /**
  * D3 Zoom 동작을 관리하는 훅
+ * 성능 최적화: RAF 기반 상태 업데이트 스로틀링
  */
 export function useZoom(
   svgRef: React.RefObject<SVGSVGElement | null>,
@@ -25,11 +26,17 @@ export function useZoom(
 ): UseZoomReturn {
   const { onZoomChange } = options;
 
+  // 줌 상태
   const [zoomState, setZoomState] = useState<ZoomState>({
     scale: ZOOM_CONFIG.initial,
     x: 0,
     y: 0,
   });
+
+  // 최신 줌 상태를 ref로 유지 (RAF 콜백에서 사용)
+  const zoomStateRef = useRef<ZoomState>(zoomState);
+  // RAF 스로틀링용 ref
+  const rafRef = useRef<number | null>(null);
 
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<
     SVGSVGElement,
@@ -47,7 +54,6 @@ export function useZoom(
       .scaleExtent([ZOOM_CONFIG.min, ZOOM_CONFIG.max])
       .filter((event) => {
         // Prevent zoom/pan if interacting with a node
-        // Use 'closest' to check if target is inside a node group
         if (
           event.target instanceof Element &&
           event.target.closest(".node-group")
@@ -59,21 +65,34 @@ export function useZoom(
       })
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         const { transform } = event;
+        // D3 DOM 직접 조작 (즉시, 끊김 없음)
         d3.select(g).attr("transform", transform.toString());
 
-        const newState: ZoomState = {
+        // 최신 상태 ref에 저장
+        zoomStateRef.current = {
           scale: transform.k,
           x: transform.x,
           y: transform.y,
         };
-        setZoomState(newState);
-        onZoomChange?.(newState);
+
+        // RAF 스로틀링: 이미 예약된 프레임 있으면 스킵 (끊김 방지)
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(() => {
+            setZoomState({ ...zoomStateRef.current });
+            onZoomChange?.(zoomStateRef.current);
+            rafRef.current = null;
+          });
+        }
       });
 
     d3.select(svg).call(zoom);
     zoomBehaviorRef.current = zoom;
 
     return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       d3.select(svg).on(".zoom", null);
     };
   }, [svgRef, gRef, onZoomChange]);

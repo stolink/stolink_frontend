@@ -65,7 +65,7 @@ export const LinkRenderer = memo(function LinkRenderer({
 
   return (
     <g ref={groupRef}>
-      {/* 글로우 효과 (하이라이트 시, 필터 제외) */}
+      {/* 글로우 효과 (하이라이트 시 - 성능 최적화: blur 제거) */}
       {isHighlighted && !isFiltered && (
         <line
           className="link-line"
@@ -74,10 +74,9 @@ export const LinkRenderer = memo(function LinkRenderer({
           x2={target.x}
           y2={target.y}
           stroke={color}
-          strokeWidth={strokeWidth + 3}
-          strokeOpacity={0.12}
+          strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.08}
           strokeLinecap="round"
-          style={{ filter: "blur(2px)" }}
         />
       )}
 
@@ -94,10 +93,7 @@ export const LinkRenderer = memo(function LinkRenderer({
         strokeLinecap="round"
         strokeDasharray={link.type === "hostile" ? "6,4" : undefined}
         style={{
-          transition: `
-            stroke-opacity ${ANIMATION.highlightDuration}ms ease,
-            stroke-width ${ANIMATION.highlightDuration}ms ease
-          `,
+          transition: `stroke-opacity ${ANIMATION.highlightDuration}ms ease-out`,
         }}
       />
     </g>

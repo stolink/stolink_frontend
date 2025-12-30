@@ -18,7 +18,7 @@ interface NodeRendererProps {
 }
 
 /**
- * SVG 노드 렌더러 컴포넌트 - Obsidian 스타일 비주얼
+ * SVG 노드 렌더러 컴포넌트 - Obsidian 스타일 비주얼 (Liquid Glass Effect Restored)
  */
 export const NodeRenderer = memo(function NodeRenderer({
   node,
@@ -81,18 +81,16 @@ export const NodeRenderer = memo(function NodeRenderer({
       style={{
         cursor: "pointer",
         opacity: isDimmed ? ANIMATION.dimOpacity : ANIMATION.normalOpacity,
-        transition: `opacity ${ANIMATION.highlightDuration}ms ease`,
+        transition: `opacity ${ANIMATION.highlightDuration}ms ease-out`,
       }}
     >
-      {/* 글로우 효과 (선택/하이라이트 시) */}
+      {/* 글로우 효과 (성능 최적화: blur 제거, 더 큰 원 + 낮은 opacity로 대체) */}
       {(isSelected || isHighlighted) && (
         <circle
-          r={radius + 10}
+          r={radius + 12}
           fill={isSelected ? "#5F7D5F" : roleColor}
-          opacity={0.15}
-          style={{
-            filter: "blur(6px)",
-          }}
+          opacity={0.12}
+          pointerEvents="none"
         />
       )}
 
@@ -121,15 +119,15 @@ export const NodeRenderer = memo(function NodeRenderer({
         />
       )}
 
-      {/* 그림자 (깊이감 - 부드러운 종이 효과) */}
+      {/* 그림자 (성능 최적화: blur 대신 그라디언트 기반 소프트 그림자) */}
       <circle
-        r={radius}
-        fill="rgba(0,0,0,0.04)"
+        r={radius + 2}
+        fill="rgba(0,0,0,0.03)"
         transform="translate(1, 2)"
-        style={{ filter: "blur(2px)" }}
+        pointerEvents="none"
       />
 
-      {/* 메인 원 - 그라디언트 효과 (자연스러운 종이 질감) */}
+      {/* 메인 원 - 그라디언트 효과 (자연스러운 종이 질감, 개별 그라디언트 사용) */}
       <defs>
         <radialGradient
           id={`node-gradient-${node.id}`}
@@ -190,7 +188,7 @@ export const NodeRenderer = memo(function NodeRenderer({
 
       {/* 이름 라벨 */}
       <g transform={`translate(0, ${radius + 18})`}>
-        {/* 라벨 배경 */}
+        {/* 라벨 배경 - 성능 최적화: drop-shadow 제거 */}
         <rect
           x={-node.name.length * 4 - 10}
           y={-11}
@@ -198,11 +196,8 @@ export const NodeRenderer = memo(function NodeRenderer({
           height={22}
           rx={11}
           fill={isSelected ? "#5F7D5F" : "rgba(248,248,247,0.98)"}
-          stroke={isSelected ? "none" : "rgba(0,0,0,0.05)"}
+          stroke={isSelected ? "none" : "rgba(0,0,0,0.08)"}
           strokeWidth={1}
-          style={{
-            filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.06))",
-          }}
         />
         <text
           textAnchor="middle"

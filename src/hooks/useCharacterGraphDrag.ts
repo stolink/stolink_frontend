@@ -5,14 +5,15 @@ import type { CharacterNode } from "@/types";
 interface UseDragOptions {
   onDragStart?: (node: CharacterNode) => void;
   onDragEnd?: (node: CharacterNode) => void;
-  reheat: () => void;
+  simulation?: d3.Simulation<CharacterNode, unknown> | null;
 }
 
 /**
  * D3 Drag 동작을 제공하는 훅
+ * 메인 스레드 부하 감소: 드래그 중 시뮬레이션 alphaTarget 조정
  */
 export function useDrag(options: UseDragOptions) {
-  const { onDragStart, onDragEnd, reheat } = options;
+  const { onDragStart, onDragEnd, simulation } = options;
 
   // 드래그 중인 노드를 추적
   const isDraggingRef = useRef(false);
@@ -23,18 +24,20 @@ export function useDrag(options: UseDragOptions) {
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
       d: CharacterNode,
     ) => {
-      // Wake up simulation ("Mongle-Mongle" effect)
-      reheat();
+      // 시뮬레이션 활성화 (드래그한 노드만 이동 - alphaTarget으로 부하 제어)
+      if (simulation) {
+        simulation.alphaTarget(0.3).restart();
+      }
 
       isDraggingRef.current = true;
       d.fx = d.x;
       d.fy = d.y;
       onDragStart?.(d);
     },
-    [onDragStart, reheat],
+    [onDragStart, simulation],
   );
 
-  // 드래그 중
+  // 드래그 중 - 최소한의 작업만
   const handleDrag = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
@@ -53,12 +56,18 @@ export function useDrag(options: UseDragOptions) {
       d: CharacterNode,
     ) => {
       isDraggingRef.current = false;
+
+      // 시뮬레이션 천천히 멈춤 (alphaTarget 0으로 설정)
+      if (simulation) {
+        simulation.alphaTarget(0);
+      }
+
       // 드래그 종료 후 위치 해제 (자유 이동)
       d.fx = null;
       d.fy = null;
       onDragEnd?.(d);
     },
-    [onDragEnd],
+    [onDragEnd, simulation],
   );
 
   // D3 drag behavior 생성

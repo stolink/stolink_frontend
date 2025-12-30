@@ -55,7 +55,7 @@ export function InteractiveLightOverlay({
         }
       });
     },
-    [enabled]
+    [enabled],
   );
 
   // 호버 시에만 이벤트 리스너 활성화 (최적화)
@@ -107,7 +107,7 @@ export function InteractiveLightOverlay({
               lightingColor={lightColor}
               result="specular"
             >
-              <fePointLight ref={lightRef} x="50%" y="50%" z="200" />
+              <fePointLight ref={lightRef} x={0} y={0} z={200} />
             </feSpecularLighting>
             {/* 합성 */}
             <feComposite

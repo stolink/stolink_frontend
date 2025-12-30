@@ -209,16 +209,26 @@ export function TiledBackground({
     };
   }, []);
 
-  useEffect(() => {
-    zoomStateRef.current = zoomState;
-  }, [zoomState]);
+  // RAF 중복 호출 방지용 ref
+  const pendingRafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (renderRef.current) {
-      requestAnimationFrame(() => {
-        renderRef.current?.(zoomState);
+    zoomStateRef.current = zoomState;
+
+    // 성능 최적화: RAF 중복 호출 방지 (이미 예약된 프레임이 있으면 스킵)
+    if (renderRef.current && !pendingRafRef.current) {
+      pendingRafRef.current = requestAnimationFrame(() => {
+        renderRef.current?.(zoomStateRef.current);
+        pendingRafRef.current = null;
       });
     }
+
+    return () => {
+      if (pendingRafRef.current) {
+        cancelAnimationFrame(pendingRafRef.current);
+        pendingRafRef.current = null;
+      }
+    };
   }, [zoomState]);
 
   return (
