@@ -36,14 +36,14 @@ interface ForeshadowingStore {
 
 interface CreateForeshadowingInput {
   projectId: string;
-  tag: string;
+  title: string;
   description?: string;
   importance?: ForeshadowingImportance;
   relatedCharacterIds?: string[];
 }
 
 interface UpdateForeshadowingInput {
-  tag?: string;
+  title?: string;
   description?: string;
   status?: ForeshadowingStatus;
   importance?: ForeshadowingImportance;
@@ -70,10 +70,11 @@ export const useForeshadowingStore = create<ForeshadowingStore>()(
       const newFs: Foreshadowing = {
         id: generateId(),
         projectId: input.projectId,
-        tag: input.tag,
+        title: input.title,
         status: "pending",
         description: input.description,
         importance: input.importance || "minor",
+        relatedEntities: {}, // Initialized
         relatedCharacterIds: input.relatedCharacterIds || [],
         appearances: [],
         createdAt: new Date().toISOString(),

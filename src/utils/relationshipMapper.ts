@@ -1,5 +1,6 @@
 import type { Character } from "@/types/character";
-import type { RelationType, RelationshipLink } from "@/types/characterGraph";
+import type { RelationType } from "@/types/character";
+import type { RelationshipLink } from "@/types/characterGraph";
 
 /**
  * 관계 타입 정규화 (백엔드 데이터 불일치 대응)
@@ -83,6 +84,33 @@ export function extractRelationshipLinks(
         type: normalizeRelationType(rel.type),
         strength: rel.strength,
         label: rel.label ?? undefined,
+        // Mock History Injection (Demonstration)
+        history: [
+          {
+            eventId: "evt-1",
+            title: "First Encounter",
+            chapter: "Chapter 1",
+            type: "friendly" as RelationType,
+            reason: "Met at the academy entrance ceremony.",
+            date: "Year 3024.03.02",
+          },
+          {
+            eventId: "evt-2",
+            title: "Misunderstanding",
+            chapter: "Chapter 2",
+            type: "neutral" as RelationType,
+            reason: "Suspicion arose regarding test scores.",
+            date: "Year 3024.05.15",
+          },
+          {
+            eventId: "evt-3",
+            title: "Betrayal",
+            chapter: "Chapter 3",
+            type: "hostile" as RelationType,
+            reason: "Critical evidence of fabrication found.",
+            date: "Year 3024.06.20",
+          },
+        ].slice(0, Math.floor(Math.random() * 3) + 1), // Randomize length 1-3
       });
     });
   });

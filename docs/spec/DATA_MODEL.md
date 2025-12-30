@@ -622,6 +622,7 @@ _(Part 1에서 정의한 1차원 리스트 구조와 동일)_
 | **Inventory**  | `inventory.equipped`       | Object[] | 장착 아이템 목록                           |
 |                | `inventory.bag`            | Object[] | 소지품 목록                                |
 | **State**      | `current_mood`             | Object   | 현재 감정 상태 (`emotion`, `intensity`)    |
+| **Meta**       | `relationCount`            | Int      | **관계 수** (자동 계산, 중요도 지표)       |
 
 ---
 
@@ -660,13 +661,26 @@ _(Part 1에서 정의한 1차원 리스트 구조와 동일)_
 
 **Purpose**: 캐릭터 간 관계 정의
 
-| Field           | Type   | Description                    |
-| --------------- | ------ | ------------------------------ |
-| `source`        | String | 주체 캐릭터                    |
-| `target`        | String | 대상 캐릭터                    |
-| `relation_type` | String | 관계 유형 (ENEMY, FRIENDLY...) |
-| `strength`      | Int    | 관계 강도                      |
-| `description`   | String | 관계에 대한 설명               |
+| Field           | Type     | Description                       |
+| --------------- | -------- | --------------------------------- |
+| `source`        | String   | 주체 캐릭터                       |
+| `target`        | String   | 대상 캐릭터                       |
+| `relation_type` | String   | 관계 유형 (ENEMY, FRIENDLY...)    |
+| `strength`      | Int      | 관계 강도                         |
+| `description`   | String   | 관계에 대한 설명                  |
+| `history`       | Object[] | **관계 변천사** (Event 참조 목록) |
+
+### Relationship History Structure (in `history`)
+
+```json
+{
+  "eventId": "uuid",
+  "title": "사건 제목",
+  "chapter": "Chapter 3",
+  "type": "hostile", // 당시 관계 상태
+  "reason": "배신으로 인한 적대 관계 형성"
+}
+```
 
 ---
 

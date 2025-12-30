@@ -20,14 +20,17 @@ import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
 import { GROUP_COLORS } from "./constants";
+import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
 import { TiledBackground } from "./TiledBackground";
+import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
 interface CharacterGraphProps {
   characters: Character[];
   links: RelationshipLink[];
   onNodeClick?: (character: Character) => void;
+  onLinkClick?: (link: RelationshipLink) => void;
   selectedNodeId?: string | null;
   relationTypeFilter?: RelationType | "all";
   highlightedNodeIds?: string[] | null;
@@ -47,6 +50,7 @@ export const CharacterGraph = forwardRef<
       characters,
       links: initialLinks,
       onNodeClick,
+      onLinkClick,
       selectedNodeId,
       relationTypeFilter = "all",
       highlightedNodeIds,
@@ -62,6 +66,13 @@ export const CharacterGraph = forwardRef<
     const [enableGrouping, setEnableGrouping] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
+    // State for Link Hover Tooltip
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      link: RelationshipLink;
+      x: number;
+      y: number;
+    } | null>(null);
+
     const { width, height } = useResize(containerRef);
 
     /**
@@ -69,6 +80,9 @@ export const CharacterGraph = forwardRef<
      * Neo4j의 extras 문자열을 파싱하여 faction 정보를 group 속성에 정합성 있게 매핑합니다.
      */
     const initialNodes: CharacterNode[] = useMemo(() => {
+      // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
+      const relationCounts = calculateRelationCounts(initialLinks);
+
       return characters.map((char) => {
         let factionName = "무소속";
 
@@ -98,9 +112,10 @@ export const CharacterGraph = forwardRef<
           role: char.role,
           group: factionName, // 추출된 파벌 정보를 시뮬레이션 그룹으로 사용
           imageUrl: char.imageUrl,
+          relationCount: relationCounts[char.id] || 0, // 관계 수 할당
         };
       });
-    }, [characters]);
+    }, [characters, initialLinks]);
 
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
@@ -149,8 +164,9 @@ export const CharacterGraph = forwardRef<
 
     // Cleanup cache on unmount
     useEffect(() => {
+      const cache = groupSelectionCache.current;
       return () => {
-        groupSelectionCache.current.clear();
+        cache.clear();
       };
     }, []);
 
@@ -391,6 +407,18 @@ export const CharacterGraph = forwardRef<
       return connected;
     }, [hoveredNodeId, selectedNodeId, links, relationTypeFilter]);
 
+    // Handle Link Hover
+    const handleLinkHover = useCallback(
+      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
+        if (!link || !coords) {
+          setHoveredLinkData(null);
+          return;
+        }
+        setHoveredLinkData({ link, x: coords.x, y: coords.y });
+      },
+      [],
+    );
+
     // Search Highlighting Logic
     // null/undefined = 검색 비활성 (일반 모드)
     // [] = 검색 활성이나 결과 없음 (모두 딤 처리)
@@ -538,6 +566,8 @@ export const CharacterGraph = forwardRef<
                       (!highlightedNodeIds?.includes(sId) ||
                         !highlightedNodeIds?.includes(tId)))
                   }
+                  onClick={onLinkClick}
+                  onHover={handleLinkHover}
                 />
               );
             })}
@@ -573,6 +603,30 @@ export const CharacterGraph = forwardRef<
             })}
           </g>
         </svg>
+
+        {/* Relationship Event Tooltip on Hover */}
+        {hoveredLinkData && hoveredLinkData.link.history && (
+          <RelationshipEventTooltip
+            events={hoveredLinkData.link.history}
+            sourceName={
+              typeof hoveredLinkData.link.source === "object"
+                ? (hoveredLinkData.link.source as CharacterNode).name
+                : String(hoveredLinkData.link.source)
+            }
+            targetName={
+              typeof hoveredLinkData.link.target === "object"
+                ? (hoveredLinkData.link.target as CharacterNode).name
+                : String(hoveredLinkData.link.target)
+            }
+            x={hoveredLinkData.x}
+            y={hoveredLinkData.y}
+            onEventClick={() => {
+              // Clicking an event opens the details panel for that link
+              onLinkClick?.(hoveredLinkData.link);
+              setHoveredLinkData(null); // Close tooltip
+            }}
+          />
+        )}
 
         <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2 z-20">
           <input

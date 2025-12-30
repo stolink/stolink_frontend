@@ -5,7 +5,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, Sword, Sparkles } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
-import type { Character, RelationType, RelationshipLink } from "@/types";
+import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
+import type {
+  Character,
+  RelationType,
+  RelationshipLink,
+  DetailedRelationship,
+  CharacterNode,
+} from "@/types";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
@@ -57,6 +64,8 @@ export default function WorldPage() {
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+  const [selectedRelationship, setSelectedRelationship] =
+    useState<DetailedRelationship | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
@@ -102,6 +111,65 @@ export default function WorldPage() {
     setSelectedCharacter(character);
     setGraphFocusId(character.id);
     setIsModalOpen(true);
+  };
+
+  const handleLinkClick = (link: RelationshipLink) => {
+    // Resolve source/target IDs (D3 replaces strings with objects)
+    const sourceId =
+      typeof link.source === "object"
+        ? (link.source as CharacterNode).id
+        : link.source;
+    const targetId =
+      typeof link.target === "object"
+        ? (link.target as CharacterNode).id
+        : link.target;
+
+    const sourceChar = characters.find((c) => c.id === sourceId);
+    const targetChar = characters.find((c) => c.id === targetId);
+
+    // Mock data enrichment based on user request example
+    const detailedRel: DetailedRelationship = {
+      ...link, // id, strength, type
+      // Ensure we map 'type' to 'relation_type' if needed, or rely on base type
+      relation_type: link.type,
+      source: sourceChar?.name || String(sourceId),
+      target: targetChar?.name || String(targetId),
+
+      // MOCK DATA for demonstration as requested
+      // In production, this might come from link.source.extras or a separate API call
+      description:
+        "리안이 마을 화염 사건 당시 티오와 동생을 버렸다고 티오가 인식함. 과거 우정의 증표인 회중시계를 통해 깊은 배신감이 드러남",
+      bidirectional: false,
+      evolved_from: link.type === "hostile" ? "friendly" : undefined,
+      since: "Chapter 3",
+      history: [
+        {
+          eventId: "evt-1",
+          title: "첫 만남",
+          chapter: "Chapter 1",
+          type: "friendly",
+          reason: "아카데미 입학식에서 서로 인사를 나눔",
+          date: "Year 3024.03.02",
+        },
+        {
+          eventId: "evt-2",
+          title: "오해의 시작",
+          chapter: "Chapter 2",
+          type: "neutral",
+          reason: "시험 성적 조작 의혹 발생",
+          date: "Year 3024.05.15",
+        },
+        {
+          eventId: "evt-3",
+          title: "결별",
+          chapter: "Chapter 3",
+          type: "hostile",
+          reason: "결정적인 증거(조작된) 발견으로 인한 절교",
+          date: "Year 3024.06.20",
+        },
+      ],
+    };
+    setSelectedRelationship(detailedRel);
   };
 
   if (isLoading) {
@@ -197,6 +265,7 @@ export default function WorldPage() {
               characters={characters}
               links={links}
               onNodeClick={handleNodeClick}
+              onLinkClick={handleLinkClick}
               selectedNodeId={graphFocusId || selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
               highlightedNodeIds={searchHighlightedIds}
@@ -325,6 +394,15 @@ export default function WorldPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={() => {}} // Read-only in this view for now
+      />
+
+      {/* Relationship Detail Sidebar */}
+      <RelationshipDetailSheet
+        relationship={selectedRelationship}
+        isOpen={!!selectedRelationship}
+        onClose={() => setSelectedRelationship(null)}
+        sourceName={selectedRelationship?.source}
+        targetName={selectedRelationship?.target}
       />
     </div>
   );

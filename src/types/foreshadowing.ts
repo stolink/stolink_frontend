@@ -1,7 +1,15 @@
 // Foreshadowing (복선) Types with flexible extras pattern
 
 // 작가가 직접 관리하는 상태값: 설정됨(setup) -> 회수됨(resolved) 또는 폐기됨(dropped)
-export type ForeshadowingStatus = "setup" | "resolved" | "dropped";
+export type ForeshadowingStatus =
+  | "setup"
+  | "resolved"
+  | "dropped"
+  | "pending"
+  | "ignored"
+  | "recovered"; // Expanded to support legacy store values
+export type ForeshadowingImportance = "major" | "minor"; // Added missing type
+
 export type ForeshadowingCategory =
   | "dialogue"
   | "props"
@@ -18,6 +26,15 @@ export interface ForeshadowLocation {
   desc?: string; // 추가 설명
 }
 
+export interface ForeshadowingAppearance {
+  sceneId: string;
+  chapterId: string;
+  chapterTitle: string;
+  line: number;
+  context: string;
+  isRecovery: boolean;
+}
+
 export interface Foreshadowing {
   id: string;
   projectId: string;
@@ -27,7 +44,7 @@ export interface Foreshadowing {
   description?: string; // 작가 메모/설명
 
   status: ForeshadowingStatus;
-  importance: number; // 1~5 별점
+  importance: ForeshadowingImportance;
   category?: ForeshadowingCategory;
 
   // === Connections ===
@@ -36,6 +53,9 @@ export interface Foreshadowing {
     placeIds?: string[];
     itemIds?: string[];
   };
+  // Legacy/Store support
+  relatedCharacterIds?: string[];
+  appearances: ForeshadowingAppearance[]; // Made required to match store usage
 
   // === Locations ===
   createdIn?: ForeshadowLocation; // 투척(Setup) 위치

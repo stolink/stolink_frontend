@@ -4,9 +4,9 @@
 export interface Document {
   // === Core Fields ===
   id: string;
-  projectId: string;
-  // parentId removed
-  // type removed (all are text documents)
+  projectId: string; // duplicate removed
+  parentId?: string; // Restored for proper hierarchy support
+  type: "folder" | "text" | "scrivenings"; // Restored type
 
   // === Content ===
   title: string;
@@ -48,6 +48,8 @@ export interface CreateDocumentInput {
   synopsis?: string;
   targetWordCount?: number;
   order?: number;
+  parentId?: string;
+  type: "folder" | "text" | "scrivenings";
 }
 
 export interface UpdateDocumentInput {
@@ -55,7 +57,13 @@ export interface UpdateDocumentInput {
   content?: string;
   synopsis?: string;
   order?: number;
+  parentId?: string;
   metadata?: Partial<DocumentMetadata>;
   characterIds?: string[];
   foreshadowingIds?: string[];
+}
+
+// Restored DocumentTreeNode for Repository usage
+export interface DocumentTreeNode extends Document {
+  children: DocumentTreeNode[];
 }
