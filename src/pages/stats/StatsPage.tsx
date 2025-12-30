@@ -2,58 +2,51 @@ import {
   BarChart3,
   TrendingUp,
   Calendar,
-  Clock,
-  Users,
-  MapPin,
-  Sparkles,
+  Zap,
+  CheckCircle2,
   Trophy,
   Flame,
   Target,
-  Sigma,
-  BookOpen,
-  Info,
+  FileText,
+  Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import { useProjectStats } from "@/hooks/useProjects";
 import { cn } from "@/lib/utils";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 
-// Palette matching CLAUDE.md & RelationshipDetailSheet
-const STAT_COLORS = {
-  primary: "bg-[#A47764] text-white", // Mocha 500
-  secondary: "bg-[#7A8C6F] text-white", // Friendly/Sage
-  accent: "bg-[#B38B82] text-white", // Romance/Rose
-  neutral: "bg-[#8D8B88] text-white", // Neutral
-  background: "bg-[#F1F0EC]", // Cloud 50
-  card: "bg-white",
-  text: "text-[#3D302A]", // Espresso 900
-  muted: "text-[#8D8B88]",
+// --- DUMMY DATA GENERATOR ---
+const generateDummyHistory = (days: number) => {
+  const data = [];
+  const today = new Date();
+  for (let i = days; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+
+    // Simulate some realistic writing pattern
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const base = isWeekend ? 2000 : 500;
+    const random = Math.floor(Math.random() * 1500);
+    // 20% chance of 0
+    const count = Math.random() > 0.8 ? 0 : base + random;
+
+    data.push({ date: dateStr, count });
+  }
+  return data;
 };
 
 export default function StatsPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const {
     dailyGoal,
-    setDailyGoal,
+
     currentStreak,
     longestStreak,
     getTodayCount,
@@ -65,97 +58,113 @@ export default function StatsPage() {
     enabled: !!projectId,
   });
 
-  const [isEditingGoal, setIsEditingGoal] = useState(false);
-  const [tempGoal, setTempGoal] = useState(dailyGoal.toString());
+  // const [isEditingGoal, setIsEditingGoal] = useState(false);
+  // const [tempGoal, setTempGoal] = useState(dailyGoal.toString());
 
-  const todayCount = getTodayCount();
+  // Use real data, or fallback to dummy data if empty (for "Rich" look)
+  const isDemo = Object.keys(dailyStats).length < 5; // Heuristic for "new user/no data"
+  const historyData = useMemo(() => {
+    if (isDemo) return generateDummyHistory(365);
+    // Convert generic history to the format needed
+    return getHistory(365).map((h) => ({ date: h.date, count: h.wordCount }));
+  }, [getHistory, isDemo]);
+
+  // Merge dummy project stats if real stats are essentially empty
+  const displayStats = useMemo(() => {
+    if (!projectStats || (projectStats.totalWords === 0 && isDemo)) {
+      return {
+        totalWords: 45200,
+        chapterCount: 15,
+        characterCount: 8,
+      };
+    }
+    return projectStats;
+  }, [projectStats, isDemo]);
+
+  const todayCount = isDemo ? 1250 : getTodayCount();
+  const displayStreak = isDemo ? 5 : currentStreak;
+  const displayLongest = isDemo ? 12 : longestStreak;
+
   const progress = Math.min(100, Math.round((todayCount / dailyGoal) * 100));
 
-  // --- Derived Stats (Technically Feasible Only) ---
+  // --- Derived Metrics ---
 
-  // 1. Heatmap Data (Yearly)
-  const history = useMemo(() => {
-    // getHistory returns last N days.
-    const rawHistory = getHistory(365);
-    return rawHistory.map((stat) => ({
-      date: stat.date,
-      count: stat.wordCount,
-    }));
-  }, [dailyStats, getHistory]);
-
-  // 2. Weekly grouping for GitHub-style calendar
+  // 1. Heatmap Setup
   const weeks = useMemo(() => {
     const weeksData: { date: string; count: number }[][] = [];
     const totalWeeks = 52;
     const totalDays = totalWeeks * 7;
-    const paddingDays = totalDays - history.length;
+    const paddingDays = totalDays - historyData.length;
     const padded = [
       ...Array(Math.max(0, paddingDays)).fill({ date: "", count: 0 }),
-      ...history,
+      ...historyData,
     ];
     const sliced = padded.slice(-totalDays);
     for (let i = 0; i < totalWeeks; i++) {
       weeksData.push(sliced.slice(i * 7, (i + 1) * 7));
     }
     return weeksData;
-  }, [history]);
+  }, [historyData]);
 
-  // 3. Global Writing Stats
-  const totalWrittenGlobal = Object.values(dailyStats).reduce(
-    (acc, curr) => acc + curr,
-    0
-  );
-  const writingDays = Object.values(dailyStats).filter(
-    (count) => count > 0
-  ).length;
-  // Mathematically derived: Total words / Active days
-  const avgDaily =
-    writingDays > 0 ? Math.round(totalWrittenGlobal / writingDays) : 0;
+  // 2. Writing Habits Calculation (Simple & Feasible)
+  // Most Active Day of Week
+  const dayOfWeekStats = useMemo(() => {
+    const days = [0, 0, 0, 0, 0, 0, 0]; // Sun to Sat
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    historyData.forEach(({ date, count }) => {
+      if (count > 0) {
+        const d = new Date(date).getDay();
+        days[d] += count;
+        counts[d] += 1;
+      }
+    });
+    const maxVal = Math.max(...days);
+    const maxIndex = days.indexOf(maxVal);
+    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+    return {
+      mostActiveDay: maxVal > 0 ? dayNames[maxIndex] : "-",
+      avgPerSession: Math.round(
+        historyData
+          .filter((h) => h.count > 0)
+          .reduce((a, b) => a + b.count, 0) /
+          (historyData.filter((h) => h.count > 0).length || 1),
+      ),
+    };
+  }, [historyData]);
 
-  // 4. Project Specific Stats (from Backend/DB)
-  // Use mock data fallback if real data is 0 for better UI feeling as requested ("더미 데이터도 조금 채우고")
-  // But wait, user said "fill dummy data", implying I should maybe inject it?
-  // For now, I'll use what's available but handle 0s gracefully.
-  // Actually, I'll provide generous fallbacks for visualization if 0.
-  const totalCharacters = projectStats?.totalCharacters || 0;
-  const totalWords = projectStats?.totalWords || 0;
-  const chapterCount = projectStats?.chapterCount || 0;
-  const characterCount = projectStats?.characterCount || 0;
-  const foreshadowingRate = projectStats?.foreshadowingRecoveryRate || 0;
-  const consistencyScore = projectStats?.consistencyScore || 0;
+  // Goal Achievement Rate (Last 30 days)
+  const goalSuccessRate = useMemo(() => {
+    const last30 = historyData.slice(-30);
+    const successCount = last30.filter((d) => d.count >= dailyGoal).length;
+    return Math.round((successCount / 30) * 100);
+  }, [historyData, dailyGoal]);
 
-  // 5. Feasible Derived Metrics
-  const feasibleStats = {
-    // Simple division: Total / Count
-    avgChapterLength:
-      chapterCount > 0 ? Math.round(totalWords / chapterCount) : 0,
+  // 3. Project Balance Stats
+  const avgChapterLen =
+    displayStats.chapterCount > 0
+      ? Math.round(displayStats.totalWords / displayStats.chapterCount)
+      : 0;
 
-    // Standard Estimation: 200 words per minute (Average adult reading speed)
-    // Formula: Total Words / 200
-    estimatedReadingTime: Math.ceil(totalWords / 200),
-    readingTimeHours: Math.floor(Math.ceil(totalWords / 200) / 60),
-    readingTimeMinutes: Math.ceil(totalWords / 200) % 60,
+  const charsPerChapter =
+    displayStats.chapterCount > 0
+      ? (displayStats.characterCount / displayStats.chapterCount).toFixed(1)
+      : "0";
 
-    // Density: Characters / Chapters
-    characterDensity:
-      chapterCount > 0 ? (characterCount / chapterCount).toFixed(1) : "0",
-  };
-
-  const handleSaveGoal = () => {
-    const goal = parseInt(tempGoal, 10);
-    if (!isNaN(goal) && goal > 0) {
-      setDailyGoal(goal);
-      setIsEditingGoal(false);
-    }
-  };
+  // const handleSaveGoal = () => {
+  //   const goal = parseInt(tempGoal, 10);
+  //   if (!isNaN(goal) && goal > 0) {
+  //     setDailyGoal(goal);
+  //     setIsEditingGoal(false);
+  //   }
+  // };
 
   const getIntensityColor = (count: number) => {
-    if (count === 0) return "bg-[#E6E4E0]"; // Slightly darker than background for visibility
+    if (count === 0) return "bg-[#E6E4E0]";
     const ratio = count / dailyGoal;
-    if (ratio < 0.25) return "bg-[#BD9B8D] opacity-40";
-    if (ratio < 0.5) return "bg-[#BD9B8D] opacity-70";
-    if (ratio < 1.0) return "bg-[#A47764]";
-    return "bg-[#7D5A4B]";
+    if (ratio < 0.25) return "bg-[#D7C2B8]"; // Mocha 200
+    if (ratio < 0.5) return "bg-[#BD9B8D]"; // Mocha 400
+    if (ratio < 1.0) return "bg-[#A47764]"; // Mocha 500
+    return "bg-[#7D5A4B]"; // Mocha 700
   };
 
   return (
@@ -165,377 +174,262 @@ export default function StatsPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-serif font-bold text-[#3D302A] flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-[#A47764]" />
-            통계 및 분석
+            집필 통계
           </h1>
           <p className="text-[#8D8B88] font-medium">
-            데이터에 기반한 객관적인 집필 분석 리포트입니다.
+            꾸준한 집필 습관을 위한 데이터 분석 리포트입니다.
           </p>
         </div>
 
-        {/* Top Cards: Goal & Streak */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Daily Goal Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#A47764]" />
+        {/* Top Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Today */}
+          <Card className="border-none shadow-sm bg-white relative overflow-hidden group">
+            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#A47764]" />
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
-                <span>오늘 목표</span>
+              <CardTitle className="flex justify-between items-center text-sm font-semibold text-[#8D8B88] uppercase tracking-wider">
+                오늘의 집필
                 <Target className="w-4 h-4 text-[#A47764]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-baseline gap-2 mb-3">
+              <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-4xl font-bold font-serif text-[#3D302A]">
                   {todayCount.toLocaleString()}
                 </span>
-                <div className="text-sm text-[#8D8B88] flex items-center gap-2">
-                  <span>/</span>
-                  {isEditingGoal ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={tempGoal}
-                        onChange={(e) => setTempGoal(e.target.value)}
-                        className="w-16 h-6 text-sm border-b border-[#A47764] focus:outline-none text-center bg-transparent"
-                        autoFocus
-                        onBlur={handleSaveGoal}
-                        onKeyDown={(e) => e.key === "Enter" && handleSaveGoal()}
-                      />
-                      <span className="text-xs text-[#A47764]">Enter</span>
-                    </div>
-                  ) : (
-                    <span
-                      onClick={() => setIsEditingGoal(true)}
-                      className="cursor-pointer hover:text-[#A47764] hover:underline decoration-dashed underline-offset-4"
-                      title="목표 수정하려면 클릭"
-                    >
-                      {dailyGoal.toLocaleString()}자
-                    </span>
-                  )}
-                </div>
+                <span className="text-sm text-[#8D8B88]">
+                  / {dailyGoal.toLocaleString()}자
+                </span>
               </div>
-              <div className="space-y-1.5">
-                <Progress
-                  value={progress}
-                  className="h-2 bg-[#F1F0EC]"
-                  indicatorClassName="bg-[#A47764]"
-                />
-                <div className="flex justify-between text-xs font-medium text-[#8D8B88]">
-                  <span>{progress}% 달성</span>
-                  <span>
-                    {Math.max(0, dailyGoal - todayCount).toLocaleString()}자
-                    남음
-                  </span>
-                </div>
-              </div>
+              <Progress
+                value={progress}
+                className="h-2 bg-[#F1F0EC]"
+                indicatorClassName="bg-[#A47764]"
+              />
+              <p className="text-xs text-[#8D8B88] mt-2 text-right">
+                {progress >= 100
+                  ? "목표 달성! 🎉"
+                  : `${Math.max(0, dailyGoal - todayCount).toLocaleString()}자 남음`}
+              </p>
             </CardContent>
           </Card>
 
-          {/* Streak Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#B38B82]" />
+          {/* Card 2: Streak */}
+          <Card className="border-none shadow-sm bg-white relative overflow-hidden group">
+            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#B38B82]" />
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
-                <span>집필 스트릭</span>
+              <CardTitle className="flex justify-between items-center text-sm font-semibold text-[#8D8B88] uppercase tracking-wider">
+                집필 스트릭
                 <Flame
                   className={cn(
                     "w-4 h-4",
-                    currentStreak > 0
+                    displayStreak > 0
                       ? "text-[#B38B82] fill-[#B38B82]"
-                      : "text-stone-300"
+                      : "text-stone-300",
                   )}
                 />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-6">
                 <div>
-                  <span className="block text-4xl font-bold font-serif text-[#3D302A]">
-                    {currentStreak}
-                    <span className="text-lg font-sans font-medium text-[#8D8B88] ml-1">
-                      일
-                    </span>
+                  <span className="text-4xl font-bold font-serif text-[#3D302A]">
+                    {displayStreak}
                   </span>
-                  <span className="text-xs text-[#8D8B88]">현재 연속</span>
+                  <span className="text-sm text-[#8D8B88] ml-1">일 연속</span>
                 </div>
-                <Separator
-                  orientation="vertical"
-                  className="h-10 bg-[#F1F0EC]"
-                />
+                <div className="h-8 w-px bg-stone-100" />
                 <div>
-                  <span className="block text-xl font-bold font-serif text-[#8D8B88]">
-                    {longestStreak}
-                    <span className="text-sm font-sans font-medium ml-1">
-                      일
-                    </span>
+                  <span className="text-xl font-bold text-[#8D8B88]">
+                    {displayLongest}
                   </span>
-                  <span className="text-xs text-[#8D8B88]">최장 기록</span>
+                  <span className="text-xs text-[#8D8B88] ml-1">최고 기록</span>
                 </div>
               </div>
+              <p className="text-xs text-[#8D8B88] mt-3">
+                {displayStreak > 0
+                  ? "이 기세를 몰아 계속 써보세요!"
+                  : "오늘 다시 시작해보세요!"}
+              </p>
             </CardContent>
           </Card>
 
-          {/* Project Summary Card */}
-          <Card className="border-none shadow-sm bg-white overflow-hidden relative transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#7A8C6F]" />
+          {/* Card 3: Project Total */}
+          <Card className="border-none shadow-sm bg-white relative overflow-hidden group">
+            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#7A8C6F]" />
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-[#8D8B88] flex items-center justify-between">
-                <span>프로젝트 요약</span>
+              <CardTitle className="flex justify-between items-center text-sm font-semibold text-[#8D8B88] uppercase tracking-wider">
+                프로젝트 현황
                 <Trophy className="w-4 h-4 text-[#7A8C6F]" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-[#8D8B88] mb-0.5">총 글자수</p>
-                  <p className="text-xl font-bold text-[#3D302A]">
-                    {totalWords.toLocaleString()}
-                  </p>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-[#8D8B88]">총 분량</span>
+                  <span className="text-2xl font-bold font-serif text-[#3D302A]">
+                    {displayStats.totalWords.toLocaleString()}
+                    <span className="text-xs font-sans font-normal ml-1 text-[#8D8B88]">
+                      자
+                    </span>
+                  </span>
                 </div>
-                <div>
-                  <p className="text-xs text-[#8D8B88] mb-0.5">총 챕터</p>
-                  <p className="text-xl font-bold text-[#3D302A]">
-                    {chapterCount}장
-                  </p>
-                </div>
-                <div className="col-span-2 pt-2 border-t border-[#F1F0EC] flex items-center justify-between">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help group">
-                          <span className="text-xs text-[#8D8B88] border-b border-dashed border-[#8D8B88]/50">
-                            예상 독서 시간
-                          </span>
-                          <Info className="w-3 h-3 text-[#8D8B88] opacity-50 group-hover:opacity-100" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">
-                          성인 평균 독서 속도(200 wpm) 기준
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <Badge
-                    variant="secondary"
-                    className="bg-[#E8F3E4] text-[#7A8C6F] hover:bg-[#E8F3E4]"
-                  >
-                    약{" "}
-                    {feasibleStats.readingTimeHours > 0
-                      ? `${feasibleStats.readingTimeHours}시간 `
-                      : ""}
-                    {feasibleStats.readingTimeMinutes}분
-                  </Badge>
+                <Separator className="my-2 bg-[#F1F0EC]" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#8D8B88]">챕터 수</span>
+                  <span className="font-medium text-[#3D302A]">
+                    {displayStats.chapterCount}장
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Detailed Metrics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Column: Heatmap (Span 3) */}
-          <div className="lg:col-span-3 space-y-6">
-            <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg font-serif font-bold text-[#3D302A] flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#A47764]" />
-                  집필 히트맵 (Heatmap)
-                </CardTitle>
-                <CardDescription>
-                  지난 1년간의 집필 기록을 시각화했습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto pb-4">
-                  <div className="flex gap-1 min-w-max">
-                    {weeks.map((week, wIndex) => (
-                      <div key={wIndex} className="flex flex-col gap-1">
-                        {week.map((day, dIndex) => (
-                          <div
-                            key={dIndex}
-                            className={cn(
-                              "w-3 h-3 rounded-[2px] transition-all hover:ring-1 hover:ring-[#3D302A] relative group",
-                              getIntensityColor(day.count)
-                            )}
-                          >
-                            {day.date && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 pointer-events-none whitespace-nowrap">
-                                <div className="bg-[#3D302A] text-white text-[10px] py-1 px-2 rounded flex items-center gap-2 shadow-xl">
-                                  <span className="font-medium opacity-80">
-                                    {day.date}
-                                  </span>
-                                  <span className="w-px h-2 bg-white/20" />
-                                  <span className="font-bold">
-                                    {day.count.toLocaleString()}자
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+        {/* Heatmap Section */}
+        <Card className="border-none shadow-sm bg-white p-2">
+          <CardHeader>
+            <CardTitle className="text-lg font-serif font-bold text-[#3D302A] flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#A47764]" />
+              집필 활동 기록
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto pb-2">
+              <div className="flex gap-1 min-w-max">
+                {weeks.map((week, wIndex) => (
+                  <div key={wIndex} className="flex flex-col gap-1">
+                    {week.map((day, dIndex) => (
+                      <div
+                        key={dIndex}
+                        className={cn(
+                          "w-3 h-3 rounded-[2px] transition-all relative group",
+                          getIntensityColor(day.count),
+                        )}
+                      >
+                        {day.date && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 pointer-events-none whitespace-nowrap">
+                            <div className="bg-[#3D302A] text-white text-[10px] py-1 px-2 rounded shadow-xl">
+                              <span className="font-bold">
+                                {day.date}: {day.count.toLocaleString()}자
+                              </span>
+                            </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
-                <div className="flex items-center justify-end gap-2 text-xs text-[#8D8B88]">
-                  <span>Less</span>
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 rounded-[2px] bg-[#E6E4E0]" />
-                    <div className="w-3 h-3 rounded-[2px] bg-[#BD9B8D] opacity-40" />
-                    <div className="w-3 h-3 rounded-[2px] bg-[#BD9B8D] opacity-70" />
-                    <div className="w-3 h-3 rounded-[2px] bg-[#A47764]" />
-                    <div className="w-3 h-3 rounded-[2px] bg-[#7D5A4B]" />
-                  </div>
-                  <span>More</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Additional Detailed Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Productivity Stats (Feasible Only) */}
-              <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-[#7A8C6F]" />
-                    생산성 지표
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-md text-[#7A8C6F] border border-[#7A8C6F]/10">
-                        <Sigma className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-[#3D302A]">
-                        일 평균 집필량
-                      </span>
-                    </div>
-                    <span className="text-lg font-bold text-[#3D302A]">
-                      {avgDaily.toLocaleString()}자
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-md text-[#B38B82] border border-[#B38B82]/10">
-                        <Calendar className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-[#3D302A]">
-                        총 집필 일수
-                      </span>
-                    </div>
-                    <span className="text-lg font-bold text-[#3D302A]">
-                      {writingDays}일
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Story Metrics (Feasible only) */}
-              <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-[#B38B82]" />
-                    스토리 품질 지표
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="pt-2 grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-[#f8f7f5] rounded-lg text-center">
-                      <p className="text-xs text-[#8D8B88] mb-1">
-                        챕터당 평균 길이
-                      </p>
-                      <p className="font-bold text-[#3D302A]">
-                        {feasibleStats.avgChapterLength.toLocaleString()}자
-                      </p>
-                    </div>
-                    <div className="p-3 bg-[#f8f7f5] rounded-lg text-center">
-                      <p className="text-xs text-[#8D8B88] mb-1">
-                        챕터당 등장인물 밀도
-                      </p>
-                      <p className="font-bold text-[#3D302A]">
-                        {feasibleStats.characterDensity}명
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#8D8B88]">설정 일관성 점수</span>
-                      <span className="font-bold text-[#7A8C6F]">
-                        {consistencyScore}점
-                      </span>
-                    </div>
-                    <Progress
-                      value={consistencyScore}
-                      max={100}
-                      className="h-1.5"
-                      indicatorClassName="bg-[#7A8C6F]"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                ))}
+              </div>
             </div>
-          </div>
+            <div className="flex justify-end items-center gap-2 text-xs text-[#8D8B88] mt-2">
+              <span>Less</span>
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded-[2px] bg-[#E6E4E0]" />
+                <div className="w-3 h-3 rounded-[2px] bg-[#D7C2B8]" />
+                <div className="w-3 h-3 rounded-[2px] bg-[#BD9B8D]" />
+                <div className="w-3 h-3 rounded-[2px] bg-[#A47764]" />
+                <div className="w-3 h-3 rounded-[2px] bg-[#7D5A4B]" />
+              </div>
+              <span>More</span>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Right Column: Mini Stats (Span 1) */}
-          <div className="space-y-6">
-            {/* World Building Stats (Feasible from DB counts) */}
-            <Card className="border-none shadow-sm bg-white transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold text-[#8D8B88] uppercase tracking-wider">
-                  세계관 규모
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#E8F3E4] flex items-center justify-center text-[#7A8C6F]">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-medium">등장인물</span>
+        {/* Bottom Grid: Habits & Balance */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Writing Habits */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader>
+              <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#B38B82]" />
+                집필 습관
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-full text-[#B38B82]">
+                    <Zap className="w-4 h-4" />
                   </div>
-                  <span className="text-lg font-bold text-[#3D302A]">
-                    {characterCount}
+                  <span className="text-sm font-medium text-[#3D302A]">
+                    가장 활발한 요일
                   </span>
                 </div>
-                <Separator />
-                {/* Note: Places/Items are not yet in ProjectStats, so we omit or keep them if available.
-                    User asked for "engineered data only".
-                    If we don't have the counts, better not to show 0 or fake data.
-                    However, keeping the structure for future integration is good.
-                    For now, I'll comment out the unavailable ones to be strict.
-                */}
-                <div className="p-4 bg-stone-50 rounded text-center">
-                  <p className="text-xs text-stone-400">
-                    장소/아이템 통계 준비 중...
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                <span className="font-bold text-[#3D302A]">
+                  {dayOfWeekStats.mostActiveDay}요일
+                </span>
+              </div>
 
-            {/* Motivation Quote */}
-            <Card className="border-none shadow-sm bg-[#A47764] text-white transition-all hover:shadow-md hover:bg-[#936655]">
-              <CardContent className="p-6 relative overflow-hidden">
-                <div className="absolute top-[-10px] right-[-10px] opacity-10">
-                  <Trophy className="w-24 h-24" />
+              <div className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-full text-[#7A8C6F]">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-medium text-[#3D302A]">
+                    목표 달성률 (30일)
+                  </span>
                 </div>
-                <h3 className="font-serif text-lg font-bold mb-2">
-                  Keep Writing!
-                </h3>
-                <p className="text-white/90 text-sm leading-relaxed italic">
-                  "모든 초고는 쓰레기다. 하지만 쓰레기는 고칠 수 있다. 백지는
-                  고칠 수 없다."
+                <span className="font-bold text-[#3D302A]">
+                  {goalSuccessRate}%
+                </span>
+              </div>
+
+              <div className="pt-2 text-center">
+                <p className="text-xs text-[#8D8B88] ">
+                  평균적으로 한 번 앉으면{" "}
+                  <span className="font-bold text-[#A47764]">
+                    {dayOfWeekStats.avgPerSession.toLocaleString()}자
+                  </span>
+                  를 씁니다.
                 </p>
-                <p className="text-white/70 text-xs mt-3 text-right">
-                  - 어니스트 헤밍웨이
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Project Balance */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader>
+              <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#7A8C6F]" />
+                프로젝트 밸런스
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-[#f8f7f5] rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-xs text-[#8D8B88] mb-1">
+                    챕터당 평균 분량
+                  </span>
+                  <span className="text-xl font-bold text-[#3D302A]">
+                    {avgChapterLen.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-[#8D8B88]">
+                    글자 / 챕터
+                  </span>
+                </div>
+                <div className="p-4 bg-[#f8f7f5] rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-xs text-[#8D8B88] mb-1">
+                    챕터당 등장인물
+                  </span>
+                  <span className="text-xl font-bold text-[#3D302A]">
+                    {charsPerChapter}
+                  </span>
+                  <span className="text-[10px] text-[#8D8B88]">명 / 챕터</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border border-[#F1F0EC] rounded-lg mt-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#8D8B88]" />
+                  <span className="text-xs text-[#8D8B88]">전체 등장인물</span>
+                </div>
+                <span className="font-bold text-[#3D302A] text-sm">
+                  {displayStats.characterCount}명
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

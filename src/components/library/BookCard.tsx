@@ -6,6 +6,7 @@ import {
   Trash,
   BookOpen,
   Check,
+  Image,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
@@ -33,7 +35,9 @@ interface BookCardProps {
   progress: number;
   lastEdited: string;
   onClick?: () => void;
-  onAction?: (action: "rename" | "duplicate" | "delete") => void;
+  onAction?: (
+    action: "rename" | "duplicate" | "delete" | "change_cover",
+  ) => void;
 
   // 상태 변경 콜백
   onStatusChange?: (status: ProjectStatusType) => void;
@@ -96,20 +100,20 @@ export function BookCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col h-full bg-white rounded-lg border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer",
-        // 기본 상태
-        !isEditMode && "border-input hover:shadow-md hover:border-primary/30",
+        "group relative flex flex-col h-full bg-white rounded-xl overflow-hidden cursor-pointer transition-all duration-300",
+        // 기본 상태: 보더 없이 쉐도우로 깊이감 표현
+        !isEditMode && "shadow-sm hover:shadow-xl hover:-translate-y-1",
         // 편집 모드 스타일
-        isEditMode && "border-mocha-200 scale-[0.98]",
+        isEditMode && "ring-1 ring-border scale-[0.98]",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary border-primary"
+        isSelected && "ring-2 ring-primary",
       )}
       onClick={handleCardClick}
     >
       {/* 편집 모드 체크박스 오버레이 */}
       {isEditMode && (
         <div
-          className="absolute top-3 left-3 z-20"
+          className="absolute top-3 left-3 z-30"
           onClick={(e) => {
             e.stopPropagation();
             onSelect?.();
@@ -121,7 +125,7 @@ export function BookCard({
               "border-2 shadow-sm transition-all duration-200",
               isSelected
                 ? "border-status-success bg-status-success"
-                : "bg-white border-muted-foreground hover:border-status-success"
+                : "bg-white border-muted-foreground hover:border-status-success",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -129,27 +133,43 @@ export function BookCard({
         </div>
       )}
 
-      {/* Cover Image Area */}
-      <div className="relative aspect-[3/2] w-full overflow-hidden bg-muted">
+      {/* Cover Image Area - Vertical Aspect Ratio [3/4] */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted-foreground/5">
         {coverImage ? (
-          <img
-            src={coverImage}
-            alt={title}
-            className={cn(
-              "h-full w-full object-cover transition-transform duration-500",
-              !isEditMode && "group-hover:scale-105"
-            )}
-          />
+          <>
+            {/* Blurred Background Layer (Fill) */}
+            <div className="absolute inset-0 overflow-hidden">
+              <img
+                src={coverImage}
+                alt=""
+                className="h-full w-full object-cover blur-2xl opacity-40 scale-125"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </div>
+
+            {/* Main Image Layer (Contain with Shadow) */}
+            <div className="relative h-full w-full p-6 flex items-center justify-center">
+              <div className="relative h-full w-full shadow-2xl transition-transform duration-500 group-hover:scale-[1.03]">
+                <img
+                  src={coverImage}
+                  alt={title}
+                  className="h-full w-full object-contain rounded-sm"
+                />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <BookOpen className="h-12 w-12 opacity-50" />
+          <div className="flex h-full w-full flex-col items-center justify-center text-muted-foreground gap-2 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="p-4 bg-white rounded-full shadow-sm">
+              <BookOpen className="h-8 w-8 opacity-30" />
+            </div>
           </div>
         )}
 
-        {/* More Options Menu (Top Right) - 편집 모드가 아닐 때만 표시 */}
+        {/* More Options Menu (Top Right) */}
         {!isEditMode && (
           <div
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20"
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenu>
@@ -157,7 +177,7 @@ export function BookCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white text-muted-foreground rounded-full shadow-sm"
+                  className="h-8 w-8 bg-black/20 backdrop-blur-md hover:bg-black/30 text-white rounded-full shadow-sm"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -169,6 +189,10 @@ export function BookCard({
                 <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
                   <Copy className="mr-2 h-4 w-4" /> 복제
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAction?.("change_cover")}>
+                  <Image className="mr-2 h-4 w-4" /> 표지 변경
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onAction?.("delete")}
                   className="text-destructive focus:text-destructive"
@@ -182,67 +206,61 @@ export function BookCard({
       </div>
 
       {/* Content Area */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        {/* Title */}
+      <div className="flex flex-col flex-1 p-5 gap-4">
+        {/* Title & Author */}
         <div>
-          <h3 className="font-heading text-lg font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-heading text-lg font-bold text-foreground leading-snug line-clamp-2 mb-1 group-hover:text-primary transition-colors">
             {title}
           </h3>
-          <p className="text-xs text-muted-foreground font-medium">{author}</p>
+          <p className="text-sm text-muted-foreground">{author}</p>
         </div>
 
-        {/* Genre Tags */}
-        <div className="flex flex-wrap gap-1.5">
-          {genre ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-cloud-50 text-muted-foreground border border-input">
-              {genre}
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-cloud-50 text-muted-foreground/50 border border-input">
-              장르 없음
-            </span>
-          )}
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-2 mt-auto text-xs text-muted-foreground/80">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{lastEdited}</span>
+          </div>
+          <div className="flex items-center gap-1.5 justify-end">{length}</div>
         </div>
 
-        {/* Last Edited */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-auto">
-          <Clock className="w-3.5 h-3.5" />
-          <span>수정: {lastEdited}</span>
-        </div>
-
-        {/* Status Line - StatusChip으로 교체 */}
-        <div
-          className="pt-3 border-t border-border flex items-center justify-between"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* StatusChip (편집 모드가 아닐 때만 클릭 가능) */}
-          {onStatusChange ? (
-            <StatusChip
-              status={normalizedStatus}
-              onStatusChange={onStatusChange}
-              disabled={isEditMode}
-            />
-          ) : (
-            // onStatusChange가 없으면 기존 방식으로 표시 (읽기 전용)
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  normalizedStatus === "Complete"
-                    ? "bg-status-success"
-                    : "bg-mocha-500"
-                )}
-              />
-              <span className="text-xs font-semibold text-muted-foreground">
-                {normalizedStatus === "Complete" ? "완료" : "집필중"}
+        {/* Footer: Tags & Status */}
+        <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+          {/* Genre Badge */}
+          <div className="flex-1 min-w-0">
+            {genre ? (
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-secondary text-secondary-foreground truncate max-w-full">
+                {genre}
               </span>
-            </div>
-          )}
+            ) : (
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-muted text-muted-foreground">
+                No Genre
+              </span>
+            )}
+          </div>
 
-          {/* Words/Length */}
-          {length && (
-            <span className="text-xs text-muted-foreground">{length}</span>
-          )}
+          {/* Status */}
+          <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+            {onStatusChange ? (
+              <StatusChip
+                status={normalizedStatus}
+                onStatusChange={onStatusChange}
+                disabled={isEditMode}
+                className="h-6 text-[10px]"
+              />
+            ) : (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">
+                <div
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    normalizedStatus === "Complete"
+                      ? "bg-green-500"
+                      : "bg-blue-500",
+                  )}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

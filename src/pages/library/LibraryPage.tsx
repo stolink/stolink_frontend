@@ -85,7 +85,7 @@ export default function LibraryPage() {
 
   // ========== 정렬 상태 ==========
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
-    "updatedAt"
+    "updatedAt",
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -103,6 +103,12 @@ export default function LibraryPage() {
     title: string;
   } | null>(null);
 
+  // ========== 표지 변경 상태 ==========
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [coverUpdateTargetId, setCoverUpdateTargetId] = useState<string | null>(
+    null,
+  );
+
   const {
     data: projectsData,
     isLoading,
@@ -117,7 +123,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -133,7 +139,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
     );
   };
 
@@ -187,7 +193,7 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project"
+        "Failed to create project",
       );
       const projectId = projectData.id;
 
@@ -198,7 +204,7 @@ export default function LibraryPage() {
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter"
+        "Failed to create default chapter",
       );
       const chapterId = chapterData.id;
 
@@ -215,7 +221,7 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section"
+          "Failed to create section",
         );
         _create(mapBackendToFrontend(sectionData));
       } catch {
@@ -258,7 +264,7 @@ export default function LibraryPage() {
   // Helper: Recursive Character Text Splitter approach
   const splitContentRecursively = (
     text: string,
-    chunkSize: number = 10000
+    chunkSize: number = 10000,
   ): { title: string; content: string }[] => {
     const separators = ["\n\n", "\n", ". ", " "];
     const chunks: string[] = [];
@@ -289,12 +295,12 @@ export default function LibraryPage() {
 
       const chunk = currentText.substring(
         0,
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       chunks.push(chunk);
 
       const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length
+        bestSplitIndex + separatorUsed.length,
       );
       if (remaining.trim().length > 0) {
         splitText(remaining);
@@ -446,12 +452,12 @@ export default function LibraryPage() {
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
         alert(
-          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요."
+          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
         );
       } else {
         alert(
           "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류")
+            (error instanceof Error ? error.message : "알 수 없는 오류"),
         );
       }
     }
@@ -469,6 +475,32 @@ export default function LibraryPage() {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // 표지 변경 핸들러
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && coverUpdateTargetId) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("이미지 크기는 5MB 이하여야 합니다.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        updateProject({
+          id: coverUpdateTargetId,
+          payload: { coverImage: base64String },
+        });
+        setCoverUpdateTargetId(null);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input
+    if (coverInputRef.current) {
+      coverInputRef.current.value = "";
+    }
   };
 
   const containerVariants = {
@@ -590,7 +622,8 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode && "bg-white border-input text-muted-foreground"
+                    !isEditMode &&
+                      "bg-white border-input text-muted-foreground",
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -613,7 +646,7 @@ export default function LibraryPage() {
                     "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
                     viewMode === "grid"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600"
+                      : "text-muted-foreground hover:text-mocha-600",
                   )}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -624,7 +657,7 @@ export default function LibraryPage() {
                     "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
                     viewMode === "list"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600"
+                      : "text-muted-foreground hover:text-mocha-600",
                   )}
                 >
                   <List className="h-4 w-4" />
@@ -696,7 +729,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1"
+              : "grid-cols-1",
           )}
           initial={false}
           animate="visible"
@@ -708,6 +741,15 @@ export default function LibraryPage() {
             ref={fileInputRef}
             onChange={handleFileChange}
             accept=".txt,.md"
+            className="hidden"
+          />
+
+          {/* 숨겨진 표지 이미지 입력 */}
+          <input
+            type="file"
+            ref={coverInputRef}
+            onChange={handleCoverChange}
+            accept="image/*"
             className="hidden"
           />
 
@@ -776,6 +818,10 @@ export default function LibraryPage() {
                     } else if (action === "duplicate") {
                       // 프로젝트 복제
                       duplicateProject(project.id);
+                    } else if (action === "change_cover") {
+                      // 표지 변경
+                      setCoverUpdateTargetId(project.id);
+                      coverInputRef.current?.click();
                     }
                   }}
                   onStatusChange={(status) =>

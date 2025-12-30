@@ -1,92 +1,172 @@
-import { Outlet, useParams, useLocation } from "react-router-dom";
-import { BookOpen } from "lucide-react";
+import { Outlet, useParams, useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, ChevronLeft } from "lucide-react";
 import { ActivityBar } from "./ActivityBar";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
-import { useProject } from "@/hooks/useProjects";
+import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { useEditorStore } from "@/stores";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /**
- * ProjectLayout - VS Code + Linear 스타일 레이아웃
+ * ProjectLayout - Header-First Layout (Dashboard Style)
  *
- * 구조:
- * - Global Header: 프로젝트 정보, 저장 상태 (모든 페이지 공통)
- * - ActivityBar: 페이지 간 전환 (좌측 세로)
- * - Page Content: 각 페이지별 콘텐츠
+ * Structure:
+ * - Header (Top, Full Width): Home/Back navigation, Project Title, Global Actions
+ * - Body (Bottom): ActivityBar (Left) + Main Content (Right)
  */
 export function ProjectLayout() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: project } = useProject(id || "", { enabled: !!id });
+  const { mutate: updateProject } = useUpdateProject();
   const { saveStatus, lastSavedAt } = useEditorStore();
+
+  // Check Demo Mode
+  const isDemo = location.pathname.includes("/demo");
+  const projectTitle = project?.title || "제목 없음";
+
+  // Title Editing State
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(projectTitle);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (project?.title) {
+      // eslint-disable-next-line
+      setEditedTitle(project.title);
+    }
+  }, [project?.title]);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [isEditingTitle]);
 
   if (!id) {
     return null;
   }
 
-  // 데모 모드 체크 (경로에 demo 포함 시)
-  const isDemo = location.pathname.includes("/demo");
-  const projectTitle = project?.title || "제목 없음";
+  const handleTitleSave = () => {
+    if (editedTitle.trim() && editedTitle !== projectTitle) {
+      updateProject({
+        id,
+        payload: { title: editedTitle.trim() },
+      });
+    } else {
+      setEditedTitle(projectTitle);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      setEditedTitle(projectTitle);
+      setIsEditingTitle(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground min-w-[1024px]">
-      {/* Global Header - 모든 페이지 공통 */}
+      {/* Global Header - Fixed Top */}
       {!isDemo && (
-        <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6 shrink-0 shadow-sm">
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-5 h-5 text-primary" />
-            <div className="flex flex-col">
-              <h1 className="text-sm font-semibold text-foreground">
-                {projectTitle}
-              </h1>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  {saveStatus === "saved" && (
-                    <>
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <span className="text-green-600 font-medium">저장됨</span>
-                    </>
-                  )}
-                  {saveStatus === "saving" && (
-                    <>
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                      <span className="text-blue-600 font-medium">저장 중...</span>
-                    </>
-                  )}
-                  {saveStatus === "unsaved" && (
-                    <>
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="text-amber-600 font-medium">편집 중</span>
-                    </>
-                  )}
-                  {lastSavedAt && saveStatus === "saved" && (
-                    <span className="text-muted-foreground/70">
-                      • {new Date(lastSavedAt).toLocaleString("ko-KR", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+        <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm z-20 relative">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Home / Back to Library Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/library")}
+              className="group gap-1.5 pl-2 pr-3 hover:bg-muted text-muted-foreground hover:text-primary transition-colors"
+              title="서재로 돌아가기"
+            >
+              <ChevronLeft className="w-4 h-4 opacity-70 group-hover:-translate-x-0.5 transition-transform" />
+              <div className="p-1 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <BookOpen className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-medium hidden sm:inline-block">
+                서재
+              </span>
+            </Button>
+
+            <div className="w-px h-4 bg-border mx-2 shrink-0" />
+
+            {/* Editable Project Title */}
+            <div className="flex flex-col justify-center min-w-0">
+              {isEditingTitle ? (
+                <Input
+                  ref={titleInputRef}
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleKeyDown}
+                  className="h-7 text-sm font-bold px-2 min-w-[200px]"
+                />
+              ) : (
+                <h1
+                  className="text-sm font-bold text-foreground hover:bg-accent/50 rounded px-2 py-0.5 cursor-pointer transition-colors truncate leading-tight"
+                  onClick={() => setIsEditingTitle(true)}
+                  title="클릭하여 제목 수정"
+                >
+                  {projectTitle}
+                </h1>
+              )}
+
+              <div className="flex items-center gap-1.5 px-2 text-[10px] text-muted-foreground leading-none">
+                {saveStatus === "saved" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-green-500" />
+                    <span className="text-green-600/80 font-medium">
+                      저장됨
                     </span>
-                  )}
-                </span>
+                  </>
+                )}
+                {saveStatus === "saving" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-blue-600/80 font-medium">
+                      저장 중...
+                    </span>
+                  </>
+                )}
+                {saveStatus === "unsaved" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-amber-600/80 font-medium">
+                      편집 중
+                    </span>
+                  </>
+                )}
+                {lastSavedAt && saveStatus === "saved" && (
+                  <span className="text-muted-foreground/50 ml-1">
+                    {new Date(lastSavedAt).toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          {/* 우측 영역 (필요시 추가 액션 버튼) */}
+          {/* Right Area - Placeholder for Global Actions */}
           <div className="flex items-center gap-2">
-            {/* 공유, 설정 등 글로벌 액션 */}
+            {/* Future: User Profile, Notifications etc. */}
           </div>
         </header>
       )}
 
-      {/* Content Area - ActivityBar + Pages */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Activity Bar (좌측 세로 아이콘 바) */}
+      {/* Content Area */}
+      <div className="flex flex-1 overflow-hidden w-full relative">
+        {/* Activity Bar - Sidebar */}
         <ActivityBar projectId={id} />
 
-        {/* 메인 콘텐츠 (각 페이지가 자체 레이아웃 관리) */}
-        <main className="flex-1 overflow-hidden w-full">
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden w-full relative bg-background">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
