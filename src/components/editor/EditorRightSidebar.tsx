@@ -81,7 +81,7 @@ export default function EditorRightSidebar({
               value="inspector"
               className="text-[11px] px-1.5 h-7 data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
-              <Info className="h-3 w-3 mr-1 text-blue-600" />
+              <Info className="h-3 w-3 mr-1 text-indigo-600" />
               정보
             </TabsTrigger>
           </TabsList>
@@ -101,7 +101,7 @@ export default function EditorRightSidebar({
       <div
         className={cn(
           "flex-1",
-          activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto"
+          activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto",
         )}
       >
         {activeTab === "inspector" && (
@@ -121,4 +121,3 @@ export default function EditorRightSidebar({
     </aside>
   );
 }
-

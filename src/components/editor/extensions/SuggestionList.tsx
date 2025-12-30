@@ -1,4 +1,10 @@
-import { forwardRef, useImperativeHandle, useState, useRef, useEffect } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 import { cn } from "@/lib/utils";
 import { User, Package } from "lucide-react";
 
@@ -86,7 +92,10 @@ export const SuggestionList = forwardRef<
         `[data-index="${selectedIndex}"]`,
       );
       if (selectedElement) {
-        selectedElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        selectedElement.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
       }
     }
   }, [selectedIndex]);
@@ -122,10 +131,10 @@ export const SuggestionList = forwardRef<
                 key={item.id}
                 data-index={index}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
+                  "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-all",
                   index === selectedIndex
-                    ? "bg-sage-100 text-sage-900"
-                    : "text-foreground hover:bg-muted/50",
+                    ? "bg-mocha-700 text-white shadow-md scale-[1.02] z-10"
+                    : "text-espresso-900 hover:bg-muted/50",
                 )}
                 onClick={() => selectItem(index)}
               >
@@ -133,16 +142,35 @@ export const SuggestionList = forwardRef<
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="w-5 h-5 rounded-full object-cover"
+                    className={cn(
+                      "w-5 h-5 rounded-full object-cover",
+                      index === selectedIndex ? "ring-1 ring-white/50" : "",
+                    )}
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-bold">
+                  <div
+                    className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                      index === selectedIndex
+                        ? "bg-white/20 text-white"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
                     {item.name[0]}
                   </div>
                 )}
-                <span className="font-medium">{item.name}</span>
+                <span className="font-semibold">{item.name}</span>
                 {item.role && (
-                  <span className="text-xs text-muted-foreground ml-auto">{item.role}</span>
+                  <span
+                    className={cn(
+                      "text-[11px] ml-auto",
+                      index === selectedIndex
+                        ? "text-mocha-50"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {item.role}
+                  </span>
                 )}
               </button>
             );
@@ -164,19 +192,40 @@ export const SuggestionList = forwardRef<
                 key={item.id}
                 data-index={index}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
+                  "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-all",
                   index === selectedIndex
-                    ? "bg-amber-100 text-amber-900"
-                    : "text-foreground hover:bg-muted/50",
+                    ? "bg-status-warning text-white shadow-md scale-[1.02] z-10"
+                    : "text-espresso-900 hover:bg-muted/50",
                 )}
                 onClick={() => selectItem(index)}
               >
-                <div className="w-5 h-5 rounded bg-amber-50 flex items-center justify-center">
-                  <Package className="w-3 h-3 text-amber-600" />
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded flex items-center justify-center",
+                    index === selectedIndex
+                      ? "bg-white/20"
+                      : "bg-status-warning/10",
+                  )}
+                >
+                  <Package
+                    className={cn(
+                      "w-3 h-3",
+                      index === selectedIndex
+                        ? "text-white"
+                        : "text-status-warning",
+                    )}
+                  />
                 </div>
-                <span className="font-medium">{item.name}</span>
+                <span className="font-semibold">{item.name}</span>
                 {item.itemType && (
-                  <span className="text-xs text-muted-foreground ml-auto capitalize">
+                  <span
+                    className={cn(
+                      "text-[11px] ml-auto capitalize",
+                      index === selectedIndex
+                        ? "text-status-warning/50"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     {item.itemType}
                   </span>
                 )}
@@ -190,4 +239,3 @@ export const SuggestionList = forwardRef<
 });
 
 SuggestionList.displayName = "SuggestionList";
-

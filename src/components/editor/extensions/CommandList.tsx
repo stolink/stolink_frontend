@@ -79,17 +79,24 @@ export const CommandList = forwardRef<CommandListRef, CommandListProps>(
           <button
             key={index}
             className={cn(
-              "flex items-center gap-2 px-2 py-1.5 text-sm text-left rounded-md transition-colors",
+              "flex items-center gap-2 px-2 py-2 text-sm text-left rounded-md transition-all",
               index === selectedIndex
-                ? "bg-sage-100 text-sage-900"
-                : "text-foreground hover:bg-muted/50",
+                ? "bg-mocha-700 text-white shadow-md scale-[1.02] z-10"
+                : "text-espresso-900 hover:bg-muted/50",
             )}
             onClick={() => selectItem(index)}
           >
-            <div className="flex items-center justify-center w-5 h-5 text-muted-foreground">
+            <div
+              className={cn(
+                "flex items-center justify-center w-5 h-5",
+                index === selectedIndex
+                  ? "text-mocha-50"
+                  : "text-muted-foreground",
+              )}
+            >
               {item.icon}
             </div>
-            <span className="font-medium">{item.title}</span>
+            <span className="font-semibold">{item.title}</span>
           </button>
         ))}
       </div>
