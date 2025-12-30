@@ -1,7 +1,7 @@
 # Troubleshooting Log
 
 | Date       | Issue                         | Status      | Note                                                                                              |
-| ---------- | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| ---------- | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------- | --- | ------------------------------------------------------------- |
 | 2025-12-27 | AI Review Fixes (Hooks & UI)  | ✅ Resolved | Fixed `useDuplicateProject` return value and `renameTarget` safety in LibraryPage                 |
 | 2025-12-28 | PR #52 AI Review Fixes        | ✅ Resolved | Added API response validation and optimized ESC key handler in WorldPage                          |
 | 2025-12-28 | PR #53 AI Review Fixes        | ✅ Resolved | Fixed projectId guard, extracted useRelationshipLinks, removed logs                               |
@@ -15,3 +15,4 @@
 | 2025-12-28 | PR #69 AI Review Fixes        | ✅ Resolved | Used `axios.isAxiosError` for type-safe 404 handling, added `onError` handler for cache strategy  |
 | 2025-12-28 | PR #69 AI Review Round 2      | ✅ Resolved | Moved 404 error handling to `shareService` layer, removed axios import from hook                  |
 | 2025-12-29 | PR #73 AI Review Fixes        | ✅ Resolved | Fixed critical missing `onToggle` prop in `EditorLeftSidebar` and added DnD UX improvement TODO   |
+| 2025-12-30 | PR #78 AI Review Fixes        | ✅ Resolved | Fixed key prop `                                                                                  |     | `→`??`, added try-catch for `forceSave()`in`handleAddSection` |
