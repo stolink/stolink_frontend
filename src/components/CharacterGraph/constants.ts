@@ -84,20 +84,20 @@ export const NODE_SIZES = {
 
 export const FORCE_CONFIG = {
   // 노드 간 반발력 (최적화: 거리 제한으로 연산 감소)
-  charge: -350,
+  charge: -600,
   chargeDistanceMin: 60,
-  chargeDistanceMax: 400, // 줄여서 먼 거리 연산 감소
+  chargeDistanceMax: 1000, // 줄여서 먼 거리 연산 감소
 
   // 링크 설정 (소프트 스프링)
-  linkDistance: 150,
+  linkDistance: 220,
   linkStrength: 0.3,
 
   // 센터링 (부드럽게)
-  centerStrength: 0.05,
-  positionStrength: 0.02, // X/Y 포지셔닝
+  centerStrength: 0.03,
+  positionStrength: 0.01, // X/Y 포지셔닝
 
   // 충돌
-  collisionPadding: 20,
+  collisionPadding: 35,
   collisionStrength: 0.7,
 
   // 수렴 (더 빠른 안정화)
