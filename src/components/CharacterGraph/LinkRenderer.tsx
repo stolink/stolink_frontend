@@ -1,7 +1,8 @@
 import { memo, useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import type { RelationshipLink, CharacterNode } from "@/types";
-import { RELATION_COLORS, ANIMATION, MOCHA_COLORS } from "./constants";
+import { MOCHA_COLORS, ANIMATION } from "./constants";
+import { getRelationshipColor } from "./utils";
 
 interface LinkRendererProps {
   link: RelationshipLink;
@@ -55,10 +56,11 @@ export const LinkRenderer = memo(function LinkRenderer({
     return null;
   }
 
-  const color = RELATION_COLORS[link.type] || "#9ca3af";
+  const color = getRelationshipColor(link.type, link.strength);
 
-  // 강도에 따른 선 두께 (strength 1-10, 1:10 = 1:4.5 비율)
-  const baseWidth = 2 + ((link.strength - 1) / 9) * 7; // 2px ~ 9px (4.5배 차이)
+  // 강도에 따른 선 두께 (strength 1-10, 1:10 = 1:4.5 비율 -> 1:2.3 비율로 변경)
+  // 기존: 2px ~ 9px -> 변경: 6px ~ 14px (약한 관계 가시성 확보)
+  const baseWidth = 6 + ((link.strength - 1) / 9) * 8;
   // Hover increases width significantly for feedback
   const hoverWidthBonus = isHovered ? 2.5 : 0;
   const strokeWidth = isHighlighted

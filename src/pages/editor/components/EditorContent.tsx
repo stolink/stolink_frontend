@@ -171,7 +171,7 @@ export const EditorContent = forwardRef<
                 </div>
                 <TiptapEditor
                   initialContent={currentContent}
-                  onUpdate={() => { }}
+                  onUpdate={() => {}}
                   readOnly
                   hideToolbar
                 />

@@ -45,6 +45,22 @@
     /* Mocha 200? Or just darker Cloud: #BD9B8D is Mocha 400.
        Let's use a soft border. #D6D3D1 (Stone 300) was used.
        Let's use Neutral #8D8B88 -> H:40 S:2 L:55 */
+    /* Relationship Colors (Final Unified) */
+    /* Friendly: #15803D (Darker Green) */
+    --rel-friendly-weak: #15803d;
+    --rel-friendly-std: #15803d;
+    --rel-friendly-deep: #15803d;
+
+    /* Hostile: #F44336 (Red - Unchanged) */
+    --rel-hostile-weak: #f44336;
+    --rel-hostile-std: #f44336;
+    --rel-hostile-deep: #f44336;
+
+    /* Romantic: #FF4081 (Vivid Cherry Blossom Pink) */
+    --rel-romantic-weak: #ff4081;
+    --rel-romantic-std: #ff4081;
+    --rel-romantic-deep: #ff4081;
+
     --border: 40 2% 85%;
     --input: 40 2% 85%;
     --ring: 18 26% 52%;
@@ -437,12 +453,14 @@
 }
 
 /* Highlight style */
+/* Highlight style - Removed to avoid conflict with editor highlight
 mark {
   background-color: #fef3c7;
   color: #92400e;
   border-radius: 0.2em;
   padding: 0.1em 0.2em;
 }
+*/
 
 /* ============================================
    Character Graph Animations

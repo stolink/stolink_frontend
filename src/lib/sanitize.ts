@@ -44,6 +44,7 @@ export function sanitizeHtml(html: string): string {
       // Custom mentions (Tiptap extensions)
       "character-mention",
       "foreshadowing-mention",
+      "mark",
     ],
     ALLOWED_ATTR: [
       // Common attributes
@@ -63,6 +64,7 @@ export function sanitizeHtml(html: string): string {
       "data-id",
       "data-label",
       "data-type",
+      "data-color",
       "contenteditable",
     ],
     ALLOWED_URI_REGEXP:

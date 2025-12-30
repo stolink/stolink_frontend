@@ -3,9 +3,9 @@ import type { CharacterRole } from "@/types";
 export type RelationType = "friendly" | "hostile" | "romantic";
 
 export const relationshipColors: Record<RelationType, string> = {
-  friendly: "#047857", // Emerald 700
-  hostile: "#DC2626", // Red 600
-  romantic: "#EC4899", // Pink 500
+  friendly: "var(--rel-friendly-std)", // Standard
+  hostile: "var(--rel-hostile-std)", // Standard
+  romantic: "var(--rel-romantic-std)", // Standard
 };
 
 export const relationshipLabels: Record<RelationType, string> = {

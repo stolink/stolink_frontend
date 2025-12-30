@@ -46,11 +46,13 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 
 ### Relationship Colors (TW3K/CK3 스타일)
 
-| 관계 유형 | HEX     | 설명        |
-| --------- | ------- | ----------- |
-| Friendly  | #047857 | Emerald 700 |
-| Hostile   | #DC2626 | Red 600     |
-| Romantic  | #EC4899 | Pink 500    |
+| 관계 유형 | HEX     | 설명                       |
+| --------- | ------- | -------------------------- |
+| Friendly  | #15803D | Dark Green (신뢰, 협력)    |
+| Hostile   | #F44336 | Red (갈등, 적대)           |
+| Romantic  | #FF4081 | Vivid Blossom (애정, 열정) |
+
+**참고**: 관계 강도(Strength)에 따른 색상 구분은 제거되고 통합되었습니다.
 
 ## 디자인 원칙
 

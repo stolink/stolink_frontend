@@ -11,11 +11,33 @@ export const MOCHA_COLORS = {
 } as const;
 
 // 관계 타입별 색상 (Total War: Three Kingdoms / CK3 스타일)
-// Emerald 700, Red 600, Pink 500 조합
+// 관계 타입별 색상 팔레트 (Strength 기반 3단계)
+export const RELATION_PALETTE: Record<
+  RelationType,
+  { weak: string; standard: string; deep: string }
+> = {
+  friendly: {
+    weak: "var(--rel-friendly-weak)", // 1-3
+    standard: "var(--rel-friendly-std)", // 4-7
+    deep: "var(--rel-friendly-deep)", // 8-10
+  },
+  hostile: {
+    weak: "var(--rel-hostile-weak)", // 1-3
+    standard: "var(--rel-hostile-std)", // 4-7
+    deep: "var(--rel-hostile-deep)", // 8-10
+  },
+  romantic: {
+    weak: "var(--rel-romantic-weak)", // 1-3
+    standard: "var(--rel-romantic-std)", // 4-7
+    deep: "var(--rel-romantic-deep)", // 8-10
+  },
+};
+
+// 관계 타입별 기본 색상 (Standard 기준)
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friendly: "#047857", // Emerald 700
-  hostile: "#DC2626", // Red 600
-  romantic: "#EC4899", // Pink 500
+  friendly: RELATION_PALETTE.friendly.standard,
+  hostile: RELATION_PALETTE.hostile.standard,
+  romantic: RELATION_PALETTE.romantic.standard,
 };
 
 // 관계 타입별 라벨 (한글)
