@@ -5,8 +5,6 @@ import {
   BookOpen,
   BarChart3,
   Settings,
-  User,
-  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
@@ -23,7 +21,12 @@ interface ActivityBarItemProps {
   onClick?: () => void;
 }
 
-function ActivityBarItem({ to, icon: Icon, label, onClick }: ActivityBarItemProps) {
+function ActivityBarItem({
+  to,
+  icon: Icon,
+  label,
+  onClick,
+}: ActivityBarItemProps) {
   return (
     <NavLink
       to={to}
@@ -33,7 +36,7 @@ function ActivityBarItem({ to, icon: Icon, label, onClick }: ActivityBarItemProp
           "relative flex items-center justify-center w-full h-12 group transition-colors",
           isActive
             ? "text-primary"
-            : "text-muted-foreground hover:text-primary"
+            : "text-muted-foreground hover:text-primary",
         )
       }
       title={label}
@@ -63,10 +66,18 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
 
   const navItems = [
     { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
-    { to: `/projects/${projectId}/studio`, label: "스튜디오", icon: Clapperboard },
+    {
+      to: `/projects/${projectId}/studio`,
+      label: "스튜디오",
+      icon: Clapperboard,
+    },
     { to: `/projects/${projectId}/world`, label: "리소스", icon: BookOpen },
     { to: `/projects/${projectId}/stats`, label: "분석", icon: BarChart3 },
-    { to: `/projects/${projectId}/settings`, label: "프로젝트 설정", icon: Settings },
+    {
+      to: `/projects/${projectId}/settings`,
+      label: "프로젝트 설정",
+      icon: Settings,
+    },
   ];
 
   return (
@@ -75,23 +86,6 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
       role="navigation"
       aria-label="주요 네비게이션"
     >
-      {/* Top: Home (Library) */}
-      <div className="w-full border-b border-border">
-        <button
-          onClick={() => navigate("/library")}
-          className="flex items-center justify-center w-full h-14 text-muted-foreground hover:text-primary hover:bg-accent transition-colors group relative"
-          title="서재로 이동"
-          aria-label="서재로 이동"
-        >
-          <Home className="h-5 w-5" />
-
-          {/* Tooltip */}
-          <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-border shadow-md">
-            서재
-          </div>
-        </button>
-      </div>
-
       {/* Main Navigation */}
       <nav className="flex-1 w-full py-2">
         {navItems.map((item) => (
