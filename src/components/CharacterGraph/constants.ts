@@ -4,13 +4,21 @@ import type { RelationType, CharacterRole } from "@/types";
 // 🎨 색상 설정
 // =====================================================
 
-// 관계 타입별 색상 (서사적 깊이)
+export const MOCHA_COLORS = {
+  500: "#A47764", // Primary
+  400: "#BD9B8D", // Hover (High brightness)
+  700: "#7D5A4B", // Dark/Active
+} as const;
+
+// 관계 타입별 색상 (Total War: Three Kingdoms / CK3 스타일)
+// Emerald 700, Red 600, Pink 500 조합
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friendly: "#15803D", // Green 700 (Deep Green)
-  hostile: "#B91C1C", // Red 700 (Deep Red)
-  romantic: "#BE185D", // Pink 700 (Deep Pink)
+  friendly: "#047857", // Emerald 700
+  hostile: "#DC2626", // Red 600
+  romantic: "#EC4899", // Pink 500
 };
 
+// 관계 타입별 라벨 (한글)
 // 관계 타입별 라벨 (한글)
 export const RELATION_LABELS: Record<RelationType, string> = {
   friendly: "우호",

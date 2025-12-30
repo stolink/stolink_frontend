@@ -21,7 +21,7 @@ interface CorkboardCard {
   id: string;
   title: string;
   synopsis: string;
-  type: "folder" | "text";
+  type: "folder" | "text" | "scrivenings";
   order: number;
   wordCount: number;
 }
@@ -52,7 +52,7 @@ export default function CorkboardView({
     (
       nodes: DocumentTreeNode[],
       parentId: string,
-      visited = new Set<string>()
+      visited = new Set<string>(),
     ): CorkboardCard[] => {
       for (const node of nodes) {
         if (visited.has(node.id)) continue;
@@ -84,12 +84,12 @@ export default function CorkboardView({
       }
       return [];
     },
-    [documents]
+    [documents],
   ); // documents가 변경될 때만 재생성
 
   const cards = useMemo(
     () => findChildDocuments(tree, folderId).sort((a, b) => a.order - b.order),
-    [tree, folderId, findChildDocuments]
+    [tree, folderId, findChildDocuments],
   );
 
   const handleStartEdit = (card: CorkboardCard) => {
@@ -177,7 +177,7 @@ export default function CorkboardView({
               "group relative bg-amber-50 border border-amber-200/60 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer",
               "min-h-[160px] flex flex-col",
               draggedId === card.id && "opacity-50 ring-2 ring-amber-400",
-              draggedId && draggedId !== card.id && "ring-1 ring-amber-300/50"
+              draggedId && draggedId !== card.id && "ring-1 ring-amber-300/50",
             )}
             onClick={() => {
               if (editingCardId !== card.id && onSelectSection) {
@@ -196,7 +196,9 @@ export default function CorkboardView({
                 <FileText
                   className={cn(
                     "w-4 h-4 shrink-0 mt-0.5",
-                    card.type === "folder" ? "text-amber-600" : "text-amber-500"
+                    card.type === "folder"
+                      ? "text-amber-600"
+                      : "text-amber-500",
                   )}
                 />
                 <h3 className="text-sm font-medium text-foreground line-clamp-2 flex-1">
@@ -267,7 +269,7 @@ export default function CorkboardView({
               <div
                 className={cn(
                   "w-2 h-2 rounded-full",
-                  card.synopsis ? "bg-status-success" : "bg-muted"
+                  card.synopsis ? "bg-status-success" : "bg-muted",
                 )}
                 title={card.synopsis ? "시놉시스 있음" : "시놉시스 없음"}
               />

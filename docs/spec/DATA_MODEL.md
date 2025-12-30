@@ -133,26 +133,23 @@ interface CreateProjectInput {
 ## 3. 문서 (Document) ⭐ 핵심
 
 > 파일: `src/types/document.ts`
-> Scrivener 스타일의 통합 문서 모델
+> Scrivener 스타일의 통합 문서 모델에서 **1차원 리스트 구조**로 변경
 
 ```typescript
-type DocumentType = "folder" | "text";
-type DocumentStatus = "draft" | "revised" | "final";
-
-interface Document {
+export interface Document {
   // === Core Fields ===
   id: string;
   projectId: string;
-  parentId?: string;
-  type: DocumentType;
+  // parentId removed
+  // type removed
 
   // === Content ===
   title: string;
-  content: string; // Only used for 'text' type
-  synopsis: string; // Shown on corkboard cards
+  content: string; // HTML content
+  synopsis: string;
 
   // === Ordering ===
-  order: number;
+  order: number; // Global order
 
   // === Metadata ===
   metadata: DocumentMetadata;
@@ -166,9 +163,9 @@ interface Document {
   updatedAt: string;
 }
 
-interface DocumentMetadata {
+export interface DocumentMetadata {
   status: DocumentStatus;
-  label?: string; // POV character, location, etc.
+  label?: string;
   labelColor?: string;
   wordCount: number;
   targetWordCount?: number;
@@ -177,22 +174,18 @@ interface DocumentMetadata {
   notes: string;
 }
 
-// Tree structure for display
-interface DocumentTreeNode extends Document {
-  children: DocumentTreeNode[];
-}
+export type DocumentStatus = "draft" | "revised" | "final";
 
 // Input types
-interface CreateDocumentInput {
+export interface CreateDocumentInput {
   projectId: string;
-  parentId?: string;
-  type: DocumentType;
   title: string;
   synopsis?: string;
   targetWordCount?: number;
+  order?: number;
 }
 
-interface UpdateDocumentInput {
+export interface UpdateDocumentInput {
   title?: string;
   content?: string;
   synopsis?: string;
@@ -206,14 +199,12 @@ interface UpdateDocumentInput {
 ### Backend Document Format
 
 > 파일: `src/services/documentService.ts`
-> 백엔드 API는 flat 구조를 사용
+> 백엔드 API도 1차원 구조
 
 ```typescript
 interface BackendDocument {
   id: string;
   projectId: string;
-  parentId?: string;
-  type: DocumentType;
   title: string;
   content?: string;
   synopsis?: string;
@@ -228,7 +219,7 @@ interface BackendDocument {
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  children?: BackendDocument[];
+  // children removed
 }
 ```
 
@@ -239,44 +230,73 @@ interface BackendDocument {
 > 파일: `src/types/foreshadowing.ts`
 
 ```typescript
-type ForeshadowingStatus = "pending" | "recovered" | "ignored";
-type ForeshadowingImportance = "major" | "minor";
+export type ForeshadowingStatus = "setup" | "resolved" | "dropped";
+export type ForeshadowingCategory =
+  | "dialogue"
+  | "props"
+  | "scene"
+  | "symbol"
+  | "other";
 
-interface Foreshadowing {
+export interface ForeshadowLocation {
+  documentId: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+  quote?: string;
+  chapterName?: string;
+  desc?: string;
+}
+
+export interface Foreshadowing {
   id: string;
   projectId: string;
-  tag: string; // e.g., "전설의검"
-  status: ForeshadowingStatus;
+
+  // === Manual Management Fields ===
+  title: string;
   description?: string;
-  importance?: ForeshadowingImportance;
-  relatedCharacterIds?: string[];
-  extras?: Record<string, string | number | boolean>;
-  appearances: ForeshadowingAppearance[];
+
+  status: ForeshadowingStatus;
+  importance: number;
+  category?: ForeshadowingCategory;
+
+  // === Connections ===
+  relatedEntities: {
+    characterIds?: string[];
+    placeIds?: string[];
+    itemIds?: string[];
+  };
+
+  // === Locations ===
+  createdIn?: ForeshadowLocation; // 투척(Setup) 위치
+  resolvedIn?: ForeshadowLocation; // 회수(Payoff) 위치
+
   createdAt: string;
   updatedAt: string;
 }
 
-interface ForeshadowingAppearance {
-  sceneId?: string;
-  chapterId: string;
-  chapterTitle: string;
-  line: number;
-  context: string; // 주변 텍스트
-  isRecovery: boolean; // 회수 지점인지
-  extras?: Record<string, string | number | boolean>;
-}
-
-interface CreateForeshadowingInput {
+export interface CreateForeshadowingInput {
   projectId: string;
-  tag: string;
+  title: string;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
+  status?: ForeshadowingStatus;
+  importance?: number;
+  category?: ForeshadowingCategory;
+  createdIn?: ForeshadowLocation;
 }
 
-interface UpdateForeshadowingInput {
-  status?: ForeshadowingStatus;
+export interface UpdateForeshadowingInput {
+  title?: string;
   description?: string;
-  extras?: Record<string, string | number | boolean>;
+  status?: ForeshadowingStatus;
+  importance?: number;
+  category?: ForeshadowingCategory;
+  relatedEntities?: {
+    characterIds?: string[];
+    placeIds?: string[];
+    itemIds?: string[];
+  };
+  createdIn?: ForeshadowLocation;
+  resolvedIn?: ForeshadowLocation;
 }
 ```
 
@@ -465,155 +485,244 @@ interface AiAnalysisResult {
 
 ---
 
+## 9. AI 분석 (AI Analysis)
+
+> 파일: `src/types/ai.ts`
+> **정책**: AI 분석 결과는 사용자 승인 과정 없이 **즉시 프로젝트 데이터(PostgreSQL/NoSQL)에 반영(Overwrite)**됩니다.
+
+```typescript
+// === AI 분석 결과 (NoSQL 저장 대상) ===
+// 분석 즉시 프론트엔드/백엔드에서 이 구조를 통해 메인 DB를 업데이트합니다.
+interface AiAnalysisResult {
+  // 메인 엔티티와 1:1 매핑되는 데이터들
+  characters: Character[]; // 기존 Character 타입 재사용 (src/types/character.ts)
+  events: Event[]; // 기존 Event 타입 재사용 (src/types/event.ts)
+  settings: Setting[]; // 기존 Setting 타입 재사용
+
+  // 분석 전용 메타데이터
+  relationships: Relationship[];
+  plot_integration: PlotIntegration;
+  consistency_report: ConsistencyReport;
+  metadata: AiMetadata;
+}
+
+// 별도의 AiCharacter, AiEvent 타입 정의 불필요 -> 기존 타입 사용
+```
+
+---
+
 # Part 2: PostgreSQL 엔티티
 
-> 백엔드 데이터베이스 스키마
+> **데이터 전략**: 관계형 데이터베이스는 서비스의 뼈대(Account, Project, Document)와 분석 요청 이력(Job)을 관리합니다.
+> 캐릭터, 사건 등 유동적인 데이터는 NoSQL로 이관되었습니다.
+
+## 1. User Entity
+
+| 필드      | 타입      | 필수 | 설명          |
+| --------- | --------- | ---- | ------------- |
+| id        | UUID      | ✅   | PK            |
+| email     | VARCHAR   | ✅   | 로그인 이메일 |
+| nickname  | VARCHAR   | ✅   | 표시 이름     |
+| createdAt | TIMESTAMP | ✅   | 가입일        |
+
+## 2. Project Entity
+
+| 필드      | 타입      | 필수 | 설명      |
+| --------- | --------- | ---- | --------- |
+| id        | UUID      | ✅   | PK        |
+| userId    | UUID      | ✅   | FK (User) |
+| title     | VARCHAR   | ✅   | 소설 제목 |
+| synopsis  | TEXT      | ❌   | 기획 의도 |
+| createdAt | TIMESTAMP | ✅   | 생성일    |
+
+## 3. Document Entity
+
+_(Part 1에서 정의한 1차원 리스트 구조와 동일)_
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| id | UUID | ✅ | PK |
+| projectId | UUID | ✅ | FK (Project) |
+| title | VARCHAR | ✅ | 챕터/장면 제목 |
+| content | TEXT | ✅ | 본문 (HTML) |
+| order | INTEGER | ✅ | 정렬 순서 |
+| status | ENUM | ✅ | draft / revised / final |
+
+## 4. AnalysisJob Entity
+
+| 필드      | 타입      | 필수 | 설명                                      |
+| --------- | --------- | ---- | ----------------------------------------- |
+| id        | UUID      | ✅   | PK (Job ID)                               |
+| projectId | UUID      | ✅   | FK (Project)                              |
+| status    | ENUM      | ✅   | pending / processing / completed / failed |
+| resultId  | VARCHAR   | ❌   | NoSQL 문서 ID (완료 시 기록)              |
+| options   | JSONB     | ❌   | 분석 옵션                                 |
+| createdAt | TIMESTAMP | ✅   | 요청 시각                                 |
+| updatedAt | TIMESTAMP | ✅   | 완료 시각                                 |
+
+## 5. Foreshadowing Entity
+
+> **수동 관리**: 작가가 직접 생성 및 관리하는 복선 데이터
+
+| 필드            | 타입      | 필수 | 설명                           |
+| --------------- | --------- | ---- | ------------------------------ |
+| id              | UUID      | ✅   | PK                             |
+| projectId       | UUID      | ✅   | FK (Project)                   |
+| title           | VARCHAR   | ✅   | 복선 제목                      |
+| description     | TEXT      | ❌   | 설명/메모                      |
+| status          | ENUM      | ✅   | setup / resolved / dropped     |
+| importance      | INTEGER   | ✅   | 중요도 (1-5)                   |
+| category        | ENUM      | ❌   | 유형 (props, dialogue...)      |
+| relatedEntities | JSONB     | ❌   | 관련 엔티티 ID 목록            |
+| createdIn       | JSONB     | ❌   | 투척 위치 (Document ID, Index) |
+| resolvedIn      | JSONB     | ❌   | 회수 위치 (Document ID, Index) |
+| createdAt       | TIMESTAMP | ✅   | 생성일                         |
+| updatedAt       | TIMESTAMP | ✅   | 수정일                         |
 
 ---
 
-## User Entity
+# Part 3: NoSQL 엔티티 (MongoDB) ⭐ 상세 스키마
 
-| 필드      | 타입      | 필수 | 설명           |
-| --------- | --------- | ---- | -------------- |
-| id        | UUID      | ✅   | PK             |
-| email     | VARCHAR   | ✅   | UNIQUE, 로그인 |
-| password  | VARCHAR   | ✅   | bcrypt 해시    |
-| nickname  | VARCHAR   | ✅   | 필명/닉네임    |
-| avatarUrl | VARCHAR   | ❌   | S3 URL         |
-| createdAt | TIMESTAMP | ✅   | 가입일시       |
-| updatedAt | TIMESTAMP | ✅   | 수정일시       |
+> **JSON 구조**: 사용자가 제공한 AI 분석 결과를 기반으로 설계되었습니다.
+> 모든 컬렉션은 `projectId`를 인덱스로 가집니다.
 
----
+## 1. AnalysisResult Collection (Raw Wrapper)
 
-## Project Entity
+**Purpose**: AI 분석 원본 데이터 보관 및 버전 관리
 
-| 필드        | 타입      | 필수 | FK/제약조건 | 설명              |
-| ----------- | --------- | ---- | ----------- | ----------------- |
-| id          | UUID      | ✅   | PK          | 고유 식별자       |
-| userId      | UUID      | ✅   | FK → User   | 소유자            |
-| title       | VARCHAR   | ✅   |             | 작품 제목         |
-| genre       | ENUM      | ✅   |             | 장르              |
-| description | TEXT      | ❌   |             | 시놉시스          |
-| coverImage  | VARCHAR   | ❌   |             | S3 URL            |
-| status      | ENUM      | ✅   |             | writing/completed |
-| author      | VARCHAR   | ❌   |             | 작가명 (표시용)   |
-| extras      | JSONB     | ❌   |             | 동적 메타데이터   |
-| createdAt   | TIMESTAMP | ✅   |             | 생성일시          |
-| updatedAt   | TIMESTAMP | ✅   |             | 수정일시          |
+| Field       | Type     | Description                            |
+| ----------- | -------- | -------------------------------------- |
+| `_id`       | ObjectId | 고유 ID                                |
+| `jobId`     | String   | AnalysisJob ID 참조                    |
+| `projectId` | String   | 프로젝트 ID                            |
+| `data`      | Object   | **AI 통합 분석 결과** (하위 문서 포함) |
+| `createdAt` | ISODate  | 생성일                                 |
 
 ---
 
-## Document Entity ⭐
+## 2. Character Collection (상세)
 
-| 필드             | 타입      | 필수 | FK/제약조건   | 설명                 |
-| ---------------- | --------- | ---- | ------------- | -------------------- |
-| id               | UUID      | ✅   | PK            | 고유 식별자          |
-| projectId        | UUID      | ✅   | FK → Project  | 프로젝트             |
-| parentId         | UUID      | ❌   | FK → Document | 상위 폴더 (self-ref) |
-| type             | ENUM      | ✅   |               | folder/text          |
-| title            | VARCHAR   | ✅   |               | 문서 제목            |
-| content          | TEXT      | ✅   |               | 본문 (HTML)          |
-| synopsis         | TEXT      | ✅   |               | 요약                 |
-| order            | INTEGER   | ✅   |               | 형제 간 순서         |
-| status           | ENUM      | ✅   |               | draft/revised/final  |
-| label            | VARCHAR   | ❌   |               | POV 캐릭터 등        |
-| labelColor       | VARCHAR   | ❌   |               | #hex                 |
-| wordCount        | INTEGER   | ✅   |               | 글자수 (읽기전용)    |
-| targetWordCount  | INTEGER   | ❌   |               | 목표 글자수          |
-| includeInCompile | BOOLEAN   | ✅   | DEFAULT true  | 내보내기 포함        |
-| keywords         | VARCHAR[] | ❌   |               | 태그 배열            |
-| notes            | TEXT      | ❌   |               | 작가 메모            |
-| createdAt        | TIMESTAMP | ✅   |               | 생성일시             |
-| updatedAt        | TIMESTAMP | ✅   |               | 수정일시             |
+**Purpose**: 등장인물의 상세 프로필, 스탯, 인벤토리 등 유동적 속성 관리
 
-> ⚠️ `wordCount`는 백엔드에서 content 저장 시 자동 계산됨. 프론트엔드에서 직접 업데이트하면 안됨.
-
----
-
-## Foreshadowing Entity
-
-| 필드        | 타입      | 필수 | FK/제약조건  | 설명                      |
-| ----------- | --------- | ---- | ------------ | ------------------------- |
-| id          | UUID      | ✅   | PK           | 고유 식별자               |
-| projectId   | UUID      | ✅   | FK → Project | 프로젝트                  |
-| tag         | VARCHAR   | ✅   | UNIQUE(proj) | 태그명 (예: 전설의검)     |
-| status      | ENUM      | ✅   |              | pending/recovered/ignored |
-| description | TEXT      | ❌   |              | 설명                      |
-| importance  | ENUM      | ❌   |              | major/minor               |
-| createdAt   | TIMESTAMP | ✅   |              | 생성일시                  |
-| updatedAt   | TIMESTAMP | ✅   |              | 수정일시                  |
+| Field Group    | Field                      | Type     | Description                                |
+| -------------- | -------------------------- | -------- | ------------------------------------------ |
+| **Identity**   | `name`                     | String   | 캐릭터 이름                                |
+|                | `role`                     | String   | 역할 (protagonist, antagonist...)          |
+|                | `aliases`                  | String[] | **이명/별명/멸칭** (예: 쥐새끼, 하얀 늑대) |
+|                | `level`                    | Int      | 레벨                                       |
+|                | `status`                   | String   | 상태 (alive, dead...)                      |
+| **Profile**    | `profile.age`              | Int      | 나이                                       |
+|                | `profile.gender`           | String   | 성별                                       |
+|                | `profile.backstory`        | String   | 배경 스토리                                |
+|                | `profile.personality`      | String[] | 성격 키워드 배열                           |
+| **Appearance** | `appearance.physique`      | String   | 체격 묘사                                  |
+|                | `appearance.visual_prompt` | String   | 이미지 생성용 프롬프트                     |
+| **Stats**      | `stats.*`                  | Map      | 유동적 스탯 (str, int, dex...)             |
+| **Combat**     | `combat.class`             | String   | 전투 클래스                                |
+|                | `combat.weapons`           | String[] | 주력 무기                                  |
+| **Inventory**  | `inventory.equipped`       | Object[] | 장착 아이템 목록                           |
+|                | `inventory.bag`            | Object[] | 소지품 목록                                |
+| **State**      | `current_mood`             | Object   | 현재 감정 상태 (`emotion`, `intensity`)    |
+| **Meta**       | `relationCount`            | Int      | **관계 수** (자동 계산, 중요도 지표)       |
 
 ---
 
-# Part 3: Neo4j 엔티티
+## 3. Event Collection (상세)
 
-> 그래프 데이터, 관계 분석
+**Purpose**: 타임라인을 구성하는 개별 사건 정보
+
+| Field               | Type     | Description                       |
+| ------------------- | -------- | --------------------------------- |
+| `event_type`        | String   | action / dialogue / confrontation |
+| `narrative_summary` | String   | 한 줄 요약                        |
+| `description`       | String   | 상세 묘사                         |
+| `participants`      | String[] | 참여 캐릭터 이름/ID 목록          |
+| `location_ref`      | String   | 장소 참조                         |
+| `visual_scene`      | String   | 장면 시각화 프롬프트              |
+| `importance`        | Int      | 중요도 (1-10)                     |
+| `is_foreshadowing`  | Boolean  | 복선 포함 여부                    |
 
 ---
 
-## Character 노드
+## 4. Setting Collection (상세)
 
-```cypher
-(:Character {
-  id: "uuid",
-  projectId: "uuid",
-  name: "주인공",
-  role: "protagonist",
-  imageUrl: "https://s3.../image.jpg",
-  // 동적 속성 (extras)
-  age: 25,
-  species: "human",
-  personality: ["용감", "정의로움"]
-})
+**Purpose**: 장소 및 배경 설정
+
+| Field               | Type     | Description             |
+| ------------------- | -------- | ----------------------- |
+| `name`              | String   | 장소 이름               |
+| `type`              | String   | 유형 (dungeon, city...) |
+| `visual_background` | String   | 배경 이미지 프롬프트    |
+| `atmosphere`        | String   | 분위기 키워드           |
+| `notable_features`  | String[] | 주요 특징물             |
+
+---
+
+## 5. Relationship Collection (상세)
+
+**Purpose**: 캐릭터 간 관계 정의
+
+| Field           | Type     | Description                       |
+| --------------- | -------- | --------------------------------- |
+| `source`        | String   | 주체 캐릭터                       |
+| `target`        | String   | 대상 캐릭터                       |
+| `relation_type` | String   | 관계 유형 (ENEMY, FRIENDLY...)    |
+| `strength`      | Int      | 관계 강도                         |
+| `description`   | String   | 관계에 대한 설명                  |
+| `history`       | Object[] | **관계 변천사** (Event 참조 목록) |
+
+### Relationship History Structure (in `history`)
+
+```json
+{
+  "eventId": "uuid",
+  "title": "사건 제목",
+  "chapter": "Chapter 3",
+  "type": "hostile", // 당시 관계 상태
+  "reason": "배신으로 인한 적대 관계 형성"
+}
 ```
 
-## Relationship 엣지
+---
 
-```cypher
-(:Character)-[:RELATED_TO {
-  id: "uuid",
-  type: "friendly",
-  strength: 8,
-  description: "어린시절 친구"
-}]->(:Character)
-```
+# Part 4: Neo4j 엔티티 (Graph DB)
 
-## Place 노드
+> **동기화 전략**: NoSQL의 `Character`와 `Relationship` 데이터를 기반으로, **복잡한 관계 탐색 및 그래프 알고리즘**을 위한 투영(Projection) 데이터를 저장합니다.
 
-```cypher
-(:Place {
-  id: "uuid",
-  projectId: "uuid",
-  name: "왕국 아르카나",
-  type: "region"
-})
-```
+## 1. Node Labels (정점)
 
-## Item 노드
+| Label        | Key Properties                        | Description                                      |
+| ------------ | ------------------------------------- | ------------------------------------------------ |
+| `:Character` | `id` (UUID)<br>`name`<br>`role`       | 등장인물 노드. NoSQL의 `Character`와 1:1 매핑    |
+| `:Event`     | `id` (UUID)<br>`type`<br>`importance` | 사건 노드. 시간 순서 및 인과 관계 표현           |
+| `:Group`     | `name`                                | 소속 세력 (Faction). 캐릭터를 그룹화하는 데 사용 |
+| `:Keyword`   | `word`                                | 주요 키워드/테마. 의미적 연결망 분석용           |
 
-```cypher
-(:Item {
-  id: "uuid",
-  projectId: "uuid",
-  name: "전설의 검",
-  type: "weapon"
-})
+## 2. Relationship Types (간선)
 
-// 소유 관계
-(:Character)-[:OWNS {since: "3장"}]->(:Item)
-```
+| Type               | Direction                        | Properties                                                    | Description                             |
+| ------------------ | -------------------------------- | ------------------------------------------------------------- | --------------------------------------- |
+| `:RELATED_TO`      | `(:Character)-[:]->(:Character)` | `type` (FRIENDLY/ENEMY)<br>`strength` (1-10)<br>`description` | 캐릭터 간의 사회적/감정적 관계          |
+| `:PARTICIPATED_IN` | `(:Character)-[:]->(:Event)`     | `role` (주동/피동)                                            | 캐릭터가 특정 사건에 개입함             |
+| `:NEXT_EVENT`      | `(:Event)-[:]->(:Event)`         | `time_gap`                                                    | 사건의 시간적/인과적 흐름 (Linked List) |
+| `:BELONGS_TO`      | `(:Character)-[:]->(:Group)`     | `rank`                                                        | 캐릭터의 세력 소속                      |
+| `:MENTIONS`        | `(:Event)-[:]->(:Keyword)`       | `frequency`                                                   | 사건에서 특정 키워드가 언급됨           |
+
+## 3. Graph Algorithms Use Cases
+
+Graph DB는 단순 조회가 아닌 **분석 연산**을 위해 존재합니다.
+
+1. **Centrality (중심성)**: 스토리의 진짜 주인공이나 비선 실세 찾기 (`PageRank`)
+2. **Community Detection**: 파벌 분석 및 인물 클러스터링 (`Louvain`)
+3. **Path Finding**: 두 캐릭터 사이의 가장 짧은 연결 고리 찾기 (`ShortestPath`)
 
 ---
 
 ## 버전 이력
 
-| 버전 | 날짜       | 변경 내용                                                |
-| ---- | ---------- | -------------------------------------------------------- |
-| 1.0  | 2024.12.25 | 현재 구현 기준 최초 작성                                 |
-| 1.1  | 2024.12.25 | API 엔드포인트 섹션 제거 (API_SPEC.md로 통합)            |
-| 1.2  | 2024.12.25 | PostgreSQL/Neo4j 저장소 분리 명시                        |
-| 1.3  | 2024.12.26 | 프론트엔드 TypeScript 타입 기준으로 전면 갱신            |
-| 1.4  | 2025.12.28 | BackendRelationshipType 5종 추가, D3.js 그래프 타입 반영 |
+| 버전 | 날짜       | 변경 내용                                                   |
+| ---- | ---------- | ----------------------------------------------------------- |
+| 1.0  | 2024.12.25 | 최초 작성                                                   |
+| 1.5  | 2025.12.30 | PostgreSQL/NoSQL/Neo4j 3-Tier 구조 확립 및 상세 스키마 정의 |
 
 ---
 

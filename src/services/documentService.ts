@@ -5,7 +5,7 @@ import type {
   UpdateDocumentInput as FrontendUpdateDocumentInput,
 } from "@/types/document";
 
-export type DocumentType = "folder" | "text";
+export type DocumentType = "folder" | "text" | "scrivenings";
 export type DocumentStatus = "draft" | "revised" | "final";
 
 // Backend API response format

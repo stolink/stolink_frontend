@@ -1,16 +1,35 @@
 // Character Types with flexible extras pattern
 
-// 백엔드 RelationshipType 정의 (5종 - 백엔드 스펙)
 export type BackendRelationshipType = "friendly" | "hostile" | "romantic";
 
 // 백엔드에서 반환하는 관계 구조 (Neo4j)
 export interface BackendRelationship {
-  id: number; // Neo4j internal ID
+  id: string | number; // Neo4j internal ID (number) or D3 link ID (string)
   target: string; // Target character ID
   type: BackendRelationshipType;
   strength: number; // 1-10
   label?: string | null;
   since?: string | null;
+  // Detailed properties requested by user
+  description?: string;
+  bidirectional?: boolean;
+  evolved_from?: BackendRelationshipType;
+  history?: RelationshipEvent[] | string; // 관계 변천사 (배열 또는 JSON 문자열)
+}
+
+export interface RelationshipEvent {
+  eventId: string;
+  title: string;
+  chapter?: string;
+  type: BackendRelationshipType; // 당시 관계
+  reason?: string;
+  date?: string; // 발생 시점
+}
+
+export interface DetailedRelationship extends BackendRelationship {
+  source: string; // resolved name or id
+  target: string; // resolved name or id
+  relation_type: BackendRelationshipType; // mapped from type
 }
 
 export interface Character {
@@ -23,6 +42,7 @@ export interface Character {
   role?: CharacterRole;
   faction?: string | null; // 소속/세력 (그룹화 기준)
   imageUrl?: string;
+  relationCount?: number; // 관계 수 (중요도 지표)
 
   // === 관계 정보 (백엔드에서 항상 포함) ===
   relationships: BackendRelationship[];
@@ -45,6 +65,7 @@ export type CharacterRole =
 
 // 기존 타입 호환성 유지
 export type RelationshipType = BackendRelationshipType;
+export type RelationType = BackendRelationshipType; // Added alias for compatibility
 
 /**
  * @deprecated Use Character.relationships instead

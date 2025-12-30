@@ -10,7 +10,7 @@ export function CharacterAppearances({
   return (
     <div className="space-y-6">
       <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-        <BookOpen className="h-4 w-4" /> Appearances
+        <BookOpen className="h-4 w-4" /> 등장 정보
       </h3>
       <div className="space-y-2">
         {appearances.length > 0 ? (
@@ -30,7 +30,7 @@ export function CharacterAppearances({
             {appearances.length > 3 && (
               <div className="flex items-center justify-center pt-2">
                 <button className="text-xs font-bold text-primary hover:underline">
-                  View All Mentions ({appearances.length})
+                  모두 보기 ({appearances.length})
                 </button>
               </div>
             )}

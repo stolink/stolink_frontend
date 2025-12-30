@@ -17,7 +17,6 @@ export interface Foreshadowing {
 
   // === 등장 위치들 ===
   appearances: ForeshadowingAppearance[];
-
   createdAt: string;
   updatedAt: string;
 }

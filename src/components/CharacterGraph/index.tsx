@@ -20,14 +20,17 @@ import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
 import { GROUP_COLORS } from "./constants";
+import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
 import { TiledBackground } from "./TiledBackground";
+import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
 interface CharacterGraphProps {
   characters: Character[];
   links: RelationshipLink[];
   onNodeClick?: (character: Character) => void;
+  onLinkClick?: (link: RelationshipLink) => void;
   selectedNodeId?: string | null;
   relationTypeFilter?: RelationType | "all";
   highlightedNodeIds?: string[] | null;
@@ -47,6 +50,7 @@ export const CharacterGraph = forwardRef<
       characters,
       links: initialLinks,
       onNodeClick,
+      onLinkClick,
       selectedNodeId,
       relationTypeFilter = "all",
       highlightedNodeIds,
@@ -61,6 +65,17 @@ export const CharacterGraph = forwardRef<
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [enableGrouping, setEnableGrouping] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+
+    // State for Link Hover Tooltip
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      link: RelationshipLink;
+      x: number;
+      y: number;
+    } | null>(null);
+
+    // Tooltip close timer for smooth interaction
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { width, height } = useResize(containerRef);
 
@@ -69,6 +84,9 @@ export const CharacterGraph = forwardRef<
      * Neo4j의 extras 문자열을 파싱하여 faction 정보를 group 속성에 정합성 있게 매핑합니다.
      */
     const initialNodes: CharacterNode[] = useMemo(() => {
+      // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
+      const relationCounts = calculateRelationCounts(initialLinks);
+
       return characters.map((char) => {
         let factionName = "무소속";
 
@@ -98,9 +116,10 @@ export const CharacterGraph = forwardRef<
           role: char.role,
           group: factionName, // 추출된 파벌 정보를 시뮬레이션 그룹으로 사용
           imageUrl: char.imageUrl,
+          relationCount: relationCounts[char.id] || 0, // 관계 수 할당
         };
       });
-    }, [characters]);
+    }, [characters, initialLinks]);
 
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
@@ -149,8 +168,9 @@ export const CharacterGraph = forwardRef<
 
     // Cleanup cache on unmount
     useEffect(() => {
+      const cache = groupSelectionCache.current;
       return () => {
-        groupSelectionCache.current.clear();
+        cache.clear();
       };
     }, []);
 
@@ -351,8 +371,14 @@ export const CharacterGraph = forwardRef<
     const { zoomState, centerAt } = useZoom(svgRef, gRef);
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
-    const onDragStart = useCallback(() => setIsDragging(true), []);
-    const onDragEnd = useCallback(() => setIsDragging(false), []);
+    const onDragStart = useCallback((node: CharacterNode) => {
+      setIsDragging(true);
+      setDraggedNodeId(node.id);
+    }, []);
+    const onDragEnd = useCallback(() => {
+      setIsDragging(false);
+      setDraggedNodeId(null);
+    }, []);
 
     const { dragBehavior } = useDrag({
       simulation,
@@ -375,7 +401,7 @@ export const CharacterGraph = forwardRef<
     );
 
     const connectedNodeIds = useMemo(() => {
-      const focusId = hoveredNodeId || selectedNodeId;
+      const focusId = hoveredNodeId || draggedNodeId || selectedNodeId;
       if (!focusId) return null;
       const connected = new Set<string>([focusId]);
       links.forEach((link) => {
@@ -389,7 +415,35 @@ export const CharacterGraph = forwardRef<
         if (tId === focusId) connected.add(sId);
       });
       return connected;
-    }, [hoveredNodeId, selectedNodeId, links, relationTypeFilter]);
+    }, [
+      hoveredNodeId,
+      draggedNodeId,
+      selectedNodeId,
+      links,
+      relationTypeFilter,
+    ]);
+
+    // Handle Link Hover with Delay
+    const handleLinkHover = useCallback(
+      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
+        // Clear any pending close timer
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
+        }
+
+        if (link && coords) {
+          // Open immediately
+          setHoveredLinkData({ link, x: coords.x, y: coords.y });
+        } else {
+          // Link not active on this tick; delay closing to allow entering tooltip
+          hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredLinkData(null);
+          }, 150);
+        }
+      },
+      [],
+    );
 
     // Search Highlighting Logic
     // null/undefined = 검색 비활성 (일반 모드)
@@ -429,8 +483,9 @@ export const CharacterGraph = forwardRef<
           height={height}
           className="cursor-grab active:cursor-grabbing relative z-10"
           style={{
-            // SVG 렌더링 최적화 힌트
-            shapeRendering: "geometricPrecision",
+            // SVG 렌더링 최적화 (잔상 방지)
+            shapeRendering: "auto",
+            willChange: "transform",
           }}
         >
           {/* 줌/패닝용 그룹 */}
@@ -511,7 +566,7 @@ export const CharacterGraph = forwardRef<
             )}
 
             {links.map((link) => {
-              const focusId = hoveredNodeId || selectedNodeId;
+              const focusId = hoveredNodeId || draggedNodeId || selectedNodeId;
               const sId =
                 typeof link.source === "object"
                   ? (link.source as CharacterNode).id
@@ -523,7 +578,10 @@ export const CharacterGraph = forwardRef<
               const isConnected = focusId
                 ? sId === focusId || tId === focusId
                 : false;
-              if (selectedNodeId && !isConnected) return null;
+
+              // Hide unconnected EDGES if a node is selected OR dragged (Strict 1:1 rule)
+              if ((selectedNodeId || draggedNodeId) && !isConnected)
+                return null;
 
               return (
                 <LinkRenderer
@@ -538,6 +596,8 @@ export const CharacterGraph = forwardRef<
                       (!highlightedNodeIds?.includes(sId) ||
                         !highlightedNodeIds?.includes(tId)))
                   }
+                  onClick={onLinkClick}
+                  onHover={handleLinkHover}
                 />
               );
             })}
@@ -573,6 +633,44 @@ export const CharacterGraph = forwardRef<
             })}
           </g>
         </svg>
+
+        {/* Relationship Event Tooltip on Hover */}
+        {hoveredLinkData && (
+          <RelationshipEventTooltip
+            type={hoveredLinkData.link.type}
+            strength={hoveredLinkData.link.strength}
+            description={hoveredLinkData.link.description}
+            events={hoveredLinkData.link.history || []}
+            sourceName={
+              typeof hoveredLinkData.link.source === "object"
+                ? (hoveredLinkData.link.source as CharacterNode).name
+                : String(hoveredLinkData.link.source)
+            }
+            targetName={
+              typeof hoveredLinkData.link.target === "object"
+                ? (hoveredLinkData.link.target as CharacterNode).name
+                : String(hoveredLinkData.link.target)
+            }
+            x={hoveredLinkData.x}
+            y={hoveredLinkData.y}
+            onEventClick={() => {
+              // Clicking an event opens the details panel for that link
+              onLinkClick?.(hoveredLinkData.link);
+              setHoveredLinkData(null); // Close tooltip
+            }}
+            onMouseEnter={() => {
+              // Keep open when entering tooltip
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+              }
+            }}
+            onMouseLeave={() => {
+              // Close when leaving tooltip
+              setHoveredLinkData(null);
+            }}
+          />
+        )}
 
         <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow-sm border text-sm flex items-center gap-2 z-20">
           <input

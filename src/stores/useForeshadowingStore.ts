@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { persist, createJSONStorage, type StateStorage } from "zustand/middleware";
+import {
+  persist,
+  createJSONStorage,
+  type StateStorage,
+} from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { get, set as idbSet, del } from "idb-keyval";
 import type {
@@ -43,7 +47,10 @@ interface ForeshadowingStore {
   getNextTagNumber: (projectId: string) => number; // "복선 N" 자동 네이밍
 
   // === 상태 변경 ===
-  markAsRecovered: (id: string, recoveryInfo: ForeshadowingAppearanceInput) => void;
+  markAsRecovered: (
+    id: string,
+    recoveryInfo: ForeshadowingAppearanceInput,
+  ) => void;
   markAsPending: (id: string) => void; // 회수 취소
   markAsIgnored: (id: string) => void;
 
@@ -55,7 +62,7 @@ interface ForeshadowingStore {
 // 복선 생성 입력 (위치 정보 포함)
 interface CreateForeshadowingInput {
   projectId: string;
-  tag: string;
+  title: string;
   description?: string;
   importance?: ForeshadowingImportance;
   relatedCharacterIds?: string[];
@@ -67,7 +74,7 @@ interface CreateForeshadowingInput {
 }
 
 interface UpdateForeshadowingInput {
-  tag?: string;
+  title?: string;
   description?: string;
   status?: ForeshadowingStatus;
   importance?: ForeshadowingImportance;
@@ -130,7 +137,7 @@ export const useForeshadowingStore = create<ForeshadowingStore>()(
         set((state) => {
           const idsToDelete = Object.values(state.foreshadowings)
             .filter((fs) =>
-              fs.appearances.some((a) => a.documentId === documentId)
+              fs.appearances.some((a) => a.documentId === documentId),
             )
             .map((fs) => fs.id);
 

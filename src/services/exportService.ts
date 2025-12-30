@@ -34,10 +34,9 @@ function htmlToText(html: string): string {
  */
 export function exportToTxt(
   documents: Document[],
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): void {
   const content = documents
-    .filter((doc) => doc.type === "text")
     .map((doc) => {
       const text = htmlToText(doc.content);
       return `=== ${doc.title} ===\n\n${text}`;
@@ -53,10 +52,9 @@ export function exportToTxt(
  */
 export function exportToMarkdown(
   documents: Document[],
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): void {
   const content = documents
-    .filter((doc) => doc.type === "text")
     .map((doc) => {
       const markdown = turndown.turndown(doc.content);
       return `# ${doc.title}\n\n${markdown}`;
@@ -92,7 +90,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_1,
-            })
+            }),
           );
           break;
         case "h2":
@@ -100,7 +98,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_2,
-            })
+            }),
           );
           break;
         case "h3":
@@ -108,21 +106,21 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             new Paragraph({
               text,
               heading: HeadingLevel.HEADING_3,
-            })
+            }),
           );
           break;
         case "p":
           paragraphs.push(
             new Paragraph({
               children: parseInlineFormatting(el),
-            })
+            }),
           );
           break;
         case "blockquote":
           paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text, italics: true })],
-            })
+            }),
           );
           break;
         case "ul":
@@ -131,7 +129,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             paragraphs.push(
               new Paragraph({
                 children: [new TextRun(`• ${li.textContent || ""}`)],
-              })
+              }),
             );
           });
           break;
@@ -190,7 +188,7 @@ function parseInlineFormatting(el: HTMLElement): TextRun[] {
  */
 export async function exportToDocx(
   documents: Document[],
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): Promise<void> {
   const sections: Paragraph[] = [];
 
@@ -200,35 +198,33 @@ export async function exportToDocx(
       text: projectTitle,
       heading: HeadingLevel.TITLE,
       spacing: { after: 400 },
-    })
+    }),
   );
 
   // 각 문서를 섹션으로 추가
-  documents
-    .filter((doc) => doc.type === "text")
-    .forEach((doc, index) => {
-      // 문서 간 구분선 (첫 번째 제외)
-      if (index > 0) {
-        sections.push(new Paragraph({ text: "" }));
-        sections.push(
-          new Paragraph({ text: "* * *", alignment: "center" as const })
-        );
-        sections.push(new Paragraph({ text: "" }));
-      }
-
-      // 섹션 제목
+  documents.forEach((doc, index) => {
+    // 문서 간 구분선 (첫 번째 제외)
+    if (index > 0) {
+      sections.push(new Paragraph({ text: "" }));
       sections.push(
-        new Paragraph({
-          text: doc.title,
-          heading: HeadingLevel.HEADING_1,
-          spacing: { before: 200, after: 200 },
-        })
+        new Paragraph({ text: "* * *", alignment: "center" as const }),
       );
+      sections.push(new Paragraph({ text: "" }));
+    }
 
-      // 본문
-      const paragraphs = htmlToDocxParagraphs(doc.content);
-      sections.push(...paragraphs);
-    });
+    // 섹션 제목
+    sections.push(
+      new Paragraph({
+        text: doc.title,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 200, after: 200 },
+      }),
+    );
+
+    // 본문
+    const paragraphs = htmlToDocxParagraphs(doc.content);
+    sections.push(...paragraphs);
+  });
 
   const docxDoc = new DocxDocument({
     sections: [
@@ -247,7 +243,7 @@ export async function exportToDocx(
  */
 export function exportToJson(
   data: Record<string, unknown>,
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): void {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: "application/json;charset=utf-8" });
@@ -258,7 +254,7 @@ export function exportToJson(
  * JSON 백업 파일 가져오기
  */
 export async function importFromJson(
-  file: File
+  file: File,
 ): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -287,12 +283,12 @@ export async function importFromJson(
 export async function exportToEpub(
   documents: Document[],
   projectTitle: string = "작품",
-  author: string = "작가"
+  author: string = "작가",
 ): Promise<void> {
   // Dynamic import for browser compatibility
   const epub = (await import("epub-gen-memory/bundle")).default;
 
-  const textDocs = documents.filter((doc) => doc.type === "text");
+  const textDocs = documents;
 
   const chapters = textDocs.map((doc) => ({
     title: doc.title,
@@ -313,12 +309,12 @@ export async function exportToEpub(
  */
 export async function exportToPdf(
   documents: Document[],
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): Promise<void> {
   // Dynamic import for html2pdf
   const html2pdf = (await import("html2pdf.js")).default;
 
-  const textDocs = documents.filter((doc) => doc.type === "text");
+  const textDocs = documents;
 
   // Build HTML content
   const htmlContent = `
@@ -330,7 +326,7 @@ export async function exportToPdf(
         ${index > 0 ? '<div style="page-break-before: always;"></div>' : ""}
         <h2 style="font-size: 20px; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">${doc.title}</h2>
         <div style="font-size: 14px; line-height: 1.8;">${doc.content}</div>
-      `
+      `,
         )
         .join("")}
     </div>
