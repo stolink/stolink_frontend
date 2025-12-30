@@ -182,7 +182,7 @@ export const EditorContent = forwardRef<
       return (
         <div className="h-full overflow-hidden">
           <TiptapEditor
-            key={selectedSectionId || "default"}
+            key={selectedSectionId ?? "empty"}
             ref={editorRef}
             onUpdate={onCharacterCountChange}
             onContentChange={onContentChange}

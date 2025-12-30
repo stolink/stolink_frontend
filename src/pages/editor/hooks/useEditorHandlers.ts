@@ -269,7 +269,15 @@ export function useEditorHandlers({
       if (isDemo) return;
 
       // 1. 섹션 전환 전 현재 콘텐츠 저장 (데이터 손실 방지)
-      await forceSave();
+      try {
+        await forceSave();
+      } catch (error) {
+        console.error(
+          "[handleAddSection] Failed to save before creating section:",
+          error,
+        );
+        // 저장 실패해도 섹션 생성은 계속 진행 (사용자 경험 우선)
+      }
 
       let parentId: string | null | undefined = selectedFolderId ?? undefined;
       let insertAfterOrder: number | undefined;
