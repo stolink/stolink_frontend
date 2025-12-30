@@ -635,9 +635,12 @@ export const CharacterGraph = forwardRef<
         </svg>
 
         {/* Relationship Event Tooltip on Hover */}
-        {hoveredLinkData && hoveredLinkData.link.history && (
+        {hoveredLinkData && (
           <RelationshipEventTooltip
-            events={hoveredLinkData.link.history}
+            type={hoveredLinkData.link.type}
+            strength={hoveredLinkData.link.strength}
+            description={hoveredLinkData.link.description}
+            events={hoveredLinkData.link.history || []}
             sourceName={
               typeof hoveredLinkData.link.source === "object"
                 ? (hoveredLinkData.link.source as CharacterNode).name

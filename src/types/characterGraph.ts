@@ -35,6 +35,10 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   type: RelationType;
   strength: number; // 1-10
   label?: string;
+  description?: string;
+  bidirectional?: boolean;
+  evolved_from?: RelationType;
+  since?: string;
   history?: {
     eventId: string;
     title: string;
