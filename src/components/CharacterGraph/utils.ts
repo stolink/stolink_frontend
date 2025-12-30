@@ -24,7 +24,7 @@ export function generateLinksFromCharacters(
       relString.includes("추적") ||
       relString.includes("적")
     ) {
-      return "enemy";
+      return "hostile";
     }
     // 연인 관계
     if (
@@ -32,10 +32,10 @@ export function generateLinksFromCharacters(
       relString.includes("짝사랑") ||
       relString.includes("사랑")
     ) {
-      return "lover";
+      return "romantic";
     }
     // 나머지는 친구 관계 (가족, 동료, 멘토 등 포함)
-    return "friend";
+    return "friendly";
   };
 
   characters.forEach((sourceChar) => {

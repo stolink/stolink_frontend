@@ -39,7 +39,7 @@ export const LinkRenderer = memo(function LinkRenderer({
       // We let React handle the lifecycle (enter/exit), we just tag the data.
       d3.select(groupRef.current).selectAll(".link-line").datum(link);
     }
-  }, [link]);
+  }, [link, isHighlighted, isDimmed, isFiltered, isHovered]);
 
   // 소스/타겟 좌표 가져오기
   const source = link.source as CharacterNode;

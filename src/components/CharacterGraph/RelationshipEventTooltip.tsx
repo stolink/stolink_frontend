@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ interface RelationshipEventTooltipProps {
   x: number;
   y: number;
   onEventClick: (event: HistoryEvent) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 // Reuse palette for consistent badging
@@ -37,18 +40,22 @@ export function RelationshipEventTooltip({
   x,
   y,
   onEventClick,
+  onMouseEnter,
+  onMouseLeave,
 }: RelationshipEventTooltipProps) {
   if (!events || events.length === 0) return null;
 
-  return (
+  return createPortal(
     <div
-      className="absolute z-50 pointer-events-auto"
+      className="fixed z-50 p-2 bg-transparent animate-in fade-in zoom-in-95 duration-200"
       style={{
-        left: x + 15, // Offset from cursor
-        top: y + 15,
+        left: x + 1,
+        top: y + 1,
       }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
-      <Card className="w-64 shadow-xl border-stone-200 animate-in fade-in zoom-in-95 duration-200">
+      <Card className="w-64 shadow-xl border-stone-200 bg-white/95 backdrop-blur-sm">
         <CardHeader className="p-3 pb-2 border-b border-stone-100 bg-stone-50/50">
           <CardTitle className="text-sm font-medium text-stone-600 flex items-center gap-2">
             <Activity className="w-4 h-4 text-mocha-500" />
@@ -90,6 +97,7 @@ export function RelationshipEventTooltip({
           ))}
         </CardContent>
       </Card>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -98,7 +98,7 @@ export function extractRelationshipLinks(
             eventId: "evt-2",
             title: "Misunderstanding",
             chapter: "Chapter 2",
-            type: "neutral" as RelationType,
+            type: "friendly" as RelationType,
             reason: "Suspicion arose regarding test scores.",
             date: "Year 3024.05.15",
           },

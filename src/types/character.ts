@@ -1,19 +1,6 @@
 // Character Types with flexible extras pattern
 
-// 백엔드 RelationshipType 정의 (5종 - 백엔드 스펙)
-// 백엔드 RelationshipType 정의 (5종 - 백엔드 스펙) + Graph Utils Extended Types
-export type BackendRelationshipType =
-  | "friendly"
-  | "hostile"
-  | "romantic"
-  | "enemy"
-  | "lover"
-  | "friend"
-  | "family"
-  | "neutral"
-  | "conflict"
-  | "romance"
-  | "friendship";
+export type BackendRelationshipType = "friendly" | "hostile" | "romantic";
 
 // 백엔드에서 반환하는 관계 구조 (Neo4j)
 export interface BackendRelationship {

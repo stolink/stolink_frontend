@@ -74,6 +74,9 @@ export const CharacterGraph = forwardRef<
       y: number;
     } | null>(null);
 
+    // Tooltip close timer for smooth interaction
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const { width, height } = useResize(containerRef);
 
     /**
@@ -420,14 +423,24 @@ export const CharacterGraph = forwardRef<
       relationTypeFilter,
     ]);
 
-    // Handle Link Hover
+    // Handle Link Hover with Delay
     const handleLinkHover = useCallback(
       (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
-        if (!link || !coords) {
-          setHoveredLinkData(null);
-          return;
+        // Clear any pending close timer
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
         }
-        setHoveredLinkData({ link, x: coords.x, y: coords.y });
+
+        if (link && coords) {
+          // Open immediately
+          setHoveredLinkData({ link, x: coords.x, y: coords.y });
+        } else {
+          // Link not active on this tick; delay closing to allow entering tooltip
+          hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredLinkData(null);
+          }, 150);
+        }
       },
       [],
     );
@@ -641,6 +654,17 @@ export const CharacterGraph = forwardRef<
               // Clicking an event opens the details panel for that link
               onLinkClick?.(hoveredLinkData.link);
               setHoveredLinkData(null); // Close tooltip
+            }}
+            onMouseEnter={() => {
+              // Keep open when entering tooltip
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+              }
+            }}
+            onMouseLeave={() => {
+              // Close when leaving tooltip
+              setHoveredLinkData(null);
             }}
           />
         )}
