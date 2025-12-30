@@ -35,7 +35,7 @@ interface CharacterGraphProps {
 }
 
 export interface CharacterGraphRef {
-  focusNode: (nodeId: string) => void;
+  focusNode: (nodeId: string) => Promise<void>;
 }
 
 export const CharacterGraph = forwardRef<
@@ -60,6 +60,7 @@ export const CharacterGraph = forwardRef<
 
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [enableGrouping, setEnableGrouping] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     const { width, height } = useResize(containerRef);
 
@@ -101,7 +102,7 @@ export const CharacterGraph = forwardRef<
       });
     }, [characters]);
 
-    const { nodes, links, reheat, simulation } = useForceSimulation(
+    const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       initialLinks,
       { width, height, enableGrouping },
@@ -135,48 +136,85 @@ export const CharacterGraph = forwardRef<
       }));
     }, [initialNodes]);
 
+    // Cache for D3 selections to avoid DOM querying in every tick
+    const groupSelectionCache = useRef<
+      Map<
+        string,
+        {
+          cloud: d3.Selection<d3.BaseType, unknown, null, undefined>;
+          label: d3.Selection<d3.BaseType, unknown, null, undefined>;
+        }
+      >
+    >(new Map());
+
+    // Cleanup cache on unmount
+    useEffect(() => {
+      return () => {
+        groupSelectionCache.current.clear();
+      };
+    }, []);
+
+    // Clear cache when group config changes
+    useEffect(() => {
+      groupSelectionCache.current.clear();
+    }, [groupConfig]);
+
     useEffect(() => {
       if (!simulation || !gRef.current) return;
+
+      const g = d3.select(gRef.current);
 
       // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
       let frameCount = 0;
       simulation.on("tick", () => {
         frameCount++;
-        const g = d3.select(gRef.current);
 
-        // 1. 필수 업데이트 (매 프레임 실행 - 60fps)
-        // Update Links (방어적 null 체크 포함)
-        g.selectAll<SVGLineElement, RelationshipLink>(".link-line")
-          .attr("x1", (d) => {
-            if (!d) return 0;
-            const source = d.source as unknown as CharacterNode;
-            return source.x ?? 0;
-          })
-          .attr("y1", (d) => {
-            if (!d) return 0;
-            const source = d.source as unknown as CharacterNode;
-            return source.y ?? 0;
-          })
-          .attr("x2", (d) => {
-            if (!d) return 0;
-            const target = d.target as unknown as CharacterNode;
-            return target.x ?? 0;
-          })
-          .attr("y2", (d) => {
-            if (!d) return 0;
-            const target = d.target as unknown as CharacterNode;
-            return target.y ?? 0;
-          });
+        // 매 tick마다 새로운 선택자 사용 (React 리렌더 시 stale 방지)
+        const linkSel = g.selectAll<SVGLineElement, RelationshipLink>(
+          ".link-line",
+        );
+        const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
-        // Update Nodes
-        g.selectAll<SVGGElement, CharacterNode>(".node-group").attr(
-          "transform",
-          (d) => (d ? `translate(${d.x}, ${d.y})` : ""),
+        // 1. 필수 업데이트 - 링크 위치 (매 프레임)
+        // 성능 최적화: d3.select(this) 대신 setAttribute 직접 사용 (Override reduction)
+        linkSel.each(function (d) {
+          if (!d) return;
+          const source = d.source as unknown as CharacterNode;
+          const target = d.target as unknown as CharacterNode;
+
+          const x1 = source.x;
+          const y1 = source.y;
+          const x2 = target.x;
+          const y2 = target.y;
+
+          // 좌표가 유효하지 않으면 업데이트 건너뜀 (깜빡임 방지)
+          if (
+            x1 === undefined ||
+            y1 === undefined ||
+            x2 === undefined ||
+            y2 === undefined ||
+            Number.isNaN(x1) ||
+            Number.isNaN(y1) ||
+            Number.isNaN(x2) ||
+            Number.isNaN(y2)
+          ) {
+            return;
+          }
+
+          this.setAttribute("x1", String(x1));
+          this.setAttribute("y1", String(y1));
+          this.setAttribute("x2", String(x2));
+          this.setAttribute("y2", String(y2));
+        });
+
+        // 2. 필수 업데이트 - 노드 위치 (매 프레임)
+        nodeSel.attr("transform", (d) =>
+          d ? `translate(${d.x}, ${d.y})` : "",
         );
 
-        // 2. 부가 연산 업데이트 (스로틀링 적용 - 30fps)
+        // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
         // 그룹 클라우드 위치 및 크기 업데이트 (노드 분포 범위 기반)
-        if (enableGrouping && frameCount % 2 === 0) {
+        if (enableGrouping && frameCount % 5 === 0) {
           // tick마다 최신 노드 위치 기반으로 그룹별 노드 재계산
           const currentNodesByGroup: Record<string, CharacterNode[]> = {};
           simulation.nodes().forEach((node) => {
@@ -201,8 +239,17 @@ export const CharacterGraph = forwardRef<
             const groupName = config.name;
             const groupNodes = currentNodesByGroup[groupName] || [];
             const safeId = groupName.replace(/\s+/g, "-");
-            const cloudEl = g.select(`#cloud-${safeId}`);
-            const labelEl = g.select(`#label-${safeId}`);
+
+            // Use Cached Selection
+            let cached = groupSelectionCache.current.get(safeId);
+            if (!cached) {
+              cached = {
+                cloud: g.select(`#cloud-${safeId}`),
+                label: g.select(`#label-${safeId}`),
+              };
+              groupSelectionCache.current.set(safeId, cached);
+            }
+            const { cloud: cloudEl, label: labelEl } = cached;
 
             // 노드가 없으면 숨김 처리
             if (groupNodes.length === 0) {
@@ -302,7 +349,16 @@ export const CharacterGraph = forwardRef<
     }, [simulation, enableGrouping, groupConfig]);
 
     const { zoomState, centerAt } = useZoom(svgRef, gRef);
-    const { dragBehavior } = useDrag({ reheat });
+
+    // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
+    const onDragStart = useCallback(() => setIsDragging(true), []);
+    const onDragEnd = useCallback(() => setIsDragging(false), []);
+
+    const { dragBehavior } = useDrag({
+      simulation,
+      onDragStart,
+      onDragEnd,
+    });
 
     useImperativeHandle(
       ref,
@@ -310,8 +366,9 @@ export const CharacterGraph = forwardRef<
         focusNode: (nodeId: string) => {
           const node = nodes.find((n) => n.id === nodeId);
           if (node && node.x !== undefined && node.y !== undefined) {
-            centerAt(node.x, node.y, 1.35);
+            return centerAt(node.x, node.y, 1.35);
           }
+          return Promise.resolve();
         },
       }),
       [nodes, centerAt],
@@ -349,14 +406,18 @@ export const CharacterGraph = forwardRef<
     );
 
     const handleNodeHover = useCallback(
-      (id: string | null) => setHoveredNodeId(id),
-      [],
+      (id: string | null) => {
+        if (isDragging) return;
+        setHoveredNodeId(id);
+      },
+      [isDragging],
     );
 
     return (
       <div
         ref={containerRef}
         className={cn("w-full h-full relative", className)}
+        style={{ contain: "layout paint" }}
       >
         <TiledBackground
           zoomState={zoomState}
@@ -367,8 +428,27 @@ export const CharacterGraph = forwardRef<
           width={width}
           height={height}
           className="cursor-grab active:cursor-grabbing relative z-10"
+          style={{
+            // SVG 렌더링 최적화 힌트
+            shapeRendering: "geometricPrecision",
+          }}
         >
+          {/* 줌/패닝용 그룹 */}
           <g ref={gRef}>
+            {/* Always available shared defs */}
+            <defs>
+              <radialGradient
+                id="node-gradient-common"
+                cx="35%"
+                cy="35%"
+                r="65%"
+              >
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.98" />
+                <stop offset="50%" stopColor="#F8F8F7" stopOpacity="1" />
+                <stop offset="100%" stopColor="#E7E5E4" stopOpacity="1" />
+              </radialGradient>
+            </defs>
+
             {enableGrouping && (
               <g className="group-layer">
                 <defs>

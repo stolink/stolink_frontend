@@ -15,4 +15,8 @@
 | 2025-12-28 | PR #69 AI Review Fixes        | ✅ Resolved | Used `axios.isAxiosError` for type-safe 404 handling, added `onError` handler for cache strategy  |
 | 2025-12-28 | PR #69 AI Review Round 2      | ✅ Resolved | Moved 404 error handling to `shareService` layer, removed axios import from hook                  |
 | 2025-12-29 | PR #73 AI Review Fixes        | ✅ Resolved | Fixed critical missing `onToggle` prop in `EditorLeftSidebar` and added DnD UX improvement TODO   |
-| 2025-12-30 | PR #78 AI Review Fixes        | ✅ Resolved | Fixed key prop `                                                                                  |     | `→`??`, added try-catch for `forceSave()`in`handleAddSection` |
+| 2025-12-30 | Graph Opt & Review Fixes      | ✅ Resolved | D3 perf, Mem leak, Constants, DOM Opt                                                             |
+| 2025-12-30 | Link Flickering Fix           | ✅ Resolved | Add safety check for NaN coords in tick handler                                                   |
+| 2025-12-30 | Zoom Lag Fix                  | ✅ Resolved | Optimize drag handlers using useCallback                                                          |
+| 2025-12-30 | Panning Delay Fix             | ✅ Resolved | Remove double RAF in TiledBackground                                                              |
+| 2025-12-30 | Animation Stutter Fix         | ✅ Resolved | Throttle React updates during D3 transitions                                                      |

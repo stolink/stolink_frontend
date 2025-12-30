@@ -55,6 +55,9 @@ export default function WorldPage() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
     null,
   );
+  // 그래프 하이라이팅용 경량 상태 (즉시 반응)
+  const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
   >("all");
@@ -68,13 +71,14 @@ export default function WorldPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setSelectedCharacter(null); // setState 사용으로 의존성 회피
+        setSelectedCharacter(null);
+        setGraphFocusId(null);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []); // 빈 배열 - setState는 항상 최신 상태로 업데이트
+  }, []);
 
   // Character.relationships에서 관계 데이터 추출 (using hook)
   const links: RelationshipLink[] = useRelationshipLinks(characters);
@@ -89,13 +93,14 @@ export default function WorldPage() {
   }
 
   const handleNodeClick = (character: Character) => {
-    setSelectedCharacter((prev) =>
-      prev?.id === character.id ? null : character,
-    );
+    const nextChar = selectedCharacter?.id === character.id ? null : character;
+    setSelectedCharacter(nextChar);
+    setGraphFocusId(nextChar?.id || null);
   };
 
   const handleCardClick = (character: Character) => {
     setSelectedCharacter(character);
+    setGraphFocusId(character.id);
     setIsModalOpen(true);
   };
 
@@ -112,10 +117,22 @@ export default function WorldPage() {
     );
   }
 
-  const handleSearchSelect = (character: Character) => {
+  const handleSearchSelect = async (character: Character) => {
+    // 1. 그래프 하이라이팅 즉시 적용 (가벼움)
+    setGraphFocusId(character.id);
+
+    // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+
+    // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
+    if (graphRef.current) {
+      await graphRef.current.focusNode(character.id);
+    }
+
+    // 3. 애니메이션 종료 후 상세 패널 표시 (무거운 리렌더링 지연)
     setSelectedCharacter(character);
-    // 선택된 캐릭터로 줌 및 이동 (150% 확대)
-    graphRef.current?.focusNode(character.id);
   };
 
   return (
@@ -180,7 +197,7 @@ export default function WorldPage() {
               characters={characters}
               links={links}
               onNodeClick={handleNodeClick}
-              selectedNodeId={selectedCharacter?.id || null}
+              selectedNodeId={graphFocusId || selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
               highlightedNodeIds={searchHighlightedIds}
               ref={graphRef}
