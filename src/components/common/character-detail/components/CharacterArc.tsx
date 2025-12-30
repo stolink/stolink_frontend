@@ -8,7 +8,7 @@ export function CharacterArc({ progress }: CharacterArcProps) {
   return (
     <div>
       <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-        <TrendingUp className="h-4 w-4" /> Character Arc
+        <TrendingUp className="h-4 w-4" /> 스토리 진행
       </h3>
       <div className="space-y-2">
         <div className="flex justify-between text-xs font-medium text-muted-foreground">

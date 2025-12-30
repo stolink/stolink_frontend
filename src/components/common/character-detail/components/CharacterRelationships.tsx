@@ -15,7 +15,7 @@ export function CharacterRelationships({
   return (
     <div className="space-y-6">
       <h3 className="font-bold text-relation-neutral text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-input pb-2">
-        <Users className="h-4 w-4" /> Relationships
+        <Users className="h-4 w-4" /> 인물 관계
       </h3>
       <div className="space-y-3">
         {relationships.length > 0 ? (

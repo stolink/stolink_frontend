@@ -8,7 +8,7 @@ export function CharacterTraits({ traits }: CharacterTraitsProps) {
   return (
     <div>
       <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-        <Heart className="h-4 w-4" /> Key Traits
+        <Heart className="h-4 w-4" /> 성격 특성
       </h3>
       <div className="flex flex-wrap gap-2">
         {traits.length > 0 ? (

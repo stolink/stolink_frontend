@@ -47,8 +47,16 @@ export const NodeRenderer = memo(function NodeRenderer({
   }, [node, dragBehavior]);
 
   const isProtagonist = node.role === "protagonist";
-  const size = isProtagonist ? NODE_SIZES.protagonist : NODE_SIZES.default;
-  const radius = size / 2;
+  const baseSize = isProtagonist ? NODE_SIZES.protagonist : NODE_SIZES.default;
+
+  // Dynamic Sizing: Base + (RelationCount * Factor)
+  // 연결이 많을수록 노드가 커짐 (중요도 시각화)
+  const importanceFactor = 1.5;
+  const dynamicBonus = (node.relationCount || 0) * importanceFactor;
+  // Cap the size to prevent massive nodes
+  const finalSize = Math.min(baseSize + dynamicBonus, 100);
+
+  const radius = finalSize / 2;
   const roleColor = ROLE_COLORS[node.role || "other"];
 
   // 위치가 아직 계산되지 않은 경우

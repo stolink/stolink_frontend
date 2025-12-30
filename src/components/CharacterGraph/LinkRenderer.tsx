@@ -1,13 +1,18 @@
-import { memo, useRef, useEffect } from "react";
+import { memo, useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import type { RelationshipLink, CharacterNode } from "@/types";
-import { RELATION_COLORS, ANIMATION } from "./constants";
+import { RELATION_COLORS, ANIMATION, MOCHA_COLORS } from "./constants";
 
 interface LinkRendererProps {
   link: RelationshipLink;
   isHighlighted: boolean;
   isDimmed: boolean;
   isFiltered: boolean;
+  onHover?: (
+    link: RelationshipLink | null,
+    coords?: { x: number; y: number }
+  ) => void;
+  onClick?: (link: RelationshipLink) => void;
 }
 
 /**
@@ -18,9 +23,14 @@ export const LinkRenderer = memo(function LinkRenderer({
   isHighlighted,
   isDimmed,
   isFiltered,
+  onClick,
+  onHover,
 }: LinkRendererProps) {
   // Ref for D3 Data Binding
   const groupRef = useRef<SVGGElement>(null);
+
+  // Local hover state for micro-interaction
+  const [isHovered, setIsHovered] = useState(false);
 
   // Bind data to children lines for Imperative D3 Updates
   useEffect(() => {
@@ -29,7 +39,7 @@ export const LinkRenderer = memo(function LinkRenderer({
       // We let React handle the lifecycle (enter/exit), we just tag the data.
       d3.select(groupRef.current).selectAll(".link-line").datum(link);
     }
-  }, [link]);
+  }, [link, isHighlighted, isDimmed, isFiltered, isHovered]);
 
   // 소스/타겟 좌표 가져오기
   const source = link.source as CharacterNode;
@@ -47,9 +57,13 @@ export const LinkRenderer = memo(function LinkRenderer({
 
   const color = RELATION_COLORS[link.type] || "#9ca3af";
 
-  // 강도에 따른 선 두께
-  const baseWidth = 1 + (link.strength / 10) * 4;
-  const strokeWidth = isHighlighted ? baseWidth + 1.5 : baseWidth;
+  // 강도에 따른 선 두께 (strength 1-10, 1:10 = 1:4.5 비율)
+  const baseWidth = 2 + ((link.strength - 1) / 9) * 7; // 2px ~ 9px (4.5배 차이)
+  // Hover increases width significantly for feedback
+  const hoverWidthBonus = isHovered ? 2.5 : 0;
+  const strokeWidth = isHighlighted
+    ? baseWidth + 1.5 + hoverWidthBonus
+    : baseWidth + hoverWidthBonus;
 
   // 강도에 따른 기본 투명도 (가독성 위해 최소값 상향)
   const baseOpacity = 0.6 + (link.strength / 10) * 0.4;
@@ -59,23 +73,54 @@ export const LinkRenderer = memo(function LinkRenderer({
     if (isFiltered) return 0.05;
     if (isDimmed) return ANIMATION.dimOpacity * 0.5;
     if (isHighlighted) return 0.95;
+    if (isHovered) return 0.9; // High opacity on hover
     return baseOpacity;
   };
   const finalOpacity = getOpacity();
 
   return (
-    <g ref={groupRef}>
-      {/* 글로우 효과 (하이라이트 시 - 성능 최적화: blur 제거) */}
-      {isHighlighted && !isFiltered && (
+    <g
+      ref={groupRef}
+      className={
+        onClick ? "cursor-pointer pointer-events-auto" : "pointer-events-none"
+      }
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(link);
+      }}
+      onMouseEnter={(e) => {
+        setIsHovered(true);
+        // Report hover with client coordinates for tooltip positioning
+        onHover?.(link, { x: e.clientX, y: e.clientY });
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        onHover?.(null);
+      }}
+    >
+      {/* Hitbox (Invisible wide line for easier clicking) */}
+      <line
+        className="link-line-hitbox"
+        x1={source.x}
+        y1={source.y}
+        x2={target.x}
+        y2={target.y}
+        stroke="transparent"
+        strokeWidth={20} // Wide hitbox
+        strokeLinecap="round"
+      />
+      {/* 글로우 효과 (하이라이트 또는 호버 시) */}
+      {(isHighlighted || isHovered) && !isFiltered && (
         <line
           className="link-line"
           x1={source.x}
           y1={source.y}
           x2={target.x}
           y2={target.y}
-          stroke={color}
-          strokeWidth={strokeWidth + 4}
-          strokeOpacity={0.08}
+          // Hover uses bright Mocha color for highlights, Highlighted uses relation color
+          stroke={isHovered ? MOCHA_COLORS[400] : color}
+          strokeWidth={strokeWidth + (isHovered ? 6 : 4)} // Wider glow on hover
+          strokeOpacity={isHovered ? 0.6 : 0.15} // Much stronger opacity on hover
           strokeLinecap="round"
         />
       )}
@@ -93,7 +138,7 @@ export const LinkRenderer = memo(function LinkRenderer({
         strokeLinecap="round"
         strokeDasharray={link.type === "hostile" ? "6,4" : undefined}
         style={{
-          transition: `stroke-opacity ${ANIMATION.highlightDuration}ms ease-out`,
+          transition: "stroke-width 200ms ease-out",
         }}
       />
     </g>

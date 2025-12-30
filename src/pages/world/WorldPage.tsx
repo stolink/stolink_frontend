@@ -5,7 +5,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, Sword, Sparkles } from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
-import type { Character, RelationType, RelationshipLink } from "@/types";
+import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
+import type {
+  Character,
+  RelationType,
+  RelationshipLink,
+  DetailedRelationship,
+  CharacterNode,
+} from "@/types";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph
@@ -53,10 +60,12 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
+  const [selectedRelationship, setSelectedRelationship] =
+    useState<DetailedRelationship | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     RelationType | "all"
@@ -92,16 +101,193 @@ export default function WorldPage() {
     );
   }
 
+  // Mock extras data for 장발장 and 자베르
+  const MOCK_EXTRAS: Record<
+    string,
+    Record<string, string | number | string[]>
+  > = {
+    "lm-001": {
+      // 장발장 - 기본 정보
+      나이: "약 45세",
+      성별: "남성",
+      직업: "전 죄수 → 공장주 → 시장",
+      출생지: "프랑스 파베롤",
+      // 외모 정보
+      신장: "180cm",
+      체격: "매우 건장함",
+      머리카락: "백발 (은빛)",
+      눈: "깊고 온화한 눈빛",
+      특징: "굳은 손, 잔잔한 미소",
+      // 성격 및 내면
+      성격: ["자비로움", "희생적", "고독함", "속죄의식"],
+      약점: "과거에 대한 죄책감",
+      목표: "코제트의 행복",
+      특기: "초인적 완력, 정원 가꾸기",
+      명대사: "사랑하는 것, 그것이 전부다",
+      // 등장 정보
+      등장: [
+        "1권 2장 - 디뉴 마을",
+        "1권 5장 - 몽트뢰유",
+        "3권 8장 - 파리",
+        "4권 12장 - 바리케이드",
+        "5권 9장 - 코제트의 결혼",
+      ],
+      // 관계 정보
+      관계: [
+        "코제트 (양녀)",
+        "자베르 (숙적)",
+        "미리엘 주교 (은인)",
+        "판틴 (약속)",
+        "마리우스 (사위)",
+      ],
+    },
+    "lm-002": {
+      // 자베르 - 기본 정보
+      나이: "약 50세",
+      성별: "남성",
+      직업: "경감",
+      출생지: "감옥 (부모 모두 죄수)",
+      // 외모 정보
+      신장: "175cm",
+      체격: "야위고 단단함",
+      머리카락: "검은색, 짧게 정돈",
+      눈: "날카롭고 차가운 시선",
+      특징: "구레나룻, 경직된 표정",
+      // 성격 및 내면
+      성격: ["냉혹함", "정의감", "완고함", "흑백논리"],
+      약점: "융통성 없음",
+      목표: "법의 완벽한 집행",
+      특기: "추적, 법률 지식, 변장",
+      명대사: "법 앞에 예외는 없다",
+      // 등장 정보
+      등장: [
+        "1권 2장 - 툴롱 감옥",
+        "1권 7장 - 법정",
+        "3권 5장 - 파리 추격",
+        "4권 12장 - 바리케이드",
+        "5권 4장 - 하수도",
+      ],
+      // 관계 정보
+      관계: [
+        "장발장 (숙적/추적 대상)",
+        "테나르디에 (정보원)",
+        "마리우스 (구출 대상)",
+      ],
+    },
+  };
+
+  const enrichCharacterWithMockData = (character: Character): Character => {
+    const mockExtras = MOCK_EXTRAS[character.id];
+    if (!mockExtras) return character;
+
+    return {
+      ...character,
+      extras: {
+        ...character.extras,
+        ...mockExtras,
+      },
+    };
+  };
+
   const handleNodeClick = (character: Character) => {
-    const nextChar = selectedCharacter?.id === character.id ? null : character;
+    const enrichedChar = enrichCharacterWithMockData(character);
+    const nextChar =
+      selectedCharacter?.id === enrichedChar.id ? null : enrichedChar;
     setSelectedCharacter(nextChar);
     setGraphFocusId(nextChar?.id || null);
   };
 
   const handleCardClick = (character: Character) => {
-    setSelectedCharacter(character);
-    setGraphFocusId(character.id);
+    const enrichedChar = enrichCharacterWithMockData(character);
+    setSelectedCharacter(enrichedChar);
+    setGraphFocusId(enrichedChar.id);
     setIsModalOpen(true);
+  };
+
+  const handleLinkClick = (link: RelationshipLink) => {
+    // Resolve source/target IDs (D3 replaces strings with objects)
+    const sourceId =
+      typeof link.source === "object"
+        ? (link.source as CharacterNode).id
+        : link.source;
+    const targetId =
+      typeof link.target === "object"
+        ? (link.target as CharacterNode).id
+        : link.target;
+
+    // Mock history data for 장발장-자베르 relationship
+    const isJavertValjean =
+      (sourceId === "lm-001" && targetId === "lm-002") ||
+      (sourceId === "lm-002" && targetId === "lm-001");
+
+    const mockHistory = isJavertValjean
+      ? [
+          {
+            eventId: "1",
+            title: "툴롱 감옥에서의 첫 만남",
+            chapter: "1권 2장",
+            type: "hostile" as const,
+            reason:
+              "교도관 자베르와 죄수 24601호의 관계. 자베르는 장발장을 근본적 악으로 규정하고 감시함.",
+            date: "1815년",
+          },
+          {
+            eventId: "2",
+            title: "몽트뢰유 시장 시절",
+            chapter: "1권 5장",
+            type: "hostile" as const,
+            reason:
+              "마들렌 시장의 정체를 의심하며 집요하게 추적. 시장직 뒤에 숨은 과거를 파헤치려 함.",
+            date: "1823년",
+          },
+          {
+            eventId: "3",
+            title: "법정에서의 자백",
+            chapter: "1권 7장",
+            type: "hostile" as const,
+            reason:
+              "장발장이 스스로 정체를 밝히고 자베르는 그를 다시 체포하려 함. 법 앞에 굴복하지 않는 장발장에 분노.",
+            date: "1823년",
+          },
+          {
+            eventId: "4",
+            title: "바리케이드의 자비",
+            chapter: "4권 12장",
+            type: "friendly" as const,
+            reason:
+              "장발장이 스파이로 잡힌 자베르를 처형하지 않고 풀어줌. 자베르의 세계관에 균열이 시작됨.",
+            date: "1832년 6월 5일",
+          },
+          {
+            eventId: "5",
+            title: "하수도에서의 해방",
+            chapter: "5권 3장",
+            type: "friendly" as const,
+            reason:
+              "자베르가 장발장을 체포하지 않고 석방함. 법과 자비 사이에서 갈등하다 결국 센 강에 투신.",
+            date: "1832년 6월 6일",
+          },
+        ]
+      : undefined;
+
+    // Mock data enrichment based on user request example
+    const detailedRel: DetailedRelationship = {
+      ...link, // id, strength, type, description, history, since, evolved_from, bidirectional
+      id: link.id,
+      target: String(targetId), // DetailedRelationship expects string ID
+      source: String(sourceId), // DetailedRelationship expects string ID
+      type: link.type, // RelationType is compatible with BackendRelationshipType
+      relation_type: link.type,
+      strength: link.strength,
+
+      // Use mapped data from link (originally from DB)
+      description: link.description,
+      bidirectional: link.bidirectional,
+      evolved_from: isJavertValjean ? "hostile" : link.evolved_from,
+      since: isJavertValjean ? "1815년 툴롱 감옥" : link.since,
+      history: mockHistory || link.history,
+    };
+    setSelectedRelationship(detailedRel);
   };
 
   if (isLoading) {
@@ -123,7 +309,7 @@ export default function WorldPage() {
 
     // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
     await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
     );
 
     // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
@@ -197,6 +383,7 @@ export default function WorldPage() {
               characters={characters}
               links={links}
               onNodeClick={handleNodeClick}
+              onLinkClick={handleLinkClick}
               selectedNodeId={graphFocusId || selectedCharacter?.id || null}
               relationTypeFilter={relationTypeFilter}
               highlightedNodeIds={searchHighlightedIds}
@@ -325,6 +512,21 @@ export default function WorldPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={() => {}} // Read-only in this view for now
+      />
+
+      {/* Relationship Detail Sidebar */}
+      <RelationshipDetailSheet
+        relationship={selectedRelationship}
+        isOpen={!!selectedRelationship}
+        onClose={() => setSelectedRelationship(null)}
+        sourceName={
+          characters.find((c) => c.id === selectedRelationship?.source)?.name ||
+          selectedRelationship?.source
+        }
+        targetName={
+          characters.find((c) => c.id === selectedRelationship?.target)?.name ||
+          selectedRelationship?.target
+        }
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import type * as d3 from "d3";
-import type { CharacterRole } from "./character";
+import type { CharacterRole, RelationType } from "./character";
 
 // =====================================================
 // 📊 캐릭터 그래프 (D3.js Force Simulation) 타입
@@ -7,7 +7,8 @@ import type { CharacterRole } from "./character";
 
 // 관계 타입 (단순화: 3종)
 // 관계 타입 (BackendRelationshipType과 일치)
-export type RelationType = "friendly" | "hostile" | "romantic";
+// 관계 타입 (BackendRelationshipType과 일치)
+// export type RelationType = "friendly" | "hostile" | "romantic"; // Removed to avoid duplicate with ./character
 
 // D3 시뮬레이션용 노드 타입
 export interface CharacterNode extends d3.SimulationNodeDatum {
@@ -16,6 +17,7 @@ export interface CharacterNode extends d3.SimulationNodeDatum {
   role?: CharacterRole;
   group?: string;
   imageUrl?: string;
+  relationCount?: number; // Dynamic: Number of relationships
   // D3 런타임 필드 (시뮬레이션이 자동 추가)
   x?: number;
   y?: number;
@@ -33,6 +35,18 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   type: RelationType;
   strength: number; // 1-10
   label?: string;
+  description?: string;
+  bidirectional?: boolean;
+  evolved_from?: RelationType;
+  since?: string;
+  history?: {
+    eventId: string;
+    title: string;
+    chapter?: string;
+    type: RelationType;
+    reason?: string;
+    date?: string;
+  }[];
 }
 
 // 그래프 데이터 구조
