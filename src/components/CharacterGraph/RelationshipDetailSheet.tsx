@@ -14,7 +14,6 @@ import {
   Heart,
   Skull,
   User,
-  Sword,
 } from "lucide-react";
 import type {
   DetailedRelationship,
@@ -35,42 +34,18 @@ const RELATION_COLORS: Record<BackendRelationshipType, string> = {
   friendly: "bg-[#7A8C6F] border-[#7A8C6F]", // Friendly: #7A8C6F
   hostile: "bg-[#9C4A3F] border-[#9C4A3F]", // Hostile: #9C4A3F
   romantic: "bg-[#B38B82] border-[#B38B82]", // Romance: #B38B82
-  enemy: "bg-[#9C4A3F] border-[#9C4A3F]",
-  lover: "bg-[#B38B82] border-[#B38B82]",
-  friend: "bg-[#7A8C6F] border-[#7A8C6F]",
-  family: "bg-[#4F5861] border-[#4F5861]", // Family: #4F5861
-  neutral: "bg-[#8D8B88] border-[#8D8B88]", // Neutral: #8D8B88
-  conflict: "bg-[#9C4A3F] border-[#9C4A3F]",
-  romance: "bg-[#B38B82] border-[#B38B82]",
-  friendship: "bg-[#7A8C6F] border-[#7A8C6F]",
 };
 
 const RELATION_ICONS: Record<BackendRelationshipType, React.ReactNode> = {
   friendly: <User className="w-4 h-4" />,
   hostile: <Skull className="w-4 h-4" />,
   romantic: <Heart className="w-4 h-4" />,
-  enemy: <Skull className="w-4 h-4" />,
-  lover: <Heart className="w-4 h-4" />,
-  friend: <User className="w-4 h-4" />,
-  family: <User className="w-4 h-4" />,
-  neutral: <Activity className="w-4 h-4" />,
-  conflict: <Sword className="w-3 h-3" />,
-  romance: <Heart className="w-4 h-4" />,
-  friendship: <User className="w-4 h-4" />,
 };
 
 const RELATION_LABELS: Record<BackendRelationshipType, string> = {
   friendly: "우호적",
   hostile: "적대적",
   romantic: "로맨틱",
-  enemy: "적대",
-  lover: "연인",
-  friend: "친구",
-  family: "가족",
-  neutral: "중립",
-  conflict: "갈등",
-  romance: "로맨스",
-  friendship: "우정",
 };
 
 export function RelationshipDetailSheet({
@@ -202,11 +177,12 @@ export function RelationshipDetailSheet({
                 <Activity className="w-4 h-4" />
                 관계 변천사
               </h4>
-              {history && history.length > 0 ? (
+              {history && Array.isArray(history) && history.length > 0 ? (
                 <div className="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-200">
-                  {history.map((event, idx) => {
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {history.map((event: any, idx: number) => {
                     const eventColor =
-                      RELATION_COLORS[event.type] ||
+                      RELATION_COLORS[event.type as BackendRelationshipType] ||
                       "bg-stone-400 border-stone-400";
 
                     return (
@@ -244,7 +220,9 @@ export function RelationshipDetailSheet({
                               className="text-[10px] px-1.5 py-0 h-5"
                               style={{ borderColor: "currentColor" }}
                             >
-                              {RELATION_LABELS[event.type] || event.type}
+                              {RELATION_LABELS[
+                                event.type as BackendRelationshipType
+                              ] || event.type}
                             </Badge>
                           </div>
                         </div>

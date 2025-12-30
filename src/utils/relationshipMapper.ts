@@ -90,7 +90,8 @@ export function extractRelationshipLinks(
 
       // Normalize history event types
       if (Array.isArray(parsedHistory)) {
-        parsedHistory = parsedHistory.map((event) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        parsedHistory = (parsedHistory as any).map((event: any) => ({
           ...event,
           type: normalizeRelationType(event.type),
         }));
@@ -109,7 +110,7 @@ export function extractRelationshipLinks(
           ? normalizeRelationType(rel.evolved_from)
           : undefined,
         since: rel.since ?? undefined,
-        history: parsedHistory,
+        history: parsedHistory as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       });
     });
   });

@@ -62,7 +62,8 @@ interface ForeshadowingStore {
 // 복선 생성 입력 (위치 정보 포함)
 interface CreateForeshadowingInput {
   projectId: string;
-  title: string;
+  tag: string;
+
   description?: string;
   importance?: ForeshadowingImportance;
   relatedCharacterIds?: string[];
@@ -74,7 +75,8 @@ interface CreateForeshadowingInput {
 }
 
 interface UpdateForeshadowingInput {
-  title?: string;
+  tag?: string;
+
   description?: string;
   status?: ForeshadowingStatus;
   importance?: ForeshadowingImportance;

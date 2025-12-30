@@ -46,6 +46,7 @@ export interface CreateForeshadowingInput {
 }
 
 export interface UpdateForeshadowingInput {
+  tag?: string;
   status?: ForeshadowingStatus;
   description?: string;
   extras?: Record<string, string | number | boolean>;
