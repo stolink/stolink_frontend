@@ -138,7 +138,7 @@ export const LinkRenderer = memo(function LinkRenderer({
         strokeLinecap="round"
         strokeDasharray={link.type === "hostile" ? "6,4" : undefined}
         style={{
-          transition: `stroke-width 200ms ease-out, stroke-opacity ${ANIMATION.highlightDuration}ms ease-out`,
+          transition: "stroke-width 200ms ease-out",
         }}
       />
     </g>

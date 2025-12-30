@@ -65,6 +65,7 @@ export const CharacterGraph = forwardRef<
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [enableGrouping, setEnableGrouping] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
 
     // State for Link Hover Tooltip
     const [hoveredLinkData, setHoveredLinkData] = useState<{
@@ -367,8 +368,14 @@ export const CharacterGraph = forwardRef<
     const { zoomState, centerAt } = useZoom(svgRef, gRef);
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
-    const onDragStart = useCallback(() => setIsDragging(true), []);
-    const onDragEnd = useCallback(() => setIsDragging(false), []);
+    const onDragStart = useCallback((node: CharacterNode) => {
+      setIsDragging(true);
+      setDraggedNodeId(node.id);
+    }, []);
+    const onDragEnd = useCallback(() => {
+      setIsDragging(false);
+      setDraggedNodeId(null);
+    }, []);
 
     const { dragBehavior } = useDrag({
       simulation,
@@ -391,7 +398,7 @@ export const CharacterGraph = forwardRef<
     );
 
     const connectedNodeIds = useMemo(() => {
-      const focusId = hoveredNodeId || selectedNodeId;
+      const focusId = hoveredNodeId || draggedNodeId || selectedNodeId;
       if (!focusId) return null;
       const connected = new Set<string>([focusId]);
       links.forEach((link) => {
@@ -405,7 +412,13 @@ export const CharacterGraph = forwardRef<
         if (tId === focusId) connected.add(sId);
       });
       return connected;
-    }, [hoveredNodeId, selectedNodeId, links, relationTypeFilter]);
+    }, [
+      hoveredNodeId,
+      draggedNodeId,
+      selectedNodeId,
+      links,
+      relationTypeFilter,
+    ]);
 
     // Handle Link Hover
     const handleLinkHover = useCallback(
@@ -457,8 +470,9 @@ export const CharacterGraph = forwardRef<
           height={height}
           className="cursor-grab active:cursor-grabbing relative z-10"
           style={{
-            // SVG 렌더링 최적화 힌트
-            shapeRendering: "geometricPrecision",
+            // SVG 렌더링 최적화 (잔상 방지)
+            shapeRendering: "auto",
+            willChange: "transform",
           }}
         >
           {/* 줌/패닝용 그룹 */}
@@ -539,7 +553,7 @@ export const CharacterGraph = forwardRef<
             )}
 
             {links.map((link) => {
-              const focusId = hoveredNodeId || selectedNodeId;
+              const focusId = hoveredNodeId || draggedNodeId || selectedNodeId;
               const sId =
                 typeof link.source === "object"
                   ? (link.source as CharacterNode).id
@@ -551,7 +565,10 @@ export const CharacterGraph = forwardRef<
               const isConnected = focusId
                 ? sId === focusId || tId === focusId
                 : false;
-              if (selectedNodeId && !isConnected) return null;
+
+              // Hide unconnected EDGES if a node is selected OR dragged (Strict 1:1 rule)
+              if ((selectedNodeId || draggedNodeId) && !isConnected)
+                return null;
 
               return (
                 <LinkRenderer
