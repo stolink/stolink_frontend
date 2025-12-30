@@ -624,6 +624,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             <EditorContent
               viewMode={viewMode}
               selectedFolderId={selectedFolderId}
+              selectedSectionId={selectedSectionId}
               projectId={projectId}
               splitView={splitView}
               isFocusMode={isFocusMode}
