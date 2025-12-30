@@ -74,7 +74,7 @@ export function CharacterAdditionalDetails({
   const filteredExtras = Object.entries(character.extras)
     .filter(
       ([key]) =>
-        !EXCLUDED_KEYS.some((k) => key.toLowerCase().includes(k.toLowerCase()))
+        !EXCLUDED_KEYS.some((k) => key.toLowerCase().includes(k.toLowerCase())),
     )
     .slice(0, MAX_FILTERED_ITEMS);
 

@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Download,
-  FileText,
-  Book,
-  Settings2,
-  Check,
-  Copy,
-  X,
-} from "lucide-react";
+import { Download, FileText, Book, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -96,15 +88,15 @@ export default function ExportModal({
     const styledContent = content
       .replace(
         /<p>/g,
-        `<p style="text-indent: ${styles.textIndent}; margin-bottom: ${styles.paragraphSpacing};">`
+        `<p style="text-indent: ${styles.textIndent}; margin-bottom: ${styles.paragraphSpacing};">`,
       )
       .replace(
         /<h1>/g,
-        `<h1 style="text-align: ${styles.chapterStyle}; font-size: 1.5em; margin: 1em 0;">`
+        `<h1 style="text-align: ${styles.chapterStyle}; font-size: 1.5em; margin: 1em 0;">`,
       )
       .replace(
         /<h2>/g,
-        `<h2 style="text-align: ${styles.chapterStyle}; font-size: 1.3em; margin: 0.8em 0;">`
+        `<h2 style="text-align: ${styles.chapterStyle}; font-size: 1.3em; margin: 0.8em 0;">`,
       );
 
     return `<!DOCTYPE html>
@@ -183,7 +175,7 @@ export default function ExportModal({
                     "p-3 rounded-lg border text-left transition-all",
                     selectedPreset === p.id
                       ? "border-sage-500 bg-sage-50 ring-1 ring-sage-500"
-                      : "border-border hover:border-stone-300 hover:bg-muted/50"
+                      : "border-border hover:border-stone-300 hover:bg-muted/50",
                   )}
                 >
                   <p.icon
@@ -191,10 +183,12 @@ export default function ExportModal({
                       "w-5 h-5 mb-1",
                       selectedPreset === p.id
                         ? "text-sage-600"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground",
                     )}
                   />
-                  <p className="text-sm font-medium text-foreground">{p.name}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {p.name}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                     {p.description}
                   </p>

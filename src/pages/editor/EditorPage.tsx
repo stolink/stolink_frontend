@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // 복선 생성 후 사이드바 포커스 이동용 상태
+  const [newForeshadowingId] = useState<string | null>(null);
+
   // Editor Store
   const { splitView, toggleSplitView, viewMode, setViewMode } =
     useEditorStore();
@@ -180,7 +183,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
   const { id: urlProjectId } = useParams<{ id: string }>();
+  const location = useLocation();
   const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
+
+  // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
+  const navigationSectionId = (location.state as { selectedSectionId?: string } | null)?.selectedSectionId;
 
   // ============================================================
   // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
@@ -195,8 +202,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
-          ),
+          (doc) => doc.projectId === projectId,
+        ),
     [allDocuments, projectId, isDemo],
   );
 
@@ -299,6 +306,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isTourActive,
     setShowTourPrompt,
   });
+
+  // Navigation state에서 전달된 섹션으로 이동 (월드 페이지에서 복선 위치 클릭 시)
+  useEffect(() => {
+    if (navigationSectionId && !isDemo) {
+      setSelectedSectionId(navigationSectionId);
+      // 에디터 뷰 모드로 전환
+      if (viewMode !== "editor") {
+        setViewMode("editor");
+      }
+      // state 초기화 (뒤로가기 시 재적용 방지)
+      window.history.replaceState({}, document.title);
+    }
+  }, [navigationSectionId, isDemo, viewMode, setViewMode]);
 
   // ============================================================
   // Computed Data
@@ -658,6 +678,18 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             activeTab={rightSidebarTab}
             onTabChange={setRightSidebarTab}
             documentId={selectedSectionId}
+            sectionTitle={currentSectionTitle}
+            newForeshadowingId={newForeshadowingId}
+            onNavigateToPosition={(docId) => {
+              // 해당 섹션으로 이동 (섹션 단위 네비게이션)
+              if (docId && docId !== selectedSectionId) {
+                setSelectedSectionId(docId);
+                // 에디터 뷰 모드로 전환 (통합 뷰에서 단일 뷰로)
+                if (viewMode !== "editor") {
+                  setViewMode("editor");
+                }
+              }
+            }}
           />
         )}
 

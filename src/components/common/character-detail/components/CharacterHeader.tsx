@@ -56,7 +56,7 @@ export function CharacterHeader({ character, onEdit }: CharacterHeaderProps) {
               <span
                 className={cn(
                   "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border",
-                  roleInfo.color
+                  roleInfo.color,
                 )}
               >
                 {roleInfo.label}

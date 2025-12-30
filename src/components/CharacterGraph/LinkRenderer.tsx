@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number }
+    coords?: { x: number; y: number },
   ) => void;
   onClick?: (link: RelationshipLink) => void;
 }
