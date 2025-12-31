@@ -182,7 +182,7 @@ export const NodeRenderer = memo(function NodeRenderer({
         </text>
       )}
 
-      {/* 이름 라벨 - 배경 제거, 텍스트 그림자 사용 */}
+      {/* 이름 라벨 - SVG 필터로 텍스트 그림자 적용 */}
       <text
         transform={`translate(0, ${radius + 18})`}
         textAnchor="middle"
@@ -191,13 +191,9 @@ export const NodeRenderer = memo(function NodeRenderer({
         fontWeight={500}
         fontFamily="'Noto Serif KR', 'Playfair Display', Georgia, serif"
         fill={isSelected ? "#5F7D5F" : "#3D3A38"}
+        filter="url(#textLabelShadow)"
         style={{
           userSelect: "none",
-          textShadow: `
-            0 0 3px rgba(248,248,247,0.9),
-            0 0 6px rgba(248,248,247,0.7),
-            0 1px 2px rgba(248,248,247,0.95)
-          `,
           letterSpacing: "0.02em",
         }}
       >

@@ -19,7 +19,12 @@ import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS, CURVE_FACTOR } from "./constants";
+import {
+  GROUP_COLORS,
+  CURVE_FACTOR,
+  MIN_CURVE_DISTANCE_SQ,
+  MAX_CURVE_OFFSET,
+} from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
@@ -226,7 +231,8 @@ export const CharacterGraph = forwardRef<
           const distSq = dx * dx + dy * dy;
 
           let pathD: string;
-          if (distSq < 1) {
+          // 거리 < 10px면 직선 (MIN_CURVE_DISTANCE_SQ = 100)
+          if (distSq < MIN_CURVE_DISTANCE_SQ) {
             pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
           } else {
             // sqrt는 비용이 높으므로 실제 필요할 때만 계산
@@ -234,8 +240,10 @@ export const CharacterGraph = forwardRef<
             const midX = (x1 + x2) * 0.5;
             const midY = (y1 + y2) * 0.5;
             const invDist = 1 / distance;
-            const curveOffset =
-              distance * CURVE_FACTOR > 60 ? 60 : distance * CURVE_FACTOR;
+            const curveOffset = Math.min(
+              distance * CURVE_FACTOR,
+              MAX_CURVE_OFFSET,
+            );
             const controlX = midX - dy * invDist * curveOffset;
             const controlY = midY + dx * invDist * curveOffset;
             pathD = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
@@ -519,6 +527,32 @@ export const CharacterGraph = forwardRef<
                 <stop offset="50%" stopColor="#F8F8F7" stopOpacity="1" />
                 <stop offset="100%" stopColor="#E7E5E4" stopOpacity="1" />
               </radialGradient>
+              {/* 텍스트 라벨용 그림자 필터 (CSS textShadow 대체) */}
+              <filter
+                id="textLabelShadow"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
+                <feGaussianBlur
+                  in="SourceAlpha"
+                  stdDeviation="2"
+                  result="blur"
+                />
+                <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+                <feFlood floodColor="rgba(248,248,247,0.95)" result="color" />
+                <feComposite
+                  in="color"
+                  in2="offsetBlur"
+                  operator="in"
+                  result="shadow"
+                />
+                <feMerge>
+                  <feMergeNode in="shadow" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             {enableGrouping && (

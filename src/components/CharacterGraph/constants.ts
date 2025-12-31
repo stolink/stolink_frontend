@@ -80,6 +80,8 @@ export const NODE_SIZES = {
 
 // 곡선형 엣지 설정
 export const CURVE_FACTOR = 0.2; // 곡선의 휘어짐 정도 (0 = 직선, 1 = 매우 휜 곡선)
+export const MIN_CURVE_DISTANCE_SQ = 100; // 곡선 적용 최소 거리 제곱 (10px^2)
+export const MAX_CURVE_OFFSET = 60; // 곡선 제어점 최대 오프셋 (px)
 
 // =====================================================
 // ⚡ Force Simulation 설정 (Obsidian 스타일 튜닝)
