@@ -20,8 +20,6 @@ import {
   Code,
   Highlighter,
   Type,
-  LineChart,
-  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,8 +58,8 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "h-8 w-8 p-0 text-foreground hover:text-foreground",
-        isActive && "bg-mocha-400/20 text-mocha-700 hover:bg-mocha-400/30"
+        "h-7 w-7 p-0 text-foreground hover:text-foreground",
+        isActive && "bg-mocha-400/20 text-mocha-700 hover:bg-mocha-400/30",
       )}
       title={tooltip}
     >
@@ -87,8 +85,8 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-0.5 px-3 py-2 border-b bg-muted/50/80 backdrop-blur sticky top-0 z-10 flex-wrap",
-        className
+        "flex items-center gap-0.5 px-2 py-1 border-b bg-muted/50/80 backdrop-blur sticky top-0 z-10 flex-wrap",
+        className,
       )}
     >
       {/* History */}
@@ -109,7 +107,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </ToolbarButton>
       </div>
 
-      <div className="w-px h-5 bg-muted mx-1" />
+      <div className="w-px h-4 bg-muted mx-1" />
 
       {/* Heading Dropdown */}
       <DropdownMenu>
@@ -118,8 +116,8 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             variant="ghost"
             size="sm"
             className={cn(
-              "h-8 px-3 text-xs font-medium",
-              currentHeadingLevel > 0 && "bg-mocha-400/20 text-mocha-700"
+              "h-7 px-2 text-xs font-medium",
+              currentHeadingLevel > 0 && "bg-mocha-400/20 text-mocha-700",
             )}
           >
             <Type className="h-3.5 w-3.5 mr-1.5" />
@@ -165,7 +163,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-muted mx-1" />
+      <div className="w-px h-4 bg-muted mx-1" />
 
       {/* Basic Formatting */}
       <ToolbarButton
@@ -204,7 +202,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <Code className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-muted mx-1" />
+      <div className="w-px h-4 bg-muted mx-1" />
 
       {/* Highlight Colors */}
       <DropdownMenu>
@@ -213,8 +211,8 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              "h-8 w-8",
-              editor.isActive("highlight") && "bg-mocha-400/20 text-mocha-700"
+              "h-7 w-7",
+              editor.isActive("highlight") && "bg-mocha-400/20 text-mocha-700",
             )}
             title="하이라이트"
           >
@@ -274,7 +272,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-muted mx-1" />
+      <div className="w-px h-4 bg-muted mx-1" />
 
       {/* Alignment */}
       <ToolbarButton
@@ -299,7 +297,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-muted mx-1" />
+      <div className="w-px h-4 bg-muted mx-1" />
 
       {/* Lists & Blocks */}
       <ToolbarButton

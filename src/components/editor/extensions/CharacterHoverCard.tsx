@@ -21,24 +21,26 @@ export function CharacterHoverCard({
   return (
     <div className="w-64 bg-card rounded-lg shadow-xl border border-border overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 text-white">
+      <div className="bg-gradient-to-r from-mocha-500 to-mocha-700 p-3 text-white">
         <div className="flex items-center gap-3">
           {avatar ? (
             <img
               src={avatar}
               alt={name}
-              className="w-10 h-10 rounded-full border-2 border-white/50 object-cover"
+              className="w-10 h-10 rounded-full border-2 border-white/30 object-cover shadow-sm"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-card/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
               <User className="w-5 h-5" />
             </div>
           )}
           <div>
-            <h4 className="font-bold text-sm">{name}</h4>
+            <h4 className="font-bold text-sm text-white tracking-tight">
+              {name}
+            </h4>
             <Badge
               variant="secondary"
-              className="text-[10px] px-1.5 py-0 bg-card/20 text-white border-none"
+              className="text-[10px] px-1.5 py-0 bg-white/15 text-white border-none hover:bg-white/20 transition-colors"
             >
               {role}
             </Badge>

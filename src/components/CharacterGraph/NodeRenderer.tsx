@@ -182,30 +182,23 @@ export const NodeRenderer = memo(function NodeRenderer({
         </text>
       )}
 
-      {/* 이름 라벨 */}
-      <g transform={`translate(0, ${radius + 18})`}>
-        {/* 라벨 배경 - 성능 최적화: drop-shadow 제거 */}
-        <rect
-          x={-node.name.length * 4 - 10}
-          y={-11}
-          width={node.name.length * 8 + 20}
-          height={22}
-          rx={11}
-          fill={isSelected ? "#5F7D5F" : "rgba(248,248,247,0.98)"}
-          stroke={isSelected ? "none" : "rgba(0,0,0,0.08)"}
-          strokeWidth={1}
-        />
-        <text
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={11}
-          fontWeight={600}
-          fill={isSelected ? "#ffffff" : "#2D2A28"}
-          style={{ userSelect: "none" }}
-        >
-          {node.name}
-        </text>
-      </g>
+      {/* 이름 라벨 - SVG 필터로 텍스트 그림자 적용 */}
+      <text
+        transform={`translate(0, ${radius + 18})`}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight={500}
+        fontFamily="'Noto Serif KR', 'Playfair Display', Georgia, serif"
+        fill={isSelected ? "#5F7D5F" : "#3D3A38"}
+        filter="url(#textLabelShadow)"
+        style={{
+          userSelect: "none",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {node.name}
+      </text>
     </g>
   );
 });

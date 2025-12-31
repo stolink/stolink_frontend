@@ -19,7 +19,12 @@ import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS } from "./constants";
+import {
+  GROUP_COLORS,
+  CURVE_FACTOR,
+  MIN_CURVE_DISTANCE_SQ,
+  MAX_CURVE_OFFSET,
+} from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
@@ -189,14 +194,13 @@ export const CharacterGraph = forwardRef<
       simulation.on("tick", () => {
         frameCount++;
 
-        // 매 tick마다 새로운 선택자 사용 (React 리렌더 시 stale 방지)
-        const linkSel = g.selectAll<SVGLineElement, RelationshipLink>(
-          ".link-line",
+        // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
+        const linkSel = g.selectAll<SVGPathElement, RelationshipLink>(
+          "path[class*='link-path']",
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
         // 1. 필수 업데이트 - 링크 위치 (매 프레임)
-        // 성능 최적화: d3.select(this) 대신 setAttribute 직접 사용 (Override reduction)
         linkSel.each(function (d) {
           if (!d) return;
           const source = d.source as unknown as CharacterNode;
@@ -221,10 +225,31 @@ export const CharacterGraph = forwardRef<
             return;
           }
 
-          this.setAttribute("x1", String(x1));
-          this.setAttribute("y1", String(y1));
-          this.setAttribute("x2", String(x2));
-          this.setAttribute("y2", String(y2));
+          // 빠른 경로: 직선 또는 곡선 (Math.sqrt 최적화)
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          const distSq = dx * dx + dy * dy;
+
+          let pathD: string;
+          // 거리 < 10px면 직선 (MIN_CURVE_DISTANCE_SQ = 100)
+          if (distSq < MIN_CURVE_DISTANCE_SQ) {
+            pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else {
+            // sqrt는 비용이 높으므로 실제 필요할 때만 계산
+            const distance = Math.sqrt(distSq);
+            const midX = (x1 + x2) * 0.5;
+            const midY = (y1 + y2) * 0.5;
+            const invDist = 1 / distance;
+            const curveOffset = Math.min(
+              distance * CURVE_FACTOR,
+              MAX_CURVE_OFFSET,
+            );
+            const controlX = midX - dy * invDist * curveOffset;
+            const controlY = midY + dx * invDist * curveOffset;
+            pathD = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+          }
+
+          this.setAttribute("d", pathD);
         });
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
@@ -502,6 +527,32 @@ export const CharacterGraph = forwardRef<
                 <stop offset="50%" stopColor="#F8F8F7" stopOpacity="1" />
                 <stop offset="100%" stopColor="#E7E5E4" stopOpacity="1" />
               </radialGradient>
+              {/* 텍스트 라벨용 그림자 필터 (CSS textShadow 대체) */}
+              <filter
+                id="textLabelShadow"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
+                <feGaussianBlur
+                  in="SourceAlpha"
+                  stdDeviation="2"
+                  result="blur"
+                />
+                <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+                <feFlood floodColor="rgba(248,248,247,0.95)" result="color" />
+                <feComposite
+                  in="color"
+                  in2="offsetBlur"
+                  operator="in"
+                  result="shadow"
+                />
+                <feMerge>
+                  <feMergeNode in="shadow" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             {enableGrouping && (

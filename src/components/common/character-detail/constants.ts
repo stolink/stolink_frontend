@@ -6,27 +6,27 @@ export const roleLabels: Record<
 > = {
   protagonist: {
     label: "주인공",
-    color: "bg-primary/10 text-primary border-primary/20",
+    color: "bg-mocha-50 text-mocha-700 border-mocha-200",
   },
   antagonist: {
     label: "적대자",
-    color: "bg-rose-50 text-rose-600 border-rose-200",
+    color: "bg-status-error/10 text-status-error border-status-error/20",
   },
   supporting: {
     label: "조연",
-    color: "bg-cloud-50 text-muted-foreground border-input",
+    color: "bg-cloud-50 text-espresso-900 border-border",
   },
   mentor: {
     label: "조력자",
-    color: "bg-amber-50 text-amber-600 border-amber-200",
+    color: "bg-status-warning/10 text-status-warning border-status-warning/20",
   },
   sidekick: {
     label: "동료",
-    color: "bg-emerald-50 text-emerald-600 border-emerald-200",
+    color: "bg-status-success/10 text-status-success border-status-success/20",
   },
   other: {
     label: "기타",
-    color: "bg-cloud-50 text-muted-foreground border-input",
+    color: "bg-cloud-50 text-espresso-900 border-border",
   },
 };
 

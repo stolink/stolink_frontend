@@ -1,4 +1,5 @@
 import type { Character, RelationshipLink, RelationType } from "@/types";
+import { RELATION_PALETTE } from "./constants";
 
 /**
  * @deprecated Use extractRelationshipLinks from @/utils/relationshipMapper
@@ -100,4 +101,21 @@ export function calculateRelationCounts(
   });
 
   return counts;
+}
+
+/**
+ * 관계 타입과 강도에 따른 색상을 반환합니다.
+ * @param type 관계 유형 (friendly, hostile, romantic)
+ * @param strength 관계 강도 (1-10)
+ */
+export function getRelationshipColor(
+  type: RelationType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _strength: number,
+): string {
+  const palette = RELATION_PALETTE[type];
+  if (!palette) return "#9ca3af"; // Default gray
+
+  // Unified color (Strength ignored per user request)
+  return palette.standard;
 }

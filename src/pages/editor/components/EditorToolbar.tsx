@@ -50,7 +50,7 @@ interface EditorToolbarProps {
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   onViewModeChange: (
     newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
+    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
   ) => void;
 
   // Split view
@@ -111,12 +111,12 @@ export function EditorToolbar({
   onExport,
 }: EditorToolbarProps) {
   return (
-    <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-card z-10">
+    <div className="!h-9 min-h-[36px] max-h-[36px] border-b border-border flex items-center justify-between px-3 shrink-0 bg-card overflow-hidden">
       <div className="flex items-center gap-3">
         {!isSidebarVisible && (
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground transition-colors mr-2"
+            className="p-1 hover:bg-accent rounded-lg text-muted-foreground transition-colors mr-2"
             title="사이드바 열기"
           >
             <PanelLeft className="w-5 h-5" />
@@ -157,7 +157,7 @@ export function EditorToolbar({
           {onShowReader && (
             <button
               onClick={onShowReader}
-              className="px-3 py-1.5 bg-secondary hover:bg-accent text-foreground rounded-lg transition-all border border-border hover:border-primary/30 flex items-center gap-1.5 font-medium text-xs shadow-sm"
+              className="px-3 py-1 bg-secondary hover:bg-accent text-foreground rounded-lg transition-all border border-border hover:border-primary/30 flex items-center gap-1 font-medium text-xs shadow-sm"
               title="미리보기 (작품을 읽기 모드로 확인)"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -170,10 +170,10 @@ export function EditorToolbar({
           <button
             onClick={onToggleSplitView}
             className={cn(
-              "p-1.5 rounded-lg transition-colors",
+              "p-1 rounded-lg transition-colors",
               splitViewEnabled
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground"
+                : "hover:bg-accent text-muted-foreground",
             )}
             title="분할 화면"
           >
@@ -183,10 +183,10 @@ export function EditorToolbar({
           <button
             onClick={onToggleTypewriterMode}
             className={cn(
-              "p-1.5 rounded-lg transition-colors",
+              "p-1 rounded-lg transition-colors",
               isTypewriterMode
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground"
+                : "hover:bg-accent text-muted-foreground",
             )}
             title="타자기 모드 (커서를 화면 중앙에 고정)"
           >
@@ -196,7 +196,7 @@ export function EditorToolbar({
           {onToggleSnapshot && (
             <button
               onClick={onToggleSnapshot}
-              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
+              className="p-1 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
               title="스냅샷 (문서 버전 관리)"
             >
               <History className="w-4 h-4" />
@@ -206,7 +206,7 @@ export function EditorToolbar({
           {onExport && (
             <button
               onClick={onExport}
-              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
+              className="p-1 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
               title="내보내기"
             >
               <Download className="w-4 h-4" />
@@ -215,7 +215,7 @@ export function EditorToolbar({
 
           <button
             onClick={onToggleFocusMode}
-            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground transition-colors"
+            className="p-1 hover:bg-accent rounded-lg text-muted-foreground transition-colors"
             title="집중 모드"
           >
             <Maximize2 className="w-4 h-4" />
@@ -228,7 +228,7 @@ export function EditorToolbar({
         <Sheet>
           <SheetTrigger asChild>
             <button
-              className="p-1.5 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
+              className="p-1 rounded-lg transition-colors hover:bg-accent text-muted-foreground"
               title="에디터 설정"
             >
               <Settings className="w-4 h-4" />
@@ -249,10 +249,10 @@ export function EditorToolbar({
         <button
           onClick={onToggleRightSidebar}
           className={cn(
-            "p-1.5 rounded-lg transition-colors",
+            "p-1 rounded-lg transition-colors",
             rightSidebarOpen
               ? "bg-primary/10 text-primary"
-              : "hover:bg-accent text-muted-foreground"
+              : "hover:bg-accent text-muted-foreground",
           )}
           title="복선/AI 사이드바"
         >
@@ -305,16 +305,16 @@ function TitleBreadcrumb({
   const usePath = sectionPath.length > 0;
 
   return (
-    <div className="flex items-center gap-2 text-sm overflow-hidden bg-secondary/50 px-3 py-1.5 rounded-full border border-border/50 shadow-sm max-w-xl">
+    <div className="flex items-center gap-2 text-sm overflow-hidden bg-secondary/50 px-3 py-1 rounded-full border border-border/50 shadow-sm max-w-xl">
       <BookOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
 
       {usePath ? (
         // Full path breadcrumb (루트 > 챕터 > 섹션 > 하위섹션)
-        <div className="flex items-center gap-1.5 overflow-hidden">
+        <div className="flex items-center gap-1 overflow-hidden">
           {sectionPath.map((item, index) => {
             const isLast = index === sectionPath.length - 1;
             return (
-              <div key={item.id} className="flex items-center gap-1.5 shrink-0">
+              <div key={item.id} className="flex items-center gap-1 shrink-0">
                 {isLast && isEditingTitle ? (
                   <input
                     type="text"
@@ -336,7 +336,7 @@ function TitleBreadcrumb({
                       "truncate max-w-[150px] transition-colors",
                       isLast
                         ? "font-bold text-foreground hover:text-primary"
-                        : "font-medium text-muted-foreground"
+                        : "font-medium text-muted-foreground",
                     )}
                     title={
                       isLast && !isDemo ? "클릭하여 제목 편집" : item.title
@@ -355,13 +355,13 @@ function TitleBreadcrumb({
       ) : (
         // Fallback: old 2-level breadcrumb
         <>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <span className="font-medium truncate max-w-[120px]">
               {currentFolderTitle || "챕터"}
             </span>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
             {isEditingTitle ? (
               <input
                 type="text"
@@ -396,7 +396,7 @@ interface ViewModeButtonsProps {
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   onViewModeChange: (
     newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
+    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
   ) => void;
 }
 
@@ -409,20 +409,20 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
   ];
 
   return (
-    <div className="flex bg-secondary/80 p-1 rounded-xl border border-border shadow-inner">
+    <div className="flex bg-secondary/80 p-0.5 rounded-lg border border-border shadow-inner">
       {modes.map(({ mode, icon: Icon, label }) => (
         <button
           key={mode}
           onClick={() => onViewModeChange(mode, viewMode)}
+          title={label}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-semibold",
+            "flex items-center justify-center p-1 rounded-md transition-all duration-200",
             viewMode === mode
               ? "bg-card text-primary shadow-sm ring-1 ring-border"
-              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50",
           )}
         >
-          <Icon className="w-3.5 h-3.5" />
-          <span>{label}</span>
+          <Icon className="w-4 h-4" />
         </button>
       ))}
     </div>

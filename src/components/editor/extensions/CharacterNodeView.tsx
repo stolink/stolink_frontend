@@ -12,13 +12,13 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
 
   // Find character data from DEMO_CHARACTERS
   const character = DEMO_CHARACTERS.find(
-    (c) => c.id === id || c.name === label
+    (c) => c.id === id || c.name === label,
   );
 
   // Find item data from DEMO_ITEMS (if not a character)
-  const item = !character ? DEMO_ITEMS.find(
-    (i) => i.id === id || i.name === label
-  ) : null;
+  const item = !character
+    ? DEMO_ITEMS.find((i) => i.id === id || i.name === label)
+    : null;
 
   // Determine entity type
   const isItem = !!item;
@@ -77,8 +77,8 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
         <span
           className={
             isItem
-              ? "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 bg-amber-50 text-amber-700 rounded text-sm font-medium border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors select-none"
-              : "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 bg-blue-50 text-blue-700 rounded text-sm font-medium border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+              ? "inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 bg-amber-50/80 text-amber-900 rounded-md text-[13px] font-semibold border border-amber-200/60 cursor-pointer hover:bg-amber-100/90 hover:border-amber-300/80 transition-all shadow-sm select-none"
+              : "inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 bg-mocha-50 text-mocha-700 rounded-md text-[13px] font-semibold border border-mocha-200/60 cursor-pointer hover:bg-mocha-100 hover:border-mocha-300 transition-all shadow-sm select-none"
           }
         >
           {isItem ? (
@@ -92,4 +92,3 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
     </NodeViewWrapper>
   );
 }
-

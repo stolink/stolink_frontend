@@ -11,11 +11,33 @@ export const MOCHA_COLORS = {
 } as const;
 
 // 관계 타입별 색상 (Total War: Three Kingdoms / CK3 스타일)
-// Emerald 700, Red 600, Pink 500 조합
+// 관계 타입별 색상 팔레트 (Strength 기반 3단계)
+export const RELATION_PALETTE: Record<
+  RelationType,
+  { weak: string; standard: string; deep: string }
+> = {
+  friendly: {
+    weak: "var(--rel-friendly-weak)", // 1-3
+    standard: "var(--rel-friendly-std)", // 4-7
+    deep: "var(--rel-friendly-deep)", // 8-10
+  },
+  hostile: {
+    weak: "var(--rel-hostile-weak)", // 1-3
+    standard: "var(--rel-hostile-std)", // 4-7
+    deep: "var(--rel-hostile-deep)", // 8-10
+  },
+  romantic: {
+    weak: "var(--rel-romantic-weak)", // 1-3
+    standard: "var(--rel-romantic-std)", // 4-7
+    deep: "var(--rel-romantic-deep)", // 8-10
+  },
+};
+
+// 관계 타입별 기본 색상 (Standard 기준)
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friendly: "#047857", // Emerald 700
-  hostile: "#DC2626", // Red 600
-  romantic: "#EC4899", // Pink 500
+  friendly: RELATION_PALETTE.friendly.standard,
+  hostile: RELATION_PALETTE.hostile.standard,
+  romantic: RELATION_PALETTE.romantic.standard,
 };
 
 // 관계 타입별 라벨 (한글)
@@ -56,26 +78,31 @@ export const NODE_SIZES = {
   hover: 1.15, // 호버 시 확대 비율
 } as const;
 
+// 곡선형 엣지 설정
+export const CURVE_FACTOR = 0.2; // 곡선의 휘어짐 정도 (0 = 직선, 1 = 매우 휜 곡선)
+export const MIN_CURVE_DISTANCE_SQ = 100; // 곡선 적용 최소 거리 제곱 (10px^2)
+export const MAX_CURVE_OFFSET = 60; // 곡선 제어점 최대 오프셋 (px)
+
 // =====================================================
 // ⚡ Force Simulation 설정 (Obsidian 스타일 튜닝)
 // =====================================================
 
 export const FORCE_CONFIG = {
   // 노드 간 반발력 (최적화: 거리 제한으로 연산 감소)
-  charge: -350,
+  charge: -600,
   chargeDistanceMin: 60,
-  chargeDistanceMax: 400, // 줄여서 먼 거리 연산 감소
+  chargeDistanceMax: 1000, // 줄여서 먼 거리 연산 감소
 
   // 링크 설정 (소프트 스프링)
-  linkDistance: 150,
+  linkDistance: 220,
   linkStrength: 0.3,
 
   // 센터링 (부드럽게)
-  centerStrength: 0.05,
-  positionStrength: 0.02, // X/Y 포지셔닝
+  centerStrength: 0.03,
+  positionStrength: 0.01, // X/Y 포지셔닝
 
   // 충돌
-  collisionPadding: 20,
+  collisionPadding: 35,
   collisionStrength: 0.7,
 
   // 수렴 (더 빠른 안정화)

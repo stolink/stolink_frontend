@@ -187,7 +187,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
 
   // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
-  const navigationSectionId = (location.state as { selectedSectionId?: string } | null)?.selectedSectionId;
+  const navigationSectionId = (
+    location.state as { selectedSectionId?: string } | null
+  )?.selectedSectionId;
 
   // ============================================================
   // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
@@ -202,8 +204,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-          (doc) => doc.projectId === projectId,
-        ),
+            (doc) => doc.projectId === projectId,
+          ),
     [allDocuments, projectId, isDemo],
   );
 

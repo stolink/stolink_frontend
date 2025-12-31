@@ -27,25 +27,25 @@ export const CharacterMention = Mention.extend({
       const lowerQuery = query.toLowerCase();
 
       // 캐릭터 필터링
-      const characters: MentionItem[] = DEMO_CHARACTERS
-        .filter((char) => char.name.toLowerCase().includes(lowerQuery))
-        .map((char) => ({
-          id: char.id,
-          name: char.name,
-          type: "character" as const,
-          imageUrl: char.imageUrl,
-          role: char.role,
-        }));
+      const characters: MentionItem[] = DEMO_CHARACTERS.filter((char) =>
+        char.name.toLowerCase().includes(lowerQuery),
+      ).map((char) => ({
+        id: char.id,
+        name: char.name,
+        type: "character" as const,
+        imageUrl: char.imageUrl,
+        role: char.role,
+      }));
 
       // 아이템 필터링
-      const items: MentionItem[] = DEMO_ITEMS
-        .filter((item) => item.name.toLowerCase().includes(lowerQuery))
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          type: "item" as const,
-          itemType: item.type,
-        }));
+      const items: MentionItem[] = DEMO_ITEMS.filter((item) =>
+        item.name.toLowerCase().includes(lowerQuery),
+      ).map((item) => ({
+        id: item.id,
+        name: item.name,
+        type: "item" as const,
+        itemType: item.type,
+      }));
 
       // 캐릭터 먼저, 그 다음 아이템 순서로 반환
       return [...characters, ...items];

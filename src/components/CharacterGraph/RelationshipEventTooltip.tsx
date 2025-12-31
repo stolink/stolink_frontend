@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Activity, Clock } from "lucide-react";
 import type { RelationType } from "@/types/character";
+import { getRelationshipColor } from "./utils";
 
 interface HistoryEvent {
   eventId: string;
@@ -29,13 +30,7 @@ interface RelationshipEventTooltipProps {
   description?: string;
 }
 
-// Reuse palette for consistent badging
-const RELATION_COLORS: Record<string, string> = {
-  friendly: "bg-[#7A8C6F] border-[#7A8C6F] text-white",
-  hostile: "bg-[#9C4A3F] border-[#9C4A3F] text-white",
-  romantic: "bg-[#B38B82] border-[#B38B82] text-white",
-  neutral: "bg-stone-500 border-stone-500 text-white",
-};
+// Local constants removed in favor of getRelationshipColor helper
 
 export function RelationshipEventTooltip({
   events,
@@ -78,9 +73,12 @@ export function RelationshipEventTooltip({
             <div className="flex items-center justify-between">
               <Badge
                 className={cn(
-                  "px-2 py-0.5 text-xs font-medium capitalize",
-                  RELATION_COLORS[type] || "bg-stone-500",
+                  "px-2 py-0.5 text-xs font-medium capitalize text-white",
                 )}
+                style={{
+                  backgroundColor: getRelationshipColor(type, strength),
+                  borderColor: getRelationshipColor(type, strength),
+                }}
               >
                 {type}
               </Badge>
@@ -136,9 +134,11 @@ export function RelationshipEventTooltip({
                   <Badge
                     variant="outline"
                     className={cn(
-                      "text-[10px] px-1.5 py-0 h-5",
-                      RELATION_COLORS[event.type] || "bg-stone-400",
+                      "text-[10px] px-1.5 py-0 h-5 text-white border-0",
                     )}
+                    style={{
+                      backgroundColor: getRelationshipColor(event.type, 5), // Default to standard strength for events
+                    }}
                   >
                     {event.type}
                   </Badge>

@@ -20,6 +20,7 @@ import type {
   BackendRelationshipType,
 } from "@/types/character";
 import { cn } from "@/lib/utils";
+import { getRelationshipColor } from "./utils";
 
 interface RelationshipDetailSheetProps {
   relationship: DetailedRelationship | null;
@@ -29,12 +30,7 @@ interface RelationshipDetailSheetProps {
   targetName?: string;
 }
 
-// Palette from CLAUDE.md (Relationship Colors)
-const RELATION_COLORS: Record<BackendRelationshipType, string> = {
-  friendly: "bg-[#7A8C6F] border-[#7A8C6F]", // Friendly: #7A8C6F
-  hostile: "bg-[#9C4A3F] border-[#9C4A3F]", // Hostile: #9C4A3F
-  romantic: "bg-[#B38B82] border-[#B38B82]", // Romance: #B38B82
-};
+// Local constants removed in favor of getRelationshipColor helper
 
 const RELATION_ICONS: Record<BackendRelationshipType, React.ReactNode> = {
   friendly: <User className="w-4 h-4" />,
@@ -70,7 +66,8 @@ export function RelationshipDetailSheet({
 
   // Use relationship.relation_type if available (from JSON), otherwise fallback to type
   const displayType = relationship.relation_type || type;
-  const colorClass = RELATION_COLORS[displayType] || "bg-gray-500";
+  const color = getRelationshipColor(displayType, strength);
+  // const colorClass = RELATION_COLORS[displayType] || "bg-gray-500"; // Removed
   const label = RELATION_LABELS[displayType] || displayType;
   const icon = RELATION_ICONS[displayType] || <Activity className="w-4 h-4" />;
 
@@ -84,7 +81,8 @@ export function RelationshipDetailSheet({
               <div className="flex items-center justify-between">
                 <Badge
                   variant="outline"
-                  className={cn("text-white gap-1.5 px-3 py-1", colorClass)}
+                  className={cn("text-white gap-1.5 px-3 py-1")}
+                  style={{ backgroundColor: color, borderColor: color }}
                 >
                   {icon}
                   {label}
@@ -162,11 +160,11 @@ export function RelationshipDetailSheet({
               </div>
               <div className="h-3 w-full bg-stone-100 rounded-full overflow-hidden shadow-inner">
                 <div
-                  className={cn(
-                    "h-full transition-all duration-500",
-                    colorClass,
-                  )}
-                  style={{ width: `${(strength / 10) * 100}%` }}
+                  className={cn("h-full transition-all duration-500")}
+                  style={{
+                    width: `${(strength / 10) * 100}%`,
+                    backgroundColor: color,
+                  }}
                 />
               </div>
             </div>
@@ -181,9 +179,10 @@ export function RelationshipDetailSheet({
                 <div className="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-200">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {history.map((event: any, idx: number) => {
-                    const eventColor =
-                      RELATION_COLORS[event.type as BackendRelationshipType] ||
-                      "bg-stone-400 border-stone-400";
+                    const eventColorHex = getRelationshipColor(
+                      event.type as BackendRelationshipType,
+                      5,
+                    ); // Default strength
 
                     return (
                       <div key={event.eventId || idx} className="relative">
@@ -191,8 +190,8 @@ export function RelationshipDetailSheet({
                         <div
                           className={cn(
                             "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200",
-                            eventColor.split(" ")[0], // Extract bg class
                           )}
+                          style={{ backgroundColor: eventColorHex }}
                         />
 
                         <div className="bg-white p-3 rounded-lg border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
@@ -250,7 +249,8 @@ export function RelationshipDetailSheet({
                   </Badge>
                   <span className="text-stone-400">→</span>
                   <Badge
-                    className={cn("text-white hover:opacity-90", colorClass)}
+                    className={cn("text-white hover:opacity-90")}
+                    style={{ backgroundColor: color }}
                   >
                     {label}
                   </Badge>

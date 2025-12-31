@@ -95,7 +95,7 @@ export function useForceSimulation(
       new Set(nodesCopy.map((d) => d.group).filter(Boolean)),
     ) as string[];
     const groupCenters: Record<string, { x: number; y: number }> = {};
-    const radius = Math.min(width, height) * 0.35; // 화면 크기 비례 반지름
+    const radius = Math.min(width, height) * 0.4; // 화면 크기 비례 반지름
 
     groups.forEach((group, i) => {
       const angle = (i / groups.length) * 2 * Math.PI - Math.PI / 2; // 상단(-90도)부터 시작
@@ -177,7 +177,7 @@ export function useForceSimulation(
             // 중요도가 낮을수록 그룹 중심에서 외곽으로 오프셋
             // importance 1.0 → 오프셋 0 (정중앙)
             // importance 0.2 → 오프셋 최대 (외곽)
-            const maxOffset = 60;
+            const maxOffset = 120;
             const offset = (1 - importance) * maxOffset;
 
             // 노드별 일관된 각도 (id 기반 해시로 분산)
@@ -202,7 +202,7 @@ export function useForceSimulation(
             const groupCenter = groupCenters[d.group];
             const importance = getImportanceScore(d.role);
 
-            const maxOffset = 60;
+            const maxOffset = 120;
             const offset = (1 - importance) * maxOffset;
 
             const hash = d.id.charCodeAt(0) + (d.id.charCodeAt(1) || 0);
