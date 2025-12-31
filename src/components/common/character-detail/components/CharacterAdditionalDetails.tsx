@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import type { Character } from "@/types";
 import { MAX_FILTERED_ITEMS, EXCLUDED_KEYS } from "../constants";
 
@@ -62,10 +63,14 @@ function getLabel(key: string): string {
 
 interface CharacterAdditionalDetailsProps {
   character: Character;
+  isEditMode?: boolean;
+  onExtrasChange?: (key: string, value: unknown) => void;
 }
 
 export function CharacterAdditionalDetails({
   character,
+  isEditMode = false,
+  onExtrasChange,
 }: CharacterAdditionalDetailsProps) {
   if (!character.extras || Object.keys(character.extras).length === 0) {
     return null;
@@ -95,9 +100,19 @@ export function CharacterAdditionalDetails({
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
                 {getLabel(key)}
               </p>
-              <p className="text-sm font-medium text-foreground truncate">
-                {Array.isArray(value) ? value.join(", ") : String(value)}
-              </p>
+              {isEditMode ? (
+                <Input
+                  value={
+                    Array.isArray(value) ? value.join(", ") : String(value)
+                  }
+                  onChange={(e) => onExtrasChange?.(key, e.target.value)}
+                  className="h-7 text-sm"
+                />
+              ) : (
+                <p className="text-sm font-medium text-foreground truncate">
+                  {Array.isArray(value) ? value.join(", ") : String(value)}
+                </p>
+              )}
             </div>
           ))}
         </div>

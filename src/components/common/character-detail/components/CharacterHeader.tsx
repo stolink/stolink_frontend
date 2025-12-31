@@ -1,5 +1,6 @@
 import { Edit, Users, Shield, MapPin, User, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
 import { roleLabels } from "../constants";
@@ -10,9 +11,16 @@ const BASIC_INFO_KEYS = ["나이", "성별", "출생지", "직업"];
 interface CharacterHeaderProps {
   character: Character;
   onEdit?: () => void;
+  isEditMode?: boolean;
+  onFieldChange?: (field: keyof Character, value: unknown) => void;
 }
 
-export function CharacterHeader({ character, onEdit }: CharacterHeaderProps) {
+export function CharacterHeader({
+  character,
+  onEdit,
+  isEditMode = false,
+  onFieldChange,
+}: CharacterHeaderProps) {
   const roleInfo = roleLabels[character.role || "other"];
   const extras = character.extras as Record<string, unknown> | undefined;
 
@@ -50,9 +58,18 @@ export function CharacterHeader({ character, onEdit }: CharacterHeaderProps) {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                {character.name}
-              </h1>
+              {isEditMode ? (
+                <Input
+                  value={character.name}
+                  onChange={(e) => onFieldChange?.("name", e.target.value)}
+                  className="text-2xl font-bold h-10 w-64"
+                  placeholder="캐릭터 이름"
+                />
+              ) : (
+                <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                  {character.name}
+                </h1>
+              )}
               <span
                 className={cn(
                   "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border",
@@ -82,7 +99,7 @@ export function CharacterHeader({ character, onEdit }: CharacterHeaderProps) {
               {new Date(character.updatedAt).toLocaleDateString("ko-KR")}
             </p>
           </div>
-          {onEdit && (
+          {onEdit && !isEditMode && (
             <Button
               variant="outline"
               onClick={onEdit}

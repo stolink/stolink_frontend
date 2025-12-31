@@ -1,11 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  PenLine,
-  Clapperboard,
-  BookOpen,
-  BarChart3,
-  Settings,
-} from "lucide-react";
+import { PenLine, BookOpen, BarChart3, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -66,11 +60,6 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
 
   const navItems = [
     { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
-    {
-      to: `/projects/${projectId}/studio`,
-      label: "스튜디오",
-      icon: Clapperboard,
-    },
     { to: `/projects/${projectId}/world`, label: "리소스", icon: BookOpen },
     { to: `/projects/${projectId}/stats`, label: "분석", icon: BarChart3 },
     {

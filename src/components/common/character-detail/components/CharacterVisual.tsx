@@ -1,4 +1,5 @@
 import { Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 // 외모 관련 키
 const APPEARANCE_KEYS = [
@@ -13,9 +14,15 @@ const APPEARANCE_KEYS = [
 
 interface CharacterVisualProps {
   extras: Record<string, unknown> | undefined;
+  isEditMode?: boolean;
+  onExtrasChange?: (key: string, value: unknown) => void;
 }
 
-export function CharacterVisual({ extras }: CharacterVisualProps) {
+export function CharacterVisual({
+  extras,
+  isEditMode = false,
+  onExtrasChange,
+}: CharacterVisualProps) {
   if (!extras) return null;
 
   const visualEntries = Object.entries(extras).filter(([key]) =>
@@ -38,9 +45,17 @@ export function CharacterVisual({ extras }: CharacterVisualProps) {
             <p className="text-[10px] text-muted-foreground font-medium mb-0.5">
               {key}
             </p>
-            <p className="text-sm font-medium text-foreground">
-              {Array.isArray(value) ? value.join(", ") : String(value)}
-            </p>
+            {isEditMode ? (
+              <Input
+                value={Array.isArray(value) ? value.join(", ") : String(value)}
+                onChange={(e) => onExtrasChange?.(key, e.target.value)}
+                className="h-7 text-sm"
+              />
+            ) : (
+              <p className="text-sm font-medium text-foreground">
+                {Array.isArray(value) ? value.join(", ") : String(value)}
+              </p>
+            )}
           </div>
         ))}
       </div>

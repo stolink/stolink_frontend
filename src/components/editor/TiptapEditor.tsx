@@ -16,17 +16,10 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import {
-  Bold,
-  Italic,
-  Clapperboard,
-  ZoomIn,
-  ZoomOut,
-  Sparkles,
-} from "lucide-react";
+import { Bold, Italic, ZoomIn, ZoomOut, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
 import { SlashCommand } from "./extensions/SlashCommand";
@@ -88,7 +81,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     },
     ref,
   ) => {
-    const navigate = useNavigate();
     const { id: projectId } = useParams<{ id: string }>();
     const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
@@ -184,21 +176,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         Highlight.extend({
           addAttributes() {
             return {
-              color: {
-                default: null,
-                parseHTML: (element) =>
-                  element.getAttribute("data-color") ||
-                  element.style.backgroundColor,
-                renderHTML: (attributes) => {
-                  if (!attributes.color) {
-                    return {};
-                  }
-                  return {
-                    "data-color": attributes.color,
-                    style: `background-color: ${attributes.color}; color: inherit`,
-                  };
-                },
-              },
+              ...this.parent?.(),
               id: {
                 default: null,
                 parseHTML: (element) => element.getAttribute("data-id"),
@@ -480,21 +458,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       };
     }, [editor, projectId]);
 
-    const handleSendToStudio = () => {
-      const { from, to } = editor.state.selection;
-      const text = editor.state.doc.textBetween(from, to, " ");
-
-      if (!text?.trim()) {
-        return;
-      }
-
-      if (projectId) {
-        navigate(`/projects/${projectId}/studio`, {
-          state: { selectedText: text },
-        });
-      }
-    };
-
     const handleSaveAsForeshadowing = () => {
       const text = editor.state.doc.textBetween(
         editor.state.selection.from,
@@ -559,11 +522,10 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       // }).run();
 
       // Current implementation update:
-      editor
-        .chain()
-        .focus()
-        .setMark("highlight", { color: "#D8B4FE", id: newFs.id })
-        .run();
+      editor.chain().focus().setHighlight({ color: "#D8B4FE" }).run();
+
+      // Store the foreshadowing ID as a data attribute on the highlighted range
+      // Note: id tracking is handled separately via the extended Highlight mark
 
       // 콜백 호출: 사이드바 포커스 이동
       onForeshadowingCreated?.(newFs.id);
@@ -601,16 +563,35 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               복선 저장
             </Button>
             <div className="w-px h-8 bg-muted" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSendToStudio}
-              aria-label="Studio로 보내기"
-              className="flex items-center gap-1.5 h-8 px-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
-            >
-              <Clapperboard className="w-3.5 h-3.5" />
-              Studio로 보내기
-            </Button>
+            {/* 하이라이트 색상 */}
+            <div className="flex items-center gap-0.5 px-1.5">
+              {[
+                { color: "#FEF08A", label: "노랑" },
+                { color: "#BBF7D0", label: "초록" },
+                { color: "#BFDBFE", label: "파랑" },
+                { color: "#FECACA", label: "빨강" },
+                { color: "#E9D5FF", label: "보라" },
+              ].map(({ color, label }) => (
+                <button
+                  key={color}
+                  onClick={() =>
+                    editor.chain().focus().setHighlight({ color }).run()
+                  }
+                  className="w-5 h-5 rounded-full border border-stone-300 hover:scale-110 transition-transform"
+                  style={{ backgroundColor: color }}
+                  title={`${label} 하이라이트`}
+                  aria-label={`${label} 하이라이트`}
+                />
+              ))}
+              <button
+                onClick={() => editor.chain().focus().unsetHighlight().run()}
+                className="w-5 h-5 rounded-full border border-stone-300 bg-white hover:bg-stone-100 flex items-center justify-center text-xs text-stone-500"
+                title="하이라이트 제거"
+                aria-label="하이라이트 제거"
+              >
+                ✕
+              </button>
+            </div>
             <div className="w-px h-8 bg-muted" />
             <Button
               variant="ghost"

@@ -14,7 +14,7 @@ const EditorPage = lazy(() => import("@/pages/editor/EditorPage"));
 const WorldPage = lazy(() => import("@/pages/world/WorldPage"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics/AnalyticsPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
-const StudioPage = lazy(() => import("@/pages/studio/StudioPage"));
+
 const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
 
 import { TextureOverlay } from "@/components/ui/TextureOverlay";
@@ -42,7 +42,7 @@ function App() {
       "theme-dark",
       "theme-sepia",
       "theme-eye-care",
-      "theme-true-black"
+      "theme-true-black",
     );
     // Add current theme class
     root.classList.add(`theme-${theme}`);
@@ -77,7 +77,7 @@ function App() {
                 {/* Project Routes */}
                 <Route path="/projects/:id" element={<ProjectLayout />}>
                   <Route path="editor" element={<EditorPage />} />
-                  <Route path="studio" element={<StudioPage />} />
+
                   <Route path="world" element={<WorldPage />} />
                   <Route path="stats" element={<AnalyticsPage />} />
                   <Route path="settings" element={<SettingsPage />} />

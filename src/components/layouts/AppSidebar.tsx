@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   PenLine,
-  Clapperboard,
   BookOpen,
   BarChart3,
   Settings,
@@ -25,11 +24,6 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
 
   const navItems = [
     { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
-    {
-      to: `/projects/${projectId}/studio`,
-      label: "스튜디오",
-      icon: Clapperboard,
-    },
     { to: `/projects/${projectId}/world`, label: "리소스", icon: BookOpen },
     { to: `/projects/${projectId}/stats`, label: "분석", icon: BarChart3 },
     {
@@ -79,7 +73,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-white text-mocha-600 shadow-sm border border-cloud-100"
-                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600"
+                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600",
               )
             }
           >
