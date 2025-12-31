@@ -4,7 +4,7 @@ import { ActivityBar } from "./ActivityBar";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { useEditorStore } from "@/stores";
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

@@ -182,30 +182,27 @@ export const NodeRenderer = memo(function NodeRenderer({
         </text>
       )}
 
-      {/* 이름 라벨 */}
-      <g transform={`translate(0, ${radius + 18})`}>
-        {/* 라벨 배경 - 성능 최적화: drop-shadow 제거 */}
-        <rect
-          x={-node.name.length * 4 - 10}
-          y={-11}
-          width={node.name.length * 8 + 20}
-          height={22}
-          rx={11}
-          fill={isSelected ? "#5F7D5F" : "rgba(248,248,247,0.98)"}
-          stroke={isSelected ? "none" : "rgba(0,0,0,0.08)"}
-          strokeWidth={1}
-        />
-        <text
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={11}
-          fontWeight={600}
-          fill={isSelected ? "#ffffff" : "#2D2A28"}
-          style={{ userSelect: "none" }}
-        >
-          {node.name}
-        </text>
-      </g>
+      {/* 이름 라벨 - 배경 제거, 텍스트 그림자 사용 */}
+      <text
+        transform={`translate(0, ${radius + 18})`}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight={500}
+        fontFamily="'Noto Serif KR', 'Playfair Display', Georgia, serif"
+        fill={isSelected ? "#5F7D5F" : "#3D3A38"}
+        style={{
+          userSelect: "none",
+          textShadow: `
+            0 0 3px rgba(248,248,247,0.9),
+            0 0 6px rgba(248,248,247,0.7),
+            0 1px 2px rgba(248,248,247,0.95)
+          `,
+          letterSpacing: "0.02em",
+        }}
+      >
+        {node.name}
+      </text>
     </g>
   );
 });

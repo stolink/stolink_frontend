@@ -1,7 +1,7 @@
 import { memo, useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import type { RelationshipLink, CharacterNode } from "@/types";
-import { MOCHA_COLORS, ANIMATION } from "./constants";
+import { MOCHA_COLORS } from "./constants";
 import { getRelationshipColor } from "./utils";
 
 interface LinkRendererProps {
@@ -33,14 +33,30 @@ export const LinkRenderer = memo(function LinkRenderer({
   // Local hover state for micro-interaction
   const [isHovered, setIsHovered] = useState(false);
 
-  // Bind data to children lines for Imperative D3 Updates
+  // Bind data only when link changes (not on highlight/dimmed state changes)
   useEffect(() => {
     if (groupRef.current) {
-      // Just bind the single link data to ALL link-line elements
-      // We let React handle the lifecycle (enter/exit), we just tag the data.
-      d3.select(groupRef.current).selectAll(".link-line").datum(link);
+      // 모든 path(hitbox 포함)에 데이터 바인딩
+      const sel = d3.select(groupRef.current).selectAll("path");
+      sel.datum(link);
+
+      // 초기 경로 설정 (React 충돌 방지용 1회성 설정)
+      // pathD 계산이 필요하지만 여기서 계산하기 번거로우므로
+      // CharacterGraph처럼 tick을 한번 돌리거나, 간단히 직선으로 초기화
+      const s = link.source as CharacterNode;
+      const t = link.target as CharacterNode;
+
+      if (
+        s.x !== undefined &&
+        s.y !== undefined &&
+        t.x !== undefined &&
+        t.y !== undefined
+      ) {
+        // 초기에는 직선으로 설정 (어차피 다음 tick에서 곡선됨)
+        sel.attr("d", `M ${s.x} ${s.y} L ${t.x} ${t.y}`);
+      }
     }
-  }, [link, isHighlighted, isDimmed, isFiltered, isHovered]);
+  }, [link]);
 
   // 소스/타겟 좌표 가져오기
   const source = link.source as CharacterNode;
@@ -58,24 +74,20 @@ export const LinkRenderer = memo(function LinkRenderer({
 
   const color = getRelationshipColor(link.type, link.strength);
 
-  // 강도에 따른 선 두께 (strength 1-10, 1:10 = 1:4.5 비율 -> 1:2.3 비율로 변경)
-  // 기존: 2px ~ 9px -> 변경: 6px ~ 14px (약한 관계 가시성 확보)
-  const baseWidth = 6 + ((link.strength - 1) / 9) * 8;
-  // Hover increases width significantly for feedback
-  const hoverWidthBonus = isHovered ? 2.5 : 0;
+  // 강도에 따른 선 두께 (더 얇게 조정)
+  const baseWidth = 2 + ((link.strength - 1) / 9) * 3;
+  const hoverWidthBonus = isHovered ? 2 : 0;
   const strokeWidth = isHighlighted
-    ? baseWidth + 1.5 + hoverWidthBonus
+    ? baseWidth + 1 + hoverWidthBonus
     : baseWidth + hoverWidthBonus;
 
-  // 강도에 따른 기본 투명도 (가독성 위해 최소값 상향)
-  const baseOpacity = 0.6 + (link.strength / 10) * 0.4;
-
-  // 투명도 계산 (가독성 개선)
+  // 투명도 계산 (기본 40-50%, 호버 시 100%)
+  const baseOpacity = 0.4 + (link.strength / 10) * 0.15; // 0.4 ~ 0.55
   const getOpacity = () => {
-    if (isFiltered) return 0.05;
-    if (isDimmed) return ANIMATION.dimOpacity * 0.5;
+    if (isFiltered) return 0.03;
+    if (isDimmed) return 0.15;
     if (isHighlighted) return 0.95;
-    if (isHovered) return 0.9; // High opacity on hover
+    if (isHovered) return 1.0;
     return baseOpacity;
   };
   const finalOpacity = getOpacity();
@@ -92,7 +104,6 @@ export const LinkRenderer = memo(function LinkRenderer({
       }}
       onMouseEnter={(e) => {
         setIsHovered(true);
-        // Report hover with client coordinates for tooltip positioning
         onHover?.(link, { x: e.clientX, y: e.clientY });
       }}
       onMouseLeave={() => {
@@ -100,40 +111,33 @@ export const LinkRenderer = memo(function LinkRenderer({
         onHover?.(null);
       }}
     >
-      {/* Hitbox (Invisible wide line for easier clicking) */}
-      <line
-        className="link-line-hitbox"
-        x1={source.x}
-        y1={source.y}
-        x2={target.x}
-        y2={target.y}
+      {/* Hitbox (Invisible wide path for easier clicking) */}
+      <path
+        className="link-path-hitbox"
+        // d 속성 제거: D3 전담
+        fill="none"
         stroke="transparent"
-        strokeWidth={20} // Wide hitbox
+        strokeWidth={20}
         strokeLinecap="round"
       />
-      {/* 글로우 효과 (하이라이트 또는 호버 시) */}
+      {/* 글로우 효과 */}
       {(isHighlighted || isHovered) && !isFiltered && (
-        <line
-          className="link-line"
-          x1={source.x}
-          y1={source.y}
-          x2={target.x}
-          y2={target.y}
-          // Hover uses bright Mocha color for highlights, Highlighted uses relation color
+        <path
+          className="link-path"
+          // d 속성 제거
+          fill="none"
           stroke={isHovered ? MOCHA_COLORS[400] : color}
-          strokeWidth={strokeWidth + (isHovered ? 6 : 4)} // Wider glow on hover
-          strokeOpacity={isHovered ? 0.6 : 0.15} // Much stronger opacity on hover
+          strokeWidth={strokeWidth + (isHovered ? 6 : 4)}
+          strokeOpacity={isHovered ? 0.6 : 0.15}
           strokeLinecap="round"
         />
       )}
 
       {/* 메인 링크 */}
-      <line
-        className="link-line"
-        x1={source.x}
-        y1={source.y}
-        x2={target.x}
-        y2={target.y}
+      <path
+        className="link-path"
+        // d 속성 제거
+        fill="none"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeOpacity={finalOpacity}

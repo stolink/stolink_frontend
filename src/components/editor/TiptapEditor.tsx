@@ -238,9 +238,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           smoothScroll: true,
           threshold: 5,
         }),
-        FocusMode.configure({
-          className: "focus-mode",
-        }),
+        FocusMode.configure({}),
         SmartPunctuation,
       ];
 

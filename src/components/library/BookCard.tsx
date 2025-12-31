@@ -246,7 +246,6 @@ export function BookCard({
                 status={normalizedStatus}
                 onStatusChange={onStatusChange}
                 disabled={isEditMode}
-                className="h-6 text-[10px]"
               />
             ) : (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">

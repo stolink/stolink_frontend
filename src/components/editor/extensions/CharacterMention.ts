@@ -23,7 +23,6 @@ export const CharacterMention = Mention.extend({
   },
   suggestion: {
     char: "@",
-    deleteTriggerWithBackspace: true,
     items: ({ query }): MentionItem[] => {
       const lowerQuery = query.toLowerCase();
 
