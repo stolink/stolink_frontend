@@ -54,6 +54,7 @@ import {
 } from "./components/EditorContent";
 import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
+import { useCharacters } from "@/hooks/useCharacters";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -196,7 +197,12 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // ============================================================
   const [showReader, setShowReader] = useState(false);
   const [showSnapshot, setShowSnapshot] = useState(false);
+  // Export & Publish State
   const [showExport, setShowExport] = useState(false);
+  const [exportInitialTab, setExportInitialTab] = useState<
+    "export" | "publish"
+  >("export");
+
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore((state) => state.documents);
   const localDocuments = useMemo(
@@ -238,6 +244,46 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const { content: documentContent, saveContent } = useDocumentContent(
     isDemo ? null : selectedSectionId,
   );
+
+  // Fetch Characters for Export/Publish Snapshot
+  const { data: characters = [] } = useCharacters(projectId, {
+    enabled: !isDemo,
+  });
+
+  // Compute Links for Graph Snapshot
+  const graphLinks = useMemo(() => {
+    if (isDemo || !characters.length) return [];
+
+    const links: Array<{
+      source: string;
+      target: string;
+      id: string | number;
+      type: string;
+      strength: number;
+    }> = [];
+    const processedLinkIds = new Set<string>();
+
+    characters.forEach((char) => {
+      char.relationships.forEach((rel) => {
+        // Avoid duplicates if using stable IDs (assuming rel.id is unique across usage)
+        // Adjust logic as needed based on BackendRelationship structure
+        if (processedLinkIds.has(String(rel.id))) return;
+        processedLinkIds.add(String(rel.id));
+
+        const targetId =
+          typeof rel.target === "object"
+            ? (rel.target as { id: string }).id
+            : rel.target;
+        links.push({
+          source: char.id,
+          ...rel,
+          target: targetId, // Explicitly overwrite target after spreading rel
+        });
+      });
+    });
+    return links;
+  }, [characters, isDemo]);
+
   const {
     createDocument,
     updateDocument: updateDocumentMutation,
@@ -622,7 +668,10 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleRightSidebar={toggleRightSidebar}
               onShowReader={isDemo ? undefined : () => setShowReader(true)}
               onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={() => setShowExport(true)}
+              onExport={() => {
+                setExportInitialTab("export");
+                setShowExport(true);
+              }}
             />
           )}
 
@@ -711,8 +760,13 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         <ExportModal
           isOpen={showExport}
           onClose={() => setShowExport(false)}
-          content={currentContent}
-          title={currentSectionTitle}
+          content={currentContent} // Default content (current)
+          title={currentSectionTitle} // Default title
+          currentId={selectedSectionId || undefined}
+          initialTab={exportInitialTab}
+          characters={characters}
+          links={graphLinks}
+          documents={documents} // Pass all documents for selection
         />
 
         {/* Right Sidebar Toggle removed - already handled in EditorToolbar */}
