@@ -7,6 +7,7 @@ import {
   BookOpen,
   Check,
   Image,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +17,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
+import { useManuscriptJobStore } from "@/stores/useManuscriptJobStore";
 
 // ✅ API 형식 통일 - 대문자만 사용
 export type ProjectStatus = "Writing" | "Complete";
@@ -66,6 +69,7 @@ function normalizeStatus(status: ProjectStatus | string): ProjectStatusType {
 }
 
 export function BookCard({
+  projectId,
   title,
   author,
   status,
@@ -83,6 +87,12 @@ export function BookCard({
   // 정규화된 상태 값
   const normalizedStatus = normalizeStatus(status);
 
+  // 원고 처리 중인 job 상태 조회
+  const jobs = useManuscriptJobStore((state) => state.jobs);
+  const job = projectId ? jobs[projectId] : undefined;
+  const isProcessing =
+    job?.status === "PENDING" || job?.status === "PROCESSING";
+
   // 편집 모드에서 onSelect 필수 체크
   if (isEditMode && !onSelect) {
     console.warn("BookCard: onSelect is required when isEditMode=true");
@@ -90,11 +100,11 @@ export function BookCard({
 
   // 카드 클릭 핸들러 (편집 모드일 때는 선택 동작)
   const handleCardClick = () => {
-    if (isEditMode) {
-      onSelect?.();
-    } else {
-      onClick?.();
+    if (isEditMode || isProcessing) {
+      if (isEditMode) onSelect?.();
+      return;
     }
+    onClick?.();
   };
 
   return (
@@ -135,6 +145,20 @@ export function BookCard({
 
       {/* Cover Image Area - Vertical Aspect Ratio [3/4] */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted-foreground/5">
+        {/* 원고 처리 중 프로그레스 오버레이 */}
+        {isProcessing && job && (
+          <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4">
+            <Loader2 className="h-8 w-8 text-white animate-spin" />
+            <Progress
+              value={job.progress}
+              className="w-3/4 h-2 [&>div]:transition-all [&>div]:duration-500 [&>div]:ease-in-out"
+            />
+            <span className="text-white text-xs text-center font-medium">
+              {job.message || "원고 처리 중..."}
+            </span>
+            <span className="text-white/70 text-[10px]">{job.progress}%</span>
+          </div>
+        )}
         {coverImage ? (
           <>
             {/* Blurred Background Layer (Fill) */}
