@@ -327,6 +327,17 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
       >
         <Minus className="h-4 w-4" />
       </ToolbarButton>
+
+      {/* Character Count */}
+      <div className="flex-1" />
+      <div
+        className={cn(
+          "text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ml-2 shrink-0 border text-mocha-500 bg-mocha-50 border-mocha-100",
+        )}
+      >
+        {editor.storage.characterCount.characters().toLocaleString()}자 /{" "}
+        {editor.storage.characterCount.words().toLocaleString()}단어
+      </div>
     </div>
   );
 }

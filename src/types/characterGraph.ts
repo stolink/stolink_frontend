@@ -5,19 +5,17 @@ import type { CharacterRole, RelationType } from "./character";
 // 📊 캐릭터 그래프 (D3.js Force Simulation) 타입
 // =====================================================
 
-// 관계 타입 (단순화: 3종)
-// 관계 타입 (BackendRelationshipType과 일치)
-// 관계 타입 (BackendRelationshipType과 일치)
-// export type RelationType = "friendly" | "hostile" | "romantic"; // Removed to avoid duplicate with ./character
-
-// D3 시뮬레이션용 노드 타입
+/**
+ * D3 시뮬레이션용 노드 타입
+ * Character._id를 id로 사용
+ */
 export interface CharacterNode extends d3.SimulationNodeDatum {
-  id: string;
-  name: string;
+  id: string; // Character._id
+  name: string; // profile.name
   role?: CharacterRole;
-  group?: string;
-  imageUrl?: string;
-  relationCount?: number; // Dynamic: Number of relationships
+  group?: string; // profile.faction.name
+  imageUrl?: string; // Optional - 별도 생성 또는 없음
+  relationCount?: number;
   // D3 런타임 필드 (시뮬레이션이 자동 추가)
   x?: number;
   y?: number;
@@ -27,18 +25,25 @@ export interface CharacterNode extends d3.SimulationNodeDatum {
   fy?: number | null;
 }
 
-// D3 시뮬레이션용 링크 타입
+/**
+ * D3 시뮬레이션용 링크 타입
+ * CharacterRelation에서 변환됨
+ */
 export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> {
-  id: string;
+  id: string; // 생성: `${source}-${target}`
   source: string | CharacterNode;
   target: string | CharacterNode;
-  type: RelationType;
-  strength: number; // 1-10
-  label?: string;
+  type: RelationType; // from relation_type
+  strength: number;
+  label?: string; // Legacy alias for description
   description?: string;
   bidirectional?: boolean;
   evolved_from?: RelationType;
   since?: string;
+  // New fields from schema
+  public_stance?: string;
+  private_feeling?: string;
+  // Legacy history field
   history?: {
     eventId: string;
     title: string;
@@ -49,13 +54,17 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   }[];
 }
 
-// 그래프 데이터 구조
+/**
+ * 그래프 데이터 구조
+ */
 export interface GraphData {
   nodes: CharacterNode[];
   links: RelationshipLink[];
 }
 
-// 컴포넌트 Props
+/**
+ * 컴포넌트 Props
+ */
 export interface CharacterGraphProps {
   characters: CharacterNode[];
   links: RelationshipLink[];
@@ -66,7 +75,9 @@ export interface CharacterGraphProps {
   className?: string;
 }
 
-// 줌 상태
+/**
+ * 줌 상태
+ */
 export interface ZoomState {
   scale: number;
   x: number;

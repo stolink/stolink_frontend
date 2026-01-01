@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/common/Footer";
+import { AuthModal } from "@/components/auth/AuthModal";
 import {
   PenLine,
   GitBranch,
@@ -11,13 +13,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  InteractiveLightOverlay,
-  PaperTexture,
-  BrushStrokeDivider,
-} from "@/components/effects";
+import { PaperTexture, BrushStrokeDivider } from "@/components/effects";
 
 export default function LandingPage() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const features = [
     {
       icon: PenLine,
@@ -70,14 +69,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      {/* Navigation with Interactive Light Effect */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-paper/80 backdrop-blur-sm border-b border-border">
-        {/* Ver.1: SVG 동적 광원 효과 */}
-        <InteractiveLightOverlay
-          id="nav-light"
-          intensity={0.12}
-          className="z-0"
-        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -88,12 +80,15 @@ export default function LandingPage() {
               />
             </div>
             <div className="flex items-center gap-4">
-              <Link to="/auth">
-                <Button variant="ghost">로그인</Button>
-              </Link>
-              <Link to="/auth?tab=register">
-                <Button className="shadow-sm">시작하기</Button>
-              </Link>
+              <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>
+                로그인
+              </Button>
+              <Button
+                className="shadow-sm"
+                onClick={() => setIsAuthModalOpen(true)}
+              >
+                시작하기
+              </Button>
             </div>
           </div>
         </div>
@@ -146,15 +141,14 @@ export default function LandingPage() {
               variants={itemVariants}
               className="flex flex-col sm:flex-row items-center justify-center gap-6"
             >
-              <Link to="/auth" className="w-full sm:w-auto">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto px-10 h-14 text-lg shadow-lg hover:shadow-xl transition-all"
-                >
-                  무료로 시작하기
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="w-full sm:w-auto px-10 h-14 text-lg shadow-lg hover:shadow-xl transition-all"
+                onClick={() => setIsAuthModalOpen(true)}
+              >
+                무료로 시작하기
+                <ChevronRight className="ml-2 h-5 w-5" />
+              </Button>
               <Link to="/demo" className="w-full sm:w-auto">
                 <Button
                   variant="outline"
@@ -345,6 +339,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Auth Modal */}
+      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </div>
   );
 }

@@ -1,33 +1,29 @@
 import { Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-// 외모 관련 키
-const APPEARANCE_KEYS = [
-  "신장",
-  "체격",
-  "머리카락",
-  "눈",
-  "특징",
-  "피부",
-  "외모",
-];
+import type { CharacterAppearance } from "@/types/character";
 
 interface CharacterVisualProps {
-  extras: Record<string, unknown> | undefined;
+  appearance: CharacterAppearance | undefined;
   isEditMode?: boolean;
-  onExtrasChange?: (key: string, value: unknown) => void;
+  onAppearanceChange?: (key: string, value: string) => void;
 }
 
 export function CharacterVisual({
-  extras,
+  appearance,
   isEditMode = false,
-  onExtrasChange,
+  onAppearanceChange,
 }: CharacterVisualProps) {
-  if (!extras) return null;
+  if (!appearance) return null;
 
-  const visualEntries = Object.entries(extras).filter(([key]) =>
-    APPEARANCE_KEYS.some((k) => key.toLowerCase().includes(k.toLowerCase())),
-  );
+  // 새 스키마 appearance 필드들 표시
+  const visualEntries: { key: string; label: string; value: string }[] = [
+    { key: "physique", label: "체격", value: appearance.physique },
+    { key: "skin_tone", label: "피부", value: appearance.skin_tone },
+    { key: "eyes", label: "눈", value: appearance.eyes },
+    { key: "hair_style", label: "헤어스타일", value: appearance.hair_style },
+    { key: "hair_color", label: "머리색", value: appearance.hair_color },
+    { key: "expression", label: "표정", value: appearance.expression },
+  ].filter((entry) => entry.value); // 값이 있는 항목만 표시
 
   if (visualEntries.length === 0) return null;
 
@@ -37,24 +33,22 @@ export function CharacterVisual({
         <Eye className="h-4 w-4" /> 외모
       </h3>
       <div className="grid grid-cols-2 gap-2">
-        {visualEntries.map(([key, value]) => (
+        {visualEntries.map(({ key, label, value }) => (
           <div
             key={key}
             className="p-2.5 bg-gradient-to-br from-cloud-50 to-white rounded-lg border border-input"
           >
             <p className="text-[10px] text-muted-foreground font-medium mb-0.5">
-              {key}
+              {label}
             </p>
             {isEditMode ? (
               <Input
-                value={Array.isArray(value) ? value.join(", ") : String(value)}
-                onChange={(e) => onExtrasChange?.(key, e.target.value)}
+                value={value}
+                onChange={(e) => onAppearanceChange?.(key, e.target.value)}
                 className="h-7 text-sm"
               />
             ) : (
-              <p className="text-sm font-medium text-foreground">
-                {Array.isArray(value) ? value.join(", ") : String(value)}
-              </p>
+              <p className="text-sm font-medium text-foreground">{value}</p>
             )}
           </div>
         ))}

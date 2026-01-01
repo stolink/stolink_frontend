@@ -139,19 +139,32 @@ export const documentService = {
     return response.data;
   },
 
-  // Get content only
-  getContent: async (id: string) => {
-    const response = await api.get<ApiResponse<{ content: string }>>(
-      `/documents/${id}/content`,
-    );
+  // Get content with paging
+  getContent: async (id: string, page: number = 1) => {
+    const response = await api.get<
+      ApiResponse<{
+        content: string;
+        page: number;
+        totalPages: number;
+        hasNext: boolean;
+      }>
+    >(`/documents/${id}/content`, {
+      params: { page },
+    });
     return response.data;
   },
 
-  // Update content only
-  updateContent: async (id: string, content: string) => {
+  // Update content for a specific page
+  updateContent: async (id: string, content: string, page: number = 1) => {
     const response = await api.patch<
-      ApiResponse<{ id: string; wordCount: number; updatedAt: string }>
-    >(`/documents/${id}/content`, { content });
+      ApiResponse<{
+        id: string;
+        wordCount: number;
+        updatedAt: string;
+        page: number;
+        totalPages: number;
+      }>
+    >(`/documents/${id}/content`, { content, page });
     return response.data;
   },
 

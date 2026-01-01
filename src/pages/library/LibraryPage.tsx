@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Search,
   LayoutGrid,
@@ -41,6 +42,9 @@ import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
 import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
 import type { ProjectStatusType } from "@/components/library/StatusChip";
+import { manuscriptService } from "@/services/manuscriptService";
+import { useManuscriptJobStore } from "@/stores/useManuscriptJobStore";
+import { useManuscriptPolling } from "@/hooks/useManuscriptPolling";
 
 import {
   DropdownMenu,
@@ -119,6 +123,13 @@ export default function LibraryPage() {
   const { mutate: updateProjectStatus } = useUpdateProjectStatus();
   const { mutate: duplicateProject } = useDuplicateProject();
   const { mutate: updateProject } = useUpdateProject();
+
+  // ========== 원고 비동기 처리 ==========
+  const setJob = useManuscriptJobStore((state) => state.setJob);
+  useManuscriptPolling(); // 전역 폴링 시작
+
+  // ========== Query Client ==========
+  const queryClient = useQueryClient();
 
   const projects = projectsData?.projects || [];
 
@@ -229,7 +240,8 @@ export default function LibraryPage() {
         console.warn("[LibraryPage] Section creation failed, continuing...");
       }
 
-      // 4. Navigate to editor
+      // 4. 프로젝트 목록 갱신 후 에디터로 이동
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
@@ -261,134 +273,12 @@ export default function LibraryPage() {
     }
   };
 
-  // Helper: Recursive Character Text Splitter approach
-  const splitContentRecursively = (
-    text: string,
-    chunkSize: number = 10000,
-  ): { title: string; content: string }[] => {
-    const separators = ["\n\n", "\n", ". ", " "];
-    const chunks: string[] = [];
-
-    const splitText = (currentText: string) => {
-      if (currentText.length <= chunkSize) {
-        chunks.push(currentText);
-        return;
-      }
-
-      let bestSplitIndex = -1;
-      let separatorUsed = "";
-
-      for (const separator of separators) {
-        const limit = chunkSize;
-        const lastIndex = currentText.lastIndexOf(separator, limit);
-
-        if (lastIndex !== -1 && lastIndex > chunkSize * 0.3) {
-          bestSplitIndex = lastIndex;
-          separatorUsed = separator;
-          break;
-        }
-      }
-
-      if (bestSplitIndex === -1) {
-        bestSplitIndex = chunkSize;
-      }
-
-      const chunk = currentText.substring(
-        0,
-        bestSplitIndex + separatorUsed.length,
-      );
-      chunks.push(chunk);
-
-      const remaining = currentText.substring(
-        bestSplitIndex + separatorUsed.length,
-      );
-      if (remaining.trim().length > 0) {
-        splitText(remaining);
-      }
-    };
-
-    splitText(text);
-
-    return chunks.map((content, index) => ({
-      title: `Part ${index + 1}`,
-      content: content.trim(),
-    }));
-  };
-
-  // Helper: Split text into chapters based on patterns
-  const splitContentByChapters = (text: string) => {
-    const pattern =
-      /(?:^|\n)\s*((?:Chapter|제|Section|Part)\s*\d+[^(\n)]*|Prologue|Epilogue|프롤로그|에필로그|Episode\s*\d+).*/gi;
-
-    const matches = [...text.matchAll(pattern)];
-
-    if (matches.length < 2) {
-      return null;
-    }
-
-    const segments: { title: string; content: string }[] = [];
-
-    matches.forEach((match, i) => {
-      const matchIndex = match.index!;
-      const matchLength = match[0].length;
-      const title = match[1].trim();
-
-      if (i === 0 && matchIndex > 0) {
-        const introContent = text.substring(0, matchIndex).trim();
-        if (introContent) {
-          segments.push({ title: "Intro", content: introContent });
-        }
-      }
-
-      const contentStart = matchIndex + matchLength;
-      const nextMatch = matches[i + 1];
-      const contentEnd = nextMatch ? nextMatch.index! : text.length;
-
-      const content = text.substring(contentStart, contentEnd).trim();
-      segments.push({ title, content });
-    });
-
-    return segments;
-  };
-
-  const cleanText = (text: string): string => {
-    let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-    cleaned = cleaned
-      .replace(/\n{2,}/g, "<<<PARA>>>")
-      .replace(/([.!?。！？])\n(?=[^\s])/g, "$1<<<PARA>>>")
-      .replace(/\n/g, " ")
-      .replace(/<<<PARA>>>/g, "\n\n")
-      .replace(/  +/g, " ")
-      .trim();
-
-    return cleaned;
-  };
-
-  const processContentToHtml = (text: string) => {
-    const cleaned = cleanText(text);
-    return cleaned
-      .split("\n\n")
-      .filter((p) => p.trim())
-      .map((p) => `<p>${p.trim()}</p>`)
-      .join("");
-  };
-
   const handleImportBook = async (file: File) => {
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
 
-    let segments = splitContentByChapters(rawText);
-
-    if (!segments && rawText.length > 30000) {
-      segments = splitContentRecursively(rawText);
-    }
-
-    const hasSegments = segments && segments.length > 0;
-
     try {
-      const { _create, _setContent } = useDocumentStore.getState();
-
+      // 1. 프로젝트 생성
       const projectResponse = await projectService.create({
         title: title,
         genre: "other",
@@ -398,51 +288,34 @@ export default function LibraryPage() {
       const projectId = projectResponse.data?.id;
       if (!projectId) throw new Error("Failed to create project");
 
-      if (hasSegments) {
-        for (const segment of segments!) {
-          const folderRes = await documentService.create(projectId, {
-            type: "folder",
-            title: segment.title,
-          });
-          const folderId = folderRes.data?.id;
-          if (!folderId) continue;
+      // 2. 원고 업로드 (비동기 처리 시작)
+      const uploadResponse = await manuscriptService.upload(
+        projectId,
+        rawText,
+        file.name,
+      );
 
-          _create(mapBackendToFrontend(folderRes.data!));
-
-          const chunkHtml = processContentToHtml(segment.content);
-
-          const docRes = await documentService.create(projectId, {
-            type: "text",
-            title: "본문",
-            parentId: folderId,
-            targetWordCount: segment.content.length,
-          });
-
-          const docId = docRes.data?.id;
-          if (docId) {
-            _create(mapBackendToFrontend(docRes.data!));
-            await documentService.updateContent(docId, chunkHtml);
-            _setContent(docId, chunkHtml);
-          }
-        }
-      } else {
-        const fullContent = processContentToHtml(rawText);
-
-        const docResponse = await documentService.create(projectId, {
-          type: "text",
-          title: "본문",
-          targetWordCount: rawText.length,
-        });
-
-        const docId = docResponse.data?.id;
-        if (!docId) throw new Error("Failed to create document");
-
-        _create(mapBackendToFrontend(docResponse.data!));
-        await documentService.updateContent(docId, fullContent);
-        _setContent(docId, fullContent);
+      const jobData = uploadResponse.data;
+      if (!jobData?.jobId) {
+        throw new Error("Failed to start manuscript processing");
       }
 
-      navigate(`/projects/${projectId}/editor`);
+      // 3. Job을 store에 등록 (폴링 시작)
+      setJob(projectId, {
+        jobId: jobData.jobId,
+        status: jobData.status,
+        progress: 0,
+        message: jobData.message || "원고 업로드 시작...",
+        startedAt: Date.now(),
+      });
+
+      // 4. 프로젝트 목록 갱신 (새 프로젝트가 보이도록)
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+
+      // 5. 라이브러리에서 확인할 수 있도록 알림
+      alert(
+        `"${title}" 원고 처리가 시작되었습니다. 완료되면 알림을 받으실 수 있습니다.`,
+      );
     } catch (error) {
       console.error("Import failed:", error);
 

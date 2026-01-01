@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import {
   useDocumentStore,
@@ -170,29 +174,30 @@ export function useDocumentContent(id: string | null) {
   const queryClient = useQueryClient();
   const { _setContent } = useDocumentStore();
 
-  // Zustand store content as fallback
-  const storeContent = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : "",
-  );
-
   const {
-    data: fetchedContent,
+    data: infiniteData,
     isLoading,
     isFetching,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: documentKeys.content(id || ""),
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       if (!id) return null;
       try {
-        const response = await documentService.getContent(id);
+        const response = await documentService.getContent(id, pageParam);
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
         if (isSuccess && response.data) {
-          return response.data.content;
+          return {
+            content: response.data.content,
+            page: response.data.page,
+            totalPages: response.data.totalPages,
+          };
         }
         return null;
       } catch (error) {
-        // 404 means content not found - use local cache
         if (
           (error as { response?: { status?: number } })?.response?.status ===
           404
@@ -202,11 +207,17 @@ export function useDocumentContent(id: string | null) {
         throw error;
       }
     },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage) return undefined;
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     enabled: !!id,
-    staleTime: 0, // Always refetch to get latest content from backend
-    refetchOnMount: "always", // Force refetch when component mounts
+    staleTime: 0,
     retry: (failureCount, error) => {
-      // Don't retry on 404 errors
       if (
         (error as { response?: { status?: number } })?.response?.status === 404
       ) {
@@ -216,18 +227,21 @@ export function useDocumentContent(id: string | null) {
     },
   });
 
-  // Sync fetched content to Zustand store
-  useEffect(() => {
-    if (id && fetchedContent !== undefined && fetchedContent !== null) {
-      _setContent(id, fetchedContent);
+  // Zustand store content as fallback
+  const storeContent = useDocumentStore((state) =>
+    id ? state.documents[id]?.content || "" : "",
+  );
+
+  // Aggregate content from all pages
+  const aggregatedContent = useMemo(() => {
+    if (!infiniteData) {
+      return storeContent;
     }
-  }, [id, fetchedContent, _setContent]);
+    return infiniteData.pages.map((page) => page?.content || "").join("");
+  }, [infiniteData, storeContent]);
 
   // Use fetched content if available, otherwise fall back to store content
-  const content =
-    fetchedContent !== undefined && fetchedContent !== null
-      ? fetchedContent
-      : storeContent;
+  const content = aggregatedContent;
 
   const saveContent = useCallback(
     async (newContent: string) => {
@@ -237,9 +251,11 @@ export function useDocumentContent(id: string | null) {
         useDocumentStore.getState().documents[id]?.content || "";
 
       try {
-        _setContent(id, newContent);
+        _setContent(id, newContent); // Optimistic update
 
-        const response = await documentService.updateContent(id, newContent);
+        // For infinite scroll, saving means saving the WHOLE document (rewrite)
+        // We pass page=1 to indicate start, relying on backend to handle full update or split
+        const response = await documentService.updateContent(id, newContent, 1);
 
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
@@ -253,8 +269,9 @@ export function useDocumentContent(id: string | null) {
             },
             updatedAt: response.data.updatedAt,
           });
-          // Update react-query cache with new content to prevent stale data on re-fetch
-          queryClient.setQueryData(["document-content", id], newContent);
+
+          // Invalidate query to reset pagination to page 1 with new content structure
+          queryClient.invalidateQueries({ queryKey: documentKeys.content(id) });
         }
       } catch (error) {
         console.error("Failed to save content:", error);
@@ -268,6 +285,9 @@ export function useDocumentContent(id: string | null) {
     content,
     saveContent,
     isLoading: isLoading || isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 }
 

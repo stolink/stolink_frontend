@@ -43,6 +43,10 @@ export interface TiptapEditorProps {
   hideToolbar?: boolean;
   documentId?: string | null;
   sectionTitle?: string; // 현재 섹션 제목 (복선 위치 정보용)
+  // Infinite Scroll Props
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export interface TiptapEditorHandle {
@@ -78,6 +82,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       hideToolbar = false,
       documentId = null,
       sectionTitle = "",
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
     },
     ref,
   ) => {
@@ -194,7 +201,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }).configure({
           multicolor: true,
         }),
-        CharacterCount,
+        CharacterCount.configure({
+          // limit removed for backend paging
+        }),
         TextAlign.configure({
           types: ["heading", "paragraph"],
         }),
@@ -644,6 +653,15 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 cssVariables["--st-editor-selection-color"],
             } as React.CSSProperties
           }
+          onScroll={(e) => {
+            if (!hasNextPage || isFetchingNextPage || !fetchNextPage) return;
+
+            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+            // Trigger when near bottom (100px threshold)
+            if (scrollHeight - scrollTop <= clientHeight + 100) {
+              fetchNextPage();
+            }
+          }}
         >
           <div
             className={cn(
@@ -710,6 +728,13 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             ) : (
               <span className="text-xs text-muted-foreground">{zoom}%</span>
             )}
+          </div>
+        )}
+
+        {/* Loading Indicator for Infinite Scroll */}
+        {isFetchingNextPage && (
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-card/90 border border-border px-3 py-1 rounded-full shadow-lg text-xs font-medium animate-pulse z-50">
+            불러오는 중...
           </div>
         )}
       </div>

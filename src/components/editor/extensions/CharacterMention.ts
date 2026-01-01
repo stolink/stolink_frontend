@@ -28,12 +28,12 @@ export const CharacterMention = Mention.extend({
 
       // 캐릭터 필터링
       const characters: MentionItem[] = DEMO_CHARACTERS.filter((char) =>
-        char.name.toLowerCase().includes(lowerQuery),
+        (char.profile?.name || "").toLowerCase().includes(lowerQuery),
       ).map((char) => ({
-        id: char.id,
-        name: char.name,
+        id: char._id,
+        name: char.profile?.name || "이름 없음",
         type: "character" as const,
-        imageUrl: char.imageUrl,
+        imageUrl: undefined, // 새 스키마에 imageUrl 없음
         role: char.role,
       }));
 

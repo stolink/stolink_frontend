@@ -1,44 +1,49 @@
-import { Edit, Users, Shield, MapPin, User, Briefcase } from "lucide-react";
+import { Edit, Users, Shield, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
 import { roleLabels } from "../constants";
 
-// 기본 정보 키 (헤더에 표시할 항목)
-const BASIC_INFO_KEYS = ["나이", "성별", "출생지", "직업"];
-
 interface CharacterHeaderProps {
   character: Character;
   onEdit?: () => void;
   isEditMode?: boolean;
-  onFieldChange?: (field: keyof Character, value: unknown) => void;
+  onGenerateImage?: () => void;
+  isGeneratingImage?: boolean;
+  imageGenerationProgress?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onFieldChange?: (field: string, value: any) => void;
 }
 
 export function CharacterHeader({
   character,
   onEdit,
   isEditMode = false,
+  onGenerateImage,
+  isGeneratingImage = false,
+  imageGenerationProgress = 0,
   onFieldChange,
 }: CharacterHeaderProps) {
   const roleInfo = roleLabels[character.role || "other"];
-  const extras = character.extras as Record<string, unknown> | undefined;
 
-  // 기본 정보 추출
-  const basicInfo = BASIC_INFO_KEYS.map((key) => ({
-    key,
-    value: extras?.[key] as string | undefined,
-  })).filter((item) => item.value);
+  // 새 스키마: profile에서 정보 추출
+  const profile = character.profile;
+  const name = profile?.name || "이름 없음";
+  const age = profile?.age;
+  const gender = profile?.gender;
+  const faction = profile?.faction?.name;
+  const relationCount = character.relations?.graph?.length || 0;
 
   return (
     <div className="flex flex-col md:flex-row gap-6 items-start mb-8 border-b border-border pb-8">
       {/* Profile Image */}
-      <div className="h-28 w-28 rounded-xl shrink-0 border border-input shadow-md ring-4 ring-cloud-50 overflow-hidden bg-muted">
+      <div className="h-28 w-28 rounded-xl shrink-0 border border-input shadow-md ring-4 ring-cloud-50 overflow-hidden bg-muted relative">
         {character.imageUrl ? (
           <img
             src={character.imageUrl}
-            alt={character.name}
-            className="w-full h-full object-cover transition-all duration-300 grayscale opacity-90 hover:grayscale-0 hover:opacity-100"
+            alt={name}
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-cloud-50 to-muted">
@@ -51,6 +56,15 @@ export function CharacterHeader({
                   : "👤"}
           </div>
         )}
+        {/* Image generation overlay */}
+        {isGeneratingImage && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+            <Sparkles className="h-6 w-6 animate-pulse text-purple-300 mb-1" />
+            <span className="text-xs font-mono text-white font-bold">
+              {imageGenerationProgress}%
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Character Info */}
@@ -60,14 +74,16 @@ export function CharacterHeader({
             <div className="flex items-center gap-3 mb-2">
               {isEditMode ? (
                 <Input
-                  value={character.name}
-                  onChange={(e) => onFieldChange?.("name", e.target.value)}
+                  value={name}
+                  onChange={(e) =>
+                    onFieldChange?.("profile.name", e.target.value)
+                  }
                   className="text-2xl font-bold h-10 w-64"
                   placeholder="캐릭터 이름"
                 />
               ) : (
                 <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                  {character.name}
+                  {name}
                 </h1>
               )}
               <span
@@ -80,57 +96,86 @@ export function CharacterHeader({
               </span>
             </div>
 
-            {/* 기본 정보 (나이, 성별, 출생지, 직업) */}
-            {basicInfo.length > 0 && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
-                {basicInfo.map(({ key, value }) => (
-                  <span key={key} className="flex items-center gap-1">
-                    {key === "나이" && <User className="h-3 w-3" />}
-                    {key === "출생지" && <MapPin className="h-3 w-3" />}
-                    {key === "직업" && <Briefcase className="h-3 w-3" />}
-                    <span className="text-foreground font-medium">{value}</span>
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* 기본 정보 (나이, 성별) */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
+              {age && (
+                <span className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  <span className="text-foreground font-medium">{age}세</span>
+                </span>
+              )}
+              {gender && (
+                <span className="flex items-center gap-1">
+                  <span className="text-foreground font-medium">{gender}</span>
+                </span>
+              )}
+            </div>
 
             <p className="text-xs text-muted-foreground">
               마지막 업데이트:{" "}
-              {new Date(character.updatedAt).toLocaleDateString("ko-KR")}
+              {character.meta?.updated_at
+                ? new Date(character.meta.updated_at).toLocaleDateString(
+                    "ko-KR",
+                  )
+                : "알 수 없음"}
             </p>
           </div>
-          {onEdit && !isEditMode && (
-            <Button
-              variant="outline"
-              onClick={onEdit}
-              className="gap-2 shadow-sm"
-              size="sm"
-            >
-              <Edit className="h-3.5 w-3.5" />
-              수정
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {onEdit && !isEditMode && (
+              <Button
+                variant="outline"
+                onClick={onEdit}
+                className="gap-2 shadow-sm"
+                size="sm"
+              >
+                <Edit className="h-3.5 w-3.5" />
+                수정
+              </Button>
+            )}
+            {onGenerateImage && !isEditMode && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  console.log(
+                    "[CharacterHeader] Generate Image button clicked",
+                  );
+                  console.log(
+                    "[CharacterHeader] isGeneratingImage:",
+                    isGeneratingImage,
+                  );
+                  console.log(
+                    "[CharacterHeader] onGenerateImage exists:",
+                    !!onGenerateImage,
+                  );
+                  onGenerateImage();
+                }}
+                disabled={isGeneratingImage}
+                className="gap-2 shadow-sm"
+                size="sm"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {isGeneratingImage ? "생성 중..." : "이미지 생성"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Character Quick Info - Faction & Relation Count */}
         <div className="mt-4 flex flex-wrap gap-3">
-          {character.faction && (
+          {faction && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-cloud-50 rounded-md border border-input text-sm">
               <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium text-foreground">{faction}</span>
+            </div>
+          )}
+          {relationCount > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-cloud-50 rounded-md border border-input text-sm">
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="font-medium text-foreground">
-                {character.faction}
+                {relationCount}개의 관계
               </span>
             </div>
           )}
-          {typeof character.relationCount === "number" &&
-            character.relationCount > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-cloud-50 rounded-md border border-input text-sm">
-                <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="font-medium text-foreground">
-                  {character.relationCount}개의 관계
-                </span>
-              </div>
-            )}
         </div>
       </div>
     </div>

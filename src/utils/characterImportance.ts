@@ -250,30 +250,25 @@ export function calculateNarrativeExposure(
 export function calculateAttributeScore(character: Character): number {
   let score = 0;
 
-  // 기본 필드 체크 (있으면 점수 부여)
-  if (character.imageUrl) score += 10;
-  if (character.faction) score += 10;
+  // 기본 필드 체크 (있으면 점수 부여) - 새 스키마에는 imageUrl 없음
+  if (character.profile?.faction?.name) score += 10;
 
-  // extras 필드 밀도
-  if (character.extras) {
-    const extrasValues = Object.values(character.extras);
-    score += Math.min(extrasValues.length * 5, 30); // 최대 30점
-
-    // 텍스트 길이 기반 점수 (backstory, description 등)
-    extrasValues.forEach((value) => {
-      if (typeof value === "string" && value.length > 50) {
-        score += Math.min(value.length / 100, 10); // 최대 10점
-      }
-      // 배열 길이 (traits, catchphrases 등)
-      if (Array.isArray(value)) {
-        score += Math.min(value.length * 2, 10); // 최대 10점
-      }
-    });
+  // personality 필드 밀도
+  if (character.personality) {
+    const { core_traits, flaws, values } = character.personality;
+    const totalItems =
+      (core_traits?.length || 0) + (flaws?.length || 0) + (values?.length || 0);
+    score += Math.min(totalItems * 3, 30); // 최대 30점
   }
 
-  // 관계 수 반영
-  if (character.relationships?.length > 0) {
-    score += Math.min(character.relationships.length * 3, 20); // 최대 20점
+  // profile.backstory 길이 기반 점수
+  if (character.profile?.backstory && character.profile.backstory.length > 50) {
+    score += Math.min(character.profile.backstory.length / 100, 10); // 최대 10점
+  }
+
+  // 관계 수 반영 (새 스키마: relations.graph)
+  if (character.relations?.graph?.length ?? 0 > 0) {
+    score += Math.min((character.relations?.graph?.length ?? 0) * 3, 20); // 최대 20점
   }
 
   // 0-100으로 정규화
@@ -306,10 +301,10 @@ export function calculateImportanceScoreFast(
   weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance {
   const networkScore = calculateNetworkImportanceWithIndex(
-    character.id,
+    character._id,
     linkIndex,
   );
-  const narrativeScore = calculateNarrativeExposure(character.id, scenes);
+  const narrativeScore = calculateNarrativeExposure(character._id, scenes);
   const attributeScore = calculateAttributeScore(character);
   const roleScore = calculateRoleWeight(character.role);
 
@@ -320,8 +315,8 @@ export function calculateImportanceScoreFast(
     roleScore * weights.role;
 
   return {
-    id: character.id,
-    name: character.name,
+    id: character._id,
+    name: character.profile?.name || "Unknown",
     score: Math.round(finalScore * 10) / 10,
     networkScore: Math.round(networkScore * 10) / 10,
     narrativeScore: Math.round(narrativeScore * 10) / 10,
@@ -339,8 +334,8 @@ export function calculateImportanceScore(
   scenes: SceneData[] = [],
   weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance {
-  const networkScore = calculateNetworkImportance(character.id, links);
-  const narrativeScore = calculateNarrativeExposure(character.id, scenes);
+  const networkScore = calculateNetworkImportance(character._id, links);
+  const narrativeScore = calculateNarrativeExposure(character._id, scenes);
   const attributeScore = calculateAttributeScore(character);
   const roleScore = calculateRoleWeight(character.role);
 
@@ -351,8 +346,8 @@ export function calculateImportanceScore(
     roleScore * weights.role;
 
   return {
-    id: character.id,
-    name: character.name,
+    id: character._id,
+    name: character.profile?.name || "Unknown",
     score: Math.round(finalScore * 10) / 10,
     networkScore: Math.round(networkScore * 10) / 10,
     narrativeScore: Math.round(narrativeScore * 10) / 10,

@@ -58,7 +58,7 @@ export function NetworkDetailPanelD3({
     const targetId =
       typeof link.target === "string" ? link.target : link.target.id;
     return (
-      sourceId === selectedCharacter.id || targetId === selectedCharacter.id
+      sourceId === selectedCharacter._id || targetId === selectedCharacter._id
     );
   });
 
@@ -85,12 +85,12 @@ export function NetworkDetailPanelD3({
 
         <div className="flex items-center gap-4">
           {/* Profile Image */}
-          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center text-2xl border border-stone-200 shadow-sm">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center text-2xl border border-stone-200 shadow-sm overflow-hidden">
             {selectedCharacter.imageUrl ? (
               <img
                 src={selectedCharacter.imageUrl}
-                alt={selectedCharacter.name}
-                className="w-full h-full object-cover rounded-xl"
+                alt={selectedCharacter.profile?.name || ""}
+                className="w-full h-full object-cover"
               />
             ) : selectedCharacter.role === "protagonist" ? (
               "🦸"
@@ -104,11 +104,11 @@ export function NetworkDetailPanelD3({
           </div>
           <div>
             <h3 className="text-xl font-bold text-stone-900 tracking-tight">
-              {selectedCharacter.name}
+              {selectedCharacter.profile?.name || "이름 없음"}
             </h3>
-            {selectedCharacter.faction && (
+            {selectedCharacter.profile?.faction?.name && (
               <p className="text-sm text-stone-500">
-                {selectedCharacter.faction}
+                {selectedCharacter.profile.faction.name}
               </p>
             )}
           </div>
@@ -155,8 +155,8 @@ export function NetworkDetailPanelD3({
                     ? link.target
                     : link.target.id;
                 const otherId =
-                  sourceId === selectedCharacter.id ? targetId : sourceId;
-                const otherChar = characters.find((c) => c.id === otherId);
+                  sourceId === selectedCharacter._id ? targetId : sourceId;
+                const otherChar = characters.find((c) => c._id === otherId);
                 const relType = link.type;
 
                 return (
@@ -164,12 +164,12 @@ export function NetworkDetailPanelD3({
                     key={link.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-stone-50 hover:bg-stone-100 transition-colors cursor-pointer border border-transparent hover:border-stone-200"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-base border border-stone-200 shadow-sm">
+                    <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-base border border-stone-200 shadow-sm overflow-hidden">
                       {otherChar?.imageUrl ? (
                         <img
                           src={otherChar.imageUrl}
-                          alt={otherChar.name}
-                          className="w-full h-full object-cover rounded-lg"
+                          alt={otherChar.profile?.name || ""}
+                          className="w-full h-full object-cover"
                         />
                       ) : otherChar?.role === "antagonist" ? (
                         "🦹"
@@ -181,7 +181,7 @@ export function NetworkDetailPanelD3({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm text-stone-800 truncate">
-                        {otherChar?.name}
+                        {otherChar?.profile?.name || "이름 없음"}
                       </div>
                       <Badge
                         variant="outline"

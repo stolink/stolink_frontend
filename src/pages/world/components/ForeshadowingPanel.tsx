@@ -5,6 +5,7 @@ import { useForeshadowingStore } from "@/stores";
 import type { Foreshadowing } from "@/types";
 import { Sparkles, CheckCircle, MapPin, ArrowRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyIndicator } from "./EmptyIndicator";
 
 interface ForeshadowingPanelProps {
   projectId: string;
@@ -150,31 +151,21 @@ export function ForeshadowingPanel({
       {/* 메인 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto p-6">
         {foreshadowings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20 bg-white/40 rounded-2xl border border-dashed border-stone-200">
-            <div
-              className={cn(
-                "w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-stone-100",
+          <div className="h-full flex items-center justify-center">
+            <EmptyIndicator
+              icon={activeStatus === "pending" ? Sparkles : CheckCircle}
+              title={
                 activeStatus === "pending"
-                  ? "bg-mocha-50"
-                  : "bg-sage-50 text-sage-600",
-              )}
-            >
-              {activeStatus === "pending" ? (
-                <Sparkles className="w-8 h-8 text-mocha-400" />
-              ) : (
-                <CheckCircle className="w-8 h-8 text-sage-400" />
-              )}
-            </div>
-            <h3 className="text-lg font-semibold text-stone-700 mb-2">
-              {activeStatus === "pending"
-                ? "미회수 복선이 없습니다"
-                : "회수 완료된 복선이 없습니다"}
-            </h3>
-            <p className="text-stone-500 max-w-md text-sm leading-relaxed px-6">
-              {activeStatus === "pending"
-                ? "에디터에서 # 태그를 입력해 새로운 복선을 기록해보세요."
-                : "미회수 복선을 회수 처리하면 이곳에서 상세한 회수 내역을 확인할 수 있습니다."}
-            </p>
+                  ? "미회수 복선이 없습니다"
+                  : "회수 완료된 복선이 없습니다"
+              }
+              description={
+                activeStatus === "pending"
+                  ? "에디터에서 # 태그를 입력해 새로운 복선을 기록해보세요."
+                  : "미회수 복선을 회수 처리하면 이곳에서 상세한 회수 내역을 확인할 수 있습니다."
+              }
+              className="w-full"
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-start">

@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiResponse } from "@/types/api";
 
 import { useNavigate } from "react-router-dom";
-import { authService, type User } from "@/services/authService";
+import {
+  authService,
+  type User,
+  type AuthResponse,
+} from "@/services/authService";
 import { useAuthStore } from "@/stores";
 
 // Query Keys
@@ -15,7 +19,6 @@ export const authKeys = {
  */
 export function useRegister() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   return useMutation({
     mutationFn: (payload: {
@@ -28,12 +31,10 @@ export function useRegister() {
       const isSuccess =
         response.success || response.status === "OK" || response.code === 200;
 
-      if (isSuccess && response.data) {
-        // Response data is the User object directly
-        const user = response.data;
-        // Tokens are handled via cookies, so pass empty strings
-        setAuth(user, "", "");
-        navigate("/library");
+      if (isSuccess) {
+        // 회원가입 성공 시 로그인 페이지로 이동
+        alert("회원가입이 완료되었습니다. 로그인해주세요.");
+        navigate("/auth?tab=login");
       }
     },
   });
@@ -49,16 +50,14 @@ export function useLogin() {
   return useMutation({
     mutationFn: (payload: { email: string; password: string }) =>
       authService.login(payload),
-    onSuccess: (response: ApiResponse<User>) => {
+    onSuccess: (response: ApiResponse<AuthResponse>) => {
       // Check for success via boolean, string status code, or HTTP numeric code
       const isSuccess =
         response.success || response.status === "OK" || response.code === 200;
 
       if (isSuccess && response.data) {
-        // Response data is the User object directly
-        const user = response.data;
-        // Tokens are handled via cookies, so pass empty strings or nulls if store allows
-        setAuth(user, "", "");
+        const { user, accessToken, refreshToken } = response.data;
+        setAuth(user, accessToken, refreshToken);
         navigate("/library");
       }
     },

@@ -15,66 +15,55 @@ export function generateLinksFromCharacters(
   const links: RelationshipLink[] = [];
   const linkSet = new Set<string>();
 
-  // 관계 문자열에서 RelationType 추출
-  const getRelationType = (relString: string): RelationType => {
+  // 관계 타입 문자열에서 RelationType 추출 (새 스키마의 relation_type 값 매핑)
+  const getRelationType = (relType: string): RelationType => {
+    const normalized = relType?.toLowerCase() || "";
     // 적대 관계
     if (
-      relString.includes("적대자") ||
-      relString.includes("원수") ||
-      relString.includes("질투") ||
-      relString.includes("추적") ||
-      relString.includes("적")
+      normalized.includes("hostile") ||
+      normalized.includes("enemy") ||
+      normalized.includes("rival")
     ) {
       return "hostile";
     }
     // 연인 관계
-    if (
-      relString.includes("연인") ||
-      relString.includes("짝사랑") ||
-      relString.includes("사랑")
-    ) {
+    if (normalized.includes("romantic") || normalized.includes("love")) {
       return "romantic";
     }
-    // 나머지는 친구 관계 (가족, 동료, 멘토 등 포함)
+    // 나머지는 친구 관계 (family, ally, mentor 등 포함)
     return "friendly";
   };
 
   characters.forEach((sourceChar) => {
-    const relationships = sourceChar.extras?.["관계"] as string[] | undefined;
-    if (!relationships) return;
+    const relationships = sourceChar.relations?.graph;
+    if (!relationships || relationships.length === 0) return;
 
-    relationships.forEach((relStr) => {
-      // '이름 (관계)' 파싱
-      const match = relStr.match(/^(.+?)\s*\((.+?)\)$/);
-      if (!match) return;
-
-      const targetName = match[1].trim();
-      const relationLabel = match[2].trim();
+    relationships.forEach((rel) => {
+      // 새 스키마: CharacterRelation 객체 사용
+      const targetId = rel.target;
 
       const targetChar = characters.find(
-        (c) =>
-          c.name.includes(targetName) ||
-          targetName.includes(c.name.split(" ")[0]),
+        (c) => c._id === targetId || c.profile?.name === targetId,
       );
 
       if (targetChar) {
         // 엣지 중복 방지 (양방향 하나만)
-        const sId = sourceChar.id;
-        const tId = targetChar.id;
+        const sId = sourceChar._id;
+        const tId = targetChar._id;
         const linkKey = sId < tId ? `${sId}-${tId}` : `${tId}-${sId}`;
 
         if (linkSet.has(linkKey)) return;
         linkSet.add(linkKey);
 
-        const relType = getRelationType(relationLabel);
+        const relType = getRelationType(rel.relation_type);
 
         links.push({
           id: `link-${sId}-${tId}`,
           source: sId,
           target: tId,
           type: relType,
-          strength: 5, // 기본값
-          label: relationLabel,
+          strength: rel.strength ?? 5,
+          label: rel.description || rel.relation_type,
         });
       }
     });
