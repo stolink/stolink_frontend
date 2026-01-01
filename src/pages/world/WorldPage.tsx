@@ -24,14 +24,16 @@ import { CharacterSearchOverlay } from "@/components/CharacterGraph/CharacterSea
 
 // Hooks
 import { useCharacters } from "@/hooks/useCharacters";
-
-// Utils
-// extractRelationshipLinks removed (replaced by useRelationshipLinks hook)
+import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Components
 import { NetworkControlsD3 } from "./components/NetworkControlsD3";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
+import { EmptyIndicator } from "./components/EmptyIndicator";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 // Mock Places
 const places = [
@@ -53,11 +55,41 @@ export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Fetch Characters
   // projectId is guaranteed to be string here
-  const { data: characters = [], isLoading } = useCharacters(projectId || "", {
+  const { data: characters = [] } = useCharacters(projectId || "", {
     enabled: !!projectId,
   });
+
+  const queryClient = useQueryClient();
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+
+  // Polling for analysis status
+  const { progress, isPolling } = useAIJobPolling(currentJobId, {
+    onComplete: () => {
+      // 분석 완료 시 데이터 리프레시
+      queryClient.invalidateQueries({
+        queryKey: ["characters", "list", projectId],
+      });
+      setCurrentJobId(null);
+    },
+  });
+
+  const analyzeMutation = useAnalyzeStory();
+
+  const handleStartAnalysis = async () => {
+    if (!projectId) return;
+    try {
+      const result = await analyzeMutation.mutateAsync({
+        projectId,
+        documentIds: [], // Empty means analyze all for now
+      });
+      if (result.data?.jobId) {
+        setCurrentJobId(result.data.jobId);
+      }
+    } catch (err) {
+      console.error("Analysis failed:", err);
+    }
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
@@ -178,30 +210,38 @@ export default function WorldPage() {
   };
 
   const enrichCharacterWithMockData = (character: Character): Character => {
-    const mockExtras = MOCK_EXTRAS[character.id];
+    const mockExtras = MOCK_EXTRAS[character._id];
     if (!mockExtras) return character;
 
     return {
       ...character,
-      extras: {
-        ...character.extras,
-        ...mockExtras,
-      },
+      // Note: extras doesn't exist in new schema, keep as-is for demo compatibility
     };
   };
 
   const handleNodeClick = (character: Character) => {
+    console.log(
+      "[WorldPage] Node clicked:",
+      character._id,
+      character.profile?.name,
+    );
     const enrichedChar = enrichCharacterWithMockData(character);
     const nextChar =
-      selectedCharacter?.id === enrichedChar.id ? null : enrichedChar;
+      selectedCharacter?._id === enrichedChar._id ? null : enrichedChar;
     setSelectedCharacter(nextChar);
-    setGraphFocusId(nextChar?.id || null);
+    setGraphFocusId(nextChar?._id || null);
+
+    // Open modal when clicking a node (not when deselecting)
+    if (nextChar) {
+      console.log("[WorldPage] Opening modal for character:", nextChar._id);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCardClick = (character: Character) => {
     const enrichedChar = enrichCharacterWithMockData(character);
     setSelectedCharacter(enrichedChar);
-    setGraphFocusId(enrichedChar.id);
+    setGraphFocusId(enrichedChar._id);
     setIsModalOpen(true);
   };
 
@@ -291,22 +331,9 @@ export default function WorldPage() {
     setSelectedRelationship(detailedRel);
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">
-            캐릭터 데이터를 불러오는 중...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const handleSearchSelect = async (character: Character) => {
     // 1. 그래프 하이라이팅 즉시 적용 (가벼움)
-    setGraphFocusId(character.id);
+    setGraphFocusId(character._id);
 
     // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
     await new Promise((resolve) =>
@@ -315,7 +342,7 @@ export default function WorldPage() {
 
     // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
     if (graphRef.current) {
-      await graphRef.current.focusNode(character.id);
+      await graphRef.current.focusNode(character._id);
     }
 
     // 3. 애니메이션 종료 후 상세 패널 표시 (무거운 리렌더링 지연)
@@ -355,149 +382,258 @@ export default function WorldPage() {
         </div>
 
         {/* Character Graph - D3.js */}
-        <TabsContent value="graph" className="flex-1 m-0 overflow-hidden">
-          <div className="h-full w-full relative">
-            {/* Search Overlay */}
-            <CharacterSearchOverlay
-              characters={characters}
-              onSelect={handleSearchSelect}
-              onSearch={setSearchHighlightedIds}
-            />
+        <TabsContent
+          value="graph"
+          className="flex-1 m-0 overflow-hidden relative"
+        >
+          {characters.length === 0 && !isPolling ? (
+            <div className="h-full flex items-center justify-center p-6">
+              <EmptyIndicator
+                icon={Users}
+                title="관계도 데이터가 없습니다"
+                description="아직 추출된 캐릭터가 없습니다. 세계관 분석을 시작하여 자동으로 관계도를 생성해보세요."
+                action={
+                  <Button
+                    onClick={handleStartAnalysis}
+                    className="bg-mocha-500 hover:bg-mocha-600 text-white"
+                    disabled={analyzeMutation.isPending}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    세계관 분석 시작하기
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="h-full w-full relative">
+              {/* Polling Indicator for Graph */}
+              {isPolling && (
+                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+                  <Card className="w-[320px] shadow-xl border-mocha-100">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-mocha-600">
+                        <div className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
+                        세계관 인공지능 분석 중...
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Progress value={progress} className="h-2" />
+                      <p className="text-xs text-center text-muted-foreground animate-pulse">
+                        본문에서 캐릭터와 관계를 추출하고 있습니다 ({progress}%)
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
-            {/* Controls & Legend */}
-            <NetworkControlsD3
-              relationTypeFilter={relationTypeFilter}
-              onFilterChange={setRelationTypeFilter}
-            />
+              {/* Search Overlay */}
+              <CharacterSearchOverlay
+                characters={characters}
+                onSelect={handleSearchSelect}
+                onSearch={setSearchHighlightedIds}
+              />
 
-            {/* Detail Sidebar */}
-            <NetworkDetailPanelD3
-              selectedCharacter={selectedCharacter}
-              characters={characters}
-              links={links}
-              onClose={() => setSelectedCharacter(null)}
-              onViewProfile={() => setIsModalOpen(true)}
-            />
+              {/* Controls & Legend */}
+              <NetworkControlsD3
+                relationTypeFilter={relationTypeFilter}
+                onFilterChange={setRelationTypeFilter}
+              />
 
-            {/* D3 CharacterGraph */}
-            <CharacterGraph
-              characters={characters}
-              links={links}
-              onNodeClick={handleNodeClick}
-              onLinkClick={handleLinkClick}
-              selectedNodeId={graphFocusId || selectedCharacter?.id || null}
-              relationTypeFilter={relationTypeFilter}
-              highlightedNodeIds={searchHighlightedIds}
-              ref={graphRef}
-            />
-          </div>
+              {/* Detail Sidebar */}
+              <NetworkDetailPanelD3
+                selectedCharacter={selectedCharacter}
+                characters={characters}
+                links={links}
+                onClose={() => setSelectedCharacter(null)}
+                onViewProfile={() => setIsModalOpen(true)}
+              />
+
+              {/* D3 CharacterGraph */}
+              <CharacterGraph
+                characters={characters}
+                links={links}
+                onNodeClick={handleNodeClick}
+                onLinkClick={handleLinkClick}
+                selectedNodeId={graphFocusId || selectedCharacter?._id || null}
+                relationTypeFilter={relationTypeFilter}
+                highlightedNodeIds={searchHighlightedIds}
+                ref={graphRef}
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* Characters List */}
         <TabsContent value="characters" className="flex-1 m-0 overflow-y-auto">
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {characters.map((character) => (
-              <Card
-                key={character.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow group"
-                onClick={() => handleCardClick(character)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
-                    {character.imageUrl ? (
-                      <div className="h-12 w-12 rounded-full overflow-hidden border border-input bg-muted shrink-0">
-                        <img
-                          src={character.imageUrl}
-                          alt={character.name}
-                          className="w-full h-full object-cover grayscale opacity-90 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100"
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-3xl flex items-center justify-center w-12 h-12 bg-cloud-50 rounded-full">
-                        {character.role === "protagonist"
-                          ? "🦸"
-                          : character.role === "antagonist"
-                            ? "🦹"
-                            : character.role === "mentor"
-                              ? "🧙"
-                              : "👤"}
-                      </span>
-                    )}
-                    <div>
-                      <CardTitle className="text-lg">
-                        {character.name}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {roleLabels[character.role || "other"]}
-                      </p>
-                    </div>
+          {characters.length === 0 && !isPolling ? (
+            <div className="h-full flex items-center justify-center p-6 pb-20">
+              <EmptyIndicator
+                icon={Users}
+                title="등록된 캐릭터가 없습니다"
+                description="스토리 속에 등장하는 캐릭터들을 AI가 자동으로 찾아드립니다."
+                action={
+                  <Button
+                    onClick={handleStartAnalysis}
+                    className="bg-mocha-500 hover:bg-mocha-600 text-white"
+                    disabled={analyzeMutation.isPending}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    캐릭터 추출하기
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="relative min-h-full">
+              {/* Polling Indicator for List */}
+              {isPolling && (
+                <div className="sticky top-0 z-50 px-6 py-4 bg-mocha-50/80 backdrop-blur-sm border-b border-mocha-100 flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1 max-w-xl">
+                    <span className="text-xs font-bold text-mocha-600 whitespace-nowrap shrink-0">
+                      분석 진행도 ({progress}%)
+                    </span>
+                    <Progress
+                      value={progress}
+                      className="h-1.5 flex-1 bg-white/50"
+                    />
                   </div>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  {Object.entries(character.extras || {})
-                    .slice(0, 2)
-                    .map(([key, value]) => (
-                      <p key={key}>
-                        {key}: {String(value)}
-                      </p>
-                    ))}
-                  {Object.keys(character.extras || {}).length > 2 && (
-                    <p className="text-xs text-mocha-500">
-                      +{Object.keys(character.extras || {}).length - 2}개 항목
-                      더보기
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <span className="text-[10px] text-mocha-400 animate-pulse ml-4">
+                    데이터가 곧 업데이트됩니다...
+                  </span>
+                </div>
+              )}
+
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {characters.map((character, index) => (
+                  <Card
+                    key={
+                      character._id ||
+                      (character as { id?: string }).id ||
+                      `char-${index}`
+                    }
+                    className="cursor-pointer hover:shadow-lg transition-shadow group"
+                    onClick={() => handleCardClick(character)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-3">
+                        {character.imageUrl ? (
+                          <div className="h-12 w-12 rounded-full overflow-hidden border border-input bg-muted shrink-0">
+                            <img
+                              src={character.imageUrl}
+                              alt={character.profile?.name || ""}
+                              className="w-full h-full object-cover grayscale opacity-90 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-3xl flex items-center justify-center w-12 h-12 bg-cloud-50 rounded-full">
+                            {character.role === "protagonist"
+                              ? "🦸"
+                              : character.role === "antagonist"
+                                ? "🦹"
+                                : character.role === "mentor"
+                                  ? "🧙"
+                                  : "👤"}
+                          </span>
+                        )}
+                        <div>
+                          <CardTitle className="text-lg">
+                            {character.profile?.name ||
+                              (character as { name?: string }).name ||
+                              "이름 없음"}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {roleLabels[character.role || "other"]}
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="text-sm text-muted-foreground">
+                      {(character.profile?.backstory ||
+                        (character as { backstory?: string }).backstory) && (
+                        <p className="line-clamp-2">
+                          {character.profile?.backstory ||
+                            (character as { backstory?: string }).backstory}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Places */}
         <TabsContent value="places" className="flex-1 m-0 overflow-y-auto">
-          <div className="p-6 space-y-2 max-w-4xl mx-auto">
-            {places.map((place) => (
-              <Card key={place.id} className="cursor-pointer hover:bg-cloud-50">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-mocha-500" />
-                    <div>
-                      <p className="font-medium">{place.name}</p>
+          <div className="p-6 max-w-4xl mx-auto h-full">
+            {places.length === 0 ? (
+              <EmptyIndicator
+                icon={MapPin}
+                title="등록된 장소가 없습니다"
+                description="스토리의 배경이 되는 주요 장소들을 기록해보세요."
+              />
+            ) : (
+              <div className="space-y-2">
+                {places.map((place) => (
+                  <Card
+                    key={place.id}
+                    className="cursor-pointer hover:bg-cloud-50 transition-colors"
+                  >
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-mocha-500" />
+                        <div>
+                          <p className="font-medium">{place.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {place.type}
+                          </p>
+                        </div>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {place.type}
+                        등장: {place.chapters.join(", ")}장
                       </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    등장: {place.chapters.join(", ")}장
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </TabsContent>
 
         {/* Items */}
         <TabsContent value="items" className="flex-1 m-0 overflow-y-auto">
-          <div className="p-6 space-y-2 max-w-4xl mx-auto">
-            {items.map((item) => (
-              <Card key={item.id} className="cursor-pointer hover:bg-cloud-50">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Sword className="h-5 w-5 text-mocha-500" />
-                    <div>
-                      <p className="font-medium">{item.name}</p>
+          <div className="p-6 max-w-4xl mx-auto h-full">
+            {items.length === 0 ? (
+              <EmptyIndicator
+                icon={Sword}
+                title="등록된 아이템이 없습니다"
+                description="전설의 무기나 중요한 단서가 되는 물건들을 관리해보세요."
+              />
+            ) : (
+              <div className="space-y-2">
+                {items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="cursor-pointer hover:bg-cloud-50 transition-colors"
+                  >
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Sword className="h-5 w-5 text-mocha-500" />
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.type}
+                          </p>
+                        </div>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {item.type}
+                        소유: {item.owner}
                       </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    소유: {item.owner}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -529,11 +665,33 @@ export default function WorldPage() {
         isOpen={!!selectedRelationship}
         onClose={() => setSelectedRelationship(null)}
         sourceName={
-          characters.find((c) => c.id === selectedRelationship?.source)?.name ||
+          characters.find(
+            (c) =>
+              (c._id || (c as { id?: string }).id) ===
+              selectedRelationship?.source,
+          )?.profile?.name ||
+          (
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.source,
+            ) as { name?: string }
+          )?.name ||
           selectedRelationship?.source
         }
         targetName={
-          characters.find((c) => c.id === selectedRelationship?.target)?.name ||
+          characters.find(
+            (c) =>
+              (c._id || (c as { id?: string }).id) ===
+              selectedRelationship?.target,
+          )?.profile?.name ||
+          (
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.target,
+            ) as { name?: string }
+          )?.name ||
           selectedRelationship?.target
         }
       />
