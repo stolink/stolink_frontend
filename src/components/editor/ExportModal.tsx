@@ -229,11 +229,11 @@ export default function ExportModal({
         graph: includeGraph
           ? {
               nodes: characters.map((c) => ({
-                id: c.id,
-                name: c.name,
+                id: c._id,
+                name: c.profile?.name || "이름 없음",
                 role: c.role,
-                group: c.faction,
-                imageUrl: c.imageUrl,
+                group: c.profile?.faction?.name || "무소속",
+                imageUrl: undefined, // 새 스키마에 imageUrl 없음
               })),
               links,
             }

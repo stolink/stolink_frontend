@@ -241,9 +241,13 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // ============================================================
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
-  const { content: documentContent, saveContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
-  );
+  const {
+    content: documentContent,
+    saveContent,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useDocumentContent(isDemo ? null : selectedSectionId);
 
   // Fetch Characters for Export/Publish Snapshot
   const { data: characters = [] } = useCharacters(projectId, {
@@ -264,20 +268,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     const processedLinkIds = new Set<string>();
 
     characters.forEach((char) => {
-      char.relationships.forEach((rel) => {
-        // Avoid duplicates if using stable IDs (assuming rel.id is unique across usage)
-        // Adjust logic as needed based on BackendRelationship structure
-        if (processedLinkIds.has(String(rel.id))) return;
-        processedLinkIds.add(String(rel.id));
+      const relGraph = char.relations?.graph || [];
+      relGraph.forEach((rel) => {
+        // Use source from relation or fallback to char._id
+        const sourceId = rel.source || char._id;
+        const linkId = `${sourceId}-${rel.target}`;
 
-        const targetId =
-          typeof rel.target === "object"
-            ? (rel.target as { id: string }).id
-            : rel.target;
+        if (processedLinkIds.has(linkId)) return;
+        processedLinkIds.add(linkId);
+
         links.push({
-          source: char.id,
-          ...rel,
-          target: targetId, // Explicitly overwrite target after spreading rel
+          source: sourceId,
+          target: rel.target,
+          id: linkId,
+          type: rel.relation_type,
+          strength: rel.strength,
         });
       });
     });
@@ -714,6 +719,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               }}
               documents={documents}
               isDemo={isDemo}
+              fetchNextPage={fetchNextPage}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
             />
           </div>
 

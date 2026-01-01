@@ -10,9 +10,9 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
   const id = node.attrs.id as string;
   const label = node.attrs.label as string;
 
-  // Find character data from DEMO_CHARACTERS
+  // Find character data from DEMO_CHARACTERS (new schema: _id, profile.name)
   const character = DEMO_CHARACTERS.find(
-    (c) => c.id === id || c.name === label,
+    (c) => c._id === id || c.profile?.name === label,
   );
 
   // Find item data from DEMO_ITEMS (if not a character)
@@ -24,10 +24,10 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
   const isItem = !!item;
   const isCharacter = !!character;
 
-  // Extract extras data for display (character only)
-  const description = character?.extras?.설명 as string | undefined;
-  const age = character?.extras?.나이 as number | undefined;
-  const traits = character?.extras?.성격 as string[] | undefined;
+  // Extract data for display (new schema: personality, profile)
+  const description = character?.profile?.backstory;
+  const age = character?.profile?.age;
+  const traits = character?.personality?.core_traits;
 
   // 아이템용 호버 카드 컨텐츠
   const itemDescription = item?.extras?.설명 as string | undefined;
@@ -52,12 +52,12 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
         content={
           isCharacter && character ? (
             <CharacterHoverCard
-              name={character.name}
+              name={character.profile?.name || "이름 없음"}
               role={character.role ?? "기타"}
               description={description}
-              age={age}
+              age={age ?? undefined}
               trait={traits?.[0]}
-              avatar={character.imageUrl}
+              avatar={undefined} // 새 스키마에 imageUrl 없음
             />
           ) : isItem ? (
             itemHoverContent

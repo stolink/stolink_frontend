@@ -121,8 +121,13 @@ const ForeshadowingPanel = ({
 
     const names = relatedIds
       .map((id) => {
-        const char = DEMO_CHARACTERS.find((c) => c.id === id);
-        if (char) return { id, name: char.name, type: "character" as const };
+        const char = DEMO_CHARACTERS.find((c) => c._id === id);
+        if (char)
+          return {
+            id,
+            name: char.profile?.name || "Unknown",
+            type: "character" as const,
+          };
         const item = DEMO_ITEMS.find((i) => i.id === id);
         if (item) return { id, name: item.name, type: "item" as const };
         return null;
@@ -150,8 +155,14 @@ const ForeshadowingPanel = ({
     }
 
     const characters = DEMO_CHARACTERS.filter(
-      (c) => !currentIds.includes(c.id) && c.name.toLowerCase().includes(query),
-    ).map((c) => ({ id: c.id, name: c.name, type: "character" as const }));
+      (c) =>
+        !currentIds.includes(c._id) &&
+        (c.profile?.name || "").toLowerCase().includes(query),
+    ).map((c) => ({
+      id: c._id,
+      name: c.profile?.name || "Unknown",
+      type: "character" as const,
+    }));
     const items = DEMO_ITEMS.filter(
       (i) => !currentIds.includes(i.id) && i.name.toLowerCase().includes(query),
     ).map((i) => ({ id: i.id, name: i.name, type: "item" as const }));

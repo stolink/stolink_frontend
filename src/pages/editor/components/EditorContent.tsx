@@ -31,6 +31,10 @@ interface EditorContentProps {
   onSynopsisUpdate?: (id: string, synopsis: string) => void; // 개요 뷰에서 시놉시스 편집
   documents: Document[];
   isDemo: boolean;
+  // Infinite Scroll Props
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export interface EditorContentHandle {
@@ -72,6 +76,9 @@ export const EditorContent = forwardRef<
       onSynopsisUpdate,
       documents,
       isDemo,
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
     },
     ref,
   ) => {
@@ -158,6 +165,9 @@ export const EditorContent = forwardRef<
                   documentId={selectedSectionId}
                   sectionTitle={currentSectionTitle}
                   hideToolbar={isFocusMode}
+                  fetchNextPage={fetchNextPage}
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
                 />
               </div>
             </ResizablePanel>
@@ -193,6 +203,9 @@ export const EditorContent = forwardRef<
             documentId={selectedSectionId}
             sectionTitle={currentSectionTitle}
             hideToolbar={isFocusMode}
+            fetchNextPage={fetchNextPage}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
           />
         </div>
       );

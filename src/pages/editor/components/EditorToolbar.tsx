@@ -76,6 +76,8 @@ interface EditorToolbarProps {
 
   // Export
   onExport?: () => void;
+
+  // Pagination removed for infinite scroll
 }
 
 /**
@@ -109,6 +111,7 @@ export function EditorToolbar({
   onShowReader,
   onToggleSnapshot,
   onExport,
+  // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
     <div className="!h-9 min-h-[36px] max-h-[36px] border-b border-border flex items-center justify-between px-3 shrink-0 bg-card overflow-hidden">
@@ -139,10 +142,16 @@ export function EditorToolbar({
         />
 
         {characterCount > 0 && (
-          <span className="text-xs text-muted-foreground">
-            ({characterCount.toLocaleString()}자)
+          <span
+            className={cn(
+              "text-xs font-medium px-2 py-0.5 rounded-full transition-colors text-muted-foreground bg-secondary",
+            )}
+          >
+            {characterCount.toLocaleString()}자
           </span>
         )}
+
+        {/* Pagination Controls Removed */}
       </div>
 
       <div className="flex items-center gap-2">

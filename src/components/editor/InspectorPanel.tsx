@@ -76,7 +76,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
   // 프로젝트의 캐릭터 목록
   const { data: characters = [], isLoading: charLoading } = useCharacters(
     projectId || "",
-    { enabled: !!projectId }
+    { enabled: !!projectId },
   );
 
   // 문서 변경 시 메모 로드 (metadata.notes 사용)
@@ -185,7 +185,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
             <div className="space-y-1.5">
               {characters.map((char) => (
                 <div
-                  key={char.id}
+                  key={char._id}
                   className="group p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
@@ -196,14 +196,14 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                           ? "bg-amber-500"
                           : char.role === "antagonist"
                             ? "bg-rose-500"
-                            : "bg-muted"
+                            : "bg-muted",
                       )}
                     >
-                      {char.name[0]}
+                      {char.profile?.name?.[0] || "?"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
-                        {char.name}
+                        {char.profile?.name || "이름 없음"}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {char.role === "protagonist"
@@ -211,16 +211,17 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                           : char.role === "antagonist"
                             ? "적대자"
                             : "조연"}
-                        {char.extras?.description &&
-                          ` · ${String(char.extras.description)}`}
+                        {char.profile?.backstory &&
+                          ` · ${String(char.profile.backstory).slice(0, 30)}...`}
                       </p>
                     </div>
                   </div>
-                  {char.extras?.personality && (
-                    <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 hidden group-hover:block">
-                      {String(char.extras.personality)}
-                    </p>
-                  )}
+                  {char.personality?.core_traits &&
+                    char.personality.core_traits.length > 0 && (
+                      <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 hidden group-hover:block">
+                        {String(char.personality.core_traits.join(", "))}
+                      </p>
+                    )}
                 </div>
               ))}
             </div>
