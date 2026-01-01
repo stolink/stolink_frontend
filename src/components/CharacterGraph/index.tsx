@@ -92,36 +92,20 @@ export const CharacterGraph = forwardRef<
       // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
       const relationCounts = calculateRelationCounts(initialLinks);
 
-      return characters.map((char) => {
-        let factionName = "무소속";
+      return characters.map((char, index) => {
+        // 새 스키마: profile.faction.name 사용
+        const factionName = char.profile?.faction?.name || "무소속";
 
-        // 1. 최상위 faction 속성이 있는 경우
-        if (char.faction) {
-          factionName = char.faction;
-        }
-        // 2. extras가 JSON 문자열인 경우 (Neo4j 데이터 케이스)
-        else if (typeof char.extras === "string") {
-          try {
-            const parsed = JSON.parse(char.extras);
-            factionName = parsed.faction || "무소속";
-          } catch {
-            factionName = "무소속";
-          }
-        }
-        // 3. extras가 이미 객체인 경우
-        else if (char.extras && typeof char.extras === "object") {
-          factionName =
-            ((char.extras as Record<string, unknown>).faction as string) ||
-            "무소속";
-        }
+        // Fallback: _id가 null이면 인덱스 기반 임시 ID 사용
+        const nodeId = char._id || `temp-node-${index}`;
 
         return {
-          id: char.id,
-          name: char.name,
+          id: nodeId,
+          name: char.profile?.name || "이름 없음",
           role: char.role,
-          group: factionName, // 추출된 파벌 정보를 시뮬레이션 그룹으로 사용
-          imageUrl: char.imageUrl,
-          relationCount: relationCounts[char.id] || 0, // 관계 수 할당
+          group: factionName,
+          imageUrl: undefined, // 새 스키마에는 imageUrl 없음
+          relationCount: relationCounts[char._id] || 0,
         };
       });
     }, [characters, initialLinks]);
@@ -478,8 +462,35 @@ export const CharacterGraph = forwardRef<
 
     const handleNodeClick = useCallback(
       (node: CharacterNode) => {
-        const char = characters.find((c) => c.id === node.id);
-        if (char && onNodeClick) onNodeClick(char);
+        console.log(
+          "[CharacterGraph] Node clicked, node.id:",
+          node.id,
+          "node.name:",
+          node.name,
+        );
+
+        // Try exact _id match first
+        let char = characters.find((c) => c._id === node.id);
+
+        // Fallback: if node.id is temp-node-N, use index
+        if (!char && node.id.startsWith("temp-node-")) {
+          const index = parseInt(node.id.replace("temp-node-", ""), 10);
+          char = characters[index];
+        }
+
+        console.log(
+          "[CharacterGraph] Found character:",
+          char?._id,
+          char?.profile?.name,
+        );
+        if (char && onNodeClick) {
+          console.log("[CharacterGraph] Calling onNodeClick");
+          onNodeClick(char);
+        } else {
+          console.warn(
+            "[CharacterGraph] Character not found or onNodeClick missing",
+          );
+        }
       },
       [characters, onNodeClick],
     );
@@ -653,7 +664,7 @@ export const CharacterGraph = forwardRef<
               );
             })}
 
-            {nodes.map((node) => {
+            {nodes.map((node, index) => {
               // Determine visual state based on Search vs Selection
               let isDimmed = false;
               let isHighlighted = false;
@@ -671,7 +682,7 @@ export const CharacterGraph = forwardRef<
 
               return (
                 <NodeRenderer
-                  key={node.id}
+                  key={node.id || `node-${index}`}
                   node={node}
                   isSelected={selectedNodeId === node.id}
                   isHighlighted={isHighlighted}

@@ -27,7 +27,9 @@ export function CharacterSearchOverlay({
     const lowerQuery = query.toLowerCase();
 
     // 사용자의 요구사항: "한글자라도 포함하면 후보로 등록"
-    return characters.filter((c) => c.name.toLowerCase().includes(lowerQuery));
+    return characters.filter((c) =>
+      (c.profile?.name || "").toLowerCase().includes(lowerQuery),
+    );
   }, [query, characters]);
 
   // Notify parent of matches for highlighting
@@ -35,7 +37,7 @@ export function CharacterSearchOverlay({
     if (!query.trim()) {
       onSearch(null); // 검색어가 없으면 null 전달 (일반 모드)
     } else {
-      onSearch(matches.map((c) => c.id));
+      onSearch(matches.map((c) => c._id));
     }
   }, [matches, query, onSearch]);
 
@@ -136,7 +138,7 @@ export function CharacterSearchOverlay({
           <div className="max-h-[280px] overflow-y-auto py-1.5 custom-scrollbar">
             {matches.map((char, index) => (
               <div
-                key={char.id}
+                key={char._id}
                 className={cn(
                   "px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-all duration-150 relative overflow-hidden",
                   index === selectedIndex
@@ -163,8 +165,8 @@ export function CharacterSearchOverlay({
                   {char.imageUrl ? (
                     <img
                       src={char.imageUrl}
-                      alt={char.name}
-                      className="w-full h-full object-cover"
+                      alt={char.profile?.name || ""}
+                      className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
                     <span className="text-base select-none">
@@ -189,7 +191,7 @@ export function CharacterSearchOverlay({
                         : "text-gray-700",
                     )}
                   >
-                    {char.name}
+                    {char.profile?.name || "이름 없음"}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <span
@@ -202,8 +204,10 @@ export function CharacterSearchOverlay({
                     >
                       {ROLE_LABELS[char.role || "other"] || char.role}
                     </span>
-                    {char.faction && (
-                      <span className="text-gray-400">• {char.faction}</span>
+                    {char.profile?.faction?.name && (
+                      <span className="text-gray-400">
+                        • {char.profile.faction.name}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -1,103 +1,38 @@
 import { useMemo } from "react";
 import type { Character } from "@/types";
-import {
-  TRAIT_KEYS,
-  RELATION_KEYS,
-  APPEARANCE_KEYS,
-  DESCRIPTION_KEYS,
-} from "../constants";
 
-// 성격 특성 추출
-function extractTraits(extras: Record<string, unknown> = {}): string[] {
-  for (const key of Object.keys(extras)) {
-    for (const traitKey of TRAIT_KEYS) {
-      if (key.toLowerCase().includes(traitKey.toLowerCase())) {
-        const value = extras[key];
-        if (Array.isArray(value)) return value.map(String);
-        if (typeof value === "string")
-          return value.split(",").map((s) => s.trim());
-      }
-    }
-  }
-  return [];
-}
-
-// 관계 추출
-function extractRelationships(
-  extras: Record<string, unknown> = {}
-): Array<{ name: string; relation: string }> {
-  for (const key of Object.keys(extras)) {
-    for (const relationKey of RELATION_KEYS) {
-      if (key.toLowerCase().includes(relationKey.toLowerCase())) {
-        const value = extras[key];
-        if (Array.isArray(value)) {
-          return value.map((v) => {
-            const str = String(v);
-            const match = str.match(/^(.+?)\s*\((.+?)\)$/);
-            if (match) {
-              return { name: match[1].trim(), relation: match[2].trim() };
-            }
-            return { name: str, relation: "" };
-          });
-        }
-      }
-    }
-  }
-  return [];
-}
-
-// 등장 챕터 추출
-function extractAppearances(extras: Record<string, unknown> = {}): string[] {
-  for (const key of Object.keys(extras)) {
-    for (const appKey of APPEARANCE_KEYS) {
-      if (key.toLowerCase().includes(appKey.toLowerCase())) {
-        const value = extras[key];
-        if (Array.isArray(value)) return value.map(String);
-        if (typeof value === "string")
-          return value.split(",").map((s) => s.trim());
-      }
-    }
-  }
-  return [];
-}
-
+/**
+ * 캐릭터 데이터에서 UI 표시용 데이터 추출 (새 스키마 대응)
+ */
 export function useCharacterData(character: Character | null) {
-  const traits = useMemo(
-    () => extractTraits(character?.extras as Record<string, unknown>),
-    [character?.extras]
-  );
+  // 성격 특성 추출 (새 스키마: personality.core_traits)
+  const traits = useMemo(() => {
+    return character?.personality?.core_traits || [];
+  }, [character?.personality?.core_traits]);
 
-  const relationships = useMemo(
-    () => extractRelationships(character?.extras as Record<string, unknown>),
-    [character?.extras]
-  );
+  // 관계 추출 (새 스키마: relations.graph)
+  const relationships = useMemo(() => {
+    const graph = character?.relations?.graph || [];
+    return graph.map((rel) => ({
+      name: rel.target,
+      relation: rel.relation_type,
+    }));
+  }, [character?.relations?.graph]);
 
-  const appearances = useMemo(
-    () => extractAppearances(character?.extras as Record<string, unknown>),
-    [character?.extras]
-  );
+  // 등장 챕터는 새 스키마에 없음 - 빈 배열 반환
+  const appearances = useMemo(() => {
+    return [];
+  }, []);
 
+  // 설명 (새 스키마: profile.backstory)
   const description = useMemo(() => {
-    const extras = character?.extras as Record<string, unknown> | undefined;
-    if (!extras) return "";
-    for (const key of Object.keys(extras)) {
-      for (const descKey of DESCRIPTION_KEYS) {
-        if (key.toLowerCase().includes(descKey.toLowerCase())) {
-          return String(extras[key]);
-        }
-      }
-    }
-    return "";
-  }, [character?.extras]);
+    return character?.profile?.backstory || "";
+  }, [character?.profile?.backstory]);
 
+  // 진행률 (새 스키마에 없음 - 기본값 반환)
   const arcProgress = useMemo(() => {
-    const extras = character?.extras as Record<string, unknown> | undefined;
-    if (!extras) return 20;
-    const progressValue = extras["진행률"] || extras["progress"];
-    if (progressValue && typeof progressValue === "number")
-      return progressValue;
-    return 20;
-  }, [character?.extras]);
+    return 50; // 기본값
+  }, []);
 
   return {
     traits,
