@@ -23,13 +23,16 @@ export const authService = {
   }) => {
     const response = await api.post<ApiResponse<User>>(
       "/auth/register",
-      payload
+      payload,
     );
     return response.data;
   },
 
   login: async (payload: { email: string; password: string }) => {
-    const response = await api.post<ApiResponse<User>>("/auth/login", payload);
+    const response = await api.post<ApiResponse<AuthResponse>>(
+      "/auth/login",
+      payload,
+    );
     return response.data;
   },
 
@@ -38,17 +41,19 @@ export const authService = {
     return response.data;
   },
 
-  refresh: async (refreshToken: string) => {
+  refresh: async (refreshToken?: string) => {
+    // refreshToken이 없으면 빈 문자열이라도 보내서 백엔드의 @RequestBody 검증 통과 유도
+    // null보다는 ""가 서버측 null 체크나 타입 파싱에서 더 안전함
     const response = await api.post<
       ApiResponse<{ accessToken: string; refreshToken: string }>
-    >("/auth/refresh", { refreshToken });
+    >("/auth/refresh", { refreshToken: refreshToken || "" });
     return response.data;
   },
 
   forgotPassword: async (email: string) => {
     const response = await api.post<ApiResponse<null>>(
       "/auth/forgot-password",
-      { email }
+      { email },
     );
     return response.data;
   },
@@ -65,7 +70,7 @@ export const authService = {
     if (payload.avatarUrl) params.append("avatarUrl", payload.avatarUrl);
 
     const response = await api.patch<ApiResponse<User>>(
-      `/auth/me?${params.toString()}`
+      `/auth/me?${params.toString()}`,
     );
     return response.data;
   },

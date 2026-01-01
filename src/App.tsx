@@ -9,6 +9,7 @@ import { ProtectedLayout, ProjectLayout } from "@/components/layouts";
 // Lazy Pages
 const LandingPage = lazy(() => import("@/pages/landing/LandingPage"));
 const AuthPage = lazy(() => import("@/pages/auth/AuthPage"));
+const OAuth2Callback = lazy(() => import("@/pages/auth/OAuth2Callback"));
 const LibraryPage = lazy(() => import("@/pages/library/LibraryPage"));
 const EditorPage = lazy(() => import("@/pages/editor/EditorPage"));
 const WorldPage = lazy(() => import("@/pages/world/WorldPage"));
@@ -30,7 +31,12 @@ const queryClient = new QueryClient({
   },
 });
 
+import { useAuthInit } from "@/hooks/useAuthInit";
+
 function App() {
+  // Auth Initialization
+  const isInitializing = useAuthInit();
+
   // Global theme application
   const theme = useEditorSettingStore((s) => s.visual?.theme ?? "light");
 
@@ -47,6 +53,15 @@ function App() {
     // Add current theme class
     root.classList.add(`theme-${theme}`);
   }, [theme]);
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
+        <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
+        <p>Initializing...</p>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -65,6 +80,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/oauth2/callback" element={<OAuth2Callback />} />
               <Route path="/share/:shareId" element={<SharedProjectPage />} />
 
               {/* Demo Route - No Auth Required */}
