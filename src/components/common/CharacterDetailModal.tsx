@@ -66,7 +66,7 @@ export default function CharacterDetailModal({
 }: CharacterDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [imageJobId, setImageJobId] = useState<string | null>(null);
 
@@ -82,18 +82,8 @@ export default function CharacterDetailModal({
     : fetchedCharacter || character; // 페치된 데이터 우선 사용
 
   useEffect(() => {
-    console.log(
-      "[CharacterDetailModal] isOpen:",
-      isOpen,
-      "character:",
-      character?._id,
-      character?.profile?.name
-    );
     if (displayCharacter) {
-      console.log(
-        "[CharacterDetailModal] 로드된 캐릭터 상세 정보:",
-        JSON.stringify(displayCharacter, null, 2)
-      );
+      // Basic logging for development check can remain if needed, but removing per user request
     }
   }, [displayCharacter, isOpen, character]);
 
@@ -106,21 +96,25 @@ export default function CharacterDetailModal({
     character?._id || "",
     {
       onComplete: (imageUrl) => {
-        setTempImageUrl(imageUrl); // 🌟 즉시 반영 (Optimistic Update)
+        // Force refresh by adding a timestamp if not already present or as a safety
+        const cacheBusterUrl = imageUrl.includes("?")
+          ? `${imageUrl}&t=${Date.now()}`
+          : `${imageUrl}?t=${Date.now()}`;
+        setTempImageUrl(cacheBusterUrl);
         setImageJobId(null);
       },
-      onError: (err) => {
+      onError: () => {
         setImageJobId(null);
       },
       onTimeout: () => {
         setImageJobId(null);
       },
-    }
+    },
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -144,7 +138,7 @@ export default function CharacterDetailModal({
   }
 
   const { traits, relationships, appearances, arcProgress } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   const { toast } = useToast();
@@ -154,31 +148,16 @@ export default function CharacterDetailModal({
 
   // Load settings
   useEffect(() => {
-    console.log("[CharacterDetailModal] Settings load check:", {
-      isOpen,
-      projectId: character?.projectId,
-      characterId: character?._id,
-    });
     if (isOpen && character?.projectId) {
       settingService
         .getAll(character.projectId)
         .then((res) => {
-          console.log("[CharacterDetailModal] Settings API response:", res);
           if (Array.isArray(res.data)) {
             setSettings(res.data);
-            console.log(
-              "[CharacterDetailModal] Settings loaded:",
-              res.data.length
-            );
-          } else {
-            console.log(
-              "[CharacterDetailModal] Settings data is not array:",
-              res
-            );
           }
         })
-        .catch((err) => {
-          console.error("[CharacterDetailModal] Settings load error:", err);
+        .catch(() => {
+          // Error handling
         });
     }
   }, [isOpen, character?.projectId, character?._id]);
@@ -187,7 +166,7 @@ export default function CharacterDetailModal({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -204,11 +183,20 @@ export default function CharacterDetailModal({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
           );
         }
         if (sourceChar?.appearance?.eyes) {
           parts.push(`Eyes: ${sourceChar.appearance.eyes}`);
+        }
+        if (sourceChar?.appearance?.attire) {
+          const attire = Array.isArray(sourceChar.appearance.attire)
+            ? sourceChar.appearance.attire.join(", ")
+            : sourceChar.appearance.attire;
+          if (attire) parts.push(`Attire: ${attire}`);
+        }
+        if (sourceChar?.appearance?.expression) {
+          parts.push(`Expression: ${sourceChar.appearance.expression}`);
         }
         if (sourceChar?.personality?.coreTraits?.length > 0) {
           parts.push(`Traits: ${sourceChar.personality.coreTraits.join(", ")}`);
@@ -221,11 +209,6 @@ export default function CharacterDetailModal({
           parts.push(`Note: ${finalManualPrompt}`);
         }
 
-        const generatedPrompt =
-          parts.length > 0
-            ? parts.join(", ")
-            : "A high quality character portrait";
-
         // Determine setting
         const selectedSetting =
           settingOverride ||
@@ -233,12 +216,22 @@ export default function CharacterDetailModal({
             ? settings.find((s) => s.id === selectedSettingId)
             : undefined);
 
+        // Add background description if available
+        if (selectedSetting?.description) {
+          parts.push(`Background Style: ${selectedSetting.description}`);
+        }
+
+        const generatedPrompt =
+          parts.length > 0
+            ? parts.join(", ")
+            : "A high quality character portrait";
+
         const { jobId } = await imageService.generateCharacterImage(
           character.projectId,
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>
+          selectedSetting as unknown as Record<string, unknown>,
         );
 
         setImageJobId(jobId);
@@ -246,8 +239,7 @@ export default function CharacterDetailModal({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch (err) {
-        console.error("[CharacterDetailModal] 이미지 생성 실패:", err);
+      } catch {
         toast({
           variant: "destructive",
           title: "실패",
@@ -262,7 +254,7 @@ export default function CharacterDetailModal({
       selectedSettingId,
       manualPrompt,
       toast,
-    ]
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -286,7 +278,7 @@ export default function CharacterDetailModal({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance
+      editedCharacter.appearance,
     );
 
     if (onSave) {
@@ -295,9 +287,6 @@ export default function CharacterDetailModal({
 
     // If appearance changed and there's already an image, trigger auto-edit
     if (hasAppearanceChanged && character?.imageUrl) {
-      console.log(
-        "[CharacterDetailModal] 외모 정보 변경 감지 - 이미지 자동 수정 요청"
-      );
       handleConfirmImageGeneration("edit", "");
     }
 
@@ -311,7 +300,7 @@ export default function CharacterDetailModal({
         return { ...prev, [field]: value };
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -327,20 +316,14 @@ export default function CharacterDetailModal({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
-    console.warn(
-      "[CharacterDetailModal] character is null, modal will not render"
-    );
     return null;
   }
 
   if (!displayCharacter) {
-    console.warn(
-      "[CharacterDetailModal] displayCharacter is null, modal will not render"
-    );
     return null;
   }
 
@@ -530,7 +513,7 @@ export default function CharacterDetailModal({
                           onChange={(e) =>
                             handleFieldChange(
                               "profile.backstory",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           className="min-h-[160px] leading-relaxed font-serif"
@@ -557,7 +540,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -580,7 +563,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -603,7 +586,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"

@@ -45,14 +45,10 @@ export function normalizeRelationType(type: string): RelationType {
  * <CharacterGraph characters={characters} links={links} />
  */
 export function extractRelationshipLinks(
-  characters: Character[]
+  characters: Character[],
 ): RelationshipLink[] {
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
-
-  console.log(
-    `[extractRelationshipLinks] Processing ${characters.length} characters`
-  );
 
   characters.forEach((char) => {
     // 1. 관계 데이터 추출 (새 스키마 relations.graph 또는 백엔드 직결 relationships 필드)
@@ -60,13 +56,9 @@ export function extractRelationshipLinks(
       char.relations?.graph ||
       (char as { relationships?: unknown[] }).relationships;
 
-    console.log(
-      `[extractRelationshipLinks] Character ${char.profile?.name}: relations.graph length = ${char.relations?.graph?.length || 0}`
-    );
-
     if (!Array.isArray(relationGraph)) {
       console.warn(
-        `Character ${char._id || (char as { id?: string }).id} (${char.profile?.name || (char as { name?: string }).name}) missing relations.graph or relationships array`
+        `Character ${char._id || (char as { id?: string }).id} (${char.profile?.name || (char as { name?: string }).name}) missing relations.graph or relationships array`,
       );
       return;
     }
@@ -96,7 +88,7 @@ export function extractRelationshipLinks(
         // target ID 검증
         if (!targetId) {
           console.warn(
-            `Invalid relationship for character ${char._id}: missing target`
+            `Invalid relationship for character ${char._id}: missing target`,
           );
           return;
         }
@@ -104,7 +96,7 @@ export function extractRelationshipLinks(
         // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
         if (!sourceId || !targetId) {
           console.warn(
-            `Invalid relationship for character ${char._id}: missing source or target`
+            `Invalid relationship for character ${char._id}: missing source or target`,
           );
           return;
         }
@@ -118,11 +110,7 @@ export function extractRelationshipLinks(
         processedPairs.add(pairKey);
 
         const normalizedType = normalizeRelationType(
-          rel.relationType || rel.relation_type || rel.type || "friendly"
-        );
-
-        console.log(
-          `[extractRelationshipLinks] Creating link: ${sourceId} -> ${targetId}, type: ${rel.type} -> ${normalizedType}`
+          rel.relationType || rel.relation_type || rel.type || "friendly",
         );
 
         links.push({
@@ -137,13 +125,13 @@ export function extractRelationshipLinks(
           evolvedFrom:
             rel.evolvedFrom || rel.evolved_from
               ? normalizeRelationType(
-                  (rel.evolvedFrom || rel.evolved_from) as string
+                  (rel.evolvedFrom || rel.evolved_from) as string,
                 )
               : undefined,
           publicStance: rel.publicStance || rel.public_stance,
           privateFeeling: rel.privateFeeling || rel.private_feeling,
         });
-      }
+      },
     );
   });
 

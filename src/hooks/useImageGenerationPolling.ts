@@ -28,23 +28,11 @@ interface UseImageGenerationPollingResult {
  * @param characterId - Character ID to update when complete
  * @param options - Polling configuration and callbacks
  * @returns Image generation status and result
- *
- * @example
- * ```tsx
- * const { isGenerating, progress, imageUrl } = useImageGenerationPolling(
- *   jobId,
- *   characterId,
- *   {
- *     onComplete: (url) => toast.success("Image generated!"),
- *     onError: (err) => toast.error(err)
- *   }
- * );
- * ```
  */
 export function useImageGenerationPolling(
   jobId: string | null,
   characterId: string,
-  options: UseImageGenerationPollingOptions = {}
+  options: UseImageGenerationPollingOptions = {},
 ): UseImageGenerationPollingResult {
   const queryClient = useQueryClient();
   const { enabled = true, onComplete, onError, onTimeout } = options;
@@ -52,7 +40,7 @@ export function useImageGenerationPolling(
   // Wrap onComplete to invalidate character queries
   const handleComplete = useCallback(
     (result: ImageGenerationResult) => {
-      const imageUrl = result.imageUrl;
+      if (!result || !result.imageUrl) return;
 
       // Invalidate character queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ["characters"] });
@@ -61,9 +49,9 @@ export function useImageGenerationPolling(
       });
 
       // Call user's onComplete callback
-      onComplete?.(imageUrl);
+      onComplete?.(result.imageUrl);
     },
-    [characterId, queryClient, onComplete]
+    [characterId, queryClient, onComplete],
   );
 
   // Use generic job polling hook with image-specific typing
@@ -78,7 +66,7 @@ export function useImageGenerationPolling(
         onComplete: handleComplete,
         onError,
         onTimeout,
-      }
+      },
     );
 
   return {
