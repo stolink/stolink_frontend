@@ -10,7 +10,9 @@ import {
   Copy,
   Loader2,
   ExternalLink,
+  CreditCard,
 } from "lucide-react";
+import { PaymentTest } from "./PaymentTest";
 import {
   useShareSettings,
   useCreateShareLink,
@@ -44,7 +46,7 @@ export default function SettingsPage() {
 
   // Share Hooks
   const { data: shareSettings, isLoading: isLoadingShare } = useShareSettings(
-    projectId || "",
+    projectId || ""
   );
   const createShare = useCreateShareLink();
   const deleteShare = useDeleteShareLink();
@@ -230,6 +232,22 @@ export default function SettingsPage() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Subscription Plan */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              구독 플랜
+            </CardTitle>
+            <CardDescription>
+              플랜을 업그레이드하여 더 많은 기능을 사용해보세요
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PaymentTest />
           </CardContent>
         </Card>
 
