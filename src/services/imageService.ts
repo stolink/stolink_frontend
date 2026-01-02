@@ -13,21 +13,27 @@ export interface GenerateImageRequest {
 
 export const imageService = {
   /**
-   * Start character image generation job
-   * @param projectId - Project ID containing the character
-   * @param characterId - ID of the character to generate image for
-   * @param description - Description for image generation (e.g., "은발 장발의 마법사")
-   * @returns Job ID and initial status
+   * Start character image generation/editing job
+   * @param projectId - Project ID
+   * @param characterId - Character ID
+   * @param action - "create" or "edit"
+   * @param description - Additional user prompt
+   * @param setting - Optional background/setting object
+   * @returns Job ID
    */
   generateCharacterImage: async (
     projectId: string,
     characterId: string,
+    action: "create" | "edit",
     description: string,
+    setting?: Record<string, unknown>,
   ): Promise<{ jobId: string; status: string }> => {
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
     >(`/projects/${projectId}/characters/${characterId}/image`, {
+      action,
       description,
+      setting,
     });
     return response.data.data;
   },
@@ -43,7 +49,7 @@ export const imageService = {
   ): Promise<JobResponse<ImageGenerationResult>> => {
     const response = await api.get<
       ApiResponse<JobResponse<ImageGenerationResult>>
-    >(`/ai/jobs/${jobId}`);
+    >(`/ai/image/jobs/${jobId}`);
     return response.data.data;
   },
 };

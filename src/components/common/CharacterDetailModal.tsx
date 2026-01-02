@@ -9,10 +9,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
+import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
-import { imageService } from "@/services/imageService";
+import { imageService, settingService, type ProjectSetting } from "@/services";
+import { useToast } from "@/hooks/useToast";
+import { Sparkles, Image as ImageIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Hooks & Components & Constants
 import { useCharacterData } from "./character-detail/hooks/useCharacterData";
@@ -105,6 +117,112 @@ export default function CharacterDetailModal({
     displayCharacter, // displayCharacter 사용
   );
 
+  const { toast } = useToast();
+  const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
+  const [settings, setSettings] = useState<ProjectSetting[]>([]);
+  const [manualPrompt, setManualPrompt] = useState("");
+
+  // Load settings
+  useEffect(() => {
+    if (isOpen && character?.projectId) {
+      settingService.getAll(character.projectId).then((res) => {
+        if (Array.isArray(res.data)) {
+          setSettings(res.data);
+        }
+      });
+    }
+  }, [isOpen, character?.projectId]);
+
+  const handleConfirmImageGeneration = useCallback(
+    async (
+      action: "create" | "edit",
+      _promptOverride?: string,
+      settingOverride?: Record<string, unknown>,
+    ) => {
+      if (!character?._id || !character?.projectId) return;
+
+      try {
+        // Construct prompt from character attributes
+        const parts: string[] = [];
+        const sourceChar = displayCharacter || character;
+
+        if (sourceChar?.profile?.name) {
+          parts.push(`Character: ${sourceChar.profile.name}`);
+        }
+        if (sourceChar?.appearance?.physique) {
+          parts.push(`Physique: ${sourceChar.appearance.physique}`);
+        }
+        if (sourceChar?.appearance?.hair_color) {
+          parts.push(
+            `Hair: ${sourceChar.appearance.hair_color} ${sourceChar.appearance.hair_style}`,
+          );
+        }
+        if (sourceChar?.appearance?.eyes) {
+          parts.push(`Eyes: ${sourceChar.appearance.eyes}`);
+        }
+        if (sourceChar?.personality?.core_traits?.length > 0) {
+          parts.push(
+            `Traits: ${sourceChar.personality.core_traits.join(", ")}`,
+          );
+        }
+
+        // Add manual prompt if provided
+        const finalManualPrompt =
+          _promptOverride !== undefined ? _promptOverride : manualPrompt;
+        if (finalManualPrompt) {
+          parts.push(`Note: ${finalManualPrompt}`);
+        }
+
+        const generatedPrompt =
+          parts.length > 0
+            ? parts.join(", ")
+            : "A high quality character portrait";
+
+        // Determine setting
+        const selectedSetting =
+          settingOverride ||
+          (selectedSettingId !== "none"
+            ? settings.find((s) => s.id === selectedSettingId)
+            : undefined);
+
+        console.log("[CharacterDetailModal] API 호출 중...", {
+          action,
+          prompt: generatedPrompt,
+          setting: selectedSetting,
+        });
+
+        const { jobId } = await imageService.generateCharacterImage(
+          character.projectId,
+          character._id,
+          action,
+          generatedPrompt,
+          selectedSetting as unknown as Record<string, unknown>,
+        );
+
+        setImageJobId(jobId);
+        toast({
+          title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
+          description: "잠시만 기다려 주세요.",
+        });
+      } catch (err) {
+        console.error("[CharacterDetailModal] 이미지 생성 실패:", err);
+        toast({
+          variant: "destructive",
+          title: "실패",
+          description: "이미지 생성 요청 중 오류가 발생했습니다.",
+        });
+      }
+    },
+    [
+      character,
+      displayCharacter,
+      settings,
+      selectedSettingId,
+      manualPrompt,
+      toast,
+    ],
+  );
+
   const handleEdit = useCallback(() => {
     setIsEditMode(true);
   }, []);
@@ -116,16 +234,36 @@ export default function CharacterDetailModal({
     }
   }, [character]);
 
-  const handleSave = useCallback(() => {
-    if (editedCharacter && onSave) {
+  const handleOpenImageGeneration = useCallback(() => {
+    handleConfirmImageGeneration("create");
+  }, [handleConfirmImageGeneration]);
+
+  const handleSave = useCallback(async () => {
+    if (!editedCharacter) return;
+
+    // Compare appearance to detect changes for image update
+    const hasAppearanceChanged = !isEqual(
+      character?.appearance,
+      editedCharacter.appearance,
+    );
+
+    if (onSave) {
       onSave(editedCharacter);
     }
+
+    // If appearance changed and there's already an image, trigger auto-edit
+    if (hasAppearanceChanged && character?.imageUrl) {
+      console.log(
+        "[CharacterDetailModal] 외모 정보 변경 감지 - 이미지 자동 수정 요청",
+      );
+      handleConfirmImageGeneration("edit", "");
+    }
+
     setIsEditMode(false);
-  }, [editedCharacter, onSave]);
+  }, [editedCharacter, character, onSave, handleConfirmImageGeneration]);
 
   const handleFieldChange = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (field: string, value: any) => {
+    (field: string, value: string | string[]) => {
       setEditedCharacter((prev) => {
         if (!prev) return prev;
         return { ...prev, [field]: value };
@@ -134,85 +272,21 @@ export default function CharacterDetailModal({
     [],
   );
 
-  const handleGenerateImage = useCallback(async () => {
-    console.log("[CharacterDetailModal] handleGenerateImage called");
-    console.log("[CharacterDetailModal] character._id:", character?._id);
-    console.log(
-      "[CharacterDetailModal] character.projectId:",
-      character?.projectId,
-    );
-
-    if (!character?._id || !character?.projectId) {
-      console.warn(
-        "[CharacterDetailModal] Missing _id or projectId, aborting image generation",
-      );
-      return;
-    }
-
-    try {
-      console.log(
-        "[CharacterDetailModal] AI가 캐릭터 이미지를 생성하고 있습니다...",
-      );
-
-      // Generate Korean description from character data
-      const parts: string[] = [];
-
-      if (displayCharacter?.profile?.name) {
-        parts.push(displayCharacter.profile.name);
-      }
-
-      if (displayCharacter?.appearance?.physique) {
-        parts.push(`${displayCharacter.appearance.physique} 체형`);
-      }
-
-      if (displayCharacter?.appearance?.hair_style) {
-        parts.push(displayCharacter.appearance.hair_style);
-      }
-
-      if (displayCharacter?.appearance?.hair_color) {
-        parts.push(`${displayCharacter.appearance.hair_color} 머리`);
-      }
-
-      const description = parts.length > 0 ? parts.join(", ") : "캐릭터 초상화";
-
-      console.log("[CharacterDetailModal] 생성 프롬프트:", description);
-      console.log(
-        "[CharacterDetailModal] API 호출 중... projectId:",
-        character.projectId,
-        "characterId:",
-        character._id,
-      );
-
-      const { jobId } = await imageService.generateCharacterImage(
-        character.projectId,
-        character._id,
-        description,
-      );
-
-      console.log("[CharacterDetailModal] API 성공! jobId:", jobId);
-      setImageJobId(jobId);
-    } catch (err) {
-      console.error("[CharacterDetailModal] 이미지 생성 실패:", err);
-      console.error(
-        "[CharacterDetailModal] Error details:",
-        err instanceof Error ? err.message : String(err),
-      );
-    }
-  }, [character, displayCharacter]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleAppearanceChange = useCallback((key: string, value: any) => {
-    setEditedCharacter((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        appearance: {
-          ...prev.appearance,
-          [key]: value,
-        },
-      };
-    });
-  }, []);
+  const handleAppearanceChange = useCallback(
+    (key: string, value: string | string[]) => {
+      setEditedCharacter((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          appearance: {
+            ...prev.appearance,
+            [key]: value,
+          },
+        };
+      });
+    },
+    [],
+  );
 
   if (!character) {
     console.warn(
@@ -245,7 +319,7 @@ export default function CharacterDetailModal({
               onEdit={handleEdit}
               isEditMode={isEditMode}
               onFieldChange={handleFieldChange}
-              onGenerateImage={handleGenerateImage}
+              onGenerateImage={handleOpenImageGeneration}
               isGeneratingImage={isGenerating}
               imageGenerationProgress={progress}
             />
@@ -254,6 +328,58 @@ export default function CharacterDetailModal({
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Left Column (3/5) - 외모, 성격, 스토리 진행도 */}
               <div className="lg:col-span-3 space-y-6">
+                {/* 이미지 & 배경 설정 섹션 */}
+                <div className="p-5 bg-stone-50 border border-stone-100 rounded-xl space-y-4">
+                  <div className="flex items-center gap-2 text-stone-700 font-semibold text-sm">
+                    <ImageIcon className="w-4 h-4 text-stone-500" />
+                    대표 이미지 & 배경 설정
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-stone-500 ml-1">
+                        대표 배경 선택
+                      </Label>
+                      <Select
+                        value={selectedSettingId}
+                        onValueChange={setSelectedSettingId}
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-white border-stone-200">
+                          <SelectValue placeholder="배경 선택 (기본)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">배경 없음 (기본)</SelectItem>
+                          {settings.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-stone-500 ml-1">
+                        추가 묘사 (선택)
+                      </Label>
+                      <Input
+                        placeholder="예: 웃고 있는, 비를 맞는..."
+                        className="h-9 text-xs bg-white border-stone-200"
+                        value={manualPrompt}
+                        onChange={(e) => setManualPrompt(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 px-1 text-[10px] text-stone-400">
+                    <Sparkles className="w-3 h-3 mt-0.5 shrink-0 text-amber-500/70" />
+                    <span>
+                      이미지 생성 시 선택한 배경과 위에서 설정한 외모/특징이
+                      자동으로 반영됩니다.
+                    </span>
+                  </div>
+                </div>
+
                 {/* 외모 섹션 */}
                 <CharacterVisual
                   appearance={displayCharacter.appearance}
