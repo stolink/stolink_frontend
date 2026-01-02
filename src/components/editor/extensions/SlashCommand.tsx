@@ -59,10 +59,9 @@ export const SlashCommand = Extension.create({
 
 const getSuggestionItems = ({
   query,
-  editor,
 }: {
   query: string;
-  editor: any;
+  editor: Editor;
 }): SlashCommandItem[] => {
   const items: SlashCommandItem[] = [
     {
@@ -70,7 +69,7 @@ const getSuggestionItems = ({
       icon: <FilePlus className="w-4 h-4" />,
       command: ({ editor, range }: SlashCommandParams) => {
         const onCreateSection = editor.extensionManager.extensions.find(
-          (ext: any) => ext.name === "slashCommand"
+          (ext) => ext.name === "slashCommand"
         )?.options?.onCreateSection;
 
         if (onCreateSection) {

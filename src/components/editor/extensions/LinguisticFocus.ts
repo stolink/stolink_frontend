@@ -69,6 +69,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
   },
 
   addProseMirrorPlugins() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const extension = this;
 
     return [

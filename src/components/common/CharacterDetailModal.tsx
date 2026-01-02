@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import {
   Save,
   X,
-  Feather,
   MapPin,
   Briefcase,
   Users2,
@@ -182,7 +181,7 @@ export default function CharacterDetailModal({
           console.error("[CharacterDetailModal] Settings load error:", err);
         });
     }
-  }, [isOpen, character?.projectId]);
+  }, [isOpen, character?.projectId, character?._id]);
 
   const handleConfirmImageGeneration = useCallback(
     async (

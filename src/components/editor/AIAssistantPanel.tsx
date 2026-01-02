@@ -1,67 +1,74 @@
-import { useState } from "react";
-import { Send, Bot } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, Square, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useChatStream, type SourceChunk } from "@/hooks/useChatStream";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
+interface AIAssistantPanelProps {
+  projectId?: string | null;
 }
 
-export default function AIAssistantPanel() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "안녕하세요! 스토리 작성을 도와드릴게요. 무엇이 궁금하신가요?",
-      timestamp: new Date(),
-    },
-  ]);
+export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const {
+    messages,
+    streaming,
+    currentResponse,
+    currentSources,
+    sendMessage,
+    cancelStream,
+    clearMessages,
+  } = useChatStream({
+    onError: (error) => {
+      console.error("AI Chat error:", error);
+    },
+  });
+
+  // 메시지 추가 시 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, currentResponse]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || streaming) return;
 
-    const userMessage: Message = {
-      id: new Date().getTime().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
+    if (!projectId) {
+      console.warn("projectId가 없습니다.");
+      return;
+    }
 
-    setMessages((prev) => [...prev, userMessage]);
+    const message = input;
     setInput("");
-    setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (new Date().getTime() + 1).toString(),
-        role: "assistant",
-        content: getAIResponse(input),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1000);
+    await sendMessage(message, projectId);
   };
 
-  const getAIResponse = (query: string): string => {
-    if (query.includes("다음") || query.includes("뭘")) {
-      return '현재 "전설의 검"이라는 복선이 설정되어 있네요. 몇 가지 방향을 제안드릴게요:\n\n1. 검에 대한 단서를 더 뿌려두기 - 검이 특정 상황에서 반응하는 장면\n2. 멘토 캐릭터 등장 - 검의 역사를 알고 있는 인물\n3. 첫 번째 위기 상황 - 검의 힘이 필요한 순간';
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
-    if (query.includes("캐릭터") || query.includes("성격")) {
-      return "현재 주인공의 성격이 용감하고 정의로운 것으로 설정되어 있어요. 일관성을 위해 다음을 참고하세요:\n\n• 위험 앞에서 두려움보다 책임감이 앞선다\n• 약자를 보호하려는 본능이 있다\n• 때로는 무모해 보일 수 있다";
-    }
-    return "좋은 질문이에요! 스토리의 맥락을 고려했을 때, 독자의 흥미를 유지하면서 복선을 자연스럽게 풀어가는 것이 중요합니다. 더 구체적인 질문이 있으시면 말씀해주세요.";
   };
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header with clear button */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+        <span className="text-xs text-muted-foreground">AI 어시스턴트</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearMessages}
+          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+          title="대화 초기화"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {messages.map((message) => (
@@ -86,11 +93,37 @@ export default function AIAssistantPanel() {
               )}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
+
+              {/* 출처 표시 */}
+              {message.sources && message.sources.length > 0 && (
+                <SourceList sources={message.sources} />
+              )}
             </div>
           </div>
         ))}
 
-        {isLoading && (
+        {/* Streaming Response */}
+        {streaming && currentResponse && (
+          <div className="flex gap-2">
+            <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center flex-shrink-0">
+              <Bot className="h-4 w-4 text-mocha-600" />
+            </div>
+            <div className="bg-muted rounded-lg px-3 py-2 text-sm max-w-[85%]">
+              <p className="whitespace-pre-wrap">
+                {currentResponse}
+                <span className="inline-block w-2 h-4 bg-mocha-500 animate-pulse ml-0.5" />
+              </p>
+
+              {/* 스트리밍 중 출처 표시 */}
+              {currentSources.length > 0 && (
+                <SourceList sources={currentSources} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Loading indicator (before response starts) */}
+        {streaming && !currentResponse && (
           <div className="flex gap-2">
             <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center">
               <Bot className="h-4 w-4 text-mocha-600" />
@@ -104,6 +137,8 @@ export default function AIAssistantPanel() {
             </div>
           </div>
         )}
+
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -113,22 +148,97 @@ export default function AIAssistantPanel() {
             e.preventDefault();
             handleSend();
           }}
-          className="flex gap-2"
+          className="flex flex-col gap-2"
         >
-          <Input
+          <Textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="질문을 입력하세요..."
-            className="flex-1"
+            onKeyDown={handleKeyDown}
+            placeholder={
+              projectId
+                ? "작품에 대해 질문하세요... (Shift+Enter: 줄바꿈)"
+                : "프로젝트를 선택해주세요"
+            }
+            disabled={streaming || !projectId}
+            className="min-h-[60px] max-h-[120px] resize-none text-sm"
+            rows={2}
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isLoading}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <div className="flex justify-end gap-2">
+            {streaming ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={cancelStream}
+                className="gap-1.5"
+              >
+                <Square className="h-3.5 w-3.5" />
+                중지
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!input.trim() || !projectId}
+                className="gap-1.5"
+              >
+                <Send className="h-3.5 w-3.5" />
+                전송
+              </Button>
+            )}
+          </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * RAG 검색 출처 목록 컴포넌트
+ */
+function SourceList({ sources }: { sources: SourceChunk[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const displaySources = expanded ? sources : sources.slice(0, 2);
+
+  return (
+    <div className="mt-3 pt-2 border-t border-mocha-200/50">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-[10px] text-mocha-600 font-medium mb-1.5 hover:text-mocha-700 flex items-center gap-1"
+      >
+        <FileText className="h-3 w-3" />
+        참고한 내용 ({sources.length}개)
+        {sources.length > 2 && (
+          <span className="text-mocha-400">
+            {expanded ? "접기" : `외 ${sources.length - 2}개`}
+          </span>
+        )}
+      </button>
+      <div className="space-y-1.5">
+        {displaySources.map((source, idx) => (
+          <div
+            key={source.chunk_uuid}
+            className="text-[10px] text-espresso-700 bg-cloud-50 rounded px-2 py-1.5"
+          >
+            <div className="flex items-start gap-1.5">
+              <span className="text-mocha-500 font-medium shrink-0">
+                [{idx + 1}]
+              </span>
+              <span className="line-clamp-2">{source.content}</span>
+            </div>
+            <div className="flex items-center justify-between mt-1 text-mocha-400">
+              {source.metadata?.document_title && (
+                <span className="truncate max-w-[120px]">
+                  {source.metadata.document_title}
+                </span>
+              )}
+              <span>
+                관련도: {(source.similarity_score * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

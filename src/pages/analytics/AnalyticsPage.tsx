@@ -8,14 +8,24 @@ export default function AnalyticsPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-paper">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "stats" | "export")} className="h-full flex flex-col">
-        {/* 탭 헤더 */}
-        <div className="border-b bg-white px-6 py-3 shrink-0">
-          <TabsList className="bg-stone-100">
-            <TabsTrigger value="stats" className="px-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "stats" | "export")}
+        className="h-full flex flex-col relative"
+      >
+        {/* Floating Glass Header (Centered) */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0">
+          <TabsList className="bg-transparent p-0 h-auto gap-1">
+            <TabsTrigger
+              value="stats"
+              className="px-6 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all font-bold"
+            >
               통계
             </TabsTrigger>
-            <TabsTrigger value="export" className="px-6">
+            <TabsTrigger
+              value="export"
+              className="px-6 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all font-bold"
+            >
               파일
             </TabsTrigger>
           </TabsList>

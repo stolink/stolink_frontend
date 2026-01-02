@@ -86,6 +86,7 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
   },
 
   addProseMirrorPlugins() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const extension = this;
 
     return [

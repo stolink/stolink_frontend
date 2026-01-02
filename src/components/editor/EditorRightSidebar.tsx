@@ -24,6 +24,8 @@ interface EditorRightSidebarProps {
   activeTab: RightSidebarTab;
   onTabChange: (tab: RightSidebarTab) => void;
   documentId?: string | null;
+  /** AI 챗봇에서 사용할 프로젝트 ID */
+  projectId?: string | null;
   sectionTitle?: string;
   /** 새로 생성된 복선 ID (포커스 이동용) */
   newForeshadowingId?: string | null;
@@ -37,6 +39,7 @@ export default function EditorRightSidebar({
   activeTab,
   onTabChange,
   documentId = null,
+  projectId = null,
   sectionTitle = "",
   newForeshadowingId,
   onNavigateToPosition,
@@ -116,7 +119,7 @@ export default function EditorRightSidebar({
               onNavigateToPosition={onNavigateToPosition}
             />
           )}
-          {activeTab === "ai" && <AIAssistantPanel />}
+          {activeTab === "ai" && <AIAssistantPanel projectId={projectId} />}
           {activeTab === "consistency" && <ConsistencyPanel />}
         </div>
       </div>

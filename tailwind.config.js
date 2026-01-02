@@ -10,6 +10,7 @@ export default {
           400: "#BD9B8D", // Hover
           500: "#A47764", // Primary - Mocha Mousse
           700: "#7D5A4B", // Dark/Active
+          900: "#3D302A", // Deep Espresso (Text/Button) - Added for visibility
         },
         cloud: {
           50: "#F1F0EC", // Surface - Cloud Dancer
@@ -80,8 +81,8 @@ export default {
         },
       },
       fontFamily: {
-        heading: ["DM Serif Display", "Pretendard", "serif"],
-        body: ["Spectral", "Pretendard", "serif"],
+        heading: ["Pretendard", "sans-serif"],
+        body: ["Pretendard", "sans-serif"],
         sans: [
           "Pretendard",
           "-apple-system",

@@ -43,7 +43,7 @@ function textReplacementRule(
 ): InputRule {
   return new InputRule({
     find,
-    handler: ({ state, range, match, commands }) => {
+    handler: ({ range, match, commands }) => {
       const replacement =
         typeof replace === "function" ? replace(match) : replace;
       // Use chain to handle insertion properly

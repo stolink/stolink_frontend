@@ -59,6 +59,7 @@
     "@tiptap/react": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
     "@tiptap/suggestion": "^3.14.0",
+    "@tosspayments/payment-widget-sdk": "^0.12.1",
     "@types/d3": "^7.4.3",
     "axios": "^1.13.2",
     "browser-image-compression": "^2.0.2",

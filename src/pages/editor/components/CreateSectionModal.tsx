@@ -30,6 +30,7 @@ export function CreateSectionModal({
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 모달 열림 시 초기화 패턴
       setTitle(defaultTitle);
     }
   }, [isOpen, defaultTitle]);
