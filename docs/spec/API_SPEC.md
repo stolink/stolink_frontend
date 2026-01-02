@@ -1,7 +1,7 @@
 # StoLink API 명세
 
-> **버전**: 1.1
-> **최종 수정**: 2025년 12월 26일
+> **버전**: 1.2
+> **최종 수정**: 2026년 1월 2일
 > **Base URL**: `https://api.stolink.com` (Production) / `http://localhost:8080` (Development)
 
 ---
@@ -456,11 +456,14 @@ X-User-Id: {userId}  // 일부 API에서 사용
       "description": "노인이 건넨 검...",
       "appearances": [
         {
-          "chapterId": "uuid",
-          "chapterTitle": "1장",
-          "line": 32,
-          "context": "\"이 검을 가져가거라.\"",
+          "sectionTitle": "1장: 만남",
+          "documentId": "uuid",
           "isRecovery": false
+        },
+        {
+          "sectionTitle": "5장: 결전",
+          "documentId": "uuid2",
+          "isRecovery": true
         }
       ]
     }
@@ -664,6 +667,7 @@ X-User-Id: {userId}  // 일부 API에서 사용
 | ---- | ---------- | -------------------------------------------------------------------------- |
 | 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의                                              |
 | 1.1  | 2025.12.26 | Job Polling 상태값 문서화, wordCount 백엔드 계산 명시, 응답 형식 대안 추가 |
+| 1.2  | 2026.01.02 | Foreshadowing 타입 동기화 (tag 필드, appearances 배열 구조 반영)           |
 
 ---
 

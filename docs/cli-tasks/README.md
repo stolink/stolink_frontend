@@ -25,7 +25,7 @@ claude run docs/cli-tasks/04-settings-ui.md
 
 ## Workflow Protocol
 
-1.  **Agent**: Defines the `editor-enhance.md` spec and breaks it down into these files.
-2.  **User**: Runs the commands above.
-3.  **CLI**: Reads the specific task file, implements the code, and runs tests/checks.
-4.  **Agent & User**: Review the changes and proceed to integration.
+1. **Agent**: Defines the `editor-enhance.md` spec and breaks it down into these files.
+2. **User**: Runs the commands above.
+3. **CLI**: Reads the specific task file, implements the code, and runs tests/checks.
+4. **Agent & User**: Review the changes and proceed to integration.

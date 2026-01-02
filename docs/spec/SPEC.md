@@ -798,6 +798,7 @@ User → React (S3+CloudFront) → Spring API → PostgreSQL
 | 1.4  | 2024.12    | 문서 간 상호 참조 추가 (ARCHITECTURE, TECHSTACK, DATA_MODEL)                         |
 | 1.5  | 2024.12    | API_SPEC.md 통합 참조                                                                |
 | 1.6  | 2025.12.26 | 데모 에디터 경로, 뷰 모드, 기술 스택 버전 업데이트                                   |
+| 1.7  | 2026.01.02 | /sync-docs 워크플로우 전체 동기화 완료 (타입, API, 훅/서비스 개수)                   |
 | 1.7  | 2025.12.28 | React Flow → D3.js Force Simulation 전환 반영                                        |
 | 1.8  | 2025.12.29 | 에디터 고급 기능 로드맵(5.10), 자연어→DB 파이프라인(5.11), 게이미피케이션(5.12) 추가 |
 

@@ -1,12 +1,12 @@
 name: AI Code Review
 
 on:
-  # 코멘트로 트리거 (/review) - 수동 실행
-  issue_comment:
-    types: [created]
-  # PR 생성 및 업데이트 시 자동 실행
-  pull_request:
-    types: [opened, synchronize]
+  # # 코멘트로 트리거 (/review) - 수동 실행
+  # issue_comment:
+  #   types: [created]
+  # # PR 생성 및 업데이트 시 자동 실행
+  # pull_request:
+  #   types: [opened, synchronize]
 
 jobs:
   ai_review:
@@ -44,14 +44,14 @@ jobs:
           BASE_BRANCH="${{ steps.pr.outputs.base_branch }}"
           git fetch origin $BASE_BRANCH
 
-          # 변경된 파일 목록 (Base Branch 기준)
-          FILES=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.ts' '*.tsx' | head -30)
+          # 변경된 파일 목록 (Java, 설정 파일 포함)
+          FILES=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.java' '*.yml' '*.gradle' '*.sql' | head -30)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          # 실제 코드 변경 내용 (Base Branch 기준, 최대 300줄)
-          DIFF=$(git diff origin/$BASE_BRANCH...HEAD -- '*.ts' '*.tsx' | head -500)
+          # 실제 코드 변경 내용
+          DIFF=$(git diff origin/$BASE_BRANCH...HEAD -- '*.java' '*.yml' '*.gradle' '*.sql' | head -500)
           echo "$DIFF" > diff_content.txt
 
       - name: Prepare prompt
@@ -60,18 +60,22 @@ jobs:
           DIFF_CONTENT=$(head -n 500 diff_content.txt)
           FILES="${{ steps.diff.outputs.files }}"
 
-          # Extract ai_code_review section from CLAUDE.md
+          # Extract coding_rules and ai_code_review section from CLAUDE.md
           if [ -f "CLAUDE.md" ]; then
-            # Extract content between <ai_code_review> and </ai_code_review>
+            # Extract content from <coding_rules> and <ai_code_review>
+            CODING_RULES=$(sed -n '/<coding_rules>/,/<\/coding_rules>/p' CLAUDE.md)
             REVIEW_CONTEXT=$(sed -n '/<ai_code_review>/,/<\/ai_code_review>/p' CLAUDE.md | sed '1d;$d')
           else
-            # Fallback if CLAUDE.md doesn't exist
+            CODING_RULES="표준 Java/Spring Boot 코딩 규칙을 따릅니다."
             REVIEW_CONTEXT="StoLink 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다."
           fi
 
-          # Create template file with CLAUDE.md context
+          # Create template file
           cat << 'EOF' > prompt_template.txt
-          REVIEW_CONTEXT_PLACEHOLDER
+          SYSTEM_CONTEXT_PLACEHOLDER
+
+          ## 프로젝트 코딩 규칙
+          CODING_RULES_PLACEHOLDER
 
           ## 변경된 파일
           FILES_PLACEHOLDER
@@ -81,7 +85,8 @@ jobs:
           DIFF_PLACEHOLDER
           ```
 
-          위 코드 변경에 대해 리뷰해주세요. 출력 형식을 정확히 따라주세요.
+          위 규칙과 프로젝트 컨텍스트를 바탕으로 변경된 코드를 리뷰해주세요.
+          항상 한국어로 응답하며, 출력 형식을 정확히 지켜주세요.
           EOF
 
           # Use jq to generate JSON safely
@@ -89,23 +94,34 @@ jobs:
             --arg model "claude-haiku-4-5-20251001" \
             --rawfile template prompt_template.txt \
             --arg context "$REVIEW_CONTEXT" \
+            --arg rules "$CODING_RULES" \
             --arg files "$FILES" \
             --arg diff "$DIFF_CONTENT" \
             '{
               model: $model,
-              max_tokens: 2048,
+              max_tokens: 4096,
               messages: [{
                 role: "user",
-                content: ($template | sub("REVIEW_CONTEXT_PLACEHOLDER"; $context) | sub("FILES_PLACEHOLDER"; $files) | sub("DIFF_PLACEHOLDER"; $diff))
+                content: ($template | sub("SYSTEM_CONTEXT_PLACEHOLDER"; $context) | sub("CODING_RULES_PLACEHOLDER"; $rules) | sub("FILES_PLACEHOLDER"; $files) | sub("DIFF_PLACEHOLDER"; $diff))
               }]
             }' > prompt.json
 
       - name: Call Claude API
         id: review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "API Error: ANTHROPIC_API_KEY secret is missing in GitHub repository settings." > review_result.txt
+            echo "error=API_KEY_MISSING" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "::add-mask::$ANTHROPIC_API_KEY"
+
           RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
             -H "Content-Type: application/json" \
-            -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -d @prompt.json)
 

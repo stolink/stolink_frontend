@@ -111,14 +111,45 @@ useMutation({
 3. **협업 확장 (Y.js 통합)** - 향후 실시간 협업 기능 추가 용이
 4. **헤드리스 아키텍처** - UI 완전 커스터마이징, shadcn/ui 통합
 
-### 커스텀 익스텐션
+### 커스텀 익스텐션 (16개)
 
-| 익스텐션             | 역할                     |
-| -------------------- | ------------------------ |
-| `CharacterMention`   | @캐릭터 멘션 자동완성    |
-| `CharacterNodeView`  | 캐릭터 노드 렌더링       |
-| `CharacterHoverCard` | 호버 시 캐릭터 정보 표시 |
-| `CommandList`        | / 명령어 팔레트          |
+| 익스텐션                   | 역할                              |
+| -------------------------- | --------------------------------- |
+| `CharacterMention`         | @캐릭터 멘션 자동완성             |
+| `CharacterNodeView`        | 캐릭터 노드 렌더링                |
+| `CharacterHoverCard`       | 캐릭터 호버 카드                  |
+| `ForeshadowingSuggest`     | #복선 태그 자동완성               |
+| `ForeshadowingSuggestList` | 복선 제안 목록 UI                 |
+| `SlashCommand`             | / 명령어 팔레트                   |
+| `CommandList`              | 명령어 목록 UI                    |
+| `TypewriterScroll`         | 타자기 모드 (현재 라인 중앙 고정) |
+| `FocusMode`                | 포커스 모드 (주변 UI 숨김)        |
+| `LinguisticFocus`          | 언어학적 포커스 (현재 문단 강조)  |
+| `SectionDivider`           | 섹션 구분선 노드                  |
+| `SectionDividerView`       | 섹션 구분선 렌더링                |
+| `SmartPunctuation`         | 스마트 구두점 자동 변환           |
+| `SuggestionList`           | 자동완성 제안 목록 UI 공통        |
+
+### Tiptap Extension 파일 구조
+
+```
+src/components/editor/extensions/
+├── CharacterMention.ts          # 캐릭터 멘션 익스텐션
+├── CharacterNodeView.tsx        # 캐릭터 노드 뷰
+├── CharacterHoverCard.tsx       # 호버 카드 UI
+├── ForeshadowingSuggest.ts      # 복선 suggest
+├── ForeshadowingSuggestList.tsx # 복선 목록 UI
+├── SlashCommand.tsx             # 슬래시 명령 메인
+├── CommandList.tsx              # 명령 목록 UI
+├── TypewriterScroll.ts          # 타자기 스크롤
+├── FocusMode.ts                 # 집중 모드
+├── LinguisticFocus.ts           # 언어학적 포커스
+├── SectionDivider.ts            # 구분선 노드
+├── SectionDividerView.tsx       # 구분선 뷰
+├── SmartPunctuation.ts          # 스마트 구두점
+├── SuggestionList.tsx           # 공통 제안 UI
+└── slashCommand.types.ts        # 타입 정의
+```
 
 ---
 
@@ -265,6 +296,7 @@ build: {
 | 1.3  | 2024.12    | 문서 정리 - 디렉토리/라우팅 섹션은 ARCHITECTURE.md로 이동            |
 | 1.4  | 2025.12.26 | 실제 버전 반영 (TS 5.9, Vite 7.2, TanStack Query 5.90 등), 패턴 추가 |
 | 1.5  | 2025.12.28 | React Flow → D3.js Force Simulation 전환, 그래프 훅 아키텍처 문서화  |
+| 1.6  | 2026.01.02 | 커스텀 익스텐션 전체 목록 동기화 (16개), 파일 구조 추가              |
 
 ---
 
