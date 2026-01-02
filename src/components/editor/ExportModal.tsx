@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Download,
   FileText,
@@ -23,6 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types/character";
+import { draftService } from "@/services/draftService";
+import { useToast } from "@/hooks/useToast";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -39,7 +41,8 @@ interface ExportModalProps {
     type: string;
     strength: number;
   }>;
-  documents?: { id: string; title: string; content?: string }[];
+  documents?: { id: string; title: string; content?: string; type?: string }[];
+  projectId?: string; // Add projectId to props
 }
 
 // 플랫폼 프리셋 정의
@@ -101,6 +104,7 @@ export default function ExportModal({
   characters = [],
   links = [],
   documents = [],
+  projectId, // Destructure projectId
 }: ExportModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedPreset, setSelectedPreset] = useState(PRESETS[0].id);
@@ -110,20 +114,37 @@ export default function ExportModal({
 
   // Initialize selected document
   // Compute initial doc ID without setState in effect
+  // 폴더(type: 'folder')를 제외하고 문서(type: 'text')만 필터링
+  const textDocuments = documents.filter((d) => d.type !== "folder");
+
   const initialDocId = (() => {
-    if (documents.length === 0) return "";
-    if (currentId && documents.some((d) => d.id === currentId))
+    if (textDocuments.length === 0) return "";
+    if (currentId && textDocuments.some((d) => d.id === currentId))
       return currentId;
     const matched =
-      documents.find((d) => d.title === title) ||
-      documents.find((d) => d.content);
-    return matched?.id || "";
+      textDocuments.find((d) => d.title === title) ||
+      textDocuments.find((d) => d.content);
+    return matched?.id || textDocuments[0]?.id || "";
   })();
 
   const [selectedDocId, setSelectedDocId] = useState<string>(initialDocId);
   const [includeCharacters, setIncludeCharacters] = useState(true);
   const [includeGraph, setIncludeGraph] = useState(true);
+
+  // documents가 로드된 후 selectedDocId가 비어있으면 첫 번째 문서로 설정
+  useEffect(() => {
+    if (!selectedDocId && textDocuments.length > 0) {
+      setSelectedDocId(textDocuments[0].id);
+    }
+  }, [textDocuments, selectedDocId]);
+
+  // 커뮤니티 배포 관련 상태
   const [isPublishing, setIsPublishing] = useState(false);
+  const { toast } = useToast();
+
+  // 커뮤니티 URL (환경 변수 또는 기본값)
+  const COMMUNITY_URL =
+    import.meta.env.VITE_COMMUNITY_URL || "http://localhost:5174";
 
   // Derived content based on selection
   const targetDoc = documents.find((d) => d.id === selectedDocId);
@@ -205,54 +226,82 @@ export default function ExportModal({
     URL.revokeObjectURL(url);
   };
 
-  // Mock Publish Handler
+  // 커뮤니티 배포 핸들러 (Draft 생성 및 리다이렉트)
   const handlePublish = async () => {
+    if (!selectedDocId || selectedDocId === "") {
+      toast({
+        title: "배포할 섹션을 선택해주세요",
+        description: "문서 목록에서 배포할 항목을 선택해야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPublishing(true);
 
-    // Simulate API call / Packaging
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // 1. 스냅샷 데이터 생성
+      const graphSnapshot = {
+        // 노드: D3 렌더링용 최소 데이터
+        nodes: characters.map((c) => ({
+          id: c._id,
+          name: c.profile?.name || "이름 없음",
+          role: c.role,
+          group: c.profile?.faction?.name || undefined,
+          imageUrl: c.imageUrl || undefined,
+        })),
 
-    // In a real app, this would upload to server.
-    // Here we'll download a JSON package representing the published state.
-    // In a real app, this would upload to server.
-    // Here we'll download a JSON package representing the published state.
-    const packageData = {
-      title: targetTitle,
-      content: targetContent, // HTML content
-      publishedAt: new Date().toISOString(),
-      stats: {
-        wordCount,
-        readTime,
-      },
-      snapshots: {
-        characters: includeCharacters ? characters : null,
-        graph: includeGraph
-          ? {
-              nodes: characters.map((c) => ({
-                id: c._id,
-                name: c.profile?.name || "이름 없음",
-                role: c.role,
-                group: c.profile?.faction?.name || "무소속",
-                imageUrl: undefined, // 새 스키마에 imageUrl 없음
-              })),
-              links,
-            }
-          : null,
-      },
-    };
+        // 링크: 관계 정보 + 히스토리
+        links: links.map((l) => {
+          const relation = characters
+            .find((c) => c._id === l.source)
+            ?.relations?.graph?.find((r) => r.target === l.target);
+          return {
+            ...l,
+            id: String(l.id),
+            description: relation?.description,
+            history: relation?.history || undefined,
+          };
+        }),
 
-    const blob = new Blob([JSON.stringify(packageData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${targetTitle}_publish_package.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+        // 프로필: 노드 클릭 시 상세 정보
+        profiles: Object.fromEntries(
+          characters.map((c) => [
+            c._id,
+            {
+              id: c._id,
+              name: c.profile?.name,
+              age: c.profile?.age || undefined,
+              gender: c.profile?.gender,
+              personality: c.personality?.core_traits,
+              backstory: c.profile?.backstory,
+              imageUrl: c.imageUrl || undefined,
+            },
+          ]),
+        ),
+      };
 
-    setIsPublishing(false);
-    onClose();
+      // 2. Draft API 호출
+      await draftService.create({
+        documentId: selectedDocId,
+        projectId, // 선택 사항
+        title: targetTitle,
+        content: targetContent,
+        graphSnapshot,
+      });
+
+      // 3. 커뮤니티로 리다이렉트 (메인으로 이동, 파라미터 없음)
+      window.location.href = COMMUNITY_URL;
+    } catch (error) {
+      console.error("Draft 저장 실패:", error);
+      toast({
+        title: "배포 준비 실패",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
