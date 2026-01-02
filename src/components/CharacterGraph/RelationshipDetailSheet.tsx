@@ -64,14 +64,10 @@ export function RelationshipDetailSheet({
     history,
   } = relationship;
 
-  // Use relationship.relationType if available (from JSON), otherwise fallback to type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const detailedRel = relationship as Record<string, unknown>;
+  // Use relationship.relationType if available, otherwise fallback to type
   const displayType = (relationship.relationType ||
-    detailedRel.relation_type ||
     type) as BackendRelationshipType;
   const color = getRelationshipColor(displayType, strength);
-  // const colorClass = RELATION_COLORS[displayType] || "bg-gray-500"; // Removed
   const label = RELATION_LABELS[displayType] || displayType;
   const icon = RELATION_ICONS[displayType] || <Activity className="w-4 h-4" />;
 
@@ -241,9 +237,7 @@ export function RelationshipDetailSheet({
             </div>
 
             {/* Legacy Evolution History (Fallback) */}
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(evolvedFrom ||
-              (relationship as Record<string, unknown>).evolved_from) && (
+            {evolvedFrom && (
               <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-2">
                 <div className="flex items-center gap-2 text-stone-500 mb-2">
                   <Activity className="w-4 h-4" />
@@ -251,13 +245,8 @@ export function RelationshipDetailSheet({
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-stone-500 bg-white">
-                    {RELATION_LABELS[
-                      (evolvedFrom ||
-                        (relationship as Record<string, unknown>)
-                          .evolved_from) as BackendRelationshipType
-                    ] ||
-                      evolvedFrom ||
-                      (relationship as Record<string, unknown>).evolved_from}
+                    {RELATION_LABELS[evolvedFrom as BackendRelationshipType] ||
+                      evolvedFrom}
                   </Badge>
                   <span className="text-stone-400">→</span>
                   <Badge

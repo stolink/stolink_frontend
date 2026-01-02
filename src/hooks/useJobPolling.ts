@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { JobResponse, JobStatus } from "@/types/api";
 
 interface UseJobPollingOptions<T> {
@@ -13,7 +13,7 @@ interface UseJobPollingOptions<T> {
 export function useJobPolling<T = unknown>(
   jobId: string | null,
   checkStatusFn: (id: string) => Promise<JobResponse<T>>,
-  options: UseJobPollingOptions<T> = {}
+  options: UseJobPollingOptions<T> = {},
 ) {
   const {
     enabled = true,
@@ -32,7 +32,7 @@ export function useJobPolling<T = unknown>(
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
-  // Derived state for jobId changes
+  // Reset state when jobId changes (Derived State Pattern)
   if (jobId !== prevJobId) {
     setPrevJobId(jobId);
     if (jobId && enabled) {
@@ -40,89 +40,122 @@ export function useJobPolling<T = unknown>(
       setProgress(0);
       setResult(null);
       setError(null);
-    } else if (!jobId) {
-      setJobStatus(null);
-      setProgress(0);
-      setResult(null);
-      setError(null);
     }
   }
 
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unmountedRef = useRef(false);
+  const pollRef = useRef<() => void>(() => {});
+  const startTimeRef = useRef<number>(0);
+
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    const pollIntervalId: NodeJS.Timeout[] = [];
-
-    if (!jobId || !enabled) {
-      return;
-    }
-
-    const poll = async () => {
-      try {
-        const response = await checkStatusFn(jobId);
-
-        // Case-insensitive status check to handle "COMPLETED" vs "completed"
-        const currentStatus = response.status?.toLowerCase();
-
-        if (currentStatus === "completed") {
-          // If response.result is missing, assume the response itself contains the result data (flattened structure)
-          const resultData = (response.result || response) as T;
-
-          setIsPolling(false);
-          setJobStatus("completed");
-          setProgress(100);
-          setResult(resultData);
-          onComplete?.(resultData);
-          clearInterval(pollIntervalId);
-          clearTimeout(timeoutId);
-        } else if (currentStatus === "failed") {
-          setIsPolling(false);
-          setJobStatus("failed");
-          setError(response.error || "Job failed");
-          onError?.(response.error || "Job failed");
-          clearInterval(pollIntervalId);
-          clearTimeout(timeoutId);
-        } else {
-          setJobStatus(response.status as JobStatus); // Keep original casing for state
-          if (typeof response.progress === "number") {
-            setProgress(response.progress);
-          }
-        }
-      } catch {
-        // Silent error handling for polling
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
+  }, []);
 
-    setIsPolling(true);
-    poll(); // Initial check
+  // 폴링 응답 처리 (복잡도 분산)
+  const handlePollResponse = useCallback(
+    (response: JobResponse<T>): boolean => {
+      setJobStatus(response.status);
+      setProgress(response.progress || 0);
 
-    const intervalId = setInterval(poll, pollingInterval);
-    pollIntervalId.push(intervalId);
-
-    if (maxPollingTime) {
-      timeoutId = setTimeout(() => {
+      if (response.status === "completed") {
+        const resultData = response.result as T;
+        setResult(resultData);
         setIsPolling(false);
-        setJobStatus("failed");
-        setError("Polling timeout");
-        clearInterval(pollIntervalId);
+        onComplete?.(resultData);
+        return true; // Stop polling
+      }
+
+      if (response.status === "failed") {
+        const errorMsg = response.error || "Job failed";
+        setError(errorMsg);
+        setIsPolling(false);
+        onError?.(errorMsg);
+        return true; // Stop polling
+      }
+
+      return false; // Continue polling
+    },
+    [onComplete, onError],
+  );
+
+  const poll = useCallback(async () => {
+    if (!jobId || !enabled || unmountedRef.current) return;
+
+    // Check timeout
+    if (maxPollingTime && startTimeRef.current) {
+      const elapsed = Date.now() - startTimeRef.current;
+      if (elapsed > maxPollingTime) {
+        setError("Polling timeout exceeded");
+        setIsPolling(false);
         onTimeout?.();
-      }, maxPollingTime);
+        return;
+      }
     }
 
-    return () => {
-      pollIntervalId.forEach((id) => clearInterval(id));
-      clearTimeout(timeoutId);
+    try {
+      setIsPolling(true);
+      const response = await checkStatusFn(jobId);
+
+      if (unmountedRef.current) return;
+
+      const shouldStop = handlePollResponse(response);
+      if (shouldStop) return;
+
+      // Continue polling - use ref to avoid stale closure
+      timeoutRef.current = setTimeout(
+        () => pollRef.current?.(),
+        pollingInterval,
+      );
+    } catch (err) {
+      if (unmountedRef.current) return;
+
+      const errorMsg = err instanceof Error ? err.message : "Polling failed";
+      setError(errorMsg);
       setIsPolling(false);
-    };
+      onError?.(errorMsg);
+    }
   }, [
     jobId,
     enabled,
-    pollingInterval,
     maxPollingTime,
+    pollingInterval,
     checkStatusFn,
-    onComplete,
-    onError,
+    handlePollResponse,
     onTimeout,
+    onError,
   ]);
+
+  // Keep pollRef in sync
+  useEffect(() => {
+    pollRef.current = poll;
+  }, [poll]);
+
+  // Reset state when jobId changes (separate from polling logic)
+  useEffect(() => {
+    if (jobId && enabled) {
+      startTimeRef.current = Date.now();
+    }
+  }, [jobId, enabled]);
+
+  // Start polling when jobId changes
+  useEffect(() => {
+    if (jobId && enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      poll();
+    } else {
+      setIsPolling(false);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    }
+  }, [jobId, enabled, poll]);
 
   return {
     jobStatus,
