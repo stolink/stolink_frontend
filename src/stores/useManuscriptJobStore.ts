@@ -5,7 +5,8 @@ export type ManuscriptJobStatus =
   | "PENDING"
   | "PROCESSING"
   | "COMPLETED"
-  | "FAILED";
+  | "FAILED"
+  | "PAUSED";
 
 export interface ManuscriptJob {
   jobId: string;
@@ -29,6 +30,7 @@ interface ManuscriptJobState {
   ) => void;
   completeJob: (projectId: string, totalDocuments: number) => void;
   failJob: (projectId: string, message: string) => void;
+  pauseJob: (projectId: string) => void;
   removeJob: (projectId: string) => void;
   getJob: (projectId: string) => ManuscriptJob | undefined;
   getActiveJobs: () => ManuscriptJob[];
@@ -102,6 +104,23 @@ export const useManuscriptJobStore = create<ManuscriptJobState>()(
                 ...existing,
                 status: "FAILED",
                 message,
+              },
+            },
+          };
+        }),
+
+      pauseJob: (projectId) =>
+        set((state) => {
+          const existing = state.jobs[projectId];
+          if (!existing) return state;
+
+          return {
+            jobs: {
+              ...state.jobs,
+              [projectId]: {
+                ...existing,
+                status: "PAUSED",
+                message: "일시 중지됨 (서버에서 찾을 수 없음)",
               },
             },
           };

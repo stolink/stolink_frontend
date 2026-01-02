@@ -60,6 +60,21 @@ export default function WorldPage() {
     enabled: !!projectId,
   });
 
+  // Debug: Log raw API response
+  useEffect(() => {
+    if (characters.length > 0) {
+      console.log(
+        "[WorldPage] Raw characters data:",
+        JSON.stringify(characters, null, 2),
+      );
+      console.log("[WorldPage] First character:", characters[0]);
+      console.log(
+        "[WorldPage] Character keys:",
+        Object.keys(characters[0] || {}),
+      );
+    }
+  }, [characters]);
+
   const queryClient = useQueryClient();
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 

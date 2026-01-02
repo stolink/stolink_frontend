@@ -55,7 +55,7 @@ export function generateLinksFromCharacters(
         if (linkSet.has(linkKey)) return;
         linkSet.add(linkKey);
 
-        const relType = getRelationType(rel.relation_type);
+        const relType = getRelationType(rel.type);
 
         links.push({
           id: `link-${sId}-${tId}`,
@@ -63,7 +63,7 @@ export function generateLinksFromCharacters(
           target: tId,
           type: relType,
           strength: rel.strength ?? 5,
-          label: rel.description || rel.relation_type,
+          label: rel.description || rel.type,
         });
       }
     });

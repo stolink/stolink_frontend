@@ -15,6 +15,9 @@ const EditorPage = lazy(() => import("@/pages/editor/EditorPage"));
 const WorldPage = lazy(() => import("@/pages/world/WorldPage"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics/AnalyticsPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
+const CharacterIntegrationTest = lazy(
+  () => import("@/pages/CharacterIntegrationTest"),
+);
 
 const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
 
@@ -82,6 +85,10 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/oauth2/callback" element={<OAuth2Callback />} />
               <Route path="/share/:shareId" element={<SharedProjectPage />} />
+              <Route
+                path="/test/character-integration"
+                element={<CharacterIntegrationTest />}
+              />
 
               {/* Demo Route - No Auth Required */}
               <Route path="/demo" element={<EditorPage isDemo={true} />} />

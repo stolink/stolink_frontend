@@ -65,7 +65,8 @@ export function RelationshipDetailSheet({
   } = relationship;
 
   // Use relationship.relation_type if available (from JSON), otherwise fallback to type
-  const displayType = relationship.relation_type || type;
+  const displayType = (relationship.relation_type ||
+    type) as BackendRelationshipType;
   const color = getRelationshipColor(displayType, strength);
   // const colorClass = RELATION_COLORS[displayType] || "bg-gray-500"; // Removed
   const label = RELATION_LABELS[displayType] || displayType;

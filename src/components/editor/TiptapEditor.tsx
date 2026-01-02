@@ -6,7 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
-import Underline from "@tiptap/extension-underline";
+// import Underline from "@tiptap/extension-underline";
 import {
   useEffect,
   useState,
@@ -207,7 +207,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         TextAlign.configure({
           types: ["heading", "paragraph"],
         }),
-        Underline,
+        // Underline, // Duplicate extension warning fix
         CharacterMention,
         SlashCommand.configure({
           onCreateSection: (title: string) => {

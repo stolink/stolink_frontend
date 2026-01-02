@@ -15,13 +15,17 @@ export function normalizeRelationType(type: string): RelationType {
     hostile: "hostile",
     romantic: "romantic",
 
+    // Backend uppercase variants
+    ally: "friendly",
+    enemy: "hostile",
+    neutral: "friendly",
+
     // Legacy / Aliases / Mapping for removed types
     family: "friendly",
-    neutral: "friendly",
     friendship: "friendly",
     friend: "friendly",
     conflict: "hostile",
-    enemy: "hostile",
+    rival: "hostile",
     lover: "romantic",
     romance: "romantic",
   };
@@ -46,11 +50,19 @@ export function extractRelationshipLinks(
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
 
+  console.log(
+    `[extractRelationshipLinks] Processing ${characters.length} characters`,
+  );
+
   characters.forEach((char) => {
     // 1. 관계 데이터 추출 (새 스키마 relations.graph 또는 백엔드 직결 relationships 필드)
     const relationGraph =
       char.relations?.graph ||
       (char as { relationships?: unknown[] }).relationships;
+
+    console.log(
+      `[extractRelationshipLinks] Character ${char.profile?.name}: relations.graph length = ${char.relations?.graph?.length || 0}`,
+    );
 
     if (!Array.isArray(relationGraph)) {
       console.warn(
@@ -101,13 +113,19 @@ export function extractRelationshipLinks(
         if (processedPairs.has(pairKey)) return;
         processedPairs.add(pairKey);
 
+        const normalizedType = normalizeRelationType(
+          rel.relation_type || rel.type || "friendly",
+        );
+
+        console.log(
+          `[extractRelationshipLinks] Creating link: ${sourceId} -> ${targetId}, type: ${rel.type} -> ${normalizedType}`,
+        );
+
         links.push({
           id: `${sourceId}-${targetId}`,
           source: sourceId,
           target: targetId,
-          type: normalizeRelationType(
-            rel.relation_type || rel.type || "friendly",
-          ),
+          type: normalizedType,
           strength: rel.strength || 5,
           label: rel.description,
           description: rel.description,

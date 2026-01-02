@@ -82,6 +82,9 @@ export const CharacterGraph = forwardRef<
     // Tooltip close timer for smooth interaction
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Map to store node ID -> original Character for reliable lookup
+    const nodeCharacterMapRef = useRef<Map<string, Character>>(new Map());
+
     const { width, height } = useResize(containerRef);
 
     /**
@@ -92,12 +95,27 @@ export const CharacterGraph = forwardRef<
       // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
       const relationCounts = calculateRelationCounts(initialLinks);
 
-      return characters.map((char, index) => {
+      // Clear and rebuild character map
+      nodeCharacterMapRef.current.clear();
+
+      console.log(
+        "[CharacterGraph] Building nodes, characters.length:",
+        characters.length,
+      );
+
+      const nodes = characters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
 
         // Fallback: _id가 null이면 인덱스 기반 임시 ID 사용
         const nodeId = char._id || `temp-node-${index}`;
+
+        // Store mapping for safe lookup in handleNodeClick
+        nodeCharacterMapRef.current.set(nodeId, char);
+
+        console.log(
+          `[CharacterGraph] Stored mapping: ${nodeId} -> char._id: ${char._id}, name: ${char.profile?.name}`,
+        );
 
         return {
           id: nodeId,
@@ -108,6 +126,17 @@ export const CharacterGraph = forwardRef<
           relationCount: relationCounts[char._id] || 0,
         };
       });
+
+      console.log(
+        "[CharacterGraph] Map size after building:",
+        nodeCharacterMapRef.current.size,
+      );
+      console.log(
+        "[CharacterGraph] Map keys:",
+        Array.from(nodeCharacterMapRef.current.keys()),
+      );
+
+      return nodes;
     }, [characters, initialLinks]);
 
     const { nodes, links, simulation } = useForceSimulation(
@@ -468,15 +497,17 @@ export const CharacterGraph = forwardRef<
           "node.name:",
           node.name,
         );
+        console.log(
+          "[CharacterGraph] Current Map size:",
+          nodeCharacterMapRef.current.size,
+        );
+        console.log(
+          "[CharacterGraph] Map has node.id?",
+          nodeCharacterMapRef.current.has(node.id),
+        );
 
-        // Try exact _id match first
-        let char = characters.find((c) => c._id === node.id);
-
-        // Fallback: if node.id is temp-node-N, use index
-        if (!char && node.id.startsWith("temp-node-")) {
-          const index = parseInt(node.id.replace("temp-node-", ""), 10);
-          char = characters[index];
-        }
+        // Use the reliable Map lookup instead of array indexing
+        const char = nodeCharacterMapRef.current.get(node.id);
 
         console.log(
           "[CharacterGraph] Found character:",
@@ -488,11 +519,16 @@ export const CharacterGraph = forwardRef<
           onNodeClick(char);
         } else {
           console.warn(
-            "[CharacterGraph] Character not found or onNodeClick missing",
+            "[CharacterGraph] Character not found for node.id:",
+            node.id,
+          );
+          console.warn(
+            "[CharacterGraph] Available keys:",
+            Array.from(nodeCharacterMapRef.current.keys()),
           );
         }
       },
-      [characters, onNodeClick],
+      [onNodeClick],
     );
 
     const handleNodeHover = useCallback(

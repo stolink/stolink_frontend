@@ -271,7 +271,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       const relGraph = char.relations?.graph || [];
       relGraph.forEach((rel) => {
         // Use source from relation or fallback to char._id
-        const sourceId = rel.source || char._id;
+        const sourceId = char._id;
         const linkId = `${sourceId}-${rel.target}`;
 
         if (processedLinkIds.has(linkId)) return;
@@ -281,7 +281,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           source: sourceId,
           target: rel.target,
           id: linkId,
-          type: rel.relation_type,
+          type: rel.type,
           strength: rel.strength,
         });
       });
