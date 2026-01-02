@@ -68,7 +68,7 @@ export function extractRelationshipLinks(
         strength?: number;
         description?: string;
         bidirectional?: boolean;
-        evolved_from?: string;
+        evolved_from?: RelationType | null;
         public_stance?: string;
         private_feeling?: string;
       }) => {
@@ -86,6 +86,13 @@ export function extractRelationshipLinks(
         }
 
         // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
+        if (!sourceId || !targetId) {
+          console.warn(
+            `Invalid relationship for character ${char._id}: missing source or target`,
+          );
+          return;
+        }
+
         const pairKey =
           sourceId < targetId
             ? `${sourceId}-${targetId}`
@@ -98,9 +105,11 @@ export function extractRelationshipLinks(
           id: `${sourceId}-${targetId}`,
           source: sourceId,
           target: targetId,
-          type: normalizeRelationType(rel.relation_type || rel.type),
-          strength: rel.strength,
-          label: rel.description, // Legacy alias
+          type: normalizeRelationType(
+            rel.relation_type || rel.type || "friendly",
+          ),
+          strength: rel.strength || 5,
+          label: rel.description,
           description: rel.description,
           bidirectional: rel.bidirectional,
           evolved_from: rel.evolved_from

@@ -1,8 +1,8 @@
 # StoLink 데이터 모델 명세
 
-> **버전**: 1.4
-> **최종 수정**: 2025년 12월 28일
-> **상태**: 현재 구현 기준
+> **버전**: 1.5
+> **최종 수정**: 2026년 1월 2일
+> **상태**: 현재 구현 기준 (sync-docs 워크플로우로 동기화)
 
 ---
 
@@ -133,15 +133,15 @@ interface CreateProjectInput {
 ## 3. 문서 (Document) ⭐ 핵심
 
 > 파일: `src/types/document.ts`
-> Scrivener 스타일의 통합 문서 모델에서 **1차원 리스트 구조**로 변경
+> Scrivener 스타일의 **트리 구조** 문서 모델 (재귀적 계층 구조)
 
 ```typescript
 export interface Document {
   // === Core Fields ===
   id: string;
   projectId: string;
-  // parentId removed
-  // type removed
+  parentId?: string; // 부모 문서 ID (계층 구조 지원)
+  type: "folder" | "text" | "scrivenings"; // 문서 타입
 
   // === Content ===
   title: string;
@@ -149,7 +149,7 @@ export interface Document {
   synopsis: string;
 
   // === Ordering ===
-  order: number; // Global order
+  order: number; // 정렬 순서 (같은 부모 내에서)
 
   // === Metadata ===
   metadata: DocumentMetadata;
@@ -230,75 +230,66 @@ interface BackendDocument {
 > 파일: `src/types/foreshadowing.ts`
 
 ```typescript
-export type ForeshadowingStatus = "setup" | "resolved" | "dropped";
-export type ForeshadowingCategory =
-  | "dialogue"
-  | "props"
-  | "scene"
-  | "symbol"
-  | "other";
+export type ForeshadowingStatus = "pending" | "recovered" | "ignored";
+export type ForeshadowingImportance = "major" | "minor";
 
-export interface ForeshadowLocation {
-  documentId: string;
-  selectionStart?: number;
-  selectionEnd?: number;
-  quote?: string;
-  chapterName?: string;
-  desc?: string;
+export interface ForeshadowingAppearance {
+  // === 위치 정보 ===
+  sectionTitle: string; // 섹션 제목 (필수)
+  documentId?: string; // 섹션 ID (선택, 레거시)
+
+  // === 상태 ===
+  isRecovery: boolean; // 회수 지점인지
+
+  // === 레거시 호환 ===
+  sceneId?: string;
+  chapterId?: string;
+  chapterTitle?: string;
 }
 
 export interface Foreshadowing {
+  // === 필수 필드 ===
   id: string;
   projectId: string;
-
-  // === Manual Management Fields ===
-  title: string;
-  description?: string;
-
+  tag: string; // e.g., "전설의검" (기존 title 필드)
   status: ForeshadowingStatus;
-  importance: number;
-  category?: ForeshadowingCategory;
 
-  // === Connections ===
-  relatedEntities: {
-    characterIds?: string[];
-    placeIds?: string[];
-    itemIds?: string[];
-  };
+  // === 주요 선택 필드 ===
+  description?: string;
+  importance?: ForeshadowingImportance; // 중요도
+  relatedCharacterIds?: string[]; // 관련 캐릭터
 
-  // === Locations ===
-  createdIn?: ForeshadowLocation; // 투척(Setup) 위치
-  resolvedIn?: ForeshadowLocation; // 회수(Payoff) 위치
+  // === 동적 추가 정보 ===
+  extras?: Record<string, string | number | boolean>;
 
+  // === 등장 위치들 ===
+  appearances: ForeshadowingAppearance[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateForeshadowingInput {
   projectId: string;
-  title: string;
+  tag: string;
   description?: string;
-  status?: ForeshadowingStatus;
-  importance?: number;
-  category?: ForeshadowingCategory;
-  createdIn?: ForeshadowLocation;
+  extras?: Record<string, string | number | boolean>;
 }
 
 export interface UpdateForeshadowingInput {
-  title?: string;
-  description?: string;
+  tag?: string;
   status?: ForeshadowingStatus;
-  importance?: number;
-  category?: ForeshadowingCategory;
-  relatedEntities?: {
-    characterIds?: string[];
-    placeIds?: string[];
-    itemIds?: string[];
-  };
-  createdIn?: ForeshadowLocation;
-  resolvedIn?: ForeshadowLocation;
+  description?: string;
+  extras?: Record<string, string | number | boolean>;
 }
 ```
+
+**주요 변경사항:**
+
+- `title` → `tag`: 복선 식별자 필드명 변경
+- `status` 값: `"setup" | "resolved" | "dropped"` → `"pending" | "recovered" | "ignored"`
+- `importance` 타입: `number` → `ForeshadowingImportance` ("major" | "minor")
+- `createdIn`/`resolvedIn` 제거 → `appearances: ForeshadowingAppearance[]` 배열로 통합
+- 각 등장 위치는 `isRecovery: boolean` 플래그로 투척/회수 구분
 
 ---
 
@@ -306,8 +297,14 @@ export interface UpdateForeshadowingInput {
 
 > 파일: `src/types/character.ts`
 
+### 5.1 새 백엔드 스키마 (현재 구현)
+
 ```typescript
-type CharacterRole =
+// === 관계 타입 (3종으로 단순화) ===
+export type RelationType = "friendly" | "hostile" | "romantic";
+
+// === 캐릭터 역할 ===
+export type CharacterRole =
   | "protagonist"
   | "antagonist"
   | "supporting"
@@ -315,64 +312,185 @@ type CharacterRole =
   | "sidekick"
   | "other";
 
-interface Character {
-  // === 필수 필드 ===
-  id: string;
-  projectId: string;
+// === 캐릭터 프로필 정보 ===
+export interface CharacterProfile {
+  character_id: string;
   name: string;
-
-  // === 주요 선택 필드 (UI에서 별도 표시) ===
-  role?: CharacterRole;
-  faction?: string | null; // 소속/세력 (그룹화 기준)
-  imageUrl?: string;
-
-  // === 관계 정보 (백엔드에서 항상 포함) ===
-  relationships: BackendRelationship[];
-
-  // === 동적 추가 정보 ===
-  extras?: Record<string, string | number | boolean | string[]>;
-
-  // === 메타 정보 ===
-  createdAt: string;
-  updatedAt: string;
+  age: number | null;
+  gender: string;
+  race: string;
+  mbti: string | null;
+  personality: string[];
+  backstory: string;
+  faction: {
+    name: string;
+    social: {
+      rank: string;
+      influence: number;
+      faction_reputation: Record<string, unknown>;
+    };
+  };
 }
 
-// === 백엔드 관계 타입 (5종 - Neo4j) ===
-type BackendRelationshipType =
-  | "friendly"
-  | "hostile"
-  | "neutral"
-  | "romantic"
-  | "family";
+// === 캐릭터 외모 정보 ===
+export interface CharacterAppearance {
+  physique: string;
+  skin_tone: string;
+  eyes: string;
+  nose: string;
+  mouth: string;
+  hair_style: string;
+  hair_color: string;
+  attire: string[];
+  expression: string;
+  scars_tattoos: string[];
+  style_context: {
+    art_style: string;
+  };
+}
 
-interface BackendRelationship {
-  id: number; // Neo4j internal ID
-  target: string; // Target character ID
-  type: BackendRelationshipType;
-  strength: number; // 1-10
+// === 캐릭터 성격 정보 ===
+export interface CharacterPersonality {
+  core_traits: string[];
+  flaws: string[];
+  values: string[];
+}
+
+// === 캐릭터 관계 (임베딩된 그래프 노드) ===
+export interface CharacterRelation {
+  source: string;
+  target: string;
+  relation_type: RelationType;
+  strength: number;
+  description: string;
+  bidirectional: boolean;
+  public_stance?: string;
+  private_feeling?: string;
+  evolved_from?: RelationType | null;
+}
+
+// === 캐릭터 관계 정보 컨테이너 ===
+export interface CharacterRelations {
+  graph: CharacterRelation[];
+  event_refs: string[];
+  location_context: string;
+}
+
+// === 캐릭터 현재 감정 상태 ===
+export interface CharacterMood {
+  emotion: string;
+  intensity: number;
+  trigger: string | null;
+}
+
+// === 인벤토리 아이템 ===
+export interface InventoryItem {
+  item_id: string | null;
+  name: string;
+  quantity: number;
+  rarity: string;
+  estimated_value: number;
+  equipped: boolean;
+  slot: string;
+  description: string;
+}
+
+// === 캐릭터 인벤토리 ===
+export interface CharacterInventory {
+  equipped_items: InventoryItem[];
+  bag_items: InventoryItem[];
+  quest_items: string[];
+}
+
+// === 캐릭터 메타 정보 ===
+export interface CharacterMeta {
+  created_at: string | null;
+  updated_at: string | null;
+  data_version: string;
+  lock_version: number;
+}
+
+// === 메인 캐릭터 인터페이스 (새 백엔드 스키마) ===
+export interface Character {
+  _id: string;
+  projectId: string;
+  role: CharacterRole;
+  profile: CharacterProfile;
+  aliases: string[];
+  status: string;
+  appearance: CharacterAppearance;
+  personality: CharacterPersonality;
+  relations: CharacterRelations;
+  current_mood: CharacterMood;
+  inventory: CharacterInventory;
+  meta: CharacterMeta;
+  /** AI 생성 이미지 URL (다른 파이프라인에서 폴링) */
+  imageUrl?: string;
+  embedding?: number[];
+}
+```
+
+### 5.2 헬퍼 함수
+
+```typescript
+// Character._id를 id로 접근할 수 있게 하는 헬퍼
+export function getCharacterId(char: Character): string {
+  return char._id;
+}
+
+// Character.profile.name을 간편하게 접근
+export function getCharacterName(char: Character): string {
+  return char.profile.name;
+}
+
+// Character.profile.faction.name을 간편하게 접근
+export function getCharacterFaction(char: Character): string {
+  return char.profile.faction?.name || "무소속";
+}
+
+// 관계 배열을 가져오는 헬퍼 (레거시 호환)
+export function getCharacterRelationships(
+  char: Character,
+): CharacterRelation[] {
+  return char.relations?.graph || [];
+}
+```
+
+### 5.3 레거시 호환 (Deprecated)
+
+```typescript
+/**
+ * @deprecated Use Character.relations.graph instead
+ * 하위 호환성을 위한 레거시 관계 인터페이스
+ */
+export interface BackendRelationship {
+  id?: string | number;
+  target: string;
+  type: RelationType;
+  strength: number;
   label?: string | null;
   since?: string | null;
+  description?: string;
+  bidirectional?: boolean;
+  evolved_from?: RelationType;
+  history?: RelationshipEvent[] | string;
 }
 
-// === 기존 타입 호환성 유지 ===
-/**
- * @deprecated Use Character.relationships instead
- * 이 타입은 하위 호환성을 위해 유지되며, 향후 제거될 예정입니다.
- */
-interface CharacterRelationship {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  type: BackendRelationshipType;
-  strength: number; // 1-10
-  extras?: Record<string, string | number | boolean>;
+export interface RelationshipEvent {
+  eventId: string;
+  title: string;
+  chapter?: string;
+  type: RelationType;
+  reason?: string;
+  date?: string;
 }
+```
 
-// === D3.js Force Simulation 노드 타입 ===
-// 파일: `src/types/characterGraph.ts`
+### 5.4 D3.js 그래프 타입
 
-type RelationType = "friend" | "lover" | "enemy"; // 단순화된 3종
+> 파일: `src/types/characterGraph.ts`
 
+```typescript
 interface CharacterNode extends d3.SimulationNodeDatum {
   id: string;
   name: string;
@@ -538,14 +656,15 @@ interface AiAnalysisResult {
 ## 3. Document Entity
 
 _(Part 1에서 정의한 1차원 리스트 구조와 동일)_
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| id | UUID | ✅ | PK |
-| projectId | UUID | ✅ | FK (Project) |
-| title | VARCHAR | ✅ | 챕터/장면 제목 |
-| content | TEXT | ✅ | 본문 (HTML) |
-| order | INTEGER | ✅ | 정렬 순서 |
-| status | ENUM | ✅ | draft / revised / final |
+
+| 필드      | 타입    | 필수 | 설명                    |
+| --------- | ------- | ---- | ----------------------- |
+| id        | UUID    | ✅   | PK                      |
+| projectId | UUID    | ✅   | FK (Project)            |
+| title     | VARCHAR | ✅   | 챕터/장면 제목          |
+| content   | TEXT    | ✅   | 본문 (HTML)             |
+| order     | INTEGER | ✅   | 정렬 순서               |
+| status    | ENUM    | ✅   | draft / revised / final |
 
 ## 4. AnalysisJob Entity
 

@@ -63,7 +63,7 @@ src/
 ├── data/                 # 목 데이터, 상수 (3개)
 │   └── demoData.ts       # 데모 모드 목 데이터
 │
-├── hooks/                # 커스텀 훅 (25개) ⭐
+├── hooks/                # 커스텀 훅 (30개) ⭐
 │   ├── useDocuments.ts   # 문서 CRUD (TanStack Query)
 │   ├── useProjects.ts    # 프로젝트 관리
 │   ├── useCharacters.ts  # 캐릭터 관리
@@ -73,14 +73,19 @@ src/
 │   ├── usePlaces.ts      # 장소 관리
 │   ├── useItems.ts       # 아이템 관리
 │   ├── useAuth.ts        # 인증
+│   ├── useAuthInit.ts    # 인증 초기화
 │   ├── useAI.ts          # AI 기능
 │   ├── useExport.ts      # 내보내기
 │   ├── useShare.ts       # 공유
 │   ├── useJobPolling.ts  # 비동기 작업 폴링
+│   ├── useImageGenerationPolling.ts # 이미지 생성 폴링
+│   ├── useManuscriptPolling.ts # 원고 처리 폴링
+│   ├── useToast.ts       # 토스트 알림
 │   ├── useCharacterGraphSimulation.ts # D3 Force 시뮬레이션
 │   ├── useCharacterGraphDrag.ts   # 그래프 드래그
 │   ├── useCharacterGraphZoom.ts   # 그래프 줌/팬
 │   ├── useCharacterGraphResize.ts # 그래프 리사이즈
+│   ├── useCharacterImportance.ts  # 캐릭터 중요도
 │   ├── useNetworkSimulation.ts    # 네트워크 시뮬레이션
 │   └── useUpdateProjectStatus.ts  # 프로젝트 상태 업데이트
 │
@@ -98,7 +103,7 @@ src/
 │   ├── DocumentRepository.ts
 │   └── LocalDocumentRepository.ts
 │
-├── services/             # API 서비스 레이어 (16개) ⭐
+├── services/             # API 서비스 레이어 (20개) ⭐
 │   ├── documentService.ts
 │   ├── projectService.ts
 │   ├── characterService.ts
@@ -110,6 +115,9 @@ src/
 │   ├── aiService.ts
 │   ├── exportService.ts
 │   ├── shareService.ts
+│   ├── manuscriptService.ts
+│   ├── imageService.ts
+│   ├── graphApi.ts
 │   └── index.ts
 │
 ├── stores/               # Zustand 스토어 (8개)
@@ -124,18 +132,18 @@ src/
 │
 ├── styles/               # 추가 스타일
 │
-└── types/                # TypeScript 타입 (12개)
+└── types/                # TypeScript 타입 (11개)
     ├── document.ts       # Document, DocumentMetadata
     ├── project.ts        # Project, ProjectStats
-    ├── character.ts      # Character, Place, Item, BackendRelationship
+    ├── character.ts      # Character, Place, Item, CharacterRelation
     ├── characterGraph.ts # CharacterNode, RelationshipLink (D3.js)
-    ├── foreshadowing.ts
-    ├── auth.ts
+    ├── foreshadowing.ts  # Foreshadowing, ForeshadowingAppearance
+    ├── auth.ts           # User, AuthResponse
     ├── api.ts            # ApiResponse, JobResponse
-    ├── chapter.ts
-    ├── scene.ts
-    ├── network.ts        # 네트워크 관련 타입
-    └── index.ts
+    ├── chapter.ts        # (Legacy)
+    ├── scene.ts          # (Legacy)
+    ├── network.ts        # Network 관련 타입
+    └── index.ts          # Type exports
 ```
 
 ---
@@ -187,22 +195,28 @@ src/
 | `useForeshadowingStore` | 복선 CRUD, 등장 위치         | -         |
 | `useChapterStore`       | 챕터 CRUD                    | -         |
 
-### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (8개)
+### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (13개)
 
-| 훅                 | 역할                | Query Key 패턴                 |
-| ------------------ | ------------------- | ------------------------------ |
-| `useDocuments`     | 문서 트리, CRUD     | `['documents', projectId]`     |
-| `useProjects`      | 프로젝트 목록, CRUD | `['projects', 'list', params]` |
-| `useCharacters`    | 캐릭터 관리         | `['characters', projectId]`    |
-| `useRelationships` | 관계 관리           | `['relationships', projectId]` |
-| `useForeshadowing` | 복선 관리           | `['foreshadowing', projectId]` |
-| `usePlaces`        | 장소 관리           | `['places', projectId]`        |
-| `useItems`         | 아이템 관리         | `['items', projectId]`         |
-| `useAuth`          | 인증 상태           | -                              |
-| `useAI`            | AI 분석             | -                              |
-| `useExport`        | 내보내기            | -                              |
-| `useShare`         | 공유                | -                              |
-| `useJobPolling`    | 비동기 작업 폴링    | `['job', jobId]`               |
+| 훅                          | 역할                | Query Key 패턴                 |
+| --------------------------- | ------------------- | ------------------------------ |
+| `useDocuments`              | 문서 트리, CRUD     | `['documents', projectId]`     |
+| `useProjects`               | 프로젝트 목록, CRUD | `['projects', 'list', params]` |
+| `useCharacters`             | 캐릭터 관리         | `['characters', projectId]`    |
+| `useRelationships`          | 관계 관리           | `['relationships', projectId]` |
+| `useForeshadowing`          | 복선 관리           | `['foreshadowing', projectId]` |
+| `usePlaces`                 | 장소 관리           | `['places', projectId]`        |
+| `useItems`                  | 아이템 관리         | `['items', projectId]`         |
+| `useAuth`                   | 인증 상태           | -                              |
+| `useAuthInit`               | 인증 초기화         | -                              |
+| `useAI`                     | AI 분석             | -                              |
+| `useExport`                 | 내보내기            | -                              |
+| `useShare`                  | 공유                | -                              |
+| `useJobPolling`             | 비동기 작업 폴링    | `['job', jobId]`               |
+| `useImageGenerationPolling` | 이미지 생성 폴링    | `['imageJob', jobId]`          |
+| `useManuscriptPolling`      | 원고 처리 폴링      | `['manuscriptJob', jobId]`     |
+| `useToast`                  | 토스트 알림         | -                              |
+| `useUpdateProjectStatus`    | 프로젝트 상태       | -                              |
+| `useCharacterImportance`    | 캐릭터 중요도       | -                              |
 
 ### D3 그래프 훅 (5개)
 
@@ -417,3 +431,4 @@ queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
 | 1.0  | 2024.12.25 | 최초 작성                                                                           |
 | 2.0  | 2025.12.26 | TanStack Query 도입, 12 hooks / 12 services 반영, 브랜치 전략 3-Layer, Phase 3 완료 |
 | 2.1  | 2025.12.28 | D3.js Force Simulation 도입, 그래프 훅 5개 추가, 총 19개 훅 반영                    |
+| 2.2  | 2026.01.02 | 훅/서비스/타입 개수 동기화 (30/20/11), 누락된 훅 추가 (useAuthInit, useToast 등)    |

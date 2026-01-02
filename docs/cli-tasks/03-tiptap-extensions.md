@@ -21,8 +21,8 @@
 
 ## Execution Steps
 
-1.  Create the extension files in `src/components/editor/extensions/`.
-2.  **Modify** `src/components/editor/TiptapEditor.tsx`:
-    - Remove the hardcoded scroll logic.
-    - Remove conflicting `useEffect`s.
-    - **Do NOT** register the new extensions yet (I will do that in integration). Just clean up the old code so it doesn't conflict.
+1. Create the extension files in `src/components/editor/extensions/`.
+2. **Modify** `src/components/editor/TiptapEditor.tsx`:
+   - Remove the hardcoded scroll logic.
+   - Remove conflicting `useEffect`s.
+   - **Do NOT** register the new extensions yet (I will do that in integration). Just clean up the old code so it doesn't conflict.

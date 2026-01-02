@@ -21,6 +21,6 @@
 
 ## Execution Steps
 
-1.  Create `src/components/editor/settings/EditorSettingsPanel.tsx`.
-2.  Delete/Refactor identified legacy setting components.
-3.  Fix broken imports caused by deletion (comment them out).
+1. Create `src/components/editor/settings/EditorSettingsPanel.tsx`.
+2. Delete/Refactor identified legacy setting components.
+3. Fix broken imports caused by deletion (comment them out).

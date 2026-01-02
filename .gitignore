@@ -76,7 +76,7 @@ smart_split_logo.py
 *.personal.*
 
 # Gemini/AI artifacts (local agent state)
-.gemini/
+# .gemini/  # Temporarily disabled for MCP config access
 
 # Temporary files
 .pr_body_temp.md

@@ -395,7 +395,7 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-paper">
       <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-border shadow-sm">
         {/* Ver.1: SVG 동적 광원 효과 */}
-        <InteractiveLightOverlay id="library-header-light" intensity={0.1} />
+        <InteractiveLightOverlay />
         <div className="max-w-7xl mx-auto px-6 py-4 relative z-10">
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">

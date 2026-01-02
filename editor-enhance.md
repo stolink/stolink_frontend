@@ -18,8 +18,6 @@
   - **Serif(명조)**: 리디바탕(Ridi Batang), 나눔명조, KoPub 바탕, Source Han Serif
   - **Sans(고딕)**: Pretendard, Noto Sans KR, Spoqa Han Sans
   - **Mono(고정폭)**: D2Coding, JetBrains Mono (교정용 추천)
-  - **사용자 폰트**: 로컬 컴퓨터에 설치된 폰트 이름 입력 지원 (Advanced)
-- **Heading Font**: 제목용 폰트 별도 지정 기능
 
 ### 1.2 미세 조정 (Micro-Typography)
 
