@@ -289,11 +289,7 @@ const createDefaultCharacter = (
     intensity: 5,
     trigger: null,
   },
-  inventory: overrides.inventory || {
-    equipped_items: [],
-    bag_items: [],
-    quest_items: [],
-  },
+  inventory: overrides.inventory || [],
   meta: overrides.meta || {
     created_at: null,
     updated_at: null,

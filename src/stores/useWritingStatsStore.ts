@@ -71,7 +71,6 @@ export const useWritingStatsStore = create<WritingStatsStore>()(
         if (amount <= 0) return; // 감소하는 경우는 집필량 통계에 포함하지 않음 (선택 사항)
 
         const today = getTodayString();
-        const state = get();
 
         set((draft) => {
           // 일일 통계 업데이트
@@ -134,6 +133,6 @@ export const useWritingStatsStore = create<WritingStatsStore>()(
     {
       name: "sto-link-stats",
       storage: createJSONStorage(() => statsStorage),
-    }
-  )
+    },
+  ),
 );

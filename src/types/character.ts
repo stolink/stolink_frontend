@@ -43,7 +43,7 @@ export interface CharacterProfile {
   personality: string[];
   backstory: string;
   faction: {
-    name: string;
+    name: string | null;
     social: {
       rank: string;
       influence: number;
@@ -84,15 +84,11 @@ export interface CharacterPersonality {
  * 캐릭터 관계 (임베딩된 그래프 노드)
  */
 export interface CharacterRelation {
-  source: string;
   target: string;
-  relation_type: RelationType;
+  type: RelationType;
+  history: string | null;
   strength: number;
   description: string;
-  bidirectional: boolean;
-  public_stance?: string;
-  private_feeling?: string;
-  evolved_from?: RelationType | null;
 }
 
 /**
@@ -117,23 +113,9 @@ export interface CharacterMood {
  * 인벤토리 아이템
  */
 export interface InventoryItem {
-  item_id: string | null;
+  item_id: string;
   name: string;
-  quantity: number;
-  rarity: string;
-  estimated_value: number;
-  equipped: boolean;
-  slot: string;
   description: string;
-}
-
-/**
- * 캐릭터 인벤토리
- */
-export interface CharacterInventory {
-  equipped_items: InventoryItem[];
-  bag_items: InventoryItem[];
-  quest_items: string[];
 }
 
 /**
@@ -155,7 +137,7 @@ export interface CharacterMeta {
  */
 export interface Character {
   _id: string;
-  projectId: string;
+  projectId: string; // 👈 Added projectId
   role: CharacterRole;
   profile: CharacterProfile;
   aliases: string[];
@@ -164,7 +146,7 @@ export interface Character {
   personality: CharacterPersonality;
   relations: CharacterRelations;
   current_mood: CharacterMood;
-  inventory: CharacterInventory;
+  inventory: InventoryItem[];
   meta: CharacterMeta;
   /** AI 생성 이미지 URL (다른 파이프라인에서 폴링) */
   imageUrl?: string;
@@ -205,12 +187,27 @@ export interface RelationshipEvent {
 }
 
 /**
- * 상세 관계 정보 (D3 그래프용 확장)
+ * 독립 relationships 컬렉션용 스키마 (source 포함)
  */
-export interface DetailedRelationship extends BackendRelationship {
+export interface Relationship {
   source: string;
   target: string;
-  relation_type: RelationType;
+  type: string;
+  strength: number;
+  description?: string;
+  history?: string | RelationshipEvent[];
+}
+
+/**
+ * 상세 관계 정보 (D3 그래프용 확장)
+ */
+export interface DetailedRelationship extends Relationship {
+  id?: string;
+  relation_type?: RelationType;
+  label?: string | null;
+  since?: string | null;
+  bidirectional?: boolean;
+  evolved_from?: RelationType | null;
 }
 
 /**
@@ -299,3 +296,16 @@ export type ItemType =
   | "document"
   | "consumable"
   | "other";
+
+// =====================================================
+// 🧪 Simple Character Interface (Integration Test)
+// =====================================================
+
+export interface SimpleCharacter {
+  name: string;
+  role: string;
+  relationships: {
+    targetCharacterName: string;
+    type: string;
+  }[];
+}

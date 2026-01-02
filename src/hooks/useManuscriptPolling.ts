@@ -19,7 +19,14 @@ export function useManuscriptPolling() {
     // 🔥 중요: getState()를 사용하여 스토어 업데이트를 구독하지 않고 현재 상태를 가져옵니다.
     // 이렇게 하면 jobs가 업데이트되어도(진행률 변경 등) 이 훅을 사용하는 컴포넌트(LibraryPage)는 리렌더링되지 않습니다.
     const state = useManuscriptJobStore.getState();
-    const { jobs, updateJobProgress, completeJob, failJob, removeJob } = state;
+    const {
+      jobs,
+      updateJobProgress,
+      completeJob,
+      failJob,
+      removeJob,
+      pauseJob,
+    } = state;
 
     const activeJobs = Object.values(jobs).filter(
       (job) => job.status === "PENDING" || job.status === "PROCESSING",
@@ -75,7 +82,17 @@ export function useManuscriptPolling() {
             data.totalDocuments,
           );
         }
-      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        // 404 Not Found Handling
+        if (error.response?.status === 404) {
+          console.warn(
+            `[ManuscriptPolling] Job ${job.jobId} not found (404). Pausing polling until resumed.`,
+          );
+          pauseJob(job.projectId);
+          continue;
+        }
+
         console.error(
           `[ManuscriptPolling] Failed to poll job ${job.jobId}:`,
           error,
