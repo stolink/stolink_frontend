@@ -59,7 +59,7 @@ const ScriveningsEditor = forwardRef<
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCreateSectionRef = useRef(onCreateSection);
-  const saveAllRef = useRef<() => Promise<void>>();
+  const saveAllRef = useRef<() => Promise<void> | undefined>(undefined);
 
   // 저장 상태 관리 (단일 뷰와 동일)
   const setSaveStatus = useEditorStore((state) => state.setSaveStatus);

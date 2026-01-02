@@ -26,7 +26,7 @@ export const imageService = {
     characterId: string,
     action: "create" | "edit",
     description: string,
-    setting?: Record<string, unknown>,
+    setting?: Record<string, unknown>
   ): Promise<{ jobId: string; status: string }> => {
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
@@ -45,11 +45,18 @@ export const imageService = {
    * @returns Job status with image generation result
    */
   getImageJobStatus: async (
-    jobId: string,
+    jobId: string
   ): Promise<JobResponse<ImageGenerationResult>> => {
     const response = await api.get<
       ApiResponse<JobResponse<ImageGenerationResult>>
     >(`/ai/image/jobs/${jobId}`);
+
+    // Normalize status to lowercase to match frontend expectations
+    if (response.data.data) {
+      response.data.data.status =
+        response.data.data.status.toLowerCase() as any;
+    }
+
     return response.data.data;
   },
 };
