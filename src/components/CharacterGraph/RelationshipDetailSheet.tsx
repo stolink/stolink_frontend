@@ -58,17 +58,16 @@ export function RelationshipDetailSheet({
     strength,
     description,
     label: relationLabel,
-    evolved_from,
+    evolvedFrom,
     bidirectional,
     since,
     history,
   } = relationship;
 
-  // Use relationship.relation_type if available (from JSON), otherwise fallback to type
-  const displayType = (relationship.relation_type ||
+  // Use relationship.relationType if available, otherwise fallback to type
+  const displayType = (relationship.relationType ||
     type) as BackendRelationshipType;
   const color = getRelationshipColor(displayType, strength);
-  // const colorClass = RELATION_COLORS[displayType] || "bg-gray-500"; // Removed
   const label = RELATION_LABELS[displayType] || displayType;
   const icon = RELATION_ICONS[displayType] || <Activity className="w-4 h-4" />;
 
@@ -182,7 +181,7 @@ export function RelationshipDetailSheet({
                   {history.map((event: any, idx: number) => {
                     const eventColorHex = getRelationshipColor(
                       event.type as BackendRelationshipType,
-                      5,
+                      5
                     ); // Default strength
 
                     return (
@@ -190,7 +189,7 @@ export function RelationshipDetailSheet({
                         {/* Timeline Dot */}
                         <div
                           className={cn(
-                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200",
+                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200"
                           )}
                           style={{ backgroundColor: eventColorHex }}
                         />
@@ -238,7 +237,7 @@ export function RelationshipDetailSheet({
             </div>
 
             {/* Legacy Evolution History (Fallback) */}
-            {evolved_from && (
+            {evolvedFrom && (
               <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-2">
                 <div className="flex items-center gap-2 text-stone-500 mb-2">
                   <Activity className="w-4 h-4" />
@@ -246,7 +245,8 @@ export function RelationshipDetailSheet({
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-stone-500 bg-white">
-                    {RELATION_LABELS[evolved_from] || evolved_from}
+                    {RELATION_LABELS[evolvedFrom as BackendRelationshipType] ||
+                      evolvedFrom}
                   </Badge>
                   <span className="text-stone-400">→</span>
                   <Badge

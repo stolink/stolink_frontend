@@ -12,7 +12,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
 
   // Find character data from DEMO_CHARACTERS (new schema: _id, profile.name)
   const character = DEMO_CHARACTERS.find(
-    (c) => c._id === id || c.profile?.name === label,
+    (c) => c._id === id || c.profile?.name === label
   );
 
   // Find item data from DEMO_ITEMS (if not a character)
@@ -27,7 +27,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
   // Extract data for display (new schema: personality, profile)
   const description = character?.profile?.backstory;
   const age = character?.profile?.age;
-  const traits = character?.personality?.core_traits;
+  const traits = character?.personality?.coreTraits;
 
   // 아이템용 호버 카드 컨텐츠
   const itemDescription = item?.extras?.설명 as string | undefined;

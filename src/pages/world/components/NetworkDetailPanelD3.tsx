@@ -1,7 +1,6 @@
-import { X, Users, BookOpen, User, Heart, Skull } from "lucide-react";
+import { X, Users, BookOpen, User, Heart, Skull, Network, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Character, RelationshipLink, RelationType } from "@/types";
 import {
@@ -12,9 +11,9 @@ import { cn } from "@/lib/utils";
 
 // 관계 타입별 색상 클래스
 const RELATION_BADGE_COLORS: Record<RelationType, string> = {
-  friendly: "bg-[#7A8C6F] text-white border-[#7A8C6F]",
-  hostile: "bg-[#9C4A3F] text-white border-[#9C4A3F]",
-  romantic: "bg-[#B38B82] text-white border-[#B38B82]",
+  friendly: "bg-emerald-500 text-white border-emerald-500",
+  hostile: "bg-rose-500 text-white border-rose-500",
+  romantic: "bg-pink-400 text-white border-pink-400",
 };
 
 // 관계 타입별 아이콘
@@ -66,17 +65,17 @@ export function NetworkDetailPanelD3({
   const roleColor = ROLE_COLORS[selectedCharacter.role || "other"];
 
   return (
-    <div className="absolute right-4 top-4 bottom-4 w-80 z-10 bg-white rounded-xl border-2 border-stone-300 shadow-2xl overflow-hidden flex flex-col ring-1 ring-stone-200">
-      {/* Header */}
-      <div className="p-5 bg-gradient-to-br from-stone-100 to-stone-50 border-b-2 border-stone-200">
-        <div className="flex items-start justify-between mb-4">
-          <Badge variant="outline" className={cn("text-xs", roleColor)}>
+    <div className="absolute right-4 top-4 bottom-4 w-80 z-10 frosted-glass rounded-2xl overflow-hidden flex flex-col editorial-fade-in shadow-xl">
+      {/* Editorial Header */}
+      <div className="p-6 bg-gradient-to-br from-white/90 to-cloud-50/90 border-b border-stone-100/50">
+        <div className="flex items-start justify-between mb-5">
+          <Badge variant="outline" className={cn("text-xs font-medium", roleColor)}>
             {roleLabel}
           </Badge>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-stone-400 hover:text-stone-600 hover:bg-stone-100 -mr-2 -mt-2"
+            className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-white/50 -mr-2 -mt-2 rounded-full"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -84,8 +83,8 @@ export function NetworkDetailPanelD3({
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Profile Image */}
-          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center text-2xl border border-stone-200 shadow-sm overflow-hidden">
+          {/* Profile Image - Larger */}
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center text-3xl border-2 border-white shadow-lg overflow-hidden">
             {selectedCharacter.imageUrl ? (
               <img
                 src={selectedCharacter.imageUrl}
@@ -102,12 +101,12 @@ export function NetworkDetailPanelD3({
               "👤"
             )}
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-stone-900 tracking-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="editorial-name text-xl truncate">
               {selectedCharacter.profile?.name || "이름 없음"}
             </h3>
             {selectedCharacter.profile?.faction?.name && (
-              <p className="text-sm text-stone-500">
+              <p className="magazine-caption text-xs not-italic text-stone-400 mt-1">
                 {selectedCharacter.profile.faction.name}
               </p>
             )}
@@ -115,22 +114,24 @@ export function NetworkDetailPanelD3({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="px-5 py-4 border-b border-stone-100 bg-stone-50/50">
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="p-3 bg-white rounded-lg border border-stone-100 shadow-sm">
-            <div className="text-2xl font-bold text-stone-800">
+      {/* Stats with Icons & Gradient */}
+      <div className="px-5 py-4 border-b border-stone-100/50">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="editorial-card p-4 bg-gradient-to-br from-white to-primary/5 group hover-lift">
+            <div className="flex items-center gap-2 mb-2">
+              <Network className="h-4 w-4 text-primary/60" />
+              <span className="editorial-label">관계</span>
+            </div>
+            <div className="text-2xl font-bold text-stone-800 editorial-name">
               {connectedLinks.length}
             </div>
-            <div className="text-[10px] text-stone-500 uppercase tracking-wider font-medium">
-              관계 수
-            </div>
           </div>
-          <div className="p-3 bg-white rounded-lg border border-stone-100 shadow-sm">
-            <div className="text-2xl font-bold text-stone-800">-</div>
-            <div className="text-[10px] text-stone-500 uppercase tracking-wider font-medium">
-              등장 횟수
+          <div className="editorial-card p-4 bg-gradient-to-br from-white to-amber-50 group hover-lift">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-amber-500/60" />
+              <span className="editorial-label">등장</span>
             </div>
+            <div className="text-2xl font-bold text-stone-800 editorial-name">-</div>
           </div>
         </div>
       </div>
@@ -138,14 +139,14 @@ export function NetworkDetailPanelD3({
       {/* Connected Characters */}
       <ScrollArea className="flex-1">
         <div className="p-5">
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Users className="h-3.5 w-3.5" />
+          <h4 className="editorial-section-heading text-xs mb-4">
+            <Users className="h-4 w-4 text-primary/70" />
             연결된 인물
           </h4>
 
           {connectedLinks.length > 0 ? (
             <ul className="space-y-2">
-              {connectedLinks.map((link) => {
+              {connectedLinks.map((link, idx) => {
                 const sourceId =
                   typeof link.source === "string"
                     ? link.source
@@ -162,9 +163,10 @@ export function NetworkDetailPanelD3({
                 return (
                   <li
                     key={link.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-stone-50 hover:bg-stone-100 transition-colors cursor-pointer border border-transparent hover:border-stone-200"
+                    className="editorial-card flex items-center gap-3 p-3 hover-lift cursor-pointer group editorial-fade-in"
+                    style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-base border border-stone-200 shadow-sm overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-stone-100 to-white flex items-center justify-center text-lg border border-stone-100 shadow-sm overflow-hidden group-hover:shadow-md transition-shadow">
                       {otherChar?.imageUrl ? (
                         <img
                           src={otherChar.imageUrl}
@@ -180,13 +182,13 @@ export function NetworkDetailPanelD3({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-stone-800 truncate">
+                      <div className="font-semibold text-sm text-stone-800 truncate group-hover:text-primary transition-colors">
                         {otherChar?.profile?.name || "이름 없음"}
                       </div>
                       <Badge
                         variant="outline"
                         className={cn(
-                          "mt-1 text-[10px] px-1.5 py-0 h-5 gap-1",
+                          "mt-1.5 text-[10px] px-2 py-0.5 h-5 gap-1 rounded-full",
                           RELATION_BADGE_COLORS[relType],
                         )}
                       >
@@ -199,20 +201,22 @@ export function NetworkDetailPanelD3({
               })}
             </ul>
           ) : (
-            <p className="text-sm text-stone-400 italic text-center py-4">
-              연결된 인물이 없습니다
-            </p>
+            <div className="editorial-empty-state py-8">
+              <Users className="editorial-empty-state-icon h-8 w-8" />
+              <p className="editorial-empty-state-title text-sm">연결된 인물 없음</p>
+              <p className="editorial-empty-state-description text-xs">
+                이 캐릭터와 연결된 관계가 없습니다.
+              </p>
+            </div>
           )}
         </div>
       </ScrollArea>
 
-      <Separator />
-
       {/* Footer */}
-      <div className="p-4 bg-stone-100 border-t-2 border-stone-200">
+      <div className="p-4 bg-gradient-to-t from-white/90 to-transparent border-t border-stone-100/50">
         <Button
           variant="default"
-          className="w-full bg-[#8B7355] hover:bg-[#6F5B44] text-white font-semibold shadow-md border border-[#6F5B44]"
+          className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all h-11 rounded-xl"
           onClick={onViewProfile}
         >
           <BookOpen className="h-4 w-4 mr-2" />

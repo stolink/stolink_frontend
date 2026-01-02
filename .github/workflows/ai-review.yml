@@ -1,12 +1,16 @@
 name: AI Code Review
 
 on:
-  # # 코멘트로 트리거 (/review) - 수동 실행
-  # issue_comment:
-  #   types: [created]
-  # # PR 생성 및 업데이트 시 자동 실행
-  # pull_request:
-  #   types: [opened, synchronize]
+  # 코멘트로 트리거 (/review) - 수동 실행
+  issue_comment:
+    types: [created]
+  # PR 생성 및 업데이트 시 자동 실행
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
 
 jobs:
   ai_review:
@@ -14,6 +18,7 @@ jobs:
       (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: write
@@ -25,10 +30,11 @@ jobs:
 
       - name: Get PR info
         id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
-            # 코멘트 트리거 시에도 PR 상세 정보를 가져와 base branch 확인
             BASE_BRANCH=$(gh pr view ${{ github.event.issue.number }} --json baseRefName --jq '.baseRefName')
             echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
           else
@@ -44,108 +50,139 @@ jobs:
           BASE_BRANCH="${{ steps.pr.outputs.base_branch }}"
           git fetch origin $BASE_BRANCH
 
-          # 변경된 파일 목록 (Java, 설정 파일 포함)
-          FILES=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.java' '*.yml' '*.gradle' '*.sql' | head -30)
+          # 변경된 파일 수 (head 적용 전, 정수 보장)
+          FILES_COUNT=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.java' '*.yml' '*.gradle' '*.sql' '*.ts' '*.tsx' | wc -l | tr -d ' ')
+          FILES_COUNT=${FILES_COUNT:-0}
+          echo "files_count=$FILES_COUNT" >> $GITHUB_OUTPUT
+
+          # 변경된 파일 목록 (최대 30개)
+          FILES=$(git diff origin/$BASE_BRANCH...HEAD --name-only -- '*.java' '*.yml' '*.gradle' '*.sql' '*.ts' '*.tsx' | head -30)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          # 실제 코드 변경 내용
-          DIFF=$(git diff origin/$BASE_BRANCH...HEAD -- '*.java' '*.yml' '*.gradle' '*.sql' | head -500)
-          echo "$DIFF" > diff_content.txt
+          # 변경 사항 통계 (정수 보장)
+          DIFF_STAT=$(git diff origin/$BASE_BRANCH...HEAD --stat | tail -1)
+          DIFF_LINES=$(git diff origin/$BASE_BRANCH...HEAD -- '*.java' '*.yml' '*.gradle' '*.sql' '*.ts' '*.tsx' | wc -l | tr -d ' ')
+          DIFF_LINES=${DIFF_LINES:-0}
+          echo "diff_stat=$DIFF_STAT" >> $GITHUB_OUTPUT
+          echo "diff_lines=$DIFF_LINES" >> $GITHUB_OUTPUT
 
-      - name: Prepare prompt
-        id: prompt
-        run: |
-          DIFF_CONTENT=$(head -n 500 diff_content.txt)
-          FILES="${{ steps.diff.outputs.files }}"
-
-          # Extract coding_rules and ai_code_review section from CLAUDE.md
-          if [ -f "CLAUDE.md" ]; then
-            # Extract content from <coding_rules> and <ai_code_review>
-            CODING_RULES=$(sed -n '/<coding_rules>/,/<\/coding_rules>/p' CLAUDE.md)
-            REVIEW_CONTEXT=$(sed -n '/<ai_code_review>/,/<\/ai_code_review>/p' CLAUDE.md | sed '1d;$d')
+          # 빈 diff 체크
+          if [ "$DIFF_LINES" -eq 0 ] || [ "$FILES_COUNT" -eq 0 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            CODING_RULES="표준 Java/Spring Boot 코딩 규칙을 따릅니다."
-            REVIEW_CONTEXT="StoLink 프로젝트의 시니어 개발자로서 코드 리뷰를 수행합니다."
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-          # Create template file
-          cat << 'EOF' > prompt_template.txt
-          SYSTEM_CONTEXT_PLACEHOLDER
+          # 실제 코드 변경 내용 (10,000줄 제한)
+          git diff origin/$BASE_BRANCH...HEAD -- '*.java' '*.yml' '*.gradle' '*.sql' '*.ts' '*.tsx' | head -10000 > diff_content.txt
 
-          ## 프로젝트 코딩 규칙
-          CODING_RULES_PLACEHOLDER
-
-          ## 변경된 파일
-          FILES_PLACEHOLDER
-
-          ## 코드 변경 내용
-          ```diff
-          DIFF_PLACEHOLDER
-          ```
-
-          위 규칙과 프로젝트 컨텍스트를 바탕으로 변경된 코드를 리뷰해주세요.
-          항상 한국어로 응답하며, 출력 형식을 정확히 지켜주세요.
-          EOF
-
-          # Use jq to generate JSON safely
-          jq -n \
-            --arg model "claude-haiku-4-5-20251001" \
-            --rawfile template prompt_template.txt \
-            --arg context "$REVIEW_CONTEXT" \
-            --arg rules "$CODING_RULES" \
-            --arg files "$FILES" \
-            --arg diff "$DIFF_CONTENT" \
-            '{
-              model: $model,
-              max_tokens: 4096,
-              messages: [{
-                role: "user",
-                content: ($template | sub("SYSTEM_CONTEXT_PLACEHOLDER"; $context) | sub("CODING_RULES_PLACEHOLDER"; $rules) | sub("FILES_PLACEHOLDER"; $files) | sub("DIFF_PLACEHOLDER"; $diff))
-              }]
-            }' > prompt.json
-
-      - name: Call Claude API
-        id: review
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Skip if no changes
+        if: steps.diff.outputs.skip == 'true'
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "API Error: ANTHROPIC_API_KEY secret is missing in GitHub repository settings." > review_result.txt
-            echo "error=API_KEY_MISSING" >> $GITHUB_OUTPUT
+          echo "리뷰할 코드 변경사항이 없습니다." > review_result.txt
+
+      - name: Prepare prompt and call Gemini API
+        id: review
+        if: steps.diff.outputs.skip != 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "API Error: GEMINI_API_KEY is missing." > review_result.txt
             exit 1
           fi
 
-          echo "::add-mask::$ANTHROPIC_API_KEY"
+          python3 << 'PYEOF'
+          import json
+          import urllib.request
+          import urllib.error
+          import sys
+          import os
 
-          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
-            -H "Content-Type: application/json" \
-            -H "x-api-key: $ANTHROPIC_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
-            -d @prompt.json)
+          with open('diff_content.txt', 'r', encoding='utf-8', errors='replace') as f:
+              diff_content = f.read()
 
-          # Extract text from response
-          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // "리뷰 생성 실패"')
+          files = """${{ steps.diff.outputs.files }}"""
+          diff_stat = "${{ steps.diff.outputs.diff_stat }}"
+          diff_lines = "${{ steps.diff.outputs.diff_lines }}"
+          files_count = "${{ steps.diff.outputs.files_count }}"
 
-          # Check for error
-          if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
-            ERROR=$(echo "$RESPONSE" | jq -r '.error.message')
-            echo "API Error: $ERROR" > review_result.txt
-          else
-            echo "$REVIEW" > review_result.txt
-          fi
+          # Gemini API 호출 (gemini-2.0-flash-exp 또는 gemini-1.5-flash)
+          api_key = os.environ.get('GEMINI_API_KEY')
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+
+          prompt = f"""당신은 StoLink 프로젝트의 시니어 풀스택 개발자입니다.
+
+          ## 프로젝트 코딩 규칙 및 컨텍스트
+          {os.popen('cat CLAUDE.md | sed -n "/<coding_rules>/,/<\/coding_rules>/p"').read() if os.path.exists('CLAUDE.md') else 'Standard Frontend/Backend practices.'}
+
+          ## 변경 요약
+          {diff_stat}
+
+          ## 변경된 파일
+          {files}
+
+          ## 코드 변경사항
+          ```diff
+          {diff_content}
+          ```
+
+          ## 리뷰 지시사항
+          - 반드시 한국어로 답변하세요.
+          - 🔴 치명적, ⚠️ 경고가 없으면 '✅ 코드 리뷰 통과' 출력.
+          - 응답 형식 외의 추가 설명이나 마무리 멘트는 작성하지 마세요.
+
+          ## 응답 형식
+          ### 요약
+          (1-2문장 요약)
+
+          ### 🔴 치명적
+          - 파일:라인 - 내용
+
+          ### ⚠️ 경고
+          - 파일:라인 - 내용
+          """
+
+          payload = {
+              "contents": [{"parts": [{"text": prompt}]}],
+              "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096}
+          }
+
+          try:
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode('utf-8'),
+                  headers={'Content-Type': 'application/json'},
+                  method='POST'
+              )
+              with urllib.request.urlopen(req, timeout=120) as response:
+                  result = json.loads(response.read().decode('utf-8'))
+
+              review = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '리뷰 생성 실패')
+              with open('review_result.txt', 'w', encoding='utf-8') as f:
+                  f.write(review)
+          except Exception as e:
+              with open('review_result.txt', 'w') as f:
+                  f.write(f"API Error: {e}")
+              sys.exit(1)
+          PYEOF
 
       - name: Post review comment
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const review = fs.readFileSync('review_result.txt', 'utf8');
+            let review = '리뷰 생성 중 오류가 발생했습니다.';
+            try {
+              review = fs.readFileSync('review_result.txt', 'utf8');
+            } catch (e) {}
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ steps.pr.outputs.number }},
-              body: `## 🤖 AI 코드 리뷰\n\n${review}`
+              body: `## 🤖 AI 코드 리뷰 (Gemini)\n\n${review}`
             });

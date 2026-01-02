@@ -76,7 +76,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
   // 프로젝트의 캐릭터 목록
   const { data: characters = [], isLoading: charLoading } = useCharacters(
     projectId || "",
-    { enabled: !!projectId },
+    { enabled: !!projectId }
   );
 
   // 문서 변경 시 메모 로드 (metadata.notes 사용)
@@ -196,7 +196,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                           ? "bg-amber-500"
                           : char.role === "antagonist"
                             ? "bg-rose-500"
-                            : "bg-muted",
+                            : "bg-muted"
                       )}
                     >
                       {char.profile?.name?.[0] || "?"}
@@ -216,10 +216,10 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                       </p>
                     </div>
                   </div>
-                  {char.personality?.core_traits &&
-                    char.personality.core_traits.length > 0 && (
+                  {char.personality?.coreTraits &&
+                    char.personality.coreTraits.length > 0 && (
                       <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 hidden group-hover:block">
-                        {String(char.personality.core_traits.join(", "))}
+                        {String(char.personality.coreTraits.join(", "))}
                       </p>
                     )}
                 </div>

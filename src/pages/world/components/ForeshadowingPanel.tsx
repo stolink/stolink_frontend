@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useForeshadowingStore } from "@/stores";
 import type { Foreshadowing } from "@/types";
-import { Sparkles, CheckCircle, MapPin, ArrowRight, Clock } from "lucide-react";
+import { Sparkles, CheckCircle, MapPin, ArrowRight, Clock, BookMarked } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyIndicator } from "./EmptyIndicator";
 
@@ -84,33 +83,43 @@ export function ForeshadowingPanel({
   };
 
   return (
-    <div className="flex h-full bg-stone-50/30 overflow-hidden">
-      {/* 왼쪽 사이드 내비게이션 */}
-      <div className="w-48 border-r bg-white/50 flex flex-col p-3 gap-2 shrink-0">
+    <div className="flex h-full bg-cloud-50 overflow-hidden editorial-fade-in">
+      {/* 왼쪽 사이드 내비게이션 - Editorial Style */}
+      <div className="w-56 border-r border-stone-100 bg-gradient-to-b from-white to-cloud-50/50 flex flex-col p-4 gap-3 shrink-0">
+        <div className="flex items-center gap-2 px-2 mb-2">
+          <BookMarked className="h-4 w-4 text-primary" />
+          <span className="editorial-label">복선 현황</span>
+        </div>
+
         <button
           onClick={() => setActiveStatus("pending")}
           className={cn(
-            "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
             activeStatus === "pending"
-              ? "bg-mocha-500 text-white shadow-md shadow-mocha-900/10"
-              : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
+              ? "bg-primary text-white shadow-lg shadow-primary/20"
+              : "text-stone-600 hover:bg-white hover:shadow-md",
           )}
         >
-          <div className="flex items-center gap-2">
-            <Clock
-              className={cn(
-                "w-4 h-4",
-                activeStatus === "pending" ? "text-white" : "text-mocha-500",
-              )}
-            />
-            <span>미회수 복선</span>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              activeStatus === "pending" ? "bg-white/20" : "bg-primary/10"
+            )}>
+              <Clock
+                className={cn(
+                  "w-4 h-4",
+                  activeStatus === "pending" ? "text-white" : "text-primary",
+                )}
+              />
+            </div>
+            <span>미회수</span>
           </div>
           <span
             className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+              "text-xs px-2 py-1 rounded-full font-bold min-w-[28px] text-center",
               activeStatus === "pending"
                 ? "bg-white/20 text-white"
-                : "bg-mocha-50 text-mocha-600",
+                : "bg-primary/10 text-primary",
             )}
           >
             {pendingCount}
@@ -120,36 +129,60 @@ export function ForeshadowingPanel({
         <button
           onClick={() => setActiveStatus("recovered")}
           className={cn(
-            "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
             activeStatus === "recovered"
-              ? "bg-sage-500 text-white shadow-md shadow-sage-900/10"
-              : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
+              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+              : "text-stone-600 hover:bg-white hover:shadow-md",
           )}
         >
-          <div className="flex items-center gap-2">
-            <CheckCircle
-              className={cn(
-                "w-4 h-4",
-                activeStatus === "recovered" ? "text-white" : "text-sage-500",
-              )}
-            />
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              activeStatus === "recovered" ? "bg-white/20" : "bg-emerald-50"
+            )}>
+              <CheckCircle
+                className={cn(
+                  "w-4 h-4",
+                  activeStatus === "recovered" ? "text-white" : "text-emerald-500",
+                )}
+              />
+            </div>
             <span>회수 완료</span>
           </div>
           <span
             className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+              "text-xs px-2 py-1 rounded-full font-bold min-w-[28px] text-center",
               activeStatus === "recovered"
                 ? "bg-white/20 text-white"
-                : "bg-sage-50 text-sage-600",
+                : "bg-emerald-50 text-emerald-600",
             )}
           >
             {recoveredCount}
           </span>
         </button>
+
+        {/* Summary Stats */}
+        <div className="mt-auto pt-4 border-t border-stone-100">
+          <div className="text-[10px] text-stone-400 uppercase tracking-wider mb-2 px-2">
+            전체 현황
+          </div>
+          <div className="editorial-card p-3 bg-white/80">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-stone-500">총 복선</span>
+              <span className="font-bold text-stone-800">{allForeshadowings.length}</span>
+            </div>
+            <div className="mt-2 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all"
+                style={{ width: `${allForeshadowings.length > 0 ? (recoveredCount / allForeshadowings.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 메인 콘텐츠 영역 */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-8">
         {foreshadowings.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <EmptyIndicator
@@ -169,73 +202,84 @@ export function ForeshadowingPanel({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-start">
-            {foreshadowings.map((fs) => (
-              <Card
+            {foreshadowings.map((fs, cardIdx) => (
+              <div
                 key={fs.id}
                 className={cn(
-                  "group relative overflow-hidden bg-white border-stone-200/80 transition-all duration-300 hover:shadow-xl hover:translate-y-[-2px]",
-                  "before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-r-full before:transition-all",
-                  fs.importance === "major"
-                    ? "before:bg-red-400 border-red-100/50 shadow-red-900/5"
-                    : activeStatus === "pending"
-                      ? "before:bg-mocha-400 border-stone-200/60 shadow-stone-900/5"
-                      : "before:bg-sage-400 border-stone-200/60 shadow-stone-900/5",
+                  "editorial-card group relative overflow-hidden hover-lift editorial-fade-in",
+                  fs.importance === "major" && "ring-1 ring-rose-200",
                 )}
+                style={{ animationDelay: `${cardIdx * 60}ms` }}
               >
-                <CardHeader className="p-5 pb-3">
+                {/* Color Bar Indicator */}
+                <div
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 w-1",
+                    fs.importance === "major"
+                      ? "bg-rose-400"
+                      : activeStatus === "pending"
+                        ? "bg-primary"
+                        : "bg-emerald-400",
+                  )}
+                />
+
+                {/* Header */}
+                <div className="p-5 pb-3">
                   <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-base font-bold text-stone-800 flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                           fs.importance === "major"
-                            ? "bg-red-50"
+                            ? "bg-rose-50"
                             : activeStatus === "pending"
-                              ? "bg-mocha-50"
-                              : "bg-sage-50",
+                              ? "bg-primary/10"
+                              : "bg-emerald-50",
                         )}
                       >
                         <Sparkles
                           className={cn(
-                            "w-4 h-4",
+                            "w-5 h-5",
                             fs.importance === "major"
-                              ? "text-red-500"
+                              ? "text-rose-500"
                               : activeStatus === "pending"
-                                ? "text-mocha-500"
-                                : "text-sage-600",
+                                ? "text-primary"
+                                : "text-emerald-500",
                           )}
                         />
                       </div>
-                      <span className="truncate">#{fs.tag}</span>
-                    </CardTitle>
+                      <h3 className="editorial-name text-base truncate">#{fs.tag}</h3>
+                    </div>
                     <div className="flex flex-wrap items-center gap-1 shrink-0">
                       {getImportanceBadge(fs.importance)}
                       {getStatusBadge(fs.status)}
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-5 pt-0 space-y-4">
+                </div>
+
+                {/* Content */}
+                <div className="px-5 pb-5 space-y-4">
                   {fs.description && (
-                    <div className="bg-stone-50/80 p-3 rounded-lg border border-stone-100 italic">
-                      <p className="text-[13px] text-stone-600 leading-relaxed">
-                        "{fs.description}"
-                      </p>
+                    <div className="pull-quote py-3 px-4 text-sm">
+                      "{fs.description}"
                     </div>
                   )}
 
-                  <div className="space-y-2.5">
-                    <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-2">
-                      <MapPin className="w-3 h-3" /> 연관 타임라인
-                    </p>
+                  <div className="space-y-3">
+                    <div className="editorial-section-heading text-xs">
+                      <MapPin className="w-4 h-4 text-primary/70" />
+                      연관 타임라인
+                    </div>
                     <div className="space-y-2">
                       {fs.appearances.map((appearance, idx) => (
                         <button
                           key={idx}
                           className={cn(
-                            "flex items-center gap-2 w-full text-left p-3 rounded-xl border border-stone-200 bg-white hover:bg-sage-50 hover:border-sage-300 transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                            "timeline-item flex items-center gap-3 w-full text-left p-3 rounded-xl border border-stone-100 bg-white hover:bg-primary/5 hover:border-primary/20 transition-all group/item shadow-sm disabled:opacity-50 disabled:cursor-not-allowed editorial-fade-in",
                             appearance.isRecovery &&
-                              "border-sage-200 bg-sage-50/30",
+                              "border-emerald-100 bg-emerald-50/30",
                           )}
+                          style={{ animationDelay: `${(cardIdx * 60) + (idx * 40)}ms` }}
                           onClick={() => {
                             if (appearance.documentId && onNavigateToSection) {
                               onNavigateToSection(
@@ -252,10 +296,10 @@ export function ForeshadowingPanel({
                         >
                           <div
                             className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                              "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all",
                               appearance.isRecovery
-                                ? "bg-sage-100 text-sage-600"
-                                : "bg-stone-100 text-stone-500 group-hover:bg-white group-hover:text-sage-600",
+                                ? "bg-emerald-100 text-emerald-600"
+                                : "bg-stone-100 text-stone-500 group-hover/item:bg-primary/10 group-hover/item:text-primary",
                             )}
                           >
                             {appearance.isRecovery ? (
@@ -265,26 +309,26 @@ export function ForeshadowingPanel({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-stone-700 truncate group-hover:text-sage-700">
+                            <p className="text-sm font-medium text-stone-700 truncate group-hover/item:text-primary transition-colors">
                               {appearance.sectionTitle ||
                                 appearance.chapterTitle ||
                                 "알 수 없음"}
                             </p>
-                            <p className="text-[10px] text-stone-400">
+                            <p className="text-[11px] text-stone-400 mt-0.5">
                               {appearance.isRecovery
-                                ? "복선 회수가 이루어진 시점"
-                                : "복선이 처음 등장한 시점"}
+                                ? "복선 회수 시점"
+                                : "최초 등장"}
                             </p>
                           </div>
                           {appearance.documentId && onNavigateToSection && (
-                            <ArrowRight className="w-3.5 h-3.5 text-stone-300 group-hover:text-sage-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+                            <ArrowRight className="w-4 h-4 text-stone-300 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all shrink-0" />
                           )}
                         </button>
                       ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
