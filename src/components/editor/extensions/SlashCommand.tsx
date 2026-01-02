@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { Extension, Editor } from "@tiptap/core";
 import Suggestion from "@tiptap/suggestion";
 import type {
   SuggestionProps,

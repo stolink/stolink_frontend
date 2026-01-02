@@ -109,7 +109,7 @@ export default function CharacterDetailModal({
         setTempImageUrl(imageUrl); // 🌟 즉시 반영 (Optimistic Update)
         setImageJobId(null);
       },
-      onError: () => {
+      onError: (err) => {
         setImageJobId(null);
       },
       onTimeout: () => {
