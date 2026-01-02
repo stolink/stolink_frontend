@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+const API_URL = import.meta.env.VITE_API_URL || "/ai-api";
 
 /**
  * RAG 검색 결과 소스 청크
@@ -59,13 +59,15 @@ export function useChatStream(options?: UseChatStreamOptions) {
     {
       id: "welcome",
       role: "assistant",
-      content: "안녕하세요! 작품에 대해 질문해주세요. 캐릭터, 복선, 스토리 흐름 등 무엇이든 도와드릴게요.",
+      content:
+        "안녕하세요! 작품에 대해 질문해주세요. 캐릭터, 복선, 스토리 흐름 등 무엇이든 도와드릴게요.",
       timestamp: new Date(),
     },
   ]);
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentSources, setCurrentSources] = useState<SourceChunk[]>([]);
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
@@ -107,13 +109,15 @@ export function useChatStream(options?: UseChatStreamOptions) {
           headers.Authorization = `Bearer ${accessToken}`;
         }
 
-        const response = await fetch(`${API_URL}/ai/chat/stream`, {
+        // Corrected path from /ai/chat/stream to /chat/stream as per guide
+        const response = await fetch(`${API_URL}/chat/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             message,
             project_id: projectId,
             user_id: userId,
+            session_id: sessionId,
           }),
           signal: abortControllerRef.current.signal,
           credentials: "include",
@@ -164,7 +168,9 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   setCurrentResponse("");
                   setCurrentSources([]);
                 } else if (data.type === "error") {
-                  throw new Error(data.error || "알 수 없는 오류가 발생했습니다.");
+                  throw new Error(
+                    data.error || "알 수 없는 오류가 발생했습니다.",
+                  );
                 }
               } catch (parseError) {
                 // JSON 파싱 실패 시 무시 (불완전한 청크일 수 있음)
@@ -194,7 +200,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
           return;
         }
 
-        const errorMessage = error instanceof Error ? error.message : "오류가 발생했습니다.";
+        const errorMessage =
+          error instanceof Error ? error.message : "오류가 발생했습니다.";
         options?.onError?.(errorMessage);
 
         // 오류 메시지 표시
@@ -210,23 +217,37 @@ export function useChatStream(options?: UseChatStreamOptions) {
         abortControllerRef.current = null;
       }
     },
-    [streaming, options]
+    [streaming, options, sessionId],
   );
 
-  const cancelStream = useCallback(() => {
+  const cancelStream = useCallback(async () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+    }
+
+    // Call stop endpoint as per guide
+    try {
+      await fetch(`${API_URL}/chat/stop`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+    } catch (err) {
+      console.error("Failed to stop generation:", err);
+    } finally {
       setStreaming(false);
       setCurrentResponse("");
     }
-  }, []);
+  }, [sessionId]);
 
-  const clearMessages = useCallback(() => {
+  const resetSession = useCallback(() => {
+    setSessionId(crypto.randomUUID());
     setMessages([
       {
         id: "welcome",
         role: "assistant",
-        content: "안녕하세요! 작품에 대해 질문해주세요.",
+        content:
+          "안녕하세요! 작품에 대해 질문해주세요. 캐릭터, 복선, 스토리 흐름 등 무엇이든 도와드릴게요.",
         timestamp: new Date(),
       },
     ]);
@@ -239,6 +260,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
     currentSources,
     sendMessage,
     cancelStream,
-    clearMessages,
+    resetSession,
   };
 }

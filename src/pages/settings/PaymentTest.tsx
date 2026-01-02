@@ -21,10 +21,6 @@ const clientKey =
   "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
 const customerKey = nanoid(); // 고객 식별 키 (실제로는 유저 ID 사용)
 
-// 디버깅
-console.log("[PaymentTest] 사용 중인 클라이언트 키:", clientKey);
-console.log("[PaymentTest] ENV 값:", import.meta.env.VITE_TOSS_CLIENT_KEY);
-
 interface PlanOption {
   id: string;
   name: string;
@@ -79,7 +75,7 @@ export function PaymentTest() {
         paymentWidget.renderPaymentMethods(
           "#payment-methods",
           { value: selectedPlan.price },
-          { variantKey: "DEFAULT" }
+          { variantKey: "DEFAULT" },
         );
 
         setIsWidgetReady(true);

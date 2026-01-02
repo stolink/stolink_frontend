@@ -21,7 +21,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     currentSources,
     sendMessage,
     cancelStream,
-    clearMessages,
+    resetSession,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
@@ -61,7 +61,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={clearMessages}
+          onClick={resetSession}
           className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
           title="대화 초기화"
         >
@@ -76,7 +76,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
             key={message.id}
             className={cn(
               "flex gap-2",
-              message.role === "user" ? "flex-row-reverse" : ""
+              message.role === "user" ? "flex-row-reverse" : "",
             )}
           >
             {message.role === "assistant" && (
@@ -89,7 +89,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                 "rounded-lg px-3 py-2 text-sm max-w-[85%]",
                 message.role === "user"
                   ? "bg-mocha-500 text-white"
-                  : "bg-muted text-foreground"
+                  : "bg-muted text-foreground",
               )}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -233,9 +233,7 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
                   {source.metadata.document_title}
                 </span>
               )}
-              <span>
-                관련도: {(source.similarity_score * 100).toFixed(0)}%
-              </span>
+              <span>관련도: {(source.similarity_score * 100).toFixed(0)}%</span>
             </div>
           </div>
         ))}

@@ -67,21 +67,6 @@ export default function WorldPage() {
     enabled: !!projectId,
   });
 
-  // Debug: Log raw API response
-  useEffect(() => {
-    if (characters.length > 0) {
-      console.log(
-        "[WorldPage] Raw characters data:",
-        JSON.stringify(characters, null, 2)
-      );
-      console.log("[WorldPage] First character:", characters[0]);
-      console.log(
-        "[WorldPage] Character keys:",
-        Object.keys(characters[0] || {})
-      );
-    }
-  }, [characters]);
-
   const queryClient = useQueryClient();
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
@@ -115,7 +100,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -242,11 +227,6 @@ export default function WorldPage() {
   };
 
   const handleNodeClick = (character: Character) => {
-    console.log(
-      "[WorldPage] Node clicked:",
-      character._id,
-      character.profile?.name
-    );
     const enrichedChar = enrichCharacterWithMockData(character);
     const nextChar =
       selectedCharacter?._id === enrichedChar._id ? null : enrichedChar;
@@ -356,7 +336,7 @@ export default function WorldPage() {
 
     // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
     await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve))
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
     );
 
     // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
@@ -749,13 +729,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
+              selectedRelationship?.source,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
+                selectedRelationship?.source,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -764,13 +744,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
+              selectedRelationship?.target,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
+                selectedRelationship?.target,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target

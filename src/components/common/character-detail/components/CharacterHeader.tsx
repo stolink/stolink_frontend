@@ -45,7 +45,12 @@ export function CharacterHeader({
   const gender = profile?.gender;
   const faction = profile?.faction?.name;
 
-  const displayImageUrl = optimisticImageUrl || character.imageUrl;
+  const fallbackTimestamp = character.meta?.updatedAt || "0";
+  const displayImageUrl =
+    optimisticImageUrl ||
+    (character.imageUrl
+      ? `${character.imageUrl}${character.imageUrl.includes("?") ? "&" : "?"}cb=${fallbackTimestamp}`
+      : null);
 
   // Role emoji mapping
   const roleEmoji =

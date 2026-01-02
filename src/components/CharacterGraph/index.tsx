@@ -61,7 +61,7 @@ export const CharacterGraph = forwardRef<
       highlightedNodeIds,
       className,
     },
-    ref
+    ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -98,11 +98,6 @@ export const CharacterGraph = forwardRef<
       // Clear and rebuild character map
       nodeCharacterMapRef.current.clear();
 
-      console.log(
-        "[CharacterGraph] Building nodes, characters.length:",
-        characters.length
-      );
-
       const nodes = characters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
@@ -112,10 +107,6 @@ export const CharacterGraph = forwardRef<
 
         // Store mapping for safe lookup in handleNodeClick
         nodeCharacterMapRef.current.set(nodeId, char);
-
-        console.log(
-          `[CharacterGraph] Stored mapping: ${nodeId} -> char._id: ${char._id}, name: ${char.profile?.name}`
-        );
 
         return {
           id: nodeId,
@@ -127,22 +118,13 @@ export const CharacterGraph = forwardRef<
         };
       });
 
-      console.log(
-        "[CharacterGraph] Map size after building:",
-        nodeCharacterMapRef.current.size
-      );
-      console.log(
-        "[CharacterGraph] Map keys:",
-        Array.from(nodeCharacterMapRef.current.keys())
-      );
-
       return nodes;
     }, [characters, initialLinks]);
 
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       initialLinks,
-      { width, height, enableGrouping }
+      { width, height, enableGrouping },
     );
 
     /**
@@ -158,12 +140,12 @@ export const CharacterGraph = forwardRef<
           if (g) acc[g] = (acc[g] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       // 2. 멤버가 1명 이상인 그룹만 추출합니다.
       const activeGroups = Object.keys(groupCounts).filter(
-        (groupName) => groupCounts[groupName] > 0
+        (groupName) => groupCounts[groupName] > 0,
       );
 
       return activeGroups.map((group, index) => ({
@@ -209,7 +191,7 @@ export const CharacterGraph = forwardRef<
 
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         const linkSel = g.selectAll<SVGPathElement, RelationshipLink>(
-          "path[class*='link-path']"
+          "path[class*='link-path']",
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
@@ -255,7 +237,7 @@ export const CharacterGraph = forwardRef<
             const invDist = 1 / distance;
             const curveOffset = Math.min(
               distance * CURVE_FACTOR,
-              MAX_CURVE_OFFSET
+              MAX_CURVE_OFFSET,
             );
             const controlX = midX - dy * invDist * curveOffset;
             const controlY = midY + dx * invDist * curveOffset;
@@ -267,7 +249,7 @@ export const CharacterGraph = forwardRef<
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
         nodeSel.attr("transform", (d) =>
-          d ? `translate(${d.x}, ${d.y})` : ""
+          d ? `translate(${d.x}, ${d.y})` : "",
         );
 
         // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
@@ -435,7 +417,7 @@ export const CharacterGraph = forwardRef<
           return Promise.resolve();
         },
       }),
-      [nodes, centerAt]
+      [nodes, centerAt],
     );
 
     const connectedNodeIds = useMemo(() => {
@@ -480,7 +462,7 @@ export const CharacterGraph = forwardRef<
           }, 150);
         }
       },
-      []
+      [],
     );
 
     // Search Highlighting Logic
@@ -491,44 +473,23 @@ export const CharacterGraph = forwardRef<
 
     const handleNodeClick = useCallback(
       (node: CharacterNode) => {
-        console.log(
-          "[CharacterGraph] Node clicked, node.id:",
-          node.id,
-          "node.name:",
-          node.name
-        );
-        console.log(
-          "[CharacterGraph] Current Map size:",
-          nodeCharacterMapRef.current.size
-        );
-        console.log(
-          "[CharacterGraph] Map has node.id?",
-          nodeCharacterMapRef.current.has(node.id)
-        );
-
         // Use the reliable Map lookup instead of array indexing
         const char = nodeCharacterMapRef.current.get(node.id);
 
-        console.log(
-          "[CharacterGraph] Found character:",
-          char?._id,
-          char?.profile?.name
-        );
         if (char && onNodeClick) {
-          console.log("[CharacterGraph] Calling onNodeClick");
           onNodeClick(char);
         } else {
           console.warn(
             "[CharacterGraph] Character not found for node.id:",
-            node.id
+            node.id,
           );
           console.warn(
             "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys())
+            Array.from(nodeCharacterMapRef.current.keys()),
           );
         }
       },
-      [onNodeClick]
+      [onNodeClick],
     );
 
     const handleNodeHover = useCallback(
@@ -536,7 +497,7 @@ export const CharacterGraph = forwardRef<
         if (isDragging) return;
         setHoveredNodeId(id);
       },
-      [isDragging]
+      [isDragging],
     );
 
     return (
@@ -787,5 +748,5 @@ export const CharacterGraph = forwardRef<
         </div>
       </div>
     );
-  }
+  },
 );
