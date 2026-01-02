@@ -58,14 +58,17 @@ export function RelationshipDetailSheet({
     strength,
     description,
     label: relationLabel,
-    evolved_from,
+    evolvedFrom,
     bidirectional,
     since,
     history,
   } = relationship;
 
-  // Use relationship.relation_type if available (from JSON), otherwise fallback to type
-  const displayType = (relationship.relation_type ||
+  // Use relationship.relationType if available (from JSON), otherwise fallback to type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const detailedRel = relationship as Record<string, unknown>;
+  const displayType = (relationship.relationType ||
+    detailedRel.relation_type ||
     type) as BackendRelationshipType;
   const color = getRelationshipColor(displayType, strength);
   // const colorClass = RELATION_COLORS[displayType] || "bg-gray-500"; // Removed
@@ -182,7 +185,7 @@ export function RelationshipDetailSheet({
                   {history.map((event: any, idx: number) => {
                     const eventColorHex = getRelationshipColor(
                       event.type as BackendRelationshipType,
-                      5,
+                      5
                     ); // Default strength
 
                     return (
@@ -190,7 +193,7 @@ export function RelationshipDetailSheet({
                         {/* Timeline Dot */}
                         <div
                           className={cn(
-                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200",
+                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200"
                           )}
                           style={{ backgroundColor: eventColorHex }}
                         />
@@ -238,7 +241,9 @@ export function RelationshipDetailSheet({
             </div>
 
             {/* Legacy Evolution History (Fallback) */}
-            {evolved_from && (
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(evolvedFrom ||
+              (relationship as Record<string, unknown>).evolved_from) && (
               <div className="p-4 bg-stone-50 rounded-lg border border-stone-100 space-y-2">
                 <div className="flex items-center gap-2 text-stone-500 mb-2">
                   <Activity className="w-4 h-4" />
@@ -246,7 +251,13 @@ export function RelationshipDetailSheet({
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-stone-500 bg-white">
-                    {RELATION_LABELS[evolved_from] || evolved_from}
+                    {RELATION_LABELS[
+                      (evolvedFrom ||
+                        (relationship as Record<string, unknown>)
+                          .evolved_from) as BackendRelationshipType
+                    ] ||
+                      evolvedFrom ||
+                      (relationship as Record<string, unknown>).evolved_from}
                   </Badge>
                   <span className="text-stone-400">→</span>
                   <Badge

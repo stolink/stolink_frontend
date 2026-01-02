@@ -6,6 +6,7 @@ import type {
   CharacterProfile,
   SimpleCharacter,
 } from "@/types/character";
+import { resolveImageUrl } from "@/utils/imageUtils";
 
 export type { Character };
 
@@ -57,11 +58,11 @@ function transformBackendCharacter(backendChar: any): Character {
   const aliases = safeParse(backendChar.aliases, backendChar.aliasesJson || []);
   const appearance = safeParse(
     backendChar.appearance,
-    backendChar.appearanceJson || {},
+    backendChar.appearanceJson || {}
   );
   const personality = safeParse(
     backendChar.personality,
-    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
+    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] }
   );
 
   // 🆕 백엔드 relationships 배열을 relations.graph로 매핑
@@ -69,7 +70,7 @@ function transformBackendCharacter(backendChar: any): Character {
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
       backendChar.relationships.map((rel: any) => ({
         target: rel.target || rel.targetId,
-        type: rel.type || rel.relation_type || "friendly",
+        type: rel.type || rel.relationType || rel.relation_type || "friendly",
         history: rel.history || null,
         strength: rel.strength || 5,
         description: rel.description || "",
@@ -78,68 +79,74 @@ function transformBackendCharacter(backendChar: any): Character {
 
   return {
     _id: backendChar.id,
-    projectId: backendChar.projectId, // 👈 Added projectId
+    projectId: backendChar.projectId,
     role: backendChar.role || "other",
     profile: {
-      character_id: backendChar.characterId || backendChar.id,
-      name: backendChar.name || "이름 없음",
-      age: backendChar.age || null,
-      gender: backendChar.gender || "",
-      race: backendChar.race || "",
-      mbti: backendChar.mbti || null,
-      personality: personality.core_traits || [],
-      backstory: backendChar.backstory || "",
+      characterId: backendChar.id || "",
+      name: backendChar.profile?.name || backendChar.name || "Unknown",
+      age: backendChar.profile?.age,
+      gender: backendChar.profile?.gender || backendChar.gender, // fallback to root gender
+      race: backendChar.profile?.race || backendChar.race, // fallback to root race
+      mbti: backendChar.profile?.mbti || backendChar.mbti, // fallback to root mbti
+      occupation: backendChar.profile?.occupation,
+      birthplace: backendChar.profile?.birthplace,
+      family: backendChar.profile?.family,
+      personality: backendChar.profile?.personality || [],
+      backstory: backendChar.backstory || backendChar.profile?.backstory || "",
       faction: {
-        name: backendChar.faction || null,
-        social: {
-          rank: "",
+        name: backendChar.profile?.faction?.name || null,
+        social: backendChar.profile?.faction?.social || {
+          rank: "unknown",
           influence: 0,
-          faction_reputation: {},
+          factionReputation: {},
         },
       },
     },
-    aliases,
-    status: backendChar.status || "alive",
+    aliases: backendChar.profile?.aliases || aliases || [],
+    status: backendChar.status || "active",
+    motivation: backendChar.motivation,
+    firstAppearance: backendChar.firstAppearance,
     appearance: {
       physique: appearance.physique || "",
-      skin_tone: appearance.skin_tone || "",
+      skinTone: appearance.skinTone || "",
       eyes: appearance.eyes || "",
-      nose: "",
-      mouth: "",
-      hair_style: appearance.hair || "",
-      hair_color: "",
-      attire: Array.isArray(appearance.attire)
-        ? appearance.attire
-        : [appearance.attire || ""],
-      expression: "",
-      scars_tattoos: [],
-      style_context: {
-        art_style: "",
-      },
+      nose: appearance.nose || "",
+      mouth: appearance.mouth || "",
+      hairStyle: appearance.hairStyle || "",
+      hairColor: appearance.hairColor || "",
+      attire:
+        appearance.attire || (appearance.clothing ? [appearance.clothing] : []),
+      expression: appearance.expression || "",
+      scarsTattoos:
+        appearance.scarsTattoos ||
+        (appearance.distinctive_features
+          ? [appearance.distinctive_features]
+          : []),
+      styleContext: appearance.styleContext || { artStyle: "default" },
     },
     personality: {
-      core_traits: personality.core_traits || [],
-      flaws: personality.flaws || [],
-      values: personality.values || [],
+      coreTraits: personality.coreTraits || personality.core_traits || [],
+      flaws: personality.flaws || personality.flaws || [],
+      values: personality.values || personality.values || [],
     },
     relations: {
       graph: relationshipsGraph,
-      event_refs: [],
-      location_context: "",
+      eventRefs: [],
+      locationContext: "",
     },
-    current_mood: {
+    currentMood: {
       emotion: "",
       intensity: 0,
       trigger: null,
     },
     inventory: [],
     meta: {
-      created_at: backendChar.createdAt || null,
-      updated_at: backendChar.updatedAt || null,
-      data_version: "1.0",
-      lock_version: 0,
+      createdAt: backendChar.createdAt || null,
+      updatedAt: backendChar.updatedAt || null,
+      dataVersion: "1.0",
+      lockVersion: 0,
     },
-    imageUrl: backendChar.imageUrl,
+    imageUrl: resolveImageUrl(backendChar.imageUrl),
   };
 }
 
@@ -147,7 +154,7 @@ export const characterService = {
   getAll: async (projectId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
-      `/projects/${projectId}/characters`,
+      `/projects/${projectId}/characters`
     );
 
     // Transform backend response to frontend type
@@ -171,7 +178,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.post<ApiResponse<any>>(
       `/projects/${projectId}/characters`,
-      payload,
+      payload
     );
     return {
       ...response.data,
@@ -183,7 +190,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.patch<ApiResponse<any>>(
       `/characters/${id}`,
-      payload,
+      payload
     );
     return {
       ...response.data,
@@ -198,7 +205,7 @@ export const characterService = {
 
   regenerateImage: async (id: string) => {
     const response = await api.post<ApiResponse<{ jobId: string }>>(
-      `/characters/${id}/regenerate`,
+      `/characters/${id}/regenerate`
     );
     return response.data;
   },

@@ -44,7 +44,7 @@ interface UseImageGenerationPollingResult {
 export function useImageGenerationPolling(
   jobId: string | null,
   characterId: string,
-  options: UseImageGenerationPollingOptions = {},
+  options: UseImageGenerationPollingOptions = {}
 ): UseImageGenerationPollingResult {
   const queryClient = useQueryClient();
   const { enabled = true, onComplete, onError, onTimeout } = options;
@@ -63,7 +63,7 @@ export function useImageGenerationPolling(
       // Call user's onComplete callback
       onComplete?.(imageUrl);
     },
-    [characterId, queryClient, onComplete],
+    [characterId, queryClient, onComplete]
   );
 
   // Use generic job polling hook with image-specific typing
@@ -73,12 +73,12 @@ export function useImageGenerationPolling(
       imageService.getImageJobStatus,
       {
         enabled,
-        pollingInterval: 2000, // Poll every 2 seconds
+        pollingInterval: 500, // Poll every 0.5 seconds for snappy updates
         maxPollingTime: 5 * 60 * 1000, // 5 minute timeout
         onComplete: handleComplete,
         onError,
         onTimeout,
-      },
+      }
     );
 
   return {

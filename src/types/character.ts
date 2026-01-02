@@ -34,7 +34,7 @@ export type CharacterRole =
  * 캐릭터 프로필 정보
  */
 export interface CharacterProfile {
-  character_id: string;
+  characterId: string;
   name: string;
   age: number | null;
   gender: string;
@@ -42,12 +42,15 @@ export interface CharacterProfile {
   mbti: string | null;
   personality: string[];
   backstory: string;
+  occupation?: string; // Added
+  birthplace?: string; // Added
+  family?: string; // Added
   faction: {
     name: string | null;
     social: {
       rank: string;
       influence: number;
-      faction_reputation: Record<string, unknown>;
+      factionReputation: Record<string, unknown>;
     };
   };
 }
@@ -57,17 +60,17 @@ export interface CharacterProfile {
  */
 export interface CharacterAppearance {
   physique: string;
-  skin_tone: string;
+  skinTone: string;
   eyes: string;
   nose: string;
   mouth: string;
-  hair_style: string;
-  hair_color: string;
+  hairStyle: string;
+  hairColor: string;
   attire: string[];
   expression: string;
-  scars_tattoos: string[];
-  style_context: {
-    art_style: string;
+  scarsTattoos: string[];
+  styleContext: {
+    artStyle: string;
   };
 }
 
@@ -75,10 +78,13 @@ export interface CharacterAppearance {
  * 캐릭터 성격 정보
  */
 export interface CharacterPersonality {
-  core_traits: string[];
-  flaws: string[];
+  coreTraits: string[];
+  strengths?: string[]; // Added
+  flaws: string[]; // Weaknesses
   values: string[];
 }
+
+// ... (Rest of interfaces)
 
 /**
  * 캐릭터 관계 (임베딩된 그래프 노드)
@@ -96,8 +102,8 @@ export interface CharacterRelation {
  */
 export interface CharacterRelations {
   graph: CharacterRelation[];
-  event_refs: string[];
-  location_context: string;
+  eventRefs: string[];
+  locationContext: string;
 }
 
 /**
@@ -113,7 +119,7 @@ export interface CharacterMood {
  * 인벤토리 아이템
  */
 export interface InventoryItem {
-  item_id: string;
+  itemId: string;
   name: string;
   description: string;
 }
@@ -122,22 +128,18 @@ export interface InventoryItem {
  * 캐릭터 메타 정보
  */
 export interface CharacterMeta {
-  created_at: string | null;
-  updated_at: string | null;
-  data_version: string;
-  lock_version: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  dataVersion: string;
+  lockVersion: number;
 }
-
-// =====================================================
-// 👤 Main Character Interface (New Schema)
-// =====================================================
 
 /**
  * 캐릭터 (새 백엔드 스키마)
  */
 export interface Character {
   _id: string;
-  projectId: string; // 👈 Added projectId
+  projectId: string;
   role: CharacterRole;
   profile: CharacterProfile;
   aliases: string[];
@@ -145,12 +147,13 @@ export interface Character {
   appearance: CharacterAppearance;
   personality: CharacterPersonality;
   relations: CharacterRelations;
-  current_mood: CharacterMood;
+  currentMood: CharacterMood;
   inventory: InventoryItem[];
   meta: CharacterMeta;
-  /** AI 생성 이미지 URL (다른 파이프라인에서 폴링) */
   imageUrl?: string;
   embedding?: number[];
+  motivation?: string; // Added
+  firstAppearance?: string; // Added
 }
 
 // =====================================================
@@ -203,11 +206,11 @@ export interface Relationship {
  */
 export interface DetailedRelationship extends Relationship {
   id?: string;
-  relation_type?: RelationType;
+  relationType?: RelationType;
   label?: string | null;
   since?: string | null;
   bidirectional?: boolean;
-  evolved_from?: RelationType | null;
+  evolvedFrom?: RelationType | null;
 }
 
 /**
@@ -252,7 +255,7 @@ export function getCharacterFaction(char: Character): string {
  * 관계 배열을 가져오는 헬퍼 (레거시 호환)
  */
 export function getCharacterRelationships(
-  char: Character,
+  char: Character
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }
