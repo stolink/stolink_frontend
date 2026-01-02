@@ -214,7 +214,7 @@
   h4,
   h5,
   h6 {
-    font-family: "DM Serif Display", "Pretendard", serif;
+    font-family: "Pretendard", serif;
   }
 }
 /* Focus Mode Sidebar - Hide drag handles and action buttons for cleaner look */
@@ -540,13 +540,13 @@ mark {
 
 /* Editorial Typography */
 .editorial-name {
-  font-family: "DM Serif Display", "Pretendard", serif;
+  font-family: "Pretendard", serif;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .magazine-caption {
-  font-family: "Spectral", "Pretendard", serif;
+  font-family: "Pretendard", serif;
   font-style: italic;
   font-size: 0.875rem;
   color: hsl(var(--muted-foreground));
@@ -565,7 +565,7 @@ mark {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-family: "DM Serif Display", serif;
+  font-family: "Pretendard", serif;
   font-size: 1.125rem;
   font-weight: 400;
   color: hsl(var(--foreground));
@@ -575,11 +575,7 @@ mark {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--border)),
-    transparent
-  );
+  background: linear-gradient(90deg, hsl(var(--border)), transparent);
 }
 
 /* Editorial Animations */
@@ -644,13 +640,15 @@ mark {
 
 /* Hover lift effect */
 .hover-lift {
-  transition: transform 0.2s cubic-bezier(0.19, 1, 0.22, 1),
+  transition:
+    transform 0.2s cubic-bezier(0.19, 1, 0.22, 1),
     box-shadow 0.2s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08),
+  box-shadow:
+    0 8px 20px -4px rgba(0, 0, 0, 0.08),
     0 4px 8px -2px rgba(0, 0, 0, 0.04);
 }
 
@@ -675,7 +673,7 @@ mark {
 .pull-quote {
   position: relative;
   padding: 1.5rem 1.5rem 1.5rem 2rem;
-  font-family: "Spectral", serif;
+  font-family: "Pretendard", serif;
   font-style: italic;
   font-size: 1.05rem;
   line-height: 1.7;
@@ -762,15 +760,15 @@ mark {
 }
 
 .color-bar-indicator.strength::before {
-  background: #5B7B4B;
+  background: #5b7b4b;
 }
 
 .color-bar-indicator.weakness::before {
-  background: #A33A3A;
+  background: #a33a3a;
 }
 
 .color-bar-indicator.value::before {
-  background: #4B7B9F;
+  background: #4b7b9f;
 }
 
 /* Timeline Dot Style */
@@ -858,15 +856,15 @@ mark {
 
 /* Relationship Color Indicators */
 .relationship-friendly {
-  --relationship-color: #15803D;
+  --relationship-color: #15803d;
 }
 
 .relationship-hostile {
-  --relationship-color: #F44336;
+  --relationship-color: #f44336;
 }
 
 .relationship-romantic {
-  --relationship-color: #FF4081;
+  --relationship-color: #ff4081;
 }
 
 .relationship-indicator::before {

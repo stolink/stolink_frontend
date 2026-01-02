@@ -14,6 +14,7 @@ interface PaperTextureProps {
   intensity?: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function PaperTexture(_props: PaperTextureProps) {
   return null;
 }

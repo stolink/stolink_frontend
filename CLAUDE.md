@@ -62,6 +62,46 @@ StoLink - 작가용 AI 기반 스토리 관리 플랫폼
 
 </design_system>
 
+<frontend_design_guidelines>
+
+  <!-- Rules integrated from 'frontend-design' skill -->
+
+## Core Philosophy
+
+- **Bold Integration**: Commit to a cohesive aesthetic (Warm & Soft in this project). Avoid generic "AI" looks.
+- **Differentiation**: Create unforgettable, distinctive interfaces. "The user should be wowed at first glance."
+- **Premium Feel**: Avoid simple MVP looks. Use curated palettes, modern typography, and smooth gradients.
+
+## Design Quality Standards
+
+- **Typography**:
+  - Use "DM Serif Display" (Headings) and "Spectral" (Body) as defined in Tailwind.
+  - Avoid generic sans-serifs for expressive text.
+  - Pair distinctive display fonts with refined body text.
+- **Color & Theme**:
+  - Use `mocha`, `cloud`, `sage` palettes defined in `tailwind.config.js`.
+  - **Narrative Context**: Must use `Relationship Colors` (Friendly/Hostile/etc) defined in `<design_system>` for character interactions.
+  - Avoid generic purple gradients or muted "tech" blues.
+  - Use distinct dominant colors rather than timid, evenly-distributed palettes.
+- **Motion & Interaction**:
+  - **MUST**: Use `framer-motion` for complex animations, CSS transitions for simple ones.
+  - **MUST**: Implement staggered reveals (page load), hover effects, and scroll-triggers.
+  - **Micro-animations**: Essential for "alive" feel (e.g., button presses, card hovers).
+- **Composition**:
+  - Use unexpected layouts, asymmetry, or generous negative space where appropriate.
+  - Avoid "cookie-cutter" dashboards.
+- **Visual Detail**:
+  - Use subtle textures (grain, noise), soft shadows (`shadow-paper`), and organic borders.
+  - Create depth with layered transparencies (Glassmorphism where it fits "Warm & Soft").
+
+## 🔴 Anti-Patterns (MUST NOT)
+
+- Generic "AI Slop": Overused layouts, standard Bootstrap/Material look without customization.
+- Default browser fonts (Times New Roman, Arial) or unconfigured Inter.
+- "Placeholders": Use `generate_image` or actual distinct assets.
+- Flat, lifeless designs without hover states or transitions.
+  </frontend_design_guidelines>
+
 <core_entities>
 
 <!-- src/types/ 기준 --> - Document: 폴더(folder) 또는 텍스트(text) - Scrivener 스타일 재귀 구조 ⭐ 핵심 - Project: 작품 (프로젝트 단위, stats 포함) - Character: 캐릭터 (extras로 동적 속성, Neo4j 연동) - Foreshadowing: 복선 (tag, status, appearances 배열) - Place: 장소, Item: 아이템 - CharacterRelationship: 관계 (sourceId, targetId, type, strength)

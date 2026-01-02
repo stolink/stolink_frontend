@@ -69,12 +69,14 @@ const WIDTH_OPTIONS: Array<{
   { value: "full", label: "전체", pixels: "100%" },
 ];
 
-const TYPEWRITER_OPTIONS: Array<{ value: TypewriterMode; label: string }> = [
+// 타이프라이터 옵션 - 향후 UI에서 사용 예정
+const _TYPEWRITER_OPTIONS: Array<{ value: TypewriterMode; label: string }> = [
   { value: "off", label: "끄기" },
   { value: "center", label: "중앙" },
   { value: "top", label: "상단" },
   { value: "bottom", label: "하단" },
 ];
+void _TYPEWRITER_OPTIONS;
 
 const LINGUISTIC_OPTIONS: Array<{
   value: BehaviorSettings["linguisticMode"];
@@ -136,14 +138,18 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
     setTheme,
     setEditorWidth,
     setHighlightCurrentLine,
-    setTypewriterMode,
-    toggleFocusMode,
+    setTypewriterMode: _setTypewriterMode,
+    toggleFocusMode: _toggleFocusMode,
     setSmartQuotes,
     setSmartDashes,
     setSmartEllipsis,
     setLinguisticMode,
     resetToDefaults,
   } = useEditorSettingStore();
+
+  // 향후 UI에서 사용 예정
+  void _setTypewriterMode;
+  void _toggleFocusMode;
 
   // Merge with defaults to prevent undefined errors
   const typography = { ...DEFAULT_TYPOGRAPHY, ...rawTypography };

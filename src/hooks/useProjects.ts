@@ -210,7 +210,7 @@ export function useDeleteProject() {
         });
       }
     },
-    onSuccess: (_data, _id) => {
+    onSuccess: () => {
       // 성공 시에만 목록 재조회 (에러 시에는 이미 onError에서 롤백됨)
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },

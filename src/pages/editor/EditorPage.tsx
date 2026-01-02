@@ -737,6 +737,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             activeTab={rightSidebarTab}
             onTabChange={setRightSidebarTab}
             documentId={selectedSectionId}
+            projectId={projectId}
             sectionTitle={currentSectionTitle}
             newForeshadowingId={newForeshadowingId}
             onNavigateToPosition={(docId) => {

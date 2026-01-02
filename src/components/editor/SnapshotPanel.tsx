@@ -10,7 +10,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { useDocumentSnapshots, type Snapshot } from "@/stores/useSnapshotStore";
+import { useDocumentSnapshots } from "@/stores/useSnapshotStore";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 interface SnapshotPanelProps {
   documentId: string | null;
