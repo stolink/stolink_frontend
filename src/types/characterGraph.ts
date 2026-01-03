@@ -16,6 +16,7 @@ export interface CharacterNode extends d3.SimulationNodeDatum {
   group?: string; // profile.faction.name
   imageUrl?: string; // Optional - 별도 생성 또는 없음
   relationCount?: number;
+  status?: string; // 캐릭터 상태 (alive, dead, unknown 등)
   // D3 런타임 필드 (시뮬레이션이 자동 추가)
   x?: number;
   y?: number;
@@ -43,6 +44,10 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   // New fields from schema
   publicStance?: string;
   privateFeeling?: string;
+  /** Curve factor for multiple links between same nodes (-1 to 1) */
+  curvature?: number;
+  /** BFS depth from protagonist for flow animation delay */
+  flowDepth?: number;
   // Legacy history field
   history?: {
     eventId: string;

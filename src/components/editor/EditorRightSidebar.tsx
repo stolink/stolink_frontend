@@ -47,11 +47,11 @@ export default function EditorRightSidebar({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-72 border-l border-border bg-card hidden lg:flex shrink-0 overflow-hidden animate-in slide-in-from-right duration-300">
+    <aside className="w-72 border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-hidden animate-in slide-in-from-right duration-300">
       {/* Toggle Button - Left Edge Strip */}
       <button
         onClick={onClose}
-        className="w-5 h-full border-r border-border/50 bg-muted/30 hover:bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        className="w-5 h-full border-r border-mocha-100/50 bg-mocha-50/30 hover:bg-mocha-100/50 flex items-center justify-center text-mocha-400 hover:text-mocha-600 transition-colors shrink-0"
         title="사이드바 닫기"
       >
         <PanelRightClose className="h-3.5 w-3.5" />
@@ -60,41 +60,41 @@ export default function EditorRightSidebar({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header with Tabs */}
-        <div className="h-12 px-2 border-b border-border/50 flex items-center shrink-0 bg-stone-50/50">
+        <div className="h-12 px-2 border-b border-mocha-100/50 flex items-center shrink-0 bg-cloud-50">
           <Tabs
             value={activeTab}
             onValueChange={(v) => onTabChange(v as RightSidebarTab)}
             className="flex-1"
           >
-            <TabsList className="grid w-full grid-cols-4 h-8 bg-stone-100/50 p-1">
+            <TabsList className="grid w-full grid-cols-4 h-8 bg-mocha-100/40 p-1 rounded-lg">
               <TabsTrigger
                 value="foreshadowing"
-                className="text-[11px] px-1.5 h-7 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
                 data-tour="foreshadowing-panel"
               >
-                <Sparkles className="h-3 w-3 mr-1 text-mocha-600" />
+                <Sparkles className="h-3 w-3 mr-1 text-mocha-500" />
                 복선
               </TabsTrigger>
               <TabsTrigger
                 value="ai"
-                className="text-[11px] px-1.5 h-7 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
                 data-tour="ai-panel"
               >
-                <Bot className="h-3 w-3 mr-1 text-indigo-600" />
+                <Bot className="h-3 w-3 mr-1 text-mocha-500" />
                 AI
               </TabsTrigger>
               <TabsTrigger
                 value="consistency"
-                className="text-[11px] px-1.5 h-7 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
               >
-                <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />
+                <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
                 체크
               </TabsTrigger>
               <TabsTrigger
                 value="inspector"
-                className="text-[11px] px-1.5 h-7 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
               >
-                <Info className="h-3 w-3 mr-1 text-indigo-600" />
+                <Info className="h-3 w-3 mr-1 text-mocha-400" />
                 정보
               </TabsTrigger>
             </TabsList>
