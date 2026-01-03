@@ -450,7 +450,7 @@ export function getCharacterFaction(char: Character): string {
 
 // 관계 배열을 가져오는 헬퍼 (레거시 호환)
 export function getCharacterRelationships(
-  char: Character,
+  char: Character
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }
@@ -625,6 +625,34 @@ interface AiAnalysisResult {
 }
 
 // 별도의 AiCharacter, AiEvent 타입 정의 불필요 -> 기존 타입 사용
+```
+
+---
+
+## 10. 증분 분석 버퍼 (Analysis Buffer)
+
+> 파일: `src/stores/useAnalysisBufferStore.ts`
+> **Persist**: IndexedDB (`idb-keyval`)
+
+```typescript
+export interface BufferChunk {
+  documentId: string;
+  content: string; // HTML content
+  charCount: number;
+  timestamp: number;
+}
+
+interface AnalysisBufferState {
+  projectId: string | null;
+  buffer: BufferChunk[];
+  bufferCharCount: number; // 현재 버퍼링된 총 글자 수
+  lastFlushAt: number; // 마지막 분석 요청 시각
+  isAnalyzing: boolean; // 현재 분석 중 여부
+}
+
+// Config Constants
+// - MIN_CHARS_FOR_AUTO_FLUSH = 10,000
+// - MIN_INTERVAL_MS = 30분
 ```
 
 ---

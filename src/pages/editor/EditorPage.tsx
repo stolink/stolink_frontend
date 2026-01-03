@@ -55,6 +55,8 @@ import {
 import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
 import { useCharacters } from "@/hooks/useCharacters";
+import { useProjectSSE } from "@/hooks/useProjectSSE";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -70,7 +72,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -150,11 +152,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const editorContentRef = useRef<EditorContentHandle>(null);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null,
+    isDemo ? "chapter-1" : null
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -167,19 +169,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode,
+    (state) => state.behavior.typewriterMode
   );
   const toggleTypewriterMode = useEditorSettingStore(
-    (state) => state.toggleTypewriterMode,
+    (state) => state.toggleTypewriterMode
   );
   const isTypewriterMode = typewriterMode !== "off";
 
   // Focus mode from settings store
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode,
+    (state) => state.behavior.focusMode
   );
   const toggleFocusMode = useEditorSettingStore(
-    (state) => state.toggleFocusMode,
+    (state) => state.toggleFocusMode
   );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
@@ -191,6 +193,34 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const navigationSectionId = (
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
+
+  // ============================================================
+  // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
+  // ============================================================
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
+    isDemo ? null : projectId,
+    { enabled: !isDemo }
+  );
+  // TODO: 저장 흐름에 addToBuffer 연결 (useEditorHandlers 확장 필요)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
+
+  // 페이지 이탈/브라우저 종료 시 버퍼 flush
+  useEffect(() => {
+    if (isDemo) return;
+
+    const handleBeforeUnload = () => {
+      flushAndAnalyze();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // 컴포넌트 언마운트 시에도 flush
+      flushAndAnalyze();
+    };
+  }, [isDemo, flushAndAnalyze]);
 
   // ============================================================
   // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
@@ -210,9 +240,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
+            (doc) => doc.projectId === projectId
           ),
-    [allDocuments, projectId, isDemo],
+    [allDocuments, projectId, isDemo]
   );
 
   const previewChapters = useMemo(() => {
@@ -231,7 +261,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     if (isDemo) return "데모 작품";
     if (project?.title) return project.title;
     const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder",
+      (doc: Document) => doc.type === "folder"
     );
     return folder?.title || "내 작품";
   }, [project?.title, localDocuments, isDemo]);
@@ -444,14 +474,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         import("@/stores/useWritingStatsStore").then(
           ({ useWritingStatsStore }) => {
             useWritingStatsStore.getState().recordActivity(delta);
-          },
+          }
         );
       }
       prevCountRef.current = count;
 
       handleCharacterCountChange(count, setCharacterCount);
     },
-    [handleCharacterCountChange],
+    [handleCharacterCountChange]
   );
 
   // ============================================================
@@ -522,7 +552,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       setSplitState(null); // 일반 생성 모드
       setCreateSectionModalOpen(true);
     },
-    [selectedSectionId, documents],
+    [selectedSectionId, documents]
   );
 
   const handleConfirmCreateSection = async (title: string) => {
@@ -579,7 +609,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full",
+        isDemo ? "h-screen" : "h-full"
       )}
     >
       {/* Demo Header */}

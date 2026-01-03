@@ -45,9 +45,15 @@ export const aiService = {
   // Job Status Polling
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
-      `/ai/jobs/${jobId}`,
+      `/ai/jobs/${jobId}`
     );
     return response.data.data;
+  },
+
+  // SSE Stream URL for job status
+  getJobStreamUrl: (jobId: string): string => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl}/ai/jobs/${jobId}/stream`;
   },
 
   // --- Mock Methods for Testing ---
