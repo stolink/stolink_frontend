@@ -34,9 +34,9 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
   // Status Badge Colors (Mocha/Sage Theme)
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case "completed":
+      case "final":
         return "bg-sage-100 text-sage-700 border-sage-200";
-      case "in_progress":
+      case "revised":
         return "bg-amber-50 text-amber-700 border-amber-200";
       case "draft":
         return "bg-stone-100 text-stone-600 border-stone-200";
@@ -153,10 +153,10 @@ function OutlineRow({ doc, onSelect, onSynopsisEdit }: OutlineRowProps) {
             getStatusColor(doc.metadata?.status),
           )}
         >
-          {doc.metadata?.status === "completed"
+          {doc.metadata?.status === "final"
             ? "완료"
-            : doc.metadata?.status === "in_progress"
-              ? "진행 중"
+            : doc.metadata?.status === "revised"
+              ? "수정됨"
               : "초안"}
         </Badge>
       </TableCell>

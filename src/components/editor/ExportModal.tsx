@@ -511,7 +511,7 @@ export default function ExportModal({
                       </div>
                       <Switch
                         checked={includeCharacters}
-                        onCheckedChange={setIncludeCharacters}
+                        onChange={setIncludeCharacters}
                       />
                     </motion.div>
 
@@ -534,7 +534,7 @@ export default function ExportModal({
                       </div>
                       <Switch
                         checked={includeGraph}
-                        onCheckedChange={setIncludeGraph}
+                        onChange={setIncludeGraph}
                       />
                     </motion.div>
                   </div>

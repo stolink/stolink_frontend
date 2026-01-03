@@ -56,8 +56,8 @@ export function useLogin() {
         response.success || response.status === "OK" || response.code === 200;
 
       if (isSuccess && response.data) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
+        // 토큰은 쿠키에 자동 저장됨, user만 store에 저장
+        setAuth(response.data.user);
         navigate("/library");
       }
     },
@@ -120,7 +120,7 @@ export function useUpdateProfile() {
       authService.updateMe(payload),
     onSuccess: (response) => {
       if (response.success && response.data) {
-        setUser(response.data, "");
+        setUser(response.data);
         queryClient.invalidateQueries({ queryKey: authKeys.me });
       }
     },

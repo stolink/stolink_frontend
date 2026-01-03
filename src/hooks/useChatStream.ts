@@ -66,7 +66,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
     async (message: string, projectId: string) => {
       if (!message.trim() || streaming) return;
 
-      const { user, accessToken } = useAuthStore.getState();
+      const { user } = useAuthStore.getState();
       const userId = user?.id;
 
       if (!userId) {
@@ -97,10 +97,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
           Accept: "text/event-stream",
         };
 
-        if (accessToken) {
-          headers.Authorization = `Bearer ${accessToken}`;
-        }
-
         // Corrected path from /ai/chat/stream to /chat/stream as per guide
         const response = await fetch(`${API_URL}/chat/stream`, {
           method: "POST",
@@ -112,7 +108,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
             session_id: sessionId,
           }),
           signal: abortControllerRef.current.signal,
-          credentials: "include",
+          credentials: "include", // 쿠키 자동 전송
         });
 
         if (!response.ok) {
@@ -161,7 +157,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   setCurrentSources([]);
                 } else if (data.type === "error") {
                   throw new Error(
-                    data.error || "알 수 없는 오류가 발생했습니다."
+                    data.error || "알 수 없는 오류가 발생했습니다.",
                   );
                 }
               } catch (parseError) {
@@ -209,7 +205,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         abortControllerRef.current = null;
       }
     },
-    [streaming, options, sessionId]
+    [streaming, options, sessionId],
   );
 
   const cancelStream = useCallback(async () => {
