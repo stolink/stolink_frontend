@@ -81,8 +81,10 @@ export default {
         },
       },
       fontFamily: {
-        heading: ["Pretendard", "sans-serif"],
-        body: ["Pretendard", "sans-serif"],
+        heading: ["DM Serif Display", "Pretendard", "sans-serif"],
+        body: ["Spectral", "Pretendard", "serif"],
+        serif: ["Spectral", "serif"],
+        display: ["DM Serif Display", "serif"],
         sans: [
           "Pretendard",
           "-apple-system",

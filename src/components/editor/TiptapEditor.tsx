@@ -559,7 +559,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         {editor && !readOnly && (
           <BubbleMenu
             editor={editor}
-            className="flex overflow-hidden rounded-md border border-border bg-card shadow-md z-50"
+            className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50"
           >
             <Button
               variant="ghost"
@@ -571,7 +571,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               <Sparkles className="w-3.5 h-3.5" />
               복선 저장
             </Button>
-            <div className="w-px h-8 bg-muted" />
+            <div className="w-px h-8 bg-mocha-200/50" />
             {/* 하이라이트 색상 */}
             <div className="flex items-center gap-0.5 px-1.5">
               {[
@@ -586,7 +586,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                   onClick={() =>
                     editor.chain().focus().setHighlight({ color }).run()
                   }
-                  className="w-5 h-5 rounded-full border border-stone-300 hover:scale-110 transition-transform"
+                  className="w-5 h-5 rounded-full border border-mocha-200 hover:scale-110 hover:shadow-sm transition-all duration-200"
                   style={{ backgroundColor: color }}
                   title={`${label} 하이라이트`}
                   aria-label={`${label} 하이라이트`}
@@ -594,14 +594,14 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               ))}
               <button
                 onClick={() => editor.chain().focus().unsetHighlight().run()}
-                className="w-5 h-5 rounded-full border border-stone-300 bg-white hover:bg-stone-100 flex items-center justify-center text-xs text-stone-500"
+                className="w-5 h-5 rounded-full border border-mocha-200 bg-white hover:bg-mocha-50 flex items-center justify-center text-xs text-mocha-500 transition-colors"
                 title="하이라이트 제거"
                 aria-label="하이라이트 제거"
               >
                 ✕
               </button>
             </div>
-            <div className="w-px h-8 bg-muted" />
+            <div className="w-px h-8 bg-mocha-200/50" />
             <Button
               variant="ghost"
               size="sm"
@@ -609,8 +609,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-label="굵게"
               aria-pressed={editor.isActive("bold")}
               className={cn(
-                "h-8 w-8 p-0",
-                editor.isActive("bold") && "bg-muted",
+                "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
+                editor.isActive("bold") && "bg-mocha-100 text-mocha-700",
               )}
             >
               <Bold className="w-3.5 h-3.5" />
@@ -622,8 +622,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-label="기울임"
               aria-pressed={editor.isActive("italic")}
               className={cn(
-                "h-8 w-8 p-0",
-                editor.isActive("italic") && "bg-muted",
+                "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
+                editor.isActive("italic") && "bg-mocha-100 text-mocha-700",
               )}
             >
               <Italic className="w-3.5 h-3.5" />

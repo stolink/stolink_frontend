@@ -17,7 +17,6 @@ import {
   Heading2,
   Heading3,
   Pilcrow,
-  Code,
   Highlighter,
   Type,
 } from "lucide-react";
@@ -85,7 +84,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-0.5 px-2 py-1 border-b bg-muted/50/80 backdrop-blur sticky top-0 z-10 flex-wrap",
+        "flex items-center gap-0.5 px-3 py-1.5 border-b border-mocha-100 bg-cloud-50/90 backdrop-blur-sm sticky top-0 z-10 flex-wrap transition-colors",
         className,
       )}
     >
@@ -107,7 +106,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </ToolbarButton>
       </div>
 
-      <div className="w-px h-4 bg-muted mx-1" />
+      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
 
       {/* Heading Dropdown */}
       <DropdownMenu>
@@ -163,7 +162,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-4 bg-muted mx-1" />
+      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
 
       {/* Basic Formatting */}
       <ToolbarButton
@@ -194,15 +193,8 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive("code")}
-        tooltip="인라인 코드"
-      >
-        <Code className="h-4 w-4" />
-      </ToolbarButton>
 
-      <div className="w-px h-4 bg-muted mx-1" />
+      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
 
       {/* Highlight Colors */}
       <DropdownMenu>
@@ -272,7 +264,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-4 bg-muted mx-1" />
+      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
 
       {/* Alignment */}
       <ToolbarButton
@@ -297,7 +289,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-4 bg-muted mx-1" />
+      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
 
       {/* Lists & Blocks */}
       <ToolbarButton

@@ -10,34 +10,45 @@ export const MOCHA_COLORS = {
   700: "#7D5A4B", // Dark/Active
 } as const;
 
-// 관계 타입별 색상 (Total War: Three Kingdoms / CK3 스타일)
-// 관계 타입별 색상 팔레트 (Strength 기반 3단계)
+// =====================================================
+// 🎨 관계 타입별 통일 색상 (HEX 직접 사용)
+// CLAUDE.md 및 index.css와 완전 동기화
+// =====================================================
+
+// 관계 타입별 HEX 색상 (단일 통일 팔레트)
+export const RELATION_COLORS_HEX = {
+  friendly: "#15803D", // Dark Green (신뢰, 협력)
+  hostile: "#F44336", // Red (갈등, 적대)
+  romantic: "#FF4081", // Vivid Cherry Blossom Pink (애정, 열정)
+} as const;
+
+// 관계 타입별 색상 팔레트 (Strength 기반 3단계 - 채도/명도 변화)
 export const RELATION_PALETTE: Record<
   RelationType,
   { weak: string; standard: string; deep: string }
 > = {
   friendly: {
-    weak: "var(--rel-friendly-weak)", // 1-3
-    standard: "var(--rel-friendly-std)", // 4-7
-    deep: "var(--rel-friendly-deep)", // 8-10
+    weak: "#4ADE80", // Light Green (1-3)
+    standard: "#15803D", // Dark Green (4-7)
+    deep: "#166534", // Deep Forest (8-10)
   },
   hostile: {
-    weak: "var(--rel-hostile-weak)", // 1-3
-    standard: "var(--rel-hostile-std)", // 4-7
-    deep: "var(--rel-hostile-deep)", // 8-10
+    weak: "#FCA5A5", // Light Red (1-3)
+    standard: "#F44336", // Red (4-7)
+    deep: "#B91C1C", // Deep Red (8-10)
   },
   romantic: {
-    weak: "var(--rel-romantic-weak)", // 1-3
-    standard: "var(--rel-romantic-std)", // 4-7
-    deep: "var(--rel-romantic-deep)", // 8-10
+    weak: "#FDA4AF", // Light Pink (1-3)
+    standard: "#FF4081", // Vivid Pink (4-7)
+    deep: "#BE185D", // Deep Rose (8-10)
   },
 };
 
 // 관계 타입별 기본 색상 (Standard 기준)
 export const RELATION_COLORS: Record<RelationType, string> = {
-  friendly: RELATION_PALETTE.friendly.standard,
-  hostile: RELATION_PALETTE.hostile.standard,
-  romantic: RELATION_PALETTE.romantic.standard,
+  friendly: RELATION_COLORS_HEX.friendly,
+  hostile: RELATION_COLORS_HEX.hostile,
+  romantic: RELATION_COLORS_HEX.romantic,
 };
 
 // 관계 타입별 라벨 (한글)
@@ -66,6 +77,23 @@ export const ROLE_COLORS: Record<CharacterRole, string> = {
   mentor: "#7C6BA8", // Muted Purple - 지혜로운 차분함
   sidekick: "#4B9F7D", // Emerald - 신뢰감 있는 조력자
   other: "#8B929E", // Sharkskin - 명확한 중립
+};
+
+// 캐릭터 상태별 배지 설정
+export const STATUS_CONFIG: Record<
+  string,
+  { icon: string; color: string; label: string }
+> = {
+  alive: { icon: "✓", color: "#5B7B4B", label: "생존" },
+  생존: { icon: "✓", color: "#5B7B4B", label: "생존" },
+  dead: { icon: "☠", color: "#A33A3A", label: "사망" },
+  사망: { icon: "☠", color: "#A33A3A", label: "사망" },
+  unknown: { icon: "?", color: "#8B929E", label: "불명" },
+  불명: { icon: "?", color: "#8B929E", label: "불명" },
+  injured: { icon: "⚡", color: "#B8860B", label: "부상" },
+  부상: { icon: "⚡", color: "#B8860B", label: "부상" },
+  missing: { icon: "👁", color: "#5B6B7B", label: "실종" },
+  실종: { icon: "👁", color: "#5B6B7B", label: "실종" },
 };
 
 // =====================================================
