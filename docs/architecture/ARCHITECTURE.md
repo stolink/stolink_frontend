@@ -87,7 +87,10 @@ src/
 │   ├── useCharacterGraphResize.ts # 그래프 리사이즈
 │   ├── useCharacterImportance.ts  # 캐릭터 중요도
 │   ├── useNetworkSimulation.ts    # 네트워크 시뮬레이션
-│   └── useUpdateProjectStatus.ts  # 프로젝트 상태 업데이트
+│   ├── useNetworkSimulation.ts    # 네트워크 시뮬레이션
+│   ├── useUpdateProjectStatus.ts  # 프로젝트 상태 업데이트
+│   ├── useJobSSE.ts               # SSE 기반 작업 스트리밍
+│   └── useProjectSSE.ts           # 프로젝트 레벨 SSE 및 증분 분석
 │
 ├── lib/                  # 유틸리티 (1개)
 │   └── utils.ts          # cn 함수 등
@@ -128,6 +131,7 @@ src/
 │   ├── useChapterStore.ts
 │   ├── useSceneStore.ts
 │   ├── useDemoStore.ts
+│   ├── useAnalysisBufferStore.ts
 │   └── index.ts
 │
 ├── styles/               # 추가 스타일
@@ -183,40 +187,43 @@ src/
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Zustand 스토어 (8개)
+### Zustand 스토어 (9개)
 
-| 스토어                  | 역할                         | 미들웨어  |
-| ----------------------- | ---------------------------- | --------- |
-| `useAuthStore`          | 인증 상태, 토큰 관리         | `persist` |
-| `useEditorStore`        | 프로젝트/챕터, 분할화면, 줌  | -         |
-| `useUIStore`            | 사이드바, 모달, 테마         | -         |
-| `useSceneStore`         | Scene CRUD, 캐릭터/복선 연결 | `immer`   |
-| `useDemoStore`          | 데모 모드 데이터             | -         |
-| `useForeshadowingStore` | 복선 CRUD, 등장 위치         | -         |
-| `useChapterStore`       | 챕터 CRUD                    | -         |
+| 스토어                   | 역할                           | 미들웨어              |
+| ------------------------ | ------------------------------ | --------------------- |
+| `useAuthStore`           | 인증 상태, 토큰 관리           | `persist`             |
+| `useEditorStore`         | 프로젝트/챕터, 분할화면, 줌    | -                     |
+| `useUIStore`             | 사이드바, 모달, 테마           | -                     |
+| `useSceneStore`          | Scene CRUD, 캐릭터/복선 연결   | `immer`               |
+| `useDemoStore`           | 데모 모드 데이터               | -                     |
+| `useForeshadowingStore`  | 복선 CRUD, 등장 위치           | -                     |
+| `useChapterStore`        | 챕터 CRUD                      | -                     |
+| `useAnalysisBufferStore` | **증분 분석 버퍼 (IndexedDB)** | `persist` (IndexedDB) |
 
-### TanStack Query 훅 (12개) + D3 그래프 훅 (5개) + 기타 훅 (13개)
+### TanStack Query 훅 (14개) + D3 그래프 훅 (5개) + 기타 훅 (13개)
 
-| 훅                          | 역할                | Query Key 패턴                 |
-| --------------------------- | ------------------- | ------------------------------ |
-| `useDocuments`              | 문서 트리, CRUD     | `['documents', projectId]`     |
-| `useProjects`               | 프로젝트 목록, CRUD | `['projects', 'list', params]` |
-| `useCharacters`             | 캐릭터 관리         | `['characters', projectId]`    |
-| `useRelationships`          | 관계 관리           | `['relationships', projectId]` |
-| `useForeshadowing`          | 복선 관리           | `['foreshadowing', projectId]` |
-| `usePlaces`                 | 장소 관리           | `['places', projectId]`        |
-| `useItems`                  | 아이템 관리         | `['items', projectId]`         |
-| `useAuth`                   | 인증 상태           | -                              |
-| `useAuthInit`               | 인증 초기화         | -                              |
-| `useAI`                     | AI 분석             | -                              |
-| `useExport`                 | 내보내기            | -                              |
-| `useShare`                  | 공유                | -                              |
-| `useJobPolling`             | 비동기 작업 폴링    | `['job', jobId]`               |
-| `useImageGenerationPolling` | 이미지 생성 폴링    | `['imageJob', jobId]`          |
-| `useManuscriptPolling`      | 원고 처리 폴링      | `['manuscriptJob', jobId]`     |
-| `useToast`                  | 토스트 알림         | -                              |
-| `useUpdateProjectStatus`    | 프로젝트 상태       | -                              |
-| `useCharacterImportance`    | 캐릭터 중요도       | -                              |
+| 훅                          | 역할                    | Query Key 패턴                 |
+| --------------------------- | ----------------------- | ------------------------------ |
+| `useDocuments`              | 문서 트리, CRUD         | `['documents', projectId]`     |
+| `useProjects`               | 프로젝트 목록, CRUD     | `['projects', 'list', params]` |
+| `useCharacters`             | 캐릭터 관리             | `['characters', projectId]`    |
+| `useRelationships`          | 관계 관리               | `['relationships', projectId]` |
+| `useForeshadowing`          | 복선 관리               | `['foreshadowing', projectId]` |
+| `usePlaces`                 | 장소 관리               | `['places', projectId]`        |
+| `useItems`                  | 아이템 관리             | `['items', projectId]`         |
+| `useAuth`                   | 인증 상태               | -                              |
+| `useAuthInit`               | 인증 초기화             | -                              |
+| `useAI`                     | AI 분석                 | -                              |
+| `useExport`                 | 내보내기                | -                              |
+| `useShare`                  | 공유                    | -                              |
+| `useJobPolling`             | 비동기 작업 폴링        | `['job', jobId]`               |
+| `useJobSSE`                 | **작업 스트리밍 (SSE)** | -                              |
+| `useProjectSSE`             | **프로젝트 SSE 연결**   | `['project-sse', projectId]`   |
+| `useImageGenerationPolling` | 이미지 생성 폴링        | `['imageJob', jobId]`          |
+| `useManuscriptPolling`      | 원고 처리 폴링          | `['manuscriptJob', jobId]`     |
+| `useToast`                  | 토스트 알림             | -                              |
+| `useUpdateProjectStatus`    | 프로젝트 상태           | -                              |
+| `useCharacterImportance`    | 캐릭터 중요도           | -                              |
 
 ### D3 그래프 훅 (5개)
 
@@ -365,7 +372,7 @@ sequenceDiagram
 
 ### 인증 흐름
 
-```mermaid
+````mermaid
 sequenceDiagram
     participant UI as AuthPage
     participant Hook as useAuth
@@ -378,7 +385,36 @@ sequenceDiagram
     Hook->>Store: setUser(user)
     Store->>Store: persist to localStorage
     UI->>UI: navigate('/library')
-```
+
+### 증분 분석 흐름 (SSE + IndexedDB)
+
+```mermaid
+sequenceDiagram
+    participant Editor as EditorPage
+    participant Handler as useEditorHandlers
+    participant Buffer as useAnalysisBufferStore (IndexedDB)
+    participant SSE as useProjectSSE
+    participant API as Backward API
+
+    Note over Editor, Buffer: 사용자 입력 및 저장
+    Editor->>Handler: handleContentChange(content)
+    Handler->>Handler: saveContent(content) (API 저장)
+    Handler->>Buffer: addToBuffer(docId, content) (로컬 버퍼링)
+
+    Note over Buffer, SSE: 자동 플러시 조건 (10,000자 or 30분)
+    SSE->>Buffer: shouldAutoFlush()
+    Buffer-->>SSE: true
+    SSE->>Buffer: flush()
+    Buffer-->>SSE: { chunks }
+    SSE->>API: POST /api/ai/analyze (chunks)
+
+    Note over SSE: SSE 이벤트 수신
+    API-->>SSE: Event: progress (분석 진행 중)
+    API-->>SSE: Event: completed (분석 완료)
+    SSE->>Editor: UI 업데이트 (분석 완료 알림)
+````
+
+````
 
 ---
 
@@ -420,7 +456,7 @@ sequenceDiagram
 
 ```typescript
 queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
-```
+````
 
 ---
 
@@ -432,3 +468,4 @@ queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
 | 2.0  | 2025.12.26 | TanStack Query 도입, 12 hooks / 12 services 반영, 브랜치 전략 3-Layer, Phase 3 완료 |
 | 2.1  | 2025.12.28 | D3.js Force Simulation 도입, 그래프 훅 5개 추가, 총 19개 훅 반영                    |
 | 2.2  | 2026.01.02 | 훅/서비스/타입 개수 동기화 (30/20/11), 누락된 훅 추가 (useAuthInit, useToast 등)    |
+| 2.3  | 2026.01.04 | 증분 분석 시스템(SSE + IndexedDB) 아키텍처 반영, useProjectSSE/BufferStore 추가     |

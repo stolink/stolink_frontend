@@ -26,3 +26,19 @@ export interface AiAnalysisResult {
   message: string;
   suggestions: string[];
 }
+
+// SSE Event Types for Job Streaming
+export interface SSEProgressEvent {
+  percent: number;
+  message?: string;
+}
+
+export interface SSECompletedEvent<T = unknown> {
+  result: T;
+}
+
+export interface SSEFailedEvent {
+  error: string;
+}
+
+export type SSEJobEventType = "heartbeat" | "progress" | "completed" | "failed";

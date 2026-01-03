@@ -70,7 +70,7 @@ export function AuthCard({
   const onGoogleLogin = () => {
     const BACKEND_URL =
       import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
-    window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
+    window.location.href = `${BACKEND_URL}/api/oauth2/authorization/google`;
   };
 
   const handleApiError = (error: Error, defaultMsg: string) => {
@@ -101,7 +101,7 @@ export function AuthCard({
           setActiveTab("login");
         },
         onError: (err) => handleApiError(err, "회원가입에 실패했습니다"),
-      },
+      }
     );
   };
 
