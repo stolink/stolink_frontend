@@ -33,7 +33,7 @@ export function CharacterSearchOverlay({
     if (!query.trim()) return [];
 
     return characters.filter((c) =>
-      matchesSearch(c.profile?.name || "", query),
+      matchesSearch(c.profile?.name || "", query)
     );
   }, [query, characters]);
 
@@ -84,7 +84,7 @@ export function CharacterSearchOverlay({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex(
-        (prev) => (prev - 1 + matches.length) % Math.max(1, matches.length),
+        (prev) => (prev - 1 + matches.length) % Math.max(1, matches.length)
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -116,8 +116,8 @@ export function CharacterSearchOverlay({
     <div
       ref={containerRef}
       className={cn(
-        "absolute top-3 right-3 z-20 flex flex-col gap-2 transition-all duration-300",
-        isFocused ? "w-80" : "w-64",
+        "absolute top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col gap-2 transition-all duration-300",
+        isFocused ? "w-[600px]" : "w-[480px]"
       )}
     >
       <div className="relative group">
@@ -132,19 +132,19 @@ export function CharacterSearchOverlay({
         <div className="relative flex items-center">
           <Search
             className={cn(
-              "absolute left-4 h-4 w-4 transition-colors duration-200 pointer-events-none z-10",
-              isFocused ? "text-mocha-500" : "text-muted-foreground",
+              "absolute left-4 h-5 w-5 transition-colors duration-200 pointer-events-none z-10",
+              isFocused ? "text-mocha-500" : "text-muted-foreground"
             )}
           />
           <Input
             ref={inputRef}
             placeholder="캐릭터 검색 (초성 지원: ㅈㅂㅈ → 장발장)"
             className={cn(
-              "pl-10 pr-10 h-11 bg-white/80 backdrop-blur-md shadow-sm border-2 border-transparent transition-all duration-300",
-              "placeholder:text-muted-foreground/70 text-base",
+              "pl-10 pr-10 h-[52px] bg-white/80 backdrop-blur-md shadow-sm border-2 border-transparent transition-all duration-300",
+              "placeholder:text-muted-foreground/70 text-lg",
               "hover:bg-white hover:border-mocha-200",
               "focus-visible:ring-0 focus-visible:border-mocha-500 focus-visible:bg-white focus-visible:shadow-md",
-              "rounded-full",
+              "rounded-full"
             )}
             value={query}
             onChange={(e) => {
@@ -208,7 +208,7 @@ export function CharacterSearchOverlay({
                       "px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-all duration-150 relative overflow-hidden",
                       index === selectedIndex
                         ? "bg-mocha-50"
-                        : "hover:bg-gray-50/80",
+                        : "hover:bg-gray-50/80"
                     )}
                     onClick={() => handleSelect(char)}
                     onMouseEnter={() => setSelectedIndex(index)}
@@ -227,7 +227,7 @@ export function CharacterSearchOverlay({
                         "h-9 w-9 rounded-full overflow-hidden border shrink-0 flex items-center justify-center",
                         index === selectedIndex
                           ? "border-mocha-200 shadow-sm"
-                          : "border-gray-100",
+                          : "border-gray-100"
                       )}
                     >
                       {char.imageUrl ? (
@@ -257,7 +257,7 @@ export function CharacterSearchOverlay({
                           "font-medium text-sm leading-none",
                           index === selectedIndex
                             ? "text-mocha-900"
-                            : "text-gray-700",
+                            : "text-gray-700"
                         )}
                       >
                         {char.profile?.name || "이름 없음"}
@@ -268,7 +268,7 @@ export function CharacterSearchOverlay({
                             "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
                             index === selectedIndex
                               ? "bg-white border-mocha-200 text-mocha-600 shadow-sm"
-                              : "bg-gray-100 border-gray-200 text-gray-500",
+                              : "bg-gray-100 border-gray-200 text-gray-500"
                           )}
                         >
                           {ROLE_LABELS[char.role || "other"] || char.role}
