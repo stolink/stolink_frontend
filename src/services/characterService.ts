@@ -29,6 +29,7 @@ export interface CreateCharacterInput {
   profile: Partial<CharacterProfile> & { name: string };
   aliases?: string[];
   status?: string;
+  graphPosition?: { x: number; y: number };
 }
 
 /**
@@ -147,6 +148,7 @@ function transformBackendCharacter(backendChar: any): Character {
       lockVersion: 0,
     },
     imageUrl: resolveImageUrl(backendChar.imageUrl),
+    graphPosition: backendChar.graphPosition || undefined,
   };
 }
 
