@@ -1,7 +1,7 @@
 import { memo, useRef, useEffect, useMemo } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
-import { NODE_SIZES, ROLE_COLORS, ANIMATION } from "./constants";
+import { NODE_SIZES, ROLE_COLORS, ANIMATION, STATUS_CONFIG } from "./constants";
 import { getInitial, truncateName, ROLE_GRADIENTS } from "./utils";
 
 interface NodeRendererProps {
@@ -206,6 +206,47 @@ export const NodeRenderer = memo(function NodeRenderer({
           </text>
         </>
       )}
+
+      {/* 상태 배지 (Status Badge) */}
+      {node.status &&
+        node.status !== "active" &&
+        node.status !== "alive" &&
+        node.status !== "생존" &&
+        (() => {
+          const statusConfig =
+            STATUS_CONFIG[node.status] || STATUS_CONFIG.unknown;
+          const badgeRadius = Math.max(13, radius * 0.35);
+          const badgeX = radius * 0.65;
+          const badgeY = radius * 0.65;
+
+          return (
+            <g transform={`translate(${badgeX}, ${badgeY})`}>
+              {/* 배지 배경 - 원형 */}
+              <circle
+                r={badgeRadius + 2}
+                fill="white"
+                stroke={statusConfig.color}
+                strokeWidth={1.5}
+                style={{
+                  filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
+                }}
+              />
+              <circle r={badgeRadius} fill={statusConfig.color} />
+              {/* 배지 아이콘 */}
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={badgeRadius * 1.1 + 3}
+                fill="white"
+                style={{
+                  userSelect: "none",
+                }}
+              >
+                {statusConfig.icon}
+              </text>
+            </g>
+          );
+        })()}
 
       {/* 이름 라벨 - Minimalist Serif style */}
       {showLabel && (

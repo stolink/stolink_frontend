@@ -3,7 +3,6 @@ import {
   Sparkles,
   Trash2,
   AlertCircle,
-  CheckCircle,
   MapPin,
   Edit2,
   Check,
@@ -18,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useForeshadowingStore } from "@/stores";
 import { useParams } from "react-router-dom";
 import { DEMO_CHARACTERS, DEMO_ITEMS } from "@/data/demoData";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ForeshadowingPanelProps {
   documentId?: string | null;
@@ -197,11 +197,15 @@ const ForeshadowingPanel = ({
   if (foreshadowings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground p-6 text-center">
-        <Sparkles className="w-10 h-10 mb-4 opacity-20" />
-        <h3 className="text-sm font-medium mb-1 text-foreground">
+        {/* Empty State Illustration - Sage Theme */}
+        <div className="w-20 h-20 mb-6 bg-sage-50 rounded-full flex items-center justify-center relative">
+          <Sparkles className="w-8 h-8 text-sage-300" />
+          <div className="absolute top-1 right-2 w-2 h-2 bg-sage-400 rounded-full animate-ping" />
+        </div>
+        <h3 className="text-sm font-bold text-sage-900 mb-1">
           미회수 복선이 없습니다
         </h3>
-        <p className="text-xs leading-relaxed">
+        <p className="text-xs text-sage-600 leading-relaxed max-w-[200px]">
           에디터에서 텍스트를 드래그하거나
           <br /># 태그를 입력해 복선을 기록해보세요.
         </p>
@@ -210,330 +214,352 @@ const ForeshadowingPanel = ({
   }
 
   return (
-    <div className="flex flex-col h-full bg-stone-50/30">
+    <div className="flex flex-col h-full bg-cloud-50/50">
       {/* 헤더 */}
-      <div className="p-4 border-b bg-card flex items-center justify-between">
+      <div className="p-4 border-b border-sage-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-mocha-500" />
-          <h2 className="text-sm font-semibold">
-            미회수 복선 ({foreshadowings.length})
-          </h2>
+          <div className="p-1.5 bg-sage-100 rounded-lg">
+            <AlertCircle className="w-3.5 h-3.5 text-sage-600" />
+          </div>
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-sage-900">미회수 복선</h2>
+            <span className="text-[10px] text-sage-500 font-medium tracking-wide uppercase">
+              Pending Foreshadowings ({foreshadowings.length})
+            </span>
+          </div>
         </div>
       </div>
 
       {/* 복선 목록 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {foreshadowings.map((fs) => (
-          <div
-            key={fs.id}
-            className={cn(
-              "group relative bg-white border border-stone-200/80 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300",
-              "before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-r-full before:transition-all",
-              fs.importance === "major"
-                ? "before:bg-amber-400 border-amber-100/50 shadow-amber-900/5"
-                : "before:bg-sage-300 border-stone-200/60 shadow-stone-900/5",
-              newForeshadowingId === fs.id &&
-                "ring-2 ring-sage-400 ring-offset-1",
-            )}
-          >
-            {/* 헤더: 제목 편집 + 삭제 버튼 */}
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* 복선 아이콘 - 세이지 그린 테마 */}
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                    fs.importance === "major" ? "bg-amber-50" : "bg-sage-50",
-                  )}
-                >
-                  <Sparkles
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-sage-200">
+        <AnimatePresence>
+          {foreshadowings.map((fs) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              key={fs.id}
+              className={cn(
+                "group relative bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300",
+                "before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-r-full before:transition-all",
+                fs.importance === "major"
+                  ? "border-amber-100/60 shadow-amber-900/5 hover:border-amber-200 before:bg-amber-400"
+                  : "border-sage-100/60 shadow-sage-900/5 hover:border-sage-200 before:bg-sage-300",
+                newForeshadowingId === fs.id &&
+                  "ring-2 ring-sage-400 ring-offset-2 ring-offset-cloud-50",
+              )}
+            >
+              {/* 헤더: 제목 편집 + 삭제 버튼 */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* 복선 아이콘 - 세이지 그린 테마 */}
+                  <div
                     className={cn(
-                      "w-4 h-4",
+                      "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all shadow-sm",
                       fs.importance === "major"
-                        ? "text-amber-600"
-                        : "text-sage-600",
+                        ? "bg-gradient-to-br from-amber-50 to-amber-100"
+                        : "bg-gradient-to-br from-sage-50 to-sage-100",
                     )}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  {editingId === fs.id ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        ref={inputRef}
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveEdit();
-                          if (e.key === "Escape") handleCancelEdit();
-                        }}
-                        className="h-8 text-sm font-bold bg-white"
-                        placeholder="복선 제목"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={handleSaveEdit}
-                      >
-                        <Check className="w-3.5 h-3.5 text-green-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={handleCancelEdit}
-                      >
-                        <X className="w-3.5 h-3.5 text-red-600" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <h4
-                        className="text-sm font-bold text-stone-800 truncate cursor-pointer hover:text-mocha-600"
-                        onClick={() => handleStartEdit(fs)}
-                        title="클릭하여 제목 편집"
-                      >
-                        #{fs.tag}
-                      </h4>
-                      <button
-                        onClick={() => handleStartEdit(fs)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Edit2 className="w-3 h-3 text-muted-foreground hover:text-mocha-600" />
-                      </button>
-                    </div>
-                  )}
-                  <div className="mt-0.5">
-                    <span
+                  >
+                    <Sparkles
                       className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider",
+                        "w-4 h-4",
                         fs.importance === "major"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-stone-100 text-stone-600",
+                          ? "text-amber-600"
+                          : "text-sage-600",
                       )}
-                    >
-                      {fs.importance === "major" ? "중요 복선" : "일반 복선"}
-                    </span>
+                    />
                   </div>
-                </div>
-              </div>
-              {/* 삭제 버튼 - 크기 축소 및 마진 추가 */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 -mt-1 -mr-1 text-muted-foreground hover:text-destructive hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                onClick={() => handleDelete(fs.id)}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-
-            {/* 요약 (드래그한 텍스트) */}
-            {fs.description && (
-              <div className="relative mb-4">
-                <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent pr-1">
-                  <p className="text-[13px] text-stone-600 leading-relaxed italic bg-stone-50/50 p-2.5 rounded-lg border border-stone-100/80">
-                    "{fs.description}"
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* 연관 요소 (인물/아이템) - 편집 가능 */}
-            <div className="mb-3">
-              {(() => {
-                const relatedItems = getRelatedNames(fs.relatedCharacterIds);
-                return (
-                  <>
-                    {relatedItems && relatedItems.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {relatedItems.map((item) => (
-                          <span
-                            key={item.id}
-                            className={cn(
-                              "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors",
-                              item.type === "character"
-                                ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                                : "bg-amber-50 text-amber-700 border border-amber-100",
-                            )}
-                          >
-                            {item.type === "character" ? (
-                              <Users className="w-2.5 h-2.5" />
-                            ) : (
-                              <Package className="w-2.5 h-2.5" />
-                            )}
-                            {item.name}
-                            <button
-                              onClick={() =>
-                                handleRemoveRelated(fs.id, item.id)
-                              }
-                              className="ml-0.5 hover:text-red-600"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* 연관 요소 추가 UI */}
-                    {editingRelatedId === fs.id ? (
-                      <div className="relative">
+                  <div className="min-w-0 flex-1">
+                    {editingId === fs.id ? (
+                      <div className="flex items-center gap-1">
                         <Input
-                          ref={relatedInputRef}
-                          value={relatedSearchQuery}
-                          onChange={(e) => {
-                            setRelatedSearchQuery(e.target.value);
-                            setFocusedOptionIndex(0);
-                          }}
+                          ref={inputRef}
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
                           onKeyDown={(e) => {
-                            const options = getFilteredRelatedOptions(
-                              fs.relatedCharacterIds,
-                            );
-                            if (options.length === 0) return;
-
-                            if (e.key === "ArrowDown") {
-                              e.preventDefault();
-                              setFocusedOptionIndex(
-                                (prev) => (prev + 1) % options.length,
-                              );
-                            } else if (e.key === "ArrowUp") {
-                              e.preventDefault();
-                              setFocusedOptionIndex(
-                                (prev) =>
-                                  (prev - 1 + options.length) % options.length,
-                              );
-                            } else if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddRelated(
-                                fs.id,
-                                options[focusedOptionIndex].id,
-                              );
-                            } else if (e.key === "Escape") {
-                              setEditingRelatedId(null);
-                              setRelatedSearchQuery("");
-                            }
+                            if (e.key === "Enter") handleSaveEdit();
+                            if (e.key === "Escape") handleCancelEdit();
                           }}
-                          onBlur={() => {
-                            setTimeout(() => {
-                              setEditingRelatedId(null);
-                              setRelatedSearchQuery("");
-                            }, 200);
-                          }}
-                          placeholder="@캐릭터 또는 아이템 검색..."
-                          className="h-7 text-xs"
-                          autoFocus
+                          className="h-8 text-sm font-bold bg-white border-sage-200 focus:ring-sage-400"
+                          placeholder="복선 제목"
                         />
-                        {relatedSearchQuery && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-md shadow-lg z-10 max-h-32 overflow-y-auto">
-                            {getFilteredRelatedOptions(
-                              fs.relatedCharacterIds,
-                            ).map((option, index) => (
-                              <button
-                                key={option.id}
-                                className={cn(
-                                  "w-full px-2 py-2 text-left text-xs flex items-center gap-2 transition-colors",
-                                  focusedOptionIndex === index
-                                    ? "bg-mocha-700 text-white"
-                                    : "text-espresso-900 hover:bg-stone-50",
-                                )}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() =>
-                                  handleAddRelated(fs.id, option.id)
-                                }
-                              >
-                                {option.type === "character" ? (
-                                  <Users
-                                    className={cn(
-                                      "w-3.5 h-3.5",
-                                      focusedOptionIndex === index
-                                        ? "text-mocha-50"
-                                        : "text-mocha-500",
-                                    )}
-                                  />
-                                ) : (
-                                  <Package
-                                    className={cn(
-                                      "w-3.5 h-3.5",
-                                      focusedOptionIndex === index
-                                        ? "text-status-warning/50"
-                                        : "text-status-warning",
-                                    )}
-                                  />
-                                )}
-                                <span className="flex-1 truncate font-medium">
-                                  {option.name}
-                                </span>
-                                {focusedOptionIndex === index && (
-                                  <Check className="w-3 h-3 text-mocha-50 shrink-0" />
-                                )}
-                              </button>
-                            ))}
-                            {getFilteredRelatedOptions(fs.relatedCharacterIds)
-                              .length === 0 && (
-                              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                                검색 결과가 없습니다
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 hover:bg-sage-100"
+                          onClick={handleSaveEdit}
+                        >
+                          <Check className="w-3.5 h-3.5 text-sage-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 hover:bg-rose-50"
+                          onClick={handleCancelEdit}
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-500" />
+                        </Button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          setEditingRelatedId(fs.id);
-                          setRelatedSearchQuery("");
-                          setFocusedOptionIndex(0);
-                        }}
-                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-mocha-600 transition-colors"
-                      >
-                        <Plus className="w-3 h-3" />
-                        연관 요소 추가
-                      </button>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 group/title">
+                          <h4
+                            className="text-sm font-bold text-st-espresso-900 truncate cursor-pointer hover:text-sage-700 hover:underline decoration-sage-300 underline-offset-4 decoration-2"
+                            onClick={() => handleStartEdit(fs)}
+                            title="클릭하여 제목 편집"
+                          >
+                            #{fs.tag}
+                          </h4>
+                          <button
+                            onClick={() => handleStartEdit(fs)}
+                            className="opacity-0 group-hover/title:opacity-100 transition-opacity p-0.5 rounded hover:bg-sage-100"
+                          >
+                            <Edit2 className="w-3 h-3 text-sage-400" />
+                          </button>
+                        </div>
+                        <span
+                          className={cn(
+                            "text-[10px] self-start px-1.5 py-0.5 rounded-md font-semibold uppercase tracking-wider",
+                            fs.importance === "major"
+                              ? "bg-amber-100/80 text-amber-700"
+                              : "bg-sage-100/80 text-sage-700",
+                          )}
+                        >
+                          {fs.importance === "major" ? "Major" : "Minor"}
+                        </span>
+                      </div>
                     )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* 위치 정보 (클릭 시 섹션 이동) - 라운딩 버튼 스타일 */}
-            {fs.appearances.length > 0 &&
-              fs.appearances[0].sectionTitle &&
-              fs.appearances[0].sectionTitle !== "알 수 없음" &&
-              fs.appearances[0].documentId && (
-                <button
-                  className="flex items-center gap-2 text-[11px] text-stone-600 mb-3 bg-white border border-stone-200 px-3 py-2 rounded-lg w-full text-left hover:bg-sage-50 hover:border-sage-300 hover:text-sage-700 transition-colors shadow-sm"
-                  onClick={() =>
-                    onNavigateToPosition?.(fs.appearances[0].documentId!)
-                  }
-                  title="클릭하여 해당 섹션으로 이동"
+                  </div>
+                </div>
+                {/* 삭제 버튼 */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 -mt-1 -mr-1 text-stone-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                  onClick={() => handleDelete(fs.id)}
                 >
-                  <MapPin className="w-3.5 h-3.5 shrink-0 text-sage-500" />
-                  <span className="truncate flex-1 font-medium">
-                    {fs.appearances[0].sectionTitle}
-                  </span>
-                  <span className="text-[10px] text-stone-400">이동 →</span>
-                </button>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+
+              {/* 요약 (드래그한 텍스트) */}
+              {fs.description && (
+                <div className="relative mb-4 group/desc">
+                  <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent pr-1">
+                    <p className="text-[13px] text-stone-600 leading-relaxed italic bg-stone-50/50 p-3 rounded-xl border border-stone-100/80 shadow-inner group-hover/desc:bg-stone-50 transition-colors">
+                      "{fs.description}"
+                    </p>
+                  </div>
+                </div>
               )}
 
-            {/* 회수 버튼 - 그린 아웃라인 스타일 */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-[11px] h-8 font-semibold bg-white border-sage-300 text-sage-700 hover:bg-sage-50 hover:text-sage-800 hover:border-sage-400"
-              onClick={() =>
-                // 현재 에디터의 documentId를 사용 (회수는 현재 섹션에서 이루어짐)
-                handleRecover(
-                  fs.id,
-                  documentId || fs.appearances[0]?.documentId,
-                )
-              }
-            >
-              <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-sage-500" />
-              회수 완료
-            </Button>
-          </div>
-        ))}
+              {/* 연관 요소 (인물/아이템) */}
+              <div className="mb-4">
+                {(() => {
+                  const relatedItems = getRelatedNames(fs.relatedCharacterIds);
+                  return (
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mr-1">
+                        Related
+                      </span>
+                      {relatedItems && relatedItems.length > 0 && (
+                        <>
+                          {relatedItems.map((item) => (
+                            <span
+                              key={item.id}
+                              className={cn(
+                                "inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-semibold transition-all shadow-sm hover:shadow-md",
+                                item.type === "character"
+                                  ? "bg-white border border-indigo-100 text-indigo-700 hover:border-indigo-200"
+                                  : "bg-white border border-amber-100 text-amber-700 hover:border-amber-200",
+                              )}
+                            >
+                              {item.type === "character" ? (
+                                <Users className="w-2.5 h-2.5 opacity-70" />
+                              ) : (
+                                <Package className="w-2.5 h-2.5 opacity-70" />
+                              )}
+                              {item.name}
+                              <button
+                                onClick={() =>
+                                  handleRemoveRelated(fs.id, item.id)
+                                }
+                                className="ml-1 hover:bg-stone-100 rounded-full p-0.5 transition-colors"
+                              >
+                                <X className="w-2 h-2" />
+                              </button>
+                            </span>
+                          ))}
+                        </>
+                      )}
+
+                      {/* 연관 요소 추가 UI */}
+                      {editingRelatedId === fs.id ? (
+                        <div className="relative ml-1">
+                          <Input
+                            ref={relatedInputRef}
+                            value={relatedSearchQuery}
+                            onChange={(e) => {
+                              setRelatedSearchQuery(e.target.value);
+                              setFocusedOptionIndex(0);
+                            }}
+                            onKeyDown={(e) => {
+                              const options = getFilteredRelatedOptions(
+                                fs.relatedCharacterIds,
+                              );
+                              if (options.length === 0) return;
+
+                              if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                setFocusedOptionIndex(
+                                  (prev) => (prev + 1) % options.length,
+                                );
+                              } else if (e.key === "ArrowUp") {
+                                e.preventDefault();
+                                setFocusedOptionIndex(
+                                  (prev) =>
+                                    (prev - 1 + options.length) %
+                                    options.length,
+                                );
+                              } else if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddRelated(
+                                  fs.id,
+                                  options[focusedOptionIndex].id,
+                                );
+                              } else if (e.key === "Escape") {
+                                setEditingRelatedId(null);
+                                setRelatedSearchQuery("");
+                              }
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => {
+                                setEditingRelatedId(null);
+                                setRelatedSearchQuery("");
+                              }, 200);
+                            }}
+                            placeholder="검색..."
+                            className="h-6 w-32 text-xs bg-white border-sage-200 focus:ring-sage-400"
+                            autoFocus
+                          />
+                          {relatedSearchQuery && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-stone-100 rounded-lg shadow-xl z-20 max-h-40 overflow-y-auto p-1">
+                              {getFilteredRelatedOptions(
+                                fs.relatedCharacterIds,
+                              ).map((option, index) => (
+                                <button
+                                  key={option.id}
+                                  className={cn(
+                                    "w-full px-2 py-1.5 text-left text-xs flex items-center gap-2 rounded-md transition-colors",
+                                    focusedOptionIndex === index
+                                      ? "bg-sage-50 text-sage-900"
+                                      : "text-stone-600 hover:bg-stone-50",
+                                  )}
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() =>
+                                    handleAddRelated(fs.id, option.id)
+                                  }
+                                >
+                                  {option.type === "character" ? (
+                                    <Users
+                                      className={cn(
+                                        "w-3 h-3",
+                                        focusedOptionIndex === index
+                                          ? "text-sage-500"
+                                          : "text-stone-400",
+                                      )}
+                                    />
+                                  ) : (
+                                    <Package
+                                      className={cn(
+                                        "w-3 h-3",
+                                        focusedOptionIndex === index
+                                          ? "text-sage-500"
+                                          : "text-stone-400",
+                                      )}
+                                    />
+                                  )}
+                                  <span className="flex-1 truncate font-medium">
+                                    {option.name}
+                                  </span>
+                                </button>
+                              ))}
+                              {getFilteredRelatedOptions(fs.relatedCharacterIds)
+                                .length === 0 && (
+                                <div className="px-2 py-1.5 text-xs text-stone-400 text-center">
+                                  결과 없음
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingRelatedId(fs.id);
+                            setRelatedSearchQuery("");
+                            setFocusedOptionIndex(0);
+                          }}
+                          className="flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-sage-400 hover:text-sage-600 hover:bg-sage-50 transition-all ml-1"
+                          title="연관 요소 추가"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 위치 정보 (클릭 시 섹션 이동) */}
+              <div className="border-t border-stone-100 pt-3 flex items-center justify-between gap-2">
+                {fs.appearances.length > 0 &&
+                fs.appearances[0].sectionTitle &&
+                fs.appearances[0].sectionTitle !== "알 수 없음" &&
+                fs.appearances[0].documentId ? (
+                  <button
+                    className="flex-1 flex items-center gap-1.5 text-[10px] text-stone-500 hover:text-sage-600 hover:bg-sage-50 px-2 py-1.5 rounded-lg transition-colors group/loc"
+                    onClick={() =>
+                      onNavigateToPosition?.(fs.appearances[0].documentId!)
+                    }
+                    title="해당 섹션으로 이동"
+                  >
+                    <MapPin className="w-3 h-3 shrink-0 text-stone-300 group-hover/loc:text-sage-400 transition-colors" />
+                    <span className="truncate max-w-[120px] font-medium">
+                      {fs.appearances[0].sectionTitle}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex-1" />
+                )}
+
+                {/* 회수 버튼 */}
+                <Button
+                  size="sm"
+                  className={cn(
+                    "h-7 text-[10px] font-bold px-3 transition-all shadow-sm",
+                    "bg-white border text-sage-600 hover:text-sage-700",
+                    "border-sage-200 hover:border-sage-300 hover:bg-sage-50",
+                    "group/btn",
+                  )}
+                  onClick={() =>
+                    handleRecover(
+                      fs.id,
+                      documentId || fs.appearances[0]?.documentId,
+                    )
+                  }
+                >
+                  <span className="mr-1.5 w-3 h-3 rounded-full border border-sage-300 flex items-center justify-center group-hover/btn:border-sage-400 group-hover/btn:bg-sage-200 transition-colors">
+                    <Check className="w-2 h-2 text-transparent group-hover/btn:text-sage-600" />
+                  </span>
+                  회수 완료
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

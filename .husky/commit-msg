@@ -1,1 +1,14 @@
+# 환경 설정 로드
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# NVM 로드
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh"
+elif [ -f "/opt/homebrew/opt/nvm/nvm.sh" ]; then
+  . "/opt/homebrew/opt/nvm/nvm.sh"
+fi
+
+# Zsh 설정 로드
+[ -f "$HOME/.zshrc" ] && . "$HOME/.zshrc" >/dev/null 2>&1
+
 npx --no -- commitlint --edit $1

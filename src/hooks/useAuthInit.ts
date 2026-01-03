@@ -4,11 +4,8 @@ import { authService } from "@/services/authService";
 
 export function useAuthInit() {
   const [isInitializing, setIsInitializing] = useState(true);
-  const updateTokens = useAuthStore((state) => state.updateTokens);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
-  const refreshTokenInStore = useAuthStore((state) => state.refreshToken);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const initialized = useRef(false);
 
@@ -20,41 +17,39 @@ export function useAuthInit() {
     if (initialized.current) return;
     initialized.current = true;
 
+    // 3. 인증 관련 페이지에서는 자동 로그인 체크 건너뛰기
+    const pathname = window.location.pathname;
+    if (
+      pathname === "/auth" ||
+      pathname.startsWith("/oauth2/") ||
+      pathname === "/"
+    ) {
+      setIsInitializing(false);
+      return;
+    }
+
     const initAuth = async () => {
-      // 3. 이전에 로그인한 기록(Zustand persisted state)이 없거나 토큰이 없으면 조기 종료
-      if (!isAuthenticated || !refreshTokenInStore) {
-        setIsInitializing(false);
-        return;
-      }
-
       try {
-        // 4. 세션 복구 시도 (Refresh Token 명시적 전달)
-        const refreshResponse = await authService.refresh(
-          refreshTokenInStore || undefined,
-        );
-        const { accessToken, refreshToken } = refreshResponse.data;
-        updateTokens(accessToken, refreshToken);
-
+        // 4. 쿠키가 유효하면 바로 사용자 정보 조회 (자동 로그인)
         const userResponse = await authService.getMe();
-        setUser(userResponse.data, accessToken);
-      } catch (error) {
-        // 토큰 만료 등 복구 실패 시에만 로그아웃
-        console.warn("[AuthInit] Session recovery failed:", error);
-        logout();
+        setUser(userResponse.data);
+      } catch {
+        // 5. 401 에러 시 refresh 시도
+        try {
+          await authService.refresh();
+          const userResponse = await authService.getMe();
+          setUser(userResponse.data);
+        } catch {
+          // refresh도 실패하면 로그아웃 상태 유지 (조용히)
+          logout();
+        }
       } finally {
         setIsInitializing(false);
       }
     };
 
     initAuth();
-  }, [
-    hasHydrated,
-    isAuthenticated,
-    refreshTokenInStore,
-    updateTokens,
-    setUser,
-    logout,
-  ]);
+  }, [hasHydrated, setUser, logout]);
 
   return isInitializing;
 }

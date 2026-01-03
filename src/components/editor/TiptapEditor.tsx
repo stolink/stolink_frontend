@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { CharacterMention } from "./extensions/CharacterMention";
-import { SlashCommand } from "./extensions/SlashCommand";
+import { SlashCommandExtension } from "./extensions/SlashCommand";
 import { ForeshadowingSuggest } from "./extensions/ForeshadowingSuggest";
 import { TypewriterScroll } from "./extensions/TypewriterScroll";
 import { FocusMode } from "./extensions/FocusMode";
@@ -209,7 +209,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }),
         // Underline, // Duplicate extension warning fix
         CharacterMention,
-        SlashCommand.configure({
+        SlashCommandExtension.configure({
           onCreateSection: (title: string) => {
             onCreateSectionRef.current?.(title);
           },
@@ -639,11 +639,10 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           ref={editorContainerRef}
           role="region"
           aria-label="편집 영역"
-          className="flex-1 overflow-y-auto w-full"
+          className="flex-1 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-mocha-200 scrollbar-track-transparent hover:scrollbar-thumb-mocha-300 transition-colors"
           style={
             {
-              backgroundColor:
-                cssVariables["--st-editor-bg-color"] || "#F1F0EC",
+              backgroundColor: "#FAFAF9", // Soft off-white - gentle on eyes
               color: cssVariables["--st-editor-text-color"] || "#3D302A",
               "--st-editor-text-indent":
                 cssVariables["--st-editor-text-indent"],
@@ -665,8 +664,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         >
           <div
             className={cn(
-              "px-6 py-6",
-              editorSettings.visual.width !== "full" && "mx-auto",
+              "px-8 py-10 min-h-screen transition-all duration-300 ease-out", // More padding, smooth transition
+              editorSettings.visual.width !== "full" &&
+                "mx-auto my-4 bg-white shadow-sm border border-mocha-100 rounded-lg", // Paper sheet look for non-full width
+              editorSettings.visual.width === "full" && "px-12",
+              !readOnly &&
+                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md", // Subtle focus effect
             )}
             style={{
               maxWidth: editorWidth,

@@ -20,7 +20,6 @@ import {
   Highlighter,
   Type,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -29,6 +28,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -51,19 +51,21 @@ function ToolbarButton({
   tooltip,
 }: ToolbarButtonProps) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <motion.button
       onClick={onClick}
       disabled={disabled}
+      whileHover={!disabled ? { scale: 1.08 } : {}}
+      whileTap={!disabled ? { scale: 0.95 } : {}}
       className={cn(
-        "h-7 w-7 p-0 text-foreground hover:text-foreground",
-        isActive && "bg-mocha-400/20 text-mocha-700 hover:bg-mocha-400/30",
+        "h-8 w-8 p-0 rounded-lg flex items-center justify-center transition-colors duration-200",
+        "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
+        isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
+        disabled && "opacity-40 cursor-not-allowed",
       )}
       title={tooltip}
     >
       {children}
-    </Button>
+    </motion.button>
   );
 }
 
@@ -72,7 +74,6 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
     return null;
   }
 
-  // Get current heading level
   const currentHeadingLevel = editor.isActive("heading", { level: 1 })
     ? 1
     : editor.isActive("heading", { level: 2 })
@@ -84,12 +85,15 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-0.5 px-3 py-1.5 border-b border-mocha-100 bg-cloud-50/90 backdrop-blur-sm sticky top-0 z-10 flex-wrap transition-colors",
+        "relative flex items-center gap-1 px-4 py-[9px] border-b-2 border-mocha-400/30 bg-white shadow-sm sticky top-0 z-10 flex-wrap transition-all",
         className,
       )}
     >
+      {/* Decorative accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-mocha-300 via-mocha-500 to-mocha-300 opacity-60" />
+
       {/* History */}
-      <div className="flex items-center gap-0.5 mr-1">
+      <div className="flex items-center gap-0.5 mr-2">
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -106,63 +110,68 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         </ToolbarButton>
       </div>
 
-      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Heading Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className={cn(
-              "h-7 px-2 text-xs font-medium",
-              currentHeadingLevel > 0 && "bg-mocha-400/20 text-mocha-700",
+              "h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors",
+              currentHeadingLevel > 0
+                ? "bg-mocha-400/30 text-mocha-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
             )}
           >
-            <Type className="h-3.5 w-3.5 mr-1.5" />
+            <Type className="h-3.5 w-3.5" />
             {currentHeadingLevel === 0 ? "본문" : `제목 ${currentHeadingLevel}`}
-          </Button>
+          </motion.button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuContent
+          align="start"
+          className="w-40 border-mocha-100 shadow-lg shadow-mocha-200/20"
+        >
           <DropdownMenuItem
             onClick={() => editor.chain().focus().setParagraph().run()}
-            className={cn(!currentHeadingLevel && "bg-cloud-50")}
+            className={cn(!currentHeadingLevel && "bg-mocha-400/10")}
           >
-            <Pilcrow className="h-4 w-4 mr-2" />
+            <Pilcrow className="h-4 w-4 mr-2 text-mocha-500" />
             본문
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-mocha-400/20" />
           <DropdownMenuItem
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 1 }).run()
             }
-            className={cn(currentHeadingLevel === 1 && "bg-cloud-50")}
+            className={cn(currentHeadingLevel === 1 && "bg-mocha-400/10")}
           >
-            <Heading1 className="h-4 w-4 mr-2" />
+            <Heading1 className="h-4 w-4 mr-2 text-mocha-500" />
             제목 1
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 2 }).run()
             }
-            className={cn(currentHeadingLevel === 2 && "bg-cloud-50")}
+            className={cn(currentHeadingLevel === 2 && "bg-mocha-400/10")}
           >
-            <Heading2 className="h-4 w-4 mr-2" />
+            <Heading2 className="h-4 w-4 mr-2 text-mocha-500" />
             제목 2
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 3 }).run()
             }
-            className={cn(currentHeadingLevel === 3 && "bg-cloud-50")}
+            className={cn(currentHeadingLevel === 3 && "bg-mocha-400/10")}
           >
-            <Heading3 className="h-4 w-4 mr-2" />
+            <Heading3 className="h-4 w-4 mr-2 text-mocha-500" />
             제목 3
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Basic Formatting */}
       <ToolbarButton
@@ -194,40 +203,45 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Highlight Colors */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
             className={cn(
-              "h-7 w-7",
-              editor.isActive("highlight") && "bg-mocha-400/20 text-mocha-700",
+              "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
+              editor.isActive("highlight")
+                ? "bg-mocha-400/30 text-mocha-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
             )}
             title="하이라이트"
           >
             <Highlighter className="h-4 w-4" />
-          </Button>
+          </motion.button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent
+          align="start"
+          className="w-48 border-mocha-100 shadow-lg shadow-mocha-200/20"
+        >
           <DropdownMenuItem
             onClick={() => editor.chain().focus().unsetHighlight().run()}
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border border-stone-300 rounded" />
+              <div className="w-4 h-4 border border-mocha-200 rounded" />
               하이라이트 제거
             </div>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-mocha-100" />
           <DropdownMenuItem
             onClick={() =>
               editor.chain().focus().toggleHighlight({ color: "#E8EFE8" }).run()
             }
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#E8EFE8] rounded border border-stone-300" />
+              <div className="w-4 h-4 bg-[#E8EFE8] rounded border border-mocha-200" />
               초록 (복선)
             </div>
           </DropdownMenuItem>
@@ -237,7 +251,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             }
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#FFF4CE] rounded border border-stone-300" />
+              <div className="w-4 h-4 bg-[#FFF4CE] rounded border border-mocha-200" />
               노랑 (중요)
             </div>
           </DropdownMenuItem>
@@ -247,7 +261,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             }
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#FFE5E5] rounded border border-stone-300" />
+              <div className="w-4 h-4 bg-[#FFE5E5] rounded border border-mocha-200" />
               빨강 (수정 필요)
             </div>
           </DropdownMenuItem>
@@ -257,14 +271,14 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
             }
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#E5F3FF] rounded border border-stone-300" />
+              <div className="w-4 h-4 bg-[#E5F3FF] rounded border border-mocha-200" />
               파랑 (정보)
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Alignment */}
       <ToolbarButton
@@ -289,7 +303,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
 
-      <div className="w-px h-5 bg-mocha-200/60 mx-1.5" />
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Lists & Blocks */}
       <ToolbarButton
@@ -320,16 +334,18 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <Minus className="h-4 w-4" />
       </ToolbarButton>
 
-      {/* Character Count */}
+      {/* Character Count - Premium Badge */}
       <div className="flex-1" />
-      <div
-        className={cn(
-          "text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ml-2 shrink-0 border text-mocha-500 bg-mocha-50 border-mocha-100",
-        )}
+      <motion.div
+        initial={false}
+        animate={{ scale: [1, 1.02, 1] }}
+        transition={{ duration: 0.3, repeat: 0 }}
+        key={editor.storage.characterCount.characters()}
+        className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
       >
-        {editor.storage.characterCount.characters().toLocaleString()}자 /{" "}
+        {editor.storage.characterCount.characters().toLocaleString()}자 ·{" "}
         {editor.storage.characterCount.words().toLocaleString()}단어
-      </div>
+      </motion.div>
     </div>
   );
 }

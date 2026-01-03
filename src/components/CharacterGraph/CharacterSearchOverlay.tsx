@@ -195,7 +195,8 @@ export function CharacterSearchOverlay({
             <div className="max-h-[280px] overflow-y-auto py-1.5 custom-scrollbar">
               {matches.map((char, index) => {
                 const role = char.role || "other";
-                const gradient = ROLE_GRADIENTS[role] || ROLE_GRADIENTS.other;
+                const gradient =
+                  (ROLE_GRADIENTS as any)[role] || ROLE_GRADIENTS.other; // eslint-disable-line @typescript-eslint/no-explicit-any
                 const initial = getInitial(char.profile?.name || "?");
 
                 return (

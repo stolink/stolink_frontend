@@ -11,8 +11,8 @@ describe("authService", () => {
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
-      expect(result.data.email).toBe("test@example.com");
-      expect(result.data.nickname).toBe("Test User");
+      expect(result.data.user.email).toBe("test@example.com");
+      expect(result.data.user.nickname).toBe("Test User");
     });
 
     it("should throw error on invalid credentials", async () => {
