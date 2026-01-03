@@ -39,7 +39,7 @@ const ELLIPSIS = "\u2026"; // …
  */
 function textReplacementRule(
   find: RegExp,
-  replace: string | ((match: RegExpMatchArray) => string)
+  replace: string | ((match: RegExpMatchArray) => string),
 ): InputRule {
   return new InputRule({
     find,
@@ -89,32 +89,32 @@ export const SmartPunctuation = Extension.create<SmartPunctuationOptions>({
       rules.push(
         textReplacementRule(
           /(?:^|[\s\n([\-\u2013\u2014])"$/,
-          (match) => match[0].slice(0, -1) + LEFT_DOUBLE_QUOTE
-        )
+          (match) => match[0].slice(0, -1) + LEFT_DOUBLE_QUOTE,
+        ),
       );
 
       // Closing double quote (after any character except space)
       rules.push(
         textReplacementRule(
           /[^\s]"$/,
-          (match) => match[0].slice(0, -1) + RIGHT_DOUBLE_QUOTE
-        )
+          (match) => match[0].slice(0, -1) + RIGHT_DOUBLE_QUOTE,
+        ),
       );
 
       // Opening single quote
       rules.push(
         textReplacementRule(
           /(?:^|[\s\n([\-\u2013\u2014])'$/,
-          (match) => match[0].slice(0, -1) + LEFT_SINGLE_QUOTE
-        )
+          (match) => match[0].slice(0, -1) + LEFT_SINGLE_QUOTE,
+        ),
       );
 
       // Closing single quote
       rules.push(
         textReplacementRule(
           /[^\s]'$/,
-          (match) => match[0].slice(0, -1) + RIGHT_SINGLE_QUOTE
-        )
+          (match) => match[0].slice(0, -1) + RIGHT_SINGLE_QUOTE,
+        ),
       );
     }
 

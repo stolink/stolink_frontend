@@ -44,7 +44,7 @@ const ForeshadowingPanel = ({
 
   const foreshadowings = useMemo(
     () => (projectId ? getUnresolved(projectId) : []),
-    [projectId, getUnresolved]
+    [projectId, getUnresolved],
   );
 
   // 제목 편집 상태

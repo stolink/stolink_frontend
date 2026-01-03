@@ -54,7 +54,7 @@ const ScriveningsEditor = forwardRef<
   const { documents, isLoading } = useDescendantDocumentsWithLevel(
     folderId,
     projectId,
-    { textOnly: true }
+    { textOnly: true },
   );
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,7 +96,7 @@ const ScriveningsEditor = forwardRef<
         onCreateSection: (title: string) => onCreateSectionRef.current?.(title),
       }),
     ],
-    [] // Empty deps - extensions are static
+    [], // Empty deps - extensions are static
   );
 
   const editor = useEditor(
@@ -106,7 +106,7 @@ const ScriveningsEditor = forwardRef<
       editorProps: {
         attributes: {
           class: cn(
-            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8"
+            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
           ),
           spellcheck: "false",
         },
@@ -124,7 +124,7 @@ const ScriveningsEditor = forwardRef<
         saveTimeoutRef.current = setTimeout(() => saveAllRef.current?.(), 1000);
       },
     },
-    [extensions] // Add dependency array to prevent recreation
+    [extensions], // Add dependency array to prevent recreation
   );
 
   useImperativeHandle(ref, () => ({
@@ -250,7 +250,7 @@ const ScriveningsEditor = forwardRef<
 
   const documentIds = useMemo(
     () => documents.map((c) => c.id).join(","),
-    [documents]
+    [documents],
   );
 
   useEffect(() => {

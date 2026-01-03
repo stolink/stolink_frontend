@@ -37,7 +37,7 @@ export interface ProfileSnapshot {
 // Draft 생성 요청 (API RequestBody)
 export interface CreateDraftRequest {
   documentId: string; // 필수: 배포할 섹션 ID
-  projectId?: string; // 선택: 원본 프로젝트 ID
+  projectId: string; // 필수: 원본 프로젝트 ID (독자 서비스에서 프로젝트 식별용)
   title: string; // 섹션 제목
   content: string; // HTML 본문
   graphSnapshot: {
@@ -45,6 +45,11 @@ export interface CreateDraftRequest {
     links: GraphLink[];
     profiles: Record<string, ProfileSnapshot>;
   };
+  // Work(작품) 정보 - 독자 서비스에서 작품 생성 시 사용
+  workTitle?: string; // 작품 제목 (프로젝트 제목)
+  workSynopsis?: string; // 작품 소개 (프로젝트 설명)
+  workGenre?: string; // 작품 장르 (fantasy, romance 등)
+  workCoverUrl?: string; // 작품 표지 이미지 URL
 }
 
 // Draft 응답

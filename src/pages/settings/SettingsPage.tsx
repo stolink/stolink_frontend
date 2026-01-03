@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
   // Share Hooks
   const { data: shareSettings, isLoading: isLoadingShare } = useShareSettings(
-    projectId || ""
+    projectId || "",
   );
   const createShare = useCreateShareLink();
   const deleteShare = useDeleteShareLink();

@@ -29,7 +29,7 @@ export default function GraphDemoPage() {
         })
         .catch(() => {
           setError(
-            "Failed to connect to Spring Server (http://localhost:8080). Is it running?"
+            "Failed to connect to Spring Server (http://localhost:8080). Is it running?",
           );
           // Fallback or keep empty? Let's just show error.
         })

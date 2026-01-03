@@ -61,7 +61,7 @@ export default function SnapshotPanel({
     createSnapshot(
       newSnapshotName.trim(),
       currentContent,
-      newSnapshotDesc.trim() || undefined
+      newSnapshotDesc.trim() || undefined,
     );
 
     setNewSnapshotName("");
@@ -157,7 +157,7 @@ export default function SnapshotPanel({
                   <button
                     onClick={() =>
                       setExpandedId(
-                        expandedId === snapshot.id ? null : snapshot.id
+                        expandedId === snapshot.id ? null : snapshot.id,
                       )
                     }
                     className="w-full px-4 py-3 flex items-start gap-3 hover:bg-muted/50 transition-colors"

@@ -337,7 +337,7 @@ export default function LandingPage() {
                   className={cn(
                     "relative group overflow-hidden rounded-3xl p-8 border border-border shadow-sm hover:shadow-paper-floating transition-all duration-500",
                     feature.colSpan,
-                    feature.bg
+                    feature.bg,
                   )}
                 >
                   <div className="relative z-10 h-full flex flex-col justify-between">

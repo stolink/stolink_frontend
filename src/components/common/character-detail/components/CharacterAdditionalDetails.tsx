@@ -1,4 +1,11 @@
-import { Sparkles, Zap, Target, Shield, AlertTriangle, Compass } from "lucide-react";
+import {
+  Sparkles,
+  Zap,
+  Target,
+  Shield,
+  AlertTriangle,
+  Compass,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { Character } from "@/types";
 
@@ -23,7 +30,13 @@ export function CharacterAdditionalDetails({
 
   if (!personality) return null;
 
-  const entries: { key: string; label: string; value: string[]; icon: typeof Zap; colorClass: string }[] = [];
+  const entries: {
+    key: string;
+    label: string;
+    value: string[];
+    icon: typeof Zap;
+    colorClass: string;
+  }[] = [];
 
   if (personality.strengths && personality.strengths.length > 0) {
     entries.push({
@@ -50,7 +63,9 @@ export function CharacterAdditionalDetails({
   }
 
   const hasMotivation = character.motivation;
-  const hasMood = character.currentMood && (character.currentMood.emotion || character.currentMood.trigger);
+  const hasMood =
+    character.currentMood &&
+    (character.currentMood.emotion || character.currentMood.trigger);
 
   if (entries.length === 0 && !hasMotivation && !hasMood) return null;
 
@@ -68,9 +83,7 @@ export function CharacterAdditionalDetails({
             <Target className="h-4 w-4 text-primary" />
             <span className="editorial-label not-italic">동기</span>
           </div>
-          <p className="text-base leading-relaxed">
-            "{character.motivation}"
-          </p>
+          <p className="text-base leading-relaxed">"{character.motivation}"</p>
         </div>
       )}
 
@@ -96,7 +109,8 @@ export function CharacterAdditionalDetails({
             )}
             {character.currentMood!.trigger && (
               <p className="text-sm text-stone-500">
-                <span className="text-stone-400">원인:</span> {character.currentMood!.trigger}
+                <span className="text-stone-400">원인:</span>{" "}
+                {character.currentMood!.trigger}
               </p>
             )}
           </div>
@@ -121,7 +135,7 @@ export function CharacterAdditionalDetails({
                   onChange={(e) =>
                     onPersonalityChange?.(
                       key,
-                      e.target.value.split(",").map((s) => s.trim())
+                      e.target.value.split(",").map((s) => s.trim()),
                     )
                   }
                   className="h-8 text-sm bg-white"

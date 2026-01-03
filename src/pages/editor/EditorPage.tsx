@@ -776,6 +776,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           characters={characters}
           links={graphLinks}
           documents={documents} // Pass all documents for selection
+          projectId={projectId} // 프로젝트 ID 전달
+          projectTitle={project?.title}
+          projectDescription={project?.description}
+          projectGenre={project?.genre}
+          projectCoverImage={project?.coverImage}
         />
 
         {/* Right Sidebar Toggle removed - already handled in EditorToolbar */}

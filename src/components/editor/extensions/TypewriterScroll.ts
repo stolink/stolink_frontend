@@ -77,7 +77,12 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
       toggleTypewriter:
         () =>
         ({ commands }) => {
-          const positions: TypewriterPosition[] = ["off", "center", "top", "bottom"];
+          const positions: TypewriterPosition[] = [
+            "off",
+            "center",
+            "top",
+            "bottom",
+          ];
           const currentIndex = positions.indexOf(this.options.position);
           const nextIndex = (currentIndex + 1) % positions.length;
           return commands.setTypewriterPosition(positions[nextIndex]);
@@ -111,14 +116,23 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
 
                 // Find scrollable container
                 let container: HTMLElement | null = editorElement;
-                while (container && container.scrollHeight <= container.clientHeight) {
+                while (
+                  container &&
+                  container.scrollHeight <= container.clientHeight
+                ) {
                   container = container.parentElement;
                 }
 
                 if (!container) return;
 
                 const containerRect = container.getBoundingClientRect();
-                const ratio = POSITION_RATIOS[extension.options.position as Exclude<TypewriterPosition, "off">] || 0.4;
+                const ratio =
+                  POSITION_RATIOS[
+                    extension.options.position as Exclude<
+                      TypewriterPosition,
+                      "off"
+                    >
+                  ] || 0.4;
                 const targetY = containerRect.height * ratio;
                 const cursorRelativeY = coords.top - containerRect.top;
                 const scrollOffset = cursorRelativeY - targetY;
@@ -135,9 +149,12 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
                     container.scrollTop += scrollOffset;
                   }
 
-                  setTimeout(() => {
-                    extension.storage.isAutoScrolling = false;
-                  }, extension.options.smoothScroll ? 150 : 50);
+                  setTimeout(
+                    () => {
+                      extension.storage.isAutoScrolling = false;
+                    },
+                    extension.options.smoothScroll ? 150 : 50,
+                  );
                 }
               } catch {
                 extension.storage.isAutoScrolling = false;

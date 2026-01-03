@@ -101,7 +101,7 @@ export function AuthCard({
           setActiveTab("login");
         },
         onError: (err) => handleApiError(err, "회원가입에 실패했습니다"),
-      }
+      },
     );
   };
 

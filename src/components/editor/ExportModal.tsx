@@ -42,7 +42,12 @@ interface ExportModalProps {
     strength: number;
   }>;
   documents?: { id: string; title: string; content?: string; type?: string }[];
-  projectId?: string; // Add projectId to props
+  projectId: string; // 필수: 프로젝트 ID
+  // Work 정보 전달용 (프로젝트 상세)
+  projectTitle?: string; // 프로젝트 제목 (작품명)
+  projectDescription?: string; // 프로젝트 설명 (작품 소개)
+  projectGenre?: string; // 프로젝트 장르
+  projectCoverImage?: string; // 프로젝트 표지 이미지
 }
 
 // 플랫폼 프리셋 정의
@@ -104,7 +109,11 @@ export default function ExportModal({
   characters = [],
   links = [],
   documents = [],
-  projectId, // Destructure projectId
+  projectId,
+  projectTitle,
+  projectDescription,
+  projectGenre,
+  projectCoverImage,
 }: ExportModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedPreset, setSelectedPreset] = useState(PRESETS[0].id);
@@ -282,16 +291,21 @@ export default function ExportModal({
       };
 
       // 2. Draft API 호출
-      await draftService.create({
+      const { data: draft } = await draftService.create({
         documentId: selectedDocId,
-        projectId, // 선택 사항
+        projectId,
         title: targetTitle,
         content: targetContent,
         graphSnapshot,
+        // Work(작품) 정보
+        workTitle: projectTitle,
+        workSynopsis: projectDescription,
+        workGenre: projectGenre,
+        workCoverUrl: projectCoverImage,
       });
 
-      // 3. 커뮤니티로 리다이렉트 (메인으로 이동, 파라미터 없음)
-      window.location.href = COMMUNITY_URL;
+      // 3. 커뮤니티로 리다이렉트 (/write?draftId={UUID})
+      window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
     } catch (error) {
       console.error("Draft 저장 실패:", error);
       toast({

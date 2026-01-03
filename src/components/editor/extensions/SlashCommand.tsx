@@ -69,7 +69,7 @@ const getSuggestionItems = ({
       icon: <FilePlus className="w-4 h-4" />,
       command: ({ editor, range }: SlashCommandParams) => {
         const onCreateSection = editor.extensionManager.extensions.find(
-          (ext) => ext.name === "slashCommand"
+          (ext) => ext.name === "slashCommand",
         )?.options?.onCreateSection;
 
         if (onCreateSection) {
@@ -147,7 +147,7 @@ const getSuggestionItems = ({
   ];
 
   return items.filter((item) =>
-    item.title.toLowerCase().includes(query.toLowerCase())
+    item.title.toLowerCase().includes(query.toLowerCase()),
   );
 };
 

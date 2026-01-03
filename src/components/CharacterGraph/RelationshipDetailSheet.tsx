@@ -181,7 +181,7 @@ export function RelationshipDetailSheet({
                   {history.map((event: any, idx: number) => {
                     const eventColorHex = getRelationshipColor(
                       event.type as BackendRelationshipType,
-                      5
+                      5,
                     ); // Default strength
 
                     return (
@@ -189,7 +189,7 @@ export function RelationshipDetailSheet({
                         {/* Timeline Dot */}
                         <div
                           className={cn(
-                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200"
+                            "absolute -left-[13px] top-1.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-stone-200",
                           )}
                           style={{ backgroundColor: eventColorHex }}
                         />
