@@ -152,8 +152,9 @@ export interface Character {
   meta: CharacterMeta;
   imageUrl?: string;
   embedding?: number[];
-  motivation?: string; // Added
-  firstAppearance?: string; // Added
+  motivation?: string; // Added,
+  firstAppearance?: string; // Added,
+  graphPosition?: { x: number; y: number }; // Added for D3 graph persistence
 }
 
 // =====================================================
