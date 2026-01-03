@@ -2,10 +2,10 @@ import axios from "axios";
 import type { NetworkNode, NetworkLink } from "@/types/network";
 
 // Default to localhost:8080 if not specified in env
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 const client = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   timeout: 5000,
 });
 
