@@ -1,4 +1,4 @@
-
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 

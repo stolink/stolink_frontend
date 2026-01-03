@@ -1,11 +1,40 @@
 ---
-description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 생성하거나 최신화합니다.
+description: (Fixed) 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 생성하거나 최신화합니다. GH CLI 자동 경로 설정 포함.
 ---
 
 > **참고:** 커밋 컨벤션은 `CLAUDE.md`를 따릅니다.
 > **언어:** 모든 결과 보고 및 PR 본문은 **한글**로 작성합니다.
 
 // turbo-all
+
+---
+
+## 0. 환경 설정 및 브랜치 전략 준수 확인 (필수!)
+
+**GH CLI 설정**:
+
+```bash
+# GH CLI 경로 설정
+if ! command -v gh &> /dev/null; then
+    if [ -f "/opt/homebrew/bin/gh" ]; then
+        export PATH="/opt/homebrew/bin:$PATH"
+    elif [ -f "/usr/local/bin/gh" ]; then
+        export PATH="/usr/local/bin:$PATH"
+    fi
+fi
+
+# GH CLI 확인
+if ! command -v gh &> /dev/null; then
+    echo "❌ Error: 'gh' command not found. Please install GitHub CLI."
+    exit 1
+fi
+
+# Auth Status 확인
+if ! gh auth status &> /dev/null; then
+    echo "❌ Error: GitHub CLI is not authenticated. Please run 'gh auth login'."
+    exit 1
+fi
+```
 
 ---
 
