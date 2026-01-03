@@ -68,7 +68,7 @@ export const CharacterGraph = forwardRef<
       className,
       showSearch = true,
     },
-    ref
+    ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -81,7 +81,7 @@ export const CharacterGraph = forwardRef<
     const [hoveredRelationType, setHoveredRelationType] =
       useState<RelationType | null>(null);
     const [internalFilter, setInternalFilter] = useState<RelationType | "all">(
-      relationTypeFilter
+      relationTypeFilter,
     );
 
     // 외부에서 필터 변경 시 내부 상태 동기화
@@ -94,7 +94,7 @@ export const CharacterGraph = forwardRef<
         setInternalFilter(filter);
         onFilterChange?.(filter);
       },
-      [onFilterChange]
+      [onFilterChange],
     );
 
     // 검색 결과 처리
@@ -102,7 +102,7 @@ export const CharacterGraph = forwardRef<
       (matchingIds: string[] | null) => {
         onSearchChange?.(matchingIds);
       },
-      [onSearchChange]
+      [onSearchChange],
     );
 
     // Handle ESC key to clear selection
@@ -156,6 +156,7 @@ export const CharacterGraph = forwardRef<
           group: factionName,
           imageUrl: char.imageUrl, // Map imageUrl from character conversion
           relationCount: relationCounts[char._id] || 0,
+          status: char.status, // 캐릭터 상태 (alive, dead, unknown 등)
         };
       });
 
@@ -170,7 +171,7 @@ export const CharacterGraph = forwardRef<
         // Since initialNodes are derived from characters, we can match by ID
         const originalChar = characters.find(
           (c) =>
-            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id)
+            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id),
         );
         if (originalChar) {
           nodeCharacterMapRef.current.set(node.id, originalChar);
@@ -326,7 +327,7 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping }
+      { width, height, enableGrouping },
     );
 
     /**
@@ -342,12 +343,12 @@ export const CharacterGraph = forwardRef<
           if (g) acc[g] = (acc[g] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       // 2. 멤버가 1명 이상인 그룹만 추출합니다.
       const activeGroups = Object.keys(groupCounts).filter(
-        (groupName) => groupCounts[groupName] > 0
+        (groupName) => groupCounts[groupName] > 0,
       );
 
       return activeGroups.map((group, index) => ({
@@ -404,7 +405,7 @@ export const CharacterGraph = forwardRef<
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
-          ".link-group"
+          ".link-group",
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
@@ -457,7 +458,7 @@ export const CharacterGraph = forwardRef<
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
         nodeSel.attr("transform", (d) =>
-          d ? `translate(${d.x}, ${d.y})` : ""
+          d ? `translate(${d.x}, ${d.y})` : "",
         );
 
         // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
@@ -615,7 +616,7 @@ export const CharacterGraph = forwardRef<
           centerAt(targetNode.x, targetNode.y, 1.35);
         }
       },
-      [onNodeClick, nodes, centerAt]
+      [onNodeClick, nodes, centerAt],
     );
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
@@ -645,7 +646,7 @@ export const CharacterGraph = forwardRef<
           return Promise.resolve();
         },
       }),
-      [nodes, centerAt]
+      [nodes, centerAt],
     );
 
     const connectedNodeIds = useMemo(() => {
@@ -690,7 +691,7 @@ export const CharacterGraph = forwardRef<
           }, 150);
         }
       },
-      []
+      [],
     );
 
     // Search Highlighting Logic
@@ -709,15 +710,15 @@ export const CharacterGraph = forwardRef<
         } else {
           console.warn(
             "[CharacterGraph] Character not found for node.id:",
-            node.id
+            node.id,
           );
           console.warn(
             "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys())
+            Array.from(nodeCharacterMapRef.current.keys()),
           );
         }
       },
-      [onNodeClick]
+      [onNodeClick],
     );
 
     const handleNodeHover = useCallback(
@@ -725,7 +726,7 @@ export const CharacterGraph = forwardRef<
         if (isDragging) return;
         setHoveredNodeId(id);
       },
-      [isDragging]
+      [isDragging],
     );
 
     // Voronoi 인터랙션: 마우스가 가장 가까운 노드 자동 하이라이트
@@ -743,7 +744,7 @@ export const CharacterGraph = forwardRef<
           delaunayRef.current = Delaunay.from(
             validNodes,
             (d) => d.x!,
-            (d) => d.y!
+            (d) => d.y!,
           );
         }
       };
@@ -777,7 +778,7 @@ export const CharacterGraph = forwardRef<
         const transformed = point.matrixTransform(ctm.inverse());
         const nearestIndex = delaunayRef.current.find(
           transformed.x,
-          transformed.y
+          transformed.y,
         );
 
         if (nearestIndex !== -1 && simulation) {
@@ -803,7 +804,7 @@ export const CharacterGraph = forwardRef<
           }
         }
       },
-      [isDragging, simulation]
+      [isDragging, simulation],
     );
 
     const handleSvgMouseLeave = useCallback(() => {
@@ -1078,5 +1079,5 @@ export const CharacterGraph = forwardRef<
         )}
       </div>
     );
-  }
+  },
 );
