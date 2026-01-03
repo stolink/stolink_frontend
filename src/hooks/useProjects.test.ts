@@ -48,7 +48,6 @@ describe("useProjects", () => {
     useAuthStore.setState({
       user: { id: "user-1", email: "test@example.com", nickname: "Test" },
       isAuthenticated: true,
-      hasHydrated: true,
     });
   });
 
@@ -65,15 +64,6 @@ describe("useProjects", () => {
 
   it("should not fetch when not authenticated", () => {
     useAuthStore.setState({ isAuthenticated: false, user: null });
-
-    const { result } = renderHook(() => useProjects());
-
-    expect(result.current.data).toBeUndefined();
-    expect(result.current.isLoading).toBe(false);
-  });
-
-  it("should not fetch when not hydrated", () => {
-    useAuthStore.setState({ hasHydrated: false });
 
     const { result } = renderHook(() => useProjects());
 

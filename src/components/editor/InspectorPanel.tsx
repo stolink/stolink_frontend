@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Info,
   Users,
   MapPin,
   Sword,
   Loader2,
   ChevronDown,
   ChevronRight,
-  BookOpen,
   StickyNote,
   Save,
 } from "lucide-react";
@@ -126,14 +124,10 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
     }
   };
 
-  if (!projectId) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-muted-foreground p-6">
-        <Info className="w-8 h-8 opacity-20 mb-3" />
-        <p className="text-sm font-medium">프로젝트를 선택하세요</p>
-      </div>
-    );
-  }
+  <div className="flex flex-col items-center justify-center min-h-[300px] text-muted-foreground p-6">
+    <StickyNote className="w-8 h-8 opacity-20 mb-3" />
+    <p className="text-sm font-medium">문서를 선택하세요</p>
+  </div>;
 
   if (charLoading) {
     return (
@@ -149,10 +143,10 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
       <div className="px-4 py-3 border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-mocha-100 rounded-lg">
-            <BookOpen className="w-3.5 h-3.5 text-mocha-700" />
+            <StickyNote className="w-3.5 h-3.5 text-mocha-700" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-stone-900">레퍼런스</h3>
+            <h3 className="text-sm font-bold text-stone-900">메모장</h3>
           </div>
         </div>
       </div>
@@ -161,7 +155,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-mocha-100">
         {/* 문서 메모 섹션 */}
         <CollapsibleSection
-          title="이 문서 메모"
+          title="현재 문서 메모"
           icon={StickyNote}
           defaultOpen={true}
         >
@@ -170,8 +164,8 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
               <textarea
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
-                placeholder="이 장면에 대한 아이디어, 잊지 말아야 할 설정을 기록하세요..."
-                className="w-full h-32 resize-none bg-stone-50/50 border border-stone-200 rounded-lg p-3 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-mocha-200 focus:border-mocha-300 transition-all leading-relaxed"
+                placeholder="장면의 아이디어, 설정, 대사 등을 자유롭게 기록하세요..."
+                className="w-full h-64 resize-none bg-stone-50/50 border border-stone-200 rounded-lg p-3 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-mocha-200 focus:border-mocha-300 transition-all leading-relaxed"
               />
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-stone-400 font-medium">
@@ -188,7 +182,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                     ) : (
                       <Save className="w-3 h-3" />
                     )}
-                    저장
+                    저장 (Cmd+S)
                   </button>
                 )}
               </div>

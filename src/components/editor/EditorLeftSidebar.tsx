@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeft, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChapterTree, type ChapterNode } from "@/components/editor/sidebar";
 
@@ -16,7 +16,6 @@ interface EditorLeftSidebarProps {
   onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
   onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
   isOpen: boolean;
-  onToggle?: () => void;
 }
 
 export default function EditorLeftSidebar({
@@ -29,33 +28,14 @@ export default function EditorLeftSidebar({
   onReorderChapter,
   onMoveToFolder,
   isOpen,
-  onToggle,
 }: EditorLeftSidebarProps) {
-  if (!isOpen) {
-    return (
-      <motion.div
-        initial={{ width: 40, opacity: 0.8 }}
-        animate={{ width: 40, opacity: 1 }}
-        className="border-r border-mocha-100 bg-cloud-50 hidden md:flex flex-col items-center py-3 shrink-0"
-      >
-        <motion.button
-          onClick={() => onToggle?.()}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="h-9 w-9 rounded-xl flex items-center justify-center text-mocha-400 hover:text-mocha-600 hover:bg-mocha-100/60 transition-colors"
-          title="사이드바 열기"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </motion.button>
-      </motion.div>
-    );
-  }
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       <motion.aside
         initial={{ width: 0, opacity: 0 }}
-        animate={{ width: 224, opacity: 1 }}
+        animate={{ width: 280, opacity: 1 }}
         exit={{ width: 0, opacity: 0 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="border-r border-mocha-100 bg-gradient-to-b from-cloud-50 to-mocha-50/30 hidden md:flex shrink-0 overflow-hidden relative"
@@ -96,18 +76,6 @@ export default function EditorLeftSidebar({
             />
           </div>
         </div>
-
-        {/* Toggle Button - Right Edge Strip */}
-        {onToggle && (
-          <motion.button
-            onClick={onToggle}
-            whileHover={{ backgroundColor: "rgba(164, 119, 100, 0.15)" }}
-            className="w-5 h-full border-l border-mocha-100/50 bg-mocha-50/30 flex items-center justify-center text-mocha-400 hover:text-mocha-600 transition-colors shrink-0"
-            title="사이드바 닫기"
-          >
-            <PanelLeftClose className="h-3.5 w-3.5" />
-          </motion.button>
-        )}
       </motion.aside>
     </AnimatePresence>
   );
