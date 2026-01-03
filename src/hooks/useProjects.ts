@@ -21,7 +21,7 @@ export const projectKeys = {
  * Hook for fetching project list with filters
  */
 export function useProjects(params?: ProjectListParams) {
-  const { user, isAuthenticated, hasHydrated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   return useQuery({
     queryKey: projectKeys.list(params),
@@ -29,8 +29,8 @@ export function useProjects(params?: ProjectListParams) {
       const response = await projectService.getAll(params);
       return response.data;
     },
-    // Only fetch after hydration is complete and user is authenticated
-    enabled: hasHydrated && isAuthenticated && !!user?.id,
+    // Only fetch after user is authenticated
+    enabled: isAuthenticated && !!user?.id,
   });
 }
 

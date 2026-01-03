@@ -6,24 +6,19 @@ export function useAuthInit() {
   const [isInitializing, setIsInitializing] = useState(true);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
-  const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const initialized = useRef(false);
 
   useEffect(() => {
-    // 1. 하이드레이션이 완료될 때까지 대기
-    if (!hasHydrated) return;
-
-    // 2. 이미 초기화가 진행되었거나 완료되었다면 중복 실행 방지
+    // 1. 이미 초기화가 진행되었거나 완료되었다면 중복 실행 방지
     if (initialized.current) return;
     initialized.current = true;
 
     // 3. 인증 관련 페이지에서는 자동 로그인 체크 건너뛰기
+    // 3. 인증 관련 페이지에서는 자동 로그인 체크 건너뛰기
+    // 단, /oauth2/* 경로는 콜백 처리 등 특수 로직이 있으므로 건너뜁니다.
+    // /auth, / 등에서는 이미 세션이 있을 경우 자동 로그인 처리를 위해 체크합니다.
     const pathname = window.location.pathname;
-    if (
-      pathname === "/auth" ||
-      pathname.startsWith("/oauth2/") ||
-      pathname === "/"
-    ) {
+    if (pathname.startsWith("/oauth2/")) {
       setIsInitializing(false);
       return;
     }
@@ -49,7 +44,7 @@ export function useAuthInit() {
     };
 
     initAuth();
-  }, [hasHydrated, setUser, logout]);
+  }, [setUser, logout]);
 
   return isInitializing;
 }

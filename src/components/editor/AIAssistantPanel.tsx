@@ -125,9 +125,10 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
               <h3 className="text-xl font-display text-espresso-900 mb-2">
                 지적 여정을 시작하세요
               </h3>
-              <p className="text-sm text-mocha-400 font-sans max-w-[240px] leading-relaxed">
-                GraphRAG 기반의 Check-Bot이 책의 방대한 맥락을 연결하여
-                답해드립니다.
+              <p className="text-sm text-mocha-400 font-sans leading-relaxed">
+                Check-Bot이 작품의 맥락을 연결하여
+                <br />
+                깊이 있는 답변을 드립니다.
               </p>
             </motion.div>
           ) : (
@@ -231,9 +232,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              projectId
-                ? "책의 이음새에 대해 무엇을 물어볼까요?"
-                : "프로젝트를 선택해주세요"
+              projectId ? "무엇을 물어볼까요?" : "프로젝트를 선택해주세요"
             }
             disabled={streaming || !projectId}
             className="min-h-[64px] max-h-[160px] w-full resize-none border-mocha-200/60 bg-white/80 p-5 pr-14 text-[0.95rem] rounded-2xl shadow-paper focus:ring-2 focus:ring-mocha-100 focus:border-mocha-300 backdrop-blur-sm transition-all placeholder:text-mocha-300/80 font-serif italic"

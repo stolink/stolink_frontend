@@ -624,7 +624,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             onReorderChapter={handleReorderChapter}
             onMoveToFolder={handleMoveToFolder}
             isOpen={isSidebarVisible}
-            onToggle={toggleSidebar}
           />
         )}
 

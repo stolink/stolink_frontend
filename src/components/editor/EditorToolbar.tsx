@@ -1,6 +1,8 @@
 import { type Editor } from "@tiptap/react";
 import {
   Bold,
+  PanelLeft,
+  PanelRight,
   Italic,
   Underline,
   Strikethrough,
@@ -19,6 +21,8 @@ import {
   Pilcrow,
   Highlighter,
   Type,
+  Minimize2,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +37,34 @@ import { motion } from "framer-motion";
 interface EditorToolbarProps {
   editor: Editor | null;
   className?: string;
+  isSidebarVisible?: boolean;
+  onToggleSidebar?: () => void;
+  rightSidebarOpen?: boolean;
+  onToggleRightSidebar?: () => void;
+  // Others passed but not previously typed? We should type them all to avoid TS errors.
+  // Based on usage in EditorPage.tsx line 636+:
+  currentFolderTitle?: string;
+  currentSectionTitle?: string;
+  sectionPath?: Array<{ id: string; title: string }>;
+  isEditingTitle?: boolean;
+  editedTitle?: string;
+  onEditedTitleChange?: (val: string) => void;
+  onStartEditTitle?: () => void;
+  onSaveTitle?: () => void;
+  onCancelEditTitle?: () => void;
+  isDemo?: boolean;
+  selectedSectionId?: string | null;
+  characterCount?: number;
+  viewMode?: "editor" | "board"; // simplified
+  onViewModeChange?: (mode: "editor" | "board") => void;
+  splitViewEnabled?: boolean;
+  onToggleSplitView?: () => void;
+  onToggleFocusMode?: () => void;
+  isTypewriterMode?: boolean;
+  onToggleTypewriterMode?: () => void;
+  onShowReader?: () => void;
+  onToggleSnapshot?: () => void;
+  onExport?: () => void;
 }
 
 interface ToolbarButtonProps {
@@ -69,7 +101,16 @@ function ToolbarButton({
   );
 }
 
-export function EditorToolbar({ editor, className }: EditorToolbarProps) {
+export function EditorToolbar({
+  editor,
+  className,
+  isSidebarVisible,
+  onToggleSidebar,
+  rightSidebarOpen,
+  onToggleRightSidebar,
+  onToggleFocusMode,
+  onExport,
+}: EditorToolbarProps) {
   if (!editor) {
     return null;
   }
@@ -91,6 +132,19 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
     >
       {/* Decorative accent line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-mocha-300 via-mocha-500 to-mocha-300 opacity-60" />
+
+      {/* Left Sidebar Toggle */}
+      {onToggleSidebar && (
+        <ToolbarButton
+          onClick={onToggleSidebar}
+          isActive={isSidebarVisible}
+          tooltip="목차 (Cmd/Ctrl+\)"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </ToolbarButton>
+      )}
+
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* History */}
       <div className="flex items-center gap-0.5 mr-2">
@@ -334,7 +388,19 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         <Minus className="h-4 w-4" />
       </ToolbarButton>
 
-      {/* Character Count - Premium Badge */}
+      <div className="flex items-center gap-1 ml-2">
+        {onToggleFocusMode && (
+          <ToolbarButton onClick={onToggleFocusMode} tooltip="집중 모드 (F11)">
+            <Minimize2 className="h-4 w-4" />
+          </ToolbarButton>
+        )}
+        {onExport && (
+          <ToolbarButton onClick={onExport} tooltip="내보내기">
+            <Share2 className="h-4 w-4" />
+          </ToolbarButton>
+        )}
+      </div>
+
       <div className="flex-1" />
       <motion.div
         initial={false}
@@ -346,6 +412,19 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         {editor.storage.characterCount.characters().toLocaleString()}자 ·{" "}
         {editor.storage.characterCount.words().toLocaleString()}단어
       </motion.div>
+
+      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
+      {/* Right Sidebar Toggle */}
+      {onToggleRightSidebar && (
+        <ToolbarButton
+          onClick={onToggleRightSidebar}
+          isActive={rightSidebarOpen}
+          tooltip="도구 패널 (Cmd/Ctrl+])"
+        >
+          <PanelRight className="h-4 w-4" />
+        </ToolbarButton>
+      )}
     </div>
   );
 }
