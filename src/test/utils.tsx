@@ -23,7 +23,7 @@ function createTestQueryClient() {
       },
     },
     logger: {
-      log: console.log,
+      log: () => {},
       warn: console.warn,
       error: () => {}, // 테스트 중 에러 로그 억제
     },

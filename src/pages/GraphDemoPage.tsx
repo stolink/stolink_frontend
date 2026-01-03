@@ -19,6 +19,7 @@ export default function GraphDemoPage() {
   // Fetch API Data Effect
   useEffect(() => {
     if (dataSource === "api") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 데이터 페칭 패턴
       setLoading(true);
       setError(null);
       graphApi
@@ -26,9 +27,9 @@ export default function GraphDemoPage() {
         .then((data) => {
           setGraphData(data);
         })
-        .catch((err) => {
+        .catch(() => {
           setError(
-            "Failed to connect to Spring Server (http://localhost:8080). Is it running?"
+            "Failed to connect to Spring Server (http://localhost:8080). Is it running?",
           );
           // Fallback or keep empty? Let's just show error.
         })

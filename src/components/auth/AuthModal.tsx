@@ -16,7 +16,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="p-0 border-none bg-transparent shadow-none sm:max-w-[850px]"
-        overlayClassName="bg-background/80 backdrop-blur-sm"
+        overlayClassName="bg-mocha-900/20 backdrop-blur-sm"
       >
         {/* 스크린 리더용 타이틀과 설명 (시각적으로는 AuthCard 내부 헤더가 담당) */}
         <DialogTitle className="sr-only">로그인 또는 회원가입</DialogTitle>

@@ -54,11 +54,12 @@ const ScriveningsEditor = forwardRef<
   const { documents, isLoading } = useDescendantDocumentsWithLevel(
     folderId,
     projectId,
-    { textOnly: true }
+    { textOnly: true },
   );
   const { bulkSaveContent } = useBulkDocumentContent();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCreateSectionRef = useRef(onCreateSection);
+  const saveAllRef = useRef<() => Promise<void> | undefined>(undefined);
 
   // 저장 상태 관리 (단일 뷰와 동일)
   const setSaveStatus = useEditorStore((state) => state.setSaveStatus);
@@ -91,12 +92,11 @@ const ScriveningsEditor = forwardRef<
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       CharacterMention,
-      CharacterMention,
       SlashCommandExtension.configure({
         onCreateSection: (title: string) => onCreateSectionRef.current?.(title),
       }),
     ],
-    [] // Empty deps - extensions are static
+    [], // Empty deps - extensions are static
   );
 
   const editor = useEditor(
@@ -106,7 +106,7 @@ const ScriveningsEditor = forwardRef<
       editorProps: {
         attributes: {
           class: cn(
-            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8"
+            "prose prose-stone prose-lg max-w-none focus:outline-none min-h-[500px] px-12 py-8",
           ),
           spellcheck: "false",
         },
@@ -121,17 +121,17 @@ const ScriveningsEditor = forwardRef<
 
         // Bulk Save logic - 1초 후 자동 저장
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = setTimeout(saveAll, 1000);
+        saveTimeoutRef.current = setTimeout(() => saveAllRef.current?.(), 1000);
       },
     },
-    [extensions] // Add dependency array to prevent recreation
+    [extensions], // Add dependency array to prevent recreation
   );
 
   useImperativeHandle(ref, () => ({
     // 외부에서 통합 뷰 저장 강제 호출
     saveAll: async () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      await saveAll();
+      await saveAllRef.current?.();
     },
     getSplitContent: () => {
       if (!editor) return null;
@@ -227,6 +227,11 @@ const ScriveningsEditor = forwardRef<
     }
   }, [editor, bulkSaveContent]);
 
+  // saveAllRef 업데이트 - useEditor에서 안전하게 참조하기 위함
+  useEffect(() => {
+    saveAllRef.current = saveAll;
+  }, [saveAll]);
+
   // Ctrl+S Manual Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -245,7 +250,7 @@ const ScriveningsEditor = forwardRef<
 
   const documentIds = useMemo(
     () => documents.map((c) => c.id).join(","),
-    [documents]
+    [documents],
   );
 
   useEffect(() => {
@@ -256,6 +261,8 @@ const ScriveningsEditor = forwardRef<
         editor.commands.setContent(newContent);
       }
     }
+    // documentIds는 documents 변경 감지용 (getCombinedContent, documents.length 포함)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, folderId, documentIds]);
 
   if (isLoading || !editor) {

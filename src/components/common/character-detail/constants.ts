@@ -30,6 +30,15 @@ export const roleLabels: Record<
   },
 };
 
+export const relationLabels: Record<string, string> = {
+  friendly: "우호",
+  hostile: "적대",
+  romantic: "로맨스",
+  neutral: "중립",
+  family: "가족",
+  business: "비즈니스",
+};
+
 export const MAX_FILTERED_ITEMS = 20;
 
 export const TRAIT_KEYS = ["성격", "특성", "성향", "traits", "personality"];

@@ -273,7 +273,7 @@ export default function ExportModal({
               name: c.profile?.name,
               age: c.profile?.age || undefined,
               gender: c.profile?.gender,
-              personality: c.personality?.core_traits,
+              personality: c.personality?.coreTraits,
               backstory: c.profile?.backstory,
               imageUrl: c.imageUrl || undefined,
             },

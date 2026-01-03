@@ -263,38 +263,38 @@ const createDefaultCharacter = (
   status: overrides.status || "active",
   appearance: overrides.appearance || {
     physique: "",
-    skin_tone: "",
+    skinTone: "",
     eyes: "",
     nose: "",
     mouth: "",
-    hair_style: "",
-    hair_color: "",
+    hairStyle: "",
+    hairColor: "",
     attire: [],
     expression: "",
-    scars_tattoos: [],
-    style_context: { art_style: "realistic" },
+    scarsTattoos: [],
+    styleContext: { artStyle: "realistic" },
   },
   personality: overrides.personality || {
-    core_traits: [],
+    coreTraits: [],
     flaws: [],
     values: [],
   },
   relations: overrides.relations || {
     graph: [],
-    event_refs: [],
-    location_context: "",
+    eventRefs: [],
+    locationContext: "",
   },
-  current_mood: overrides.current_mood || {
+  currentMood: overrides.currentMood || {
     emotion: "neutral",
     intensity: 5,
     trigger: null,
   },
   inventory: overrides.inventory || [],
   meta: overrides.meta || {
-    created_at: null,
-    updated_at: null,
-    data_version: "1.0",
-    lock_version: 0,
+    createdAt: null,
+    updatedAt: null,
+    dataVersion: "1.0",
+    lockVersion: 0,
   },
   imageUrl: overrides.imageUrl,
 });
@@ -307,7 +307,7 @@ export const DEMO_CHARACTERS: Character[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
     profile: {
-      character_id: "char-1",
+      characterId: "char-1",
       name: "장발장 (Jean Valjean)",
       age: 50,
       gender: "남성",
@@ -318,11 +318,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "빵 한 조각을 훔친 죄로 19년간 복역한 후, 미리엘 주교의 감화로 새 삶을 살기로 결심한 인물.",
       faction: {
         name: "선한자들",
-        social: { rank: "시장", influence: 9, faction_reputation: {} },
+        social: { rank: "시장", influence: 9, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["자비로움", "강인함"],
+      coreTraits: ["자비로움", "강인함"],
       flaws: ["과거의 죄책감"],
       values: ["구원", "희생"],
     },
@@ -331,7 +331,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-2",
     role: "antagonist",
     profile: {
-      character_id: "char-2",
+      characterId: "char-2",
       name: "자베르 (Javert)",
       age: 45,
       gender: "남성",
@@ -342,11 +342,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "법과 질서를 맹신하며, 장발장을 평생 쫓는 형사. 법 앞에는 예외가 없다고 믿는다.",
       faction: {
         name: "법집행국",
-        social: { rank: "경감", influence: 7, faction_reputation: {} },
+        social: { rank: "경감", influence: 7, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["집요함", "원칙주의"],
+      coreTraits: ["집요함", "원칙주의"],
       flaws: ["융통성 부족"],
       values: ["법과 질서"],
     },
@@ -355,7 +355,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-3",
     role: "supporting",
     profile: {
-      character_id: "char-3",
+      characterId: "char-3",
       name: "팡틴 (Fantine)",
       age: 25,
       gender: "여성",
@@ -366,11 +366,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "코제트를 부양하기 위해 모든 것을 희생하는 어머니. 사회의 부조리에 짓밟힌 비운의 여인.",
       faction: {
         name: "빈민",
-        social: { rank: "노동자", influence: 1, faction_reputation: {} },
+        social: { rank: "노동자", influence: 1, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["모성애", "순수함"],
+      coreTraits: ["모성애", "순수함"],
       flaws: ["나약함"],
       values: ["딸을 위한 희생"],
     },
@@ -379,7 +379,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-4",
     role: "protagonist",
     profile: {
-      character_id: "char-4",
+      characterId: "char-4",
       name: "코제트 (Cosette)",
       age: 18,
       gender: "여성",
@@ -390,11 +390,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "팡틴의 딸이자 장발장의 양녀. 어두운 과거를 뒤로하고 마리우스와 사랑에 빠진다.",
       faction: {
         name: "선한자들",
-        social: { rank: "양녀", influence: 3, faction_reputation: {} },
+        social: { rank: "양녀", influence: 3, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["순수함", "희망적"],
+      coreTraits: ["순수함", "희망적"],
       flaws: ["세상 물정에 어두움"],
       values: ["사랑", "가족"],
     },
@@ -403,7 +403,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-5",
     role: "protagonist",
     profile: {
-      character_id: "char-5",
+      characterId: "char-5",
       name: "마리우스 (Marius)",
       age: 20,
       gender: "남성",
@@ -414,11 +414,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "공화주의 사상을 가진 청년. 혁명에 가담하지만 코제트와의 사랑으로 갈등한다.",
       faction: {
         name: "ABC의 벗",
-        social: { rank: "회원", influence: 5, faction_reputation: {} },
+        social: { rank: "회원", influence: 5, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["이상주의", "열정"],
+      coreTraits: ["이상주의", "열정"],
       flaws: ["우유부단"],
       values: ["자유", "사랑"],
     },
@@ -427,7 +427,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-6",
     role: "supporting",
     profile: {
-      character_id: "char-6",
+      characterId: "char-6",
       name: "에포닌 (Éponine)",
       age: 18,
       gender: "여성",
@@ -438,11 +438,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "테나르디에 부부의 딸. 어린 시절 코제트를 괴롭혔으나, 나중에 마리우스를 사랑하여 그를 위해 희생한다.",
       faction: {
         name: "테나르디에 일가",
-        social: { rank: "딸", influence: 2, faction_reputation: {} },
+        social: { rank: "딸", influence: 2, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["희생적", "용감"],
+      coreTraits: ["희생적", "용감"],
       flaws: ["짝사랑의 집착"],
       values: ["진정한 사랑"],
     },
@@ -451,7 +451,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-7",
     role: "supporting",
     profile: {
-      character_id: "char-7",
+      characterId: "char-7",
       name: "앙졸라 (Enjolras)",
       age: 22,
       gender: "남성",
@@ -462,11 +462,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "아베쎄(ABC) 벗들의 리더. 혁명에 자신의 모든 것을 바치는 열정적인 지도자.",
       faction: {
         name: "ABC의 벗",
-        social: { rank: "리더", influence: 8, faction_reputation: {} },
+        social: { rank: "리더", influence: 8, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["카리스마", "단호함"],
+      coreTraits: ["카리스마", "단호함"],
       flaws: ["감정 배제"],
       values: ["자유", "평등"],
     },
@@ -475,7 +475,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-8",
     role: "antagonist",
     profile: {
-      character_id: "char-8",
+      characterId: "char-8",
       name: "테나르디에 (Thénardier)",
       age: 50,
       gender: "남성",
@@ -486,11 +486,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "돈을 위해서라면 무슨 짓이든 하는 악당. 워털루 전쟁 때 장교를 구했다는 거짓말로 훈장을 받았다.",
       faction: {
         name: "테나르디에 일가",
-        social: { rank: "가장", influence: 4, faction_reputation: {} },
+        social: { rank: "가장", influence: 4, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["교활함", "생존본능"],
+      coreTraits: ["교활함", "생존본능"],
       flaws: ["탐욕"],
       values: ["돈", "자기 이익"],
     },
@@ -499,7 +499,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-9",
     role: "sidekick",
     profile: {
-      character_id: "char-9",
+      characterId: "char-9",
       name: "가브로슈 (Gavroche)",
       age: 12,
       gender: "남성",
@@ -510,11 +510,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "파리의 부랑아. 테나르디에의 버려진 아들이며, 혁명군을 돕다 전사한다.",
       faction: {
         name: "파리 거리",
-        social: { rank: "부랑아", influence: 2, faction_reputation: {} },
+        social: { rank: "부랑아", influence: 2, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["용감함", "명랑함"],
+      coreTraits: ["용감함", "명랑함"],
       flaws: ["무모함"],
       values: ["자유", "우정"],
     },
@@ -523,7 +523,7 @@ export const DEMO_CHARACTERS: Character[] = [
     _id: "char-10",
     role: "mentor",
     profile: {
-      character_id: "char-10",
+      characterId: "char-10",
       name: "미리엘 주교 (Bishop Myriel)",
       age: 75,
       gender: "남성",
@@ -534,11 +534,11 @@ export const DEMO_CHARACTERS: Character[] = [
         "디뉴의 주교. 장발장에게 은촛대를 주며 그를 구원하고 정직한 삶으로 인도한다.",
       faction: {
         name: "성직자",
-        social: { rank: "주교", influence: 8, faction_reputation: {} },
+        social: { rank: "주교", influence: 8, factionReputation: {} },
       },
     },
     personality: {
-      core_traits: ["자비로움", "검소함"],
+      coreTraits: ["자비로움", "검소함"],
       flaws: [],
       values: ["신앙", "용서", "구원"],
     },

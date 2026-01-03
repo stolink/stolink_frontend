@@ -10,7 +10,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { useDocumentSnapshots, type Snapshot } from "@/stores/useSnapshotStore";
+import { useDocumentSnapshots } from "@/stores/useSnapshotStore";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 interface SnapshotPanelProps {
   documentId: string | null;
@@ -62,7 +61,7 @@ export default function SnapshotPanel({
     createSnapshot(
       newSnapshotName.trim(),
       currentContent,
-      newSnapshotDesc.trim() || undefined
+      newSnapshotDesc.trim() || undefined,
     );
 
     setNewSnapshotName("");
@@ -158,7 +157,7 @@ export default function SnapshotPanel({
                   <button
                     onClick={() =>
                       setExpandedId(
-                        expandedId === snapshot.id ? null : snapshot.id
+                        expandedId === snapshot.id ? null : snapshot.id,
                       )
                     }
                     className="w-full px-4 py-3 flex items-start gap-3 hover:bg-muted/50 transition-colors"

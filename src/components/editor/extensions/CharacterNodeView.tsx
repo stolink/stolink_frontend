@@ -27,7 +27,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
   // Extract data for display (new schema: personality, profile)
   const description = character?.profile?.backstory;
   const age = character?.profile?.age;
-  const traits = character?.personality?.core_traits;
+  const traits = character?.personality?.coreTraits;
 
   // 아이템용 호버 카드 컨텐츠
   const itemDescription = item?.extras?.설명 as string | undefined;

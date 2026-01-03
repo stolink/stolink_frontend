@@ -101,7 +101,7 @@ export function useUpdateProject() {
       // Optimistically update detail
       queryClient.setQueryData(
         projectKeys.detail(id),
-        (old: Project | undefined) => (old ? { ...old, ...payload } : old)
+        (old: Project | undefined) => (old ? { ...old, ...payload } : old),
       );
 
       // Optimistically update lists (순서 유지하면서 데이터만 변경)
@@ -112,10 +112,10 @@ export function useUpdateProject() {
           return {
             ...old,
             projects: old.projects.map((p: Project) =>
-              p.id === id ? { ...p, ...payload } : p
+              p.id === id ? { ...p, ...payload } : p,
             ),
           };
-        }
+        },
       );
 
       return { previousDetail, previousLists, id, currentOrder };
@@ -125,7 +125,7 @@ export function useUpdateProject() {
       if (context?.previousDetail) {
         queryClient.setQueryData(
           projectKeys.detail(context.id),
-          context.previousDetail
+          context.previousDetail,
         );
       }
       if (context?.previousLists) {
@@ -160,7 +160,7 @@ export function useUpdateProject() {
               ...old,
               projects: sortedProjects,
             };
-          }
+          },
         );
       }
     },
@@ -196,7 +196,7 @@ export function useDeleteProject() {
             ...old,
             projects: old.projects.filter((p: Project) => p.id !== id),
           };
-        }
+        },
       );
 
       return { previousLists };
@@ -210,7 +210,7 @@ export function useDeleteProject() {
         });
       }
     },
-    onSuccess: (_data, _id) => {
+    onSuccess: () => {
       // 성공 시에만 목록 재조회 (에러 시에는 이미 onError에서 롤백됨)
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },

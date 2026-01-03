@@ -15,7 +15,7 @@ export function generateLinksFromCharacters(
   const links: RelationshipLink[] = [];
   const linkSet = new Set<string>();
 
-  // 관계 타입 문자열에서 RelationType 추출 (새 스키마의 relation_type 값 매핑)
+  // 관계 타입 문자열에서 RelationType 추출 (새 스키마의 relationType 값 매핑)
   const getRelationType = (relType: string): RelationType => {
     const normalized = relType?.toLowerCase() || "";
     // 적대 관계

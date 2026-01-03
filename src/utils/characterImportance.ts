@@ -255,9 +255,9 @@ export function calculateAttributeScore(character: Character): number {
 
   // personality 필드 밀도
   if (character.personality) {
-    const { core_traits, flaws, values } = character.personality;
+    const { coreTraits, flaws, values } = character.personality;
     const totalItems =
-      (core_traits?.length || 0) + (flaws?.length || 0) + (values?.length || 0);
+      (coreTraits?.length || 0) + (flaws?.length || 0) + (values?.length || 0);
     score += Math.min(totalItems * 3, 30); // 최대 30점
   }
 
@@ -410,8 +410,8 @@ export function calculateAllImportanceScores(
  */
 export function importanceToNodeSize(
   score: number,
-  minSize: number = 30,
-  maxSize: number = 80,
+  minSize: number = 50,
+  maxSize: number = 100,
 ): number {
   // 0-100 점수를 minSize-maxSize 범위로 매핑
   const normalized = Math.max(0, Math.min(score, 100)) / 100;

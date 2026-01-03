@@ -98,11 +98,6 @@ export const CharacterGraph = forwardRef<
       // Clear and rebuild character map
       nodeCharacterMapRef.current.clear();
 
-      console.log(
-        "[CharacterGraph] Building nodes, characters.length:",
-        characters.length,
-      );
-
       const nodes = characters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
@@ -113,28 +108,15 @@ export const CharacterGraph = forwardRef<
         // Store mapping for safe lookup in handleNodeClick
         nodeCharacterMapRef.current.set(nodeId, char);
 
-        console.log(
-          `[CharacterGraph] Stored mapping: ${nodeId} -> char._id: ${char._id}, name: ${char.profile?.name}`,
-        );
-
         return {
           id: nodeId,
           name: char.profile?.name || "이름 없음",
           role: char.role,
           group: factionName,
-          imageUrl: undefined, // 새 스키마에는 imageUrl 없음
+          imageUrl: char.imageUrl, // Map imageUrl from character conversion
           relationCount: relationCounts[char._id] || 0,
         };
       });
-
-      console.log(
-        "[CharacterGraph] Map size after building:",
-        nodeCharacterMapRef.current.size,
-      );
-      console.log(
-        "[CharacterGraph] Map keys:",
-        Array.from(nodeCharacterMapRef.current.keys()),
-      );
 
       return nodes;
     }, [characters, initialLinks]);
@@ -491,31 +473,10 @@ export const CharacterGraph = forwardRef<
 
     const handleNodeClick = useCallback(
       (node: CharacterNode) => {
-        console.log(
-          "[CharacterGraph] Node clicked, node.id:",
-          node.id,
-          "node.name:",
-          node.name,
-        );
-        console.log(
-          "[CharacterGraph] Current Map size:",
-          nodeCharacterMapRef.current.size,
-        );
-        console.log(
-          "[CharacterGraph] Map has node.id?",
-          nodeCharacterMapRef.current.has(node.id),
-        );
-
         // Use the reliable Map lookup instead of array indexing
         const char = nodeCharacterMapRef.current.get(node.id);
 
-        console.log(
-          "[CharacterGraph] Found character:",
-          char?._id,
-          char?.profile?.name,
-        );
         if (char && onNodeClick) {
-          console.log("[CharacterGraph] Calling onNodeClick");
           onNodeClick(char);
         } else {
           console.warn(

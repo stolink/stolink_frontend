@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Palette } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { CharacterAppearance } from "@/types/character";
 
@@ -8,47 +8,100 @@ interface CharacterVisualProps {
   onAppearanceChange?: (key: string, value: string) => void;
 }
 
+const visualFieldConfig: {
+  key: keyof CharacterAppearance;
+  label: string;
+  icon: string;
+}[] = [
+  { key: "physique", label: "체격", icon: "💪" },
+  { key: "skinTone", label: "피부", icon: "✨" },
+  { key: "eyes", label: "눈", icon: "👁️" },
+  { key: "hairStyle", label: "헤어스타일", icon: "💇" },
+  { key: "hairColor", label: "머리색", icon: "🎨" },
+  { key: "attire", label: "의상", icon: "👔" },
+  { key: "expression", label: "표정", icon: "😊" },
+  { key: "scarsTattoos", label: "특징", icon: "⭐" },
+];
+
 export function CharacterVisual({
   appearance,
   isEditMode = false,
   onAppearanceChange,
 }: CharacterVisualProps) {
-  if (!appearance) return null;
+  if (!appearance) {
+    return (
+      <div className="editorial-empty-state">
+        <Palette className="editorial-empty-state-icon" />
+        <p className="editorial-empty-state-title">외모 정보 없음</p>
+        <p className="editorial-empty-state-description">
+          캐릭터의 외모 정보가 아직 입력되지 않았습니다.
+        </p>
+      </div>
+    );
+  }
 
-  // 새 스키마 appearance 필드들 표시
-  const visualEntries: { key: string; label: string; value: string }[] = [
-    { key: "physique", label: "체격", value: appearance.physique },
-    { key: "skin_tone", label: "피부", value: appearance.skin_tone },
-    { key: "eyes", label: "눈", value: appearance.eyes },
-    { key: "hair_style", label: "헤어스타일", value: appearance.hair_style },
-    { key: "hair_color", label: "머리색", value: appearance.hair_color },
-    { key: "expression", label: "표정", value: appearance.expression },
-  ].filter((entry) => entry.value); // 값이 있는 항목만 표시
+  const getFieldValue = (key: keyof CharacterAppearance): string => {
+    const value = appearance[key];
+    if (Array.isArray(value)) {
+      return value.join(", ");
+    }
+    if (typeof value === "object" && value !== null) {
+      // Handle styleContext: { artStyle: string }
+      if ("artStyle" in value) {
+        return value.artStyle || "";
+      }
+      return JSON.stringify(value);
+    }
+    return (value as string) || "";
+  };
 
-  if (visualEntries.length === 0) return null;
+  const visualEntries = visualFieldConfig
+    .map(({ key, label, icon }) => ({
+      key,
+      label,
+      icon,
+      value: getFieldValue(key),
+    }))
+    .filter((entry) => entry.value || isEditMode);
+
+  if (visualEntries.length === 0) {
+    return (
+      <div className="editorial-empty-state">
+        <Palette className="editorial-empty-state-icon" />
+        <p className="editorial-empty-state-title">외모 정보 없음</p>
+        <p className="editorial-empty-state-description">
+          캐릭터의 외모 정보가 아직 입력되지 않았습니다.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-        <Eye className="h-4 w-4" /> 외모
+    <div className="space-y-4">
+      <h3 className="editorial-section-heading">
+        <Palette className="h-5 w-5 text-primary/70" />
+        외모
       </h3>
-      <div className="grid grid-cols-2 gap-2">
-        {visualEntries.map(({ key, label, value }) => (
-          <div
-            key={key}
-            className="p-2.5 bg-gradient-to-br from-cloud-50 to-white rounded-lg border border-input"
-          >
-            <p className="text-[10px] text-muted-foreground font-medium mb-0.5">
-              {label}
-            </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {visualEntries.map(({ key, label, icon, value }) => (
+          <div key={key} className="editorial-card p-3 hover-lift group">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm opacity-70 group-hover:opacity-100 transition-opacity">
+                {icon}
+              </span>
+              <span className="editorial-label">{label}</span>
+            </div>
             {isEditMode ? (
               <Input
                 value={value}
                 onChange={(e) => onAppearanceChange?.(key, e.target.value)}
-                className="h-7 text-sm"
+                className="h-8 text-sm bg-white"
+                placeholder={`${label} 입력`}
               />
             ) : (
-              <p className="text-sm font-medium text-foreground">{value}</p>
+              <p className="text-sm font-medium text-stone-800 leading-snug">
+                {value || "-"}
+              </p>
             )}
           </div>
         ))}

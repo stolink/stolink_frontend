@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Character } from "@/types";
 import { useCharacters } from "@/hooks/useCharacters";
+import { relationLabels } from "../constants";
 
 /**
  * 캐릭터 데이터에서 UI 표시용 데이터 추출 (새 스키마 대응)
@@ -14,10 +15,10 @@ export function useCharacterData(character: Character | null) {
     enabled: !!projectId,
   });
 
-  // 성격 특성 추출 (새 스키마: personality.core_traits)
+  // 성격 특성 추출 (새 스키마: personality.coreTraits)
   const traits = useMemo(() => {
-    return character?.personality?.core_traits || [];
-  }, [character?.personality?.core_traits]);
+    return character?.personality?.coreTraits || [];
+  }, [character?.personality?.coreTraits]);
 
   // 관계 추출 (새 스키마: relations.graph)
   // target ID를 이름으로 변환
@@ -43,8 +44,11 @@ export function useCharacterData(character: Character | null) {
       }
 
       // 관계 설명이 있으면 그것을, 없으면 타입(friendly 등)을 표시
+      // 관계 설명이 있으면 그것을, 없으면 타입(friendly 등)을 표시 (한글 변환)
       // 백엔드의 description 필드가 사용자 정의 관계명(예: "팀원이자 친구")을 담고 있음
-      const relationLabel = rel.description || rel.type || "friendly";
+      const typeLabel =
+        relationLabels[rel.type || "friendly"] || rel.type || "우호";
+      const relationLabel = rel.description || typeLabel;
 
       return {
         name: targetName,

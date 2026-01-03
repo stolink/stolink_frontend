@@ -38,11 +38,11 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   label?: string; // Legacy alias for description
   description?: string;
   bidirectional?: boolean;
-  evolved_from?: RelationType;
+  evolvedFrom?: RelationType;
   since?: string;
   // New fields from schema
-  public_stance?: string;
-  private_feeling?: string;
+  publicStance?: string;
+  privateFeeling?: string;
   // Legacy history field
   history?: {
     eventId: string;

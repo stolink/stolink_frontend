@@ -70,6 +70,7 @@ export const FocusMode = Extension.create<FocusModeOptions>({
   },
 
   addProseMirrorPlugins() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const extension = this;
 
     return [
@@ -112,13 +113,13 @@ export const FocusMode = Extension.create<FocusModeOptions>({
                 decorations.push(
                   Decoration.node(pos, nodeEnd, {
                     class: extension.options.focusedClass,
-                  })
+                  }),
                 );
               } else {
                 decorations.push(
                   Decoration.node(pos, nodeEnd, {
                     class: extension.options.unfocusedClass,
-                  })
+                  }),
                 );
               }
 

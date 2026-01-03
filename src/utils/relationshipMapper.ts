@@ -50,19 +50,11 @@ export function extractRelationshipLinks(
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
 
-  console.log(
-    `[extractRelationshipLinks] Processing ${characters.length} characters`,
-  );
-
   characters.forEach((char) => {
     // 1. 관계 데이터 추출 (새 스키마 relations.graph 또는 백엔드 직결 relationships 필드)
     const relationGraph =
       char.relations?.graph ||
       (char as { relationships?: unknown[] }).relationships;
-
-    console.log(
-      `[extractRelationshipLinks] Character ${char.profile?.name}: relations.graph length = ${char.relations?.graph?.length || 0}`,
-    );
 
     if (!Array.isArray(relationGraph)) {
       console.warn(
@@ -75,13 +67,17 @@ export function extractRelationshipLinks(
       (rel: {
         source?: string;
         target?: string;
+        relationType?: string;
         relation_type?: string;
         type?: string;
         strength?: number;
         description?: string;
         bidirectional?: boolean;
+        evolvedFrom?: RelationType | null;
         evolved_from?: RelationType | null;
+        publicStance?: string;
         public_stance?: string;
+        privateFeeling?: string;
         private_feeling?: string;
       }) => {
         // 2. 소스/타겟 ID 추출 (id 또는 _id)
@@ -114,11 +110,7 @@ export function extractRelationshipLinks(
         processedPairs.add(pairKey);
 
         const normalizedType = normalizeRelationType(
-          rel.relation_type || rel.type || "friendly",
-        );
-
-        console.log(
-          `[extractRelationshipLinks] Creating link: ${sourceId} -> ${targetId}, type: ${rel.type} -> ${normalizedType}`,
+          rel.relationType || rel.relation_type || rel.type || "friendly",
         );
 
         links.push({
@@ -130,11 +122,14 @@ export function extractRelationshipLinks(
           label: rel.description,
           description: rel.description,
           bidirectional: rel.bidirectional,
-          evolved_from: rel.evolved_from
-            ? normalizeRelationType(rel.evolved_from)
-            : undefined,
-          public_stance: rel.public_stance,
-          private_feeling: rel.private_feeling,
+          evolvedFrom:
+            rel.evolvedFrom || rel.evolved_from
+              ? normalizeRelationType(
+                  (rel.evolvedFrom || rel.evolved_from) as string,
+                )
+              : undefined,
+          publicStance: rel.publicStance || rel.public_stance,
+          privateFeeling: rel.privateFeeling || rel.private_feeling,
         });
       },
     );

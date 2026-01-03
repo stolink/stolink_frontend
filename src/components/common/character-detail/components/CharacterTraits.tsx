@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, Plus, X } from "lucide-react";
+import { Heart, Plus, X, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -37,43 +37,54 @@ export function CharacterTraits({
   };
 
   return (
-    <div>
-      <h3 className="font-bold text-muted-foreground text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-        <Heart className="h-4 w-4" /> 성격 특성
+    <div className="space-y-4">
+      <h3 className="editorial-section-heading">
+        <Heart className="h-5 w-5 text-primary/70" />
+        성격 특성
       </h3>
-      <div className="flex flex-wrap gap-2">
-        {traits.length > 0 ? (
-          traits.map((trait, idx) => (
+
+      {traits.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {traits.map((trait, idx) => (
             <span
               key={idx}
-              className="px-2.5 py-1 rounded bg-cloud-50 text-muted-foreground text-xs font-semibold border border-input flex items-center gap-1"
+              className="editorial-tag group"
+              style={{ animationDelay: `${idx * 50}ms` }}
             >
+              <Sparkles className="h-3 w-3 text-primary/50" />
               {trait}
               {isEditMode && (
                 <button
                   type="button"
                   onClick={() => handleRemoveTrait(idx)}
-                  className="ml-1 text-muted-foreground hover:text-red-500 transition-colors"
+                  className="ml-1 opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition-all"
                 >
                   <X className="h-3 w-3" />
                 </button>
               )}
             </span>
-          ))
-        ) : (
-          <span className="text-sm text-muted-foreground">
-            성격 특성이 없습니다
-          </span>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="editorial-empty-state py-8">
+          <Heart className="editorial-empty-state-icon h-10 w-10" />
+          <p className="editorial-empty-state-title text-base">
+            성격 특성 없음
+          </p>
+          <p className="editorial-empty-state-description text-sm">
+            캐릭터의 성격을 정의하는 특성을 추가해보세요.
+          </p>
+        </div>
+      )}
+
       {isEditMode && (
-        <div className="mt-3 flex gap-2">
+        <div className="flex gap-2 pt-2">
           <Input
             value={newTrait}
             onChange={(e) => setNewTrait(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="새 특성 추가"
-            className="h-8 text-sm flex-1"
+            placeholder="새 특성 추가 (예: 용감한, 신중한...)"
+            className="h-9 text-sm flex-1 bg-white"
           />
           <Button
             type="button"
@@ -81,9 +92,10 @@ export function CharacterTraits({
             size="sm"
             onClick={handleAddTrait}
             disabled={!newTrait.trim()}
-            className="h-8 px-2"
+            className="h-9 px-3 gap-1.5 hover:bg-primary hover:text-white hover:border-primary transition-all"
           >
             <Plus className="h-4 w-4" />
+            추가
           </Button>
         </div>
       )}

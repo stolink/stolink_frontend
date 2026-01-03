@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Sparkles,
   Trash2,
@@ -42,7 +42,10 @@ const ForeshadowingPanel = ({
     updateForeshadowing,
   } = useForeshadowingStore();
 
-  const foreshadowings = projectId ? getUnresolved(projectId) : [];
+  const foreshadowings = useMemo(
+    () => (projectId ? getUnresolved(projectId) : []),
+    [projectId, getUnresolved],
+  );
 
   // 제목 편집 상태
   const [editingId, setEditingId] = useState<string | null>(null);

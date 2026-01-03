@@ -3,7 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, MapPin, Sword, Sparkles } from "lucide-react";
+import {
+  Users,
+  MapPin,
+  Sword,
+  Sparkles,
+  Network,
+  UserRound,
+} from "lucide-react";
 import CharacterDetailModal from "@/components/common/CharacterDetailModal";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
@@ -59,21 +66,6 @@ export default function WorldPage() {
   const { data: characters = [] } = useCharacters(projectId || "", {
     enabled: !!projectId,
   });
-
-  // Debug: Log raw API response
-  useEffect(() => {
-    if (characters.length > 0) {
-      console.log(
-        "[WorldPage] Raw characters data:",
-        JSON.stringify(characters, null, 2),
-      );
-      console.log("[WorldPage] First character:", characters[0]);
-      console.log(
-        "[WorldPage] Character keys:",
-        Object.keys(characters[0] || {}),
-      );
-    }
-  }, [characters]);
 
   const queryClient = useQueryClient();
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -235,22 +227,14 @@ export default function WorldPage() {
   };
 
   const handleNodeClick = (character: Character) => {
-    console.log(
-      "[WorldPage] Node clicked:",
-      character._id,
-      character.profile?.name,
-    );
     const enrichedChar = enrichCharacterWithMockData(character);
     const nextChar =
       selectedCharacter?._id === enrichedChar._id ? null : enrichedChar;
     setSelectedCharacter(nextChar);
     setGraphFocusId(nextChar?._id || null);
 
-    // Open modal when clicking a node (not when deselecting)
-    if (nextChar) {
-      console.log("[WorldPage] Opening modal for character:", nextChar._id);
-      setIsModalOpen(true);
-    }
+    // Sidebar will open because selectedCharacter is set
+    // Modal will be opened manually from the sidebar's "View Profile" button
   };
 
   const handleCardClick = (character: Character) => {
@@ -333,13 +317,13 @@ export default function WorldPage() {
       target: String(targetId), // DetailedRelationship expects string ID
       source: String(sourceId), // DetailedRelationship expects string ID
       type: link.type, // RelationType is compatible with BackendRelationshipType
-      relation_type: link.type,
+      relationType: link.type,
       strength: link.strength,
 
       // Use mapped data from link (originally from DB)
       description: link.description,
       bidirectional: link.bidirectional,
-      evolved_from: isJavertValjean ? "hostile" : link.evolved_from,
+      evolvedFrom: isJavertValjean ? "hostile" : link.evolvedFrom,
       since: isJavertValjean ? "1815년 툴롱 감옥" : link.since,
       history: mockHistory || link.history,
     };
@@ -365,41 +349,54 @@ export default function WorldPage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-paper">
-      <Tabs defaultValue="graph" className="h-full flex flex-col">
-        {/* Tab Header */}
-        <div className="px-6 py-3 border-b bg-white shrink-0">
-          <TabsList>
-            <TabsTrigger value="graph" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              캐릭터 관계도
+    <div className="h-full w-full flex flex-col bg-stone-50">
+      <Tabs defaultValue="graph" className="h-full flex flex-col relative">
+        {/* Floating Glass Header */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0">
+          {/* Tab Navigation - Pill Style with borders */}
+          <TabsList className="bg-transparent p-0 h-auto gap-1">
+            <TabsTrigger
+              value="graph"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+            >
+              <Network className="h-3.5 w-3.5" />
+              관계도
             </TabsTrigger>
-            <TabsTrigger value="characters" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              캐릭터 목록
+            <TabsTrigger
+              value="characters"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+            >
+              <UserRound className="h-3.5 w-3.5" />
+              캐릭터
             </TabsTrigger>
-            <TabsTrigger value="places" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+            <TabsTrigger
+              value="places"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+            >
+              <MapPin className="h-3.5 w-3.5" />
               장소
             </TabsTrigger>
-            <TabsTrigger value="items" className="flex items-center gap-2">
-              <Sword className="h-4 w-4" />
+            <TabsTrigger
+              value="items"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+            >
+              <Sword className="h-3.5 w-3.5" />
               아이템
             </TabsTrigger>
             <TabsTrigger
               value="foreshadowing"
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5" />
               복선
             </TabsTrigger>
           </TabsList>
         </div>
 
-        {/* Character Graph - D3.js */}
+        {/* Character Graph - D3.js (Full Bleed) */}
         <TabsContent
           value="graph"
-          className="flex-1 m-0 overflow-hidden relative"
+          className="flex-1 m-0 overflow-hidden relative bg-stone-50"
         >
           {characters.length === 0 && !isPolling ? (
             <div className="h-full flex items-center justify-center p-6">
@@ -518,29 +515,32 @@ export default function WorldPage() {
                 </div>
               )}
 
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="pt-20 px-8 pb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {characters.map((character, index) => (
-                  <Card
+                  <div
                     key={
                       character._id ||
                       (character as { id?: string }).id ||
                       `char-${index}`
                     }
-                    className="cursor-pointer hover:shadow-lg transition-shadow group"
+                    className="editorial-card group cursor-pointer overflow-hidden aspect-[3/4] flex flex-col hover-lift editorial-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
                     onClick={() => handleCardClick(character)}
                   >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center gap-3">
-                        {character.imageUrl ? (
-                          <div className="h-12 w-12 rounded-full overflow-hidden border border-input bg-muted shrink-0">
-                            <img
-                              src={character.imageUrl}
-                              alt={character.profile?.name || ""}
-                              className="w-full h-full object-cover grayscale opacity-90 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-3xl flex items-center justify-center w-12 h-12 bg-cloud-50 rounded-full">
+                    {/* Image Section - 70% height */}
+                    <div className="relative flex-[7] overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50">
+                      {character.imageUrl ? (
+                        <>
+                          <img
+                            src={character.imageUrl}
+                            alt={character.profile?.name || ""}
+                            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-5xl opacity-50 group-hover:opacity-70 transition-opacity">
                             {character.role === "protagonist"
                               ? "🦸"
                               : character.role === "antagonist"
@@ -549,29 +549,30 @@ export default function WorldPage() {
                                   ? "🧙"
                                   : "👤"}
                           </span>
-                        )}
-                        <div>
-                          <CardTitle className="text-lg">
-                            {character.profile?.name ||
-                              (character as { name?: string }).name ||
-                              "이름 없음"}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            {roleLabels[character.role || "other"]}
-                          </p>
                         </div>
+                      )}
+                      {/* Role Badge */}
+                      <div className="floating-badge">
+                        {roleLabels[character.role || "other"]}
                       </div>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground">
+                    </div>
+
+                    {/* Info Section - 30% height */}
+                    <div className="flex-[3] p-4 bg-white flex flex-col justify-center border-t border-stone-100">
+                      <h3 className="editorial-name text-base line-clamp-1 group-hover:text-primary transition-colors">
+                        {character.profile?.name ||
+                          (character as { name?: string }).name ||
+                          "이름 없음"}
+                      </h3>
                       {(character.profile?.backstory ||
                         (character as { backstory?: string }).backstory) && (
-                        <p className="line-clamp-2">
+                        <p className="text-xs text-stone-400 line-clamp-2 mt-1 leading-relaxed">
                           {character.profile?.backstory ||
                             (character as { backstory?: string }).backstory}
                         </p>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -579,74 +580,119 @@ export default function WorldPage() {
         </TabsContent>
 
         {/* Places */}
-        <TabsContent value="places" className="flex-1 m-0 overflow-y-auto">
-          <div className="p-6 max-w-4xl mx-auto h-full">
+        <TabsContent
+          value="places"
+          className="flex-1 m-0 overflow-y-auto editorial-fade-in"
+        >
+          <div className="p-8 max-w-5xl mx-auto h-full">
             {places.length === 0 ? (
-              <EmptyIndicator
-                icon={MapPin}
-                title="등록된 장소가 없습니다"
-                description="스토리의 배경이 되는 주요 장소들을 기록해보세요."
-              />
+              <div className="h-full flex items-center justify-center">
+                <EmptyIndicator
+                  icon={MapPin}
+                  title="등록된 장소가 없습니다"
+                  description="스토리의 배경이 되는 주요 장소들을 기록해보세요."
+                />
+              </div>
             ) : (
-              <div className="space-y-2">
-                {places.map((place) => (
-                  <Card
-                    key={place.id}
-                    className="cursor-pointer hover:bg-cloud-50 transition-colors"
-                  >
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="h-5 w-5 text-mocha-500" />
-                        <div>
-                          <p className="font-medium">{place.name}</p>
-                          <p className="text-sm text-muted-foreground">
+              <div className="space-y-4">
+                <h2 className="editorial-section-heading mb-6">
+                  <MapPin className="h-5 w-5 text-primary/70" />
+                  주요 장소
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {places.map((place, idx) => (
+                    <div
+                      key={place.id}
+                      className="editorial-card p-5 hover-lift cursor-pointer group editorial-fade-in"
+                      style={{ animationDelay: `${idx * 60}ms` }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0 group-hover:from-primary/20 group-hover:to-primary/10 transition-all">
+                          <MapPin className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="editorial-name text-base group-hover:text-primary transition-colors">
+                            {place.name}
+                          </h3>
+                          <p className="text-xs text-stone-400 mt-1">
                             {place.type}
                           </p>
+                          <div className="flex items-center gap-1 mt-3">
+                            <span className="text-[10px] text-stone-400 uppercase tracking-wider">
+                              등장
+                            </span>
+                            <div className="flex gap-1">
+                              {place.chapters.map((ch) => (
+                                <span
+                                  key={ch}
+                                  className="text-xs px-1.5 py-0.5 rounded bg-stone-100 text-stone-600"
+                                >
+                                  {ch}장
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        등장: {place.chapters.join(", ")}장
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </TabsContent>
 
         {/* Items */}
-        <TabsContent value="items" className="flex-1 m-0 overflow-y-auto">
-          <div className="p-6 max-w-4xl mx-auto h-full">
+        <TabsContent
+          value="items"
+          className="flex-1 m-0 overflow-y-auto editorial-fade-in"
+        >
+          <div className="p-8 max-w-5xl mx-auto h-full">
             {items.length === 0 ? (
-              <EmptyIndicator
-                icon={Sword}
-                title="등록된 아이템이 없습니다"
-                description="전설의 무기나 중요한 단서가 되는 물건들을 관리해보세요."
-              />
+              <div className="h-full flex items-center justify-center">
+                <EmptyIndicator
+                  icon={Sword}
+                  title="등록된 아이템이 없습니다"
+                  description="전설의 무기나 중요한 단서가 되는 물건들을 관리해보세요."
+                />
+              </div>
             ) : (
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <Card
-                    key={item.id}
-                    className="cursor-pointer hover:bg-cloud-50 transition-colors"
-                  >
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Sword className="h-5 w-5 text-mocha-500" />
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">
+              <div className="space-y-4">
+                <h2 className="editorial-section-heading mb-6">
+                  <Sword className="h-5 w-5 text-primary/70" />
+                  주요 아이템
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {items.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="editorial-card p-5 hover-lift cursor-pointer group editorial-fade-in"
+                      style={{ animationDelay: `${idx * 60}ms` }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center shrink-0 group-hover:from-amber-200 group-hover:to-amber-100 transition-all">
+                          <Sword className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="editorial-name text-base group-hover:text-amber-600 transition-colors">
+                            {item.name}
+                          </h3>
+                          <p className="text-xs text-stone-400 mt-1">
                             {item.type}
                           </p>
+                          <div className="flex items-center gap-2 mt-3">
+                            <span className="text-[10px] text-stone-400 uppercase tracking-wider">
+                              소유자
+                            </span>
+                            <span className="text-xs font-medium text-stone-600">
+                              {item.owner}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        소유: {item.owner}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

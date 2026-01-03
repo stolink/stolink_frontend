@@ -107,9 +107,9 @@ export function AuthCard({
 
   return (
     <Card
-      className={`w-full overflow-hidden bg-white shadow-2xl border-none ${className}`}
+      className={`w-full overflow-hidden bg-white rounded-[2rem] shadow-xl border-none ${className}`}
       style={{
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        boxShadow: "0 25px 50px -12px rgba(61, 48, 42, 0.25)", // Warm Mocha Shadow
       }}
     >
       <div className="flex flex-col md:flex-row min-h-[550px]">
@@ -177,16 +177,16 @@ export function AuthCard({
               }}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-6 h-10 bg-cloud-50/50 p-1 rounded-lg">
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-cloud-50/80 p-1.5 rounded-xl">
                 <TabsTrigger
                   value="login"
-                  className="text-xs font-bold rounded-md data-[state=active]:bg-white data-[state=active]:text-mocha-700 data-[state=active]:shadow-sm transition-all"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   로그인
                 </TabsTrigger>
                 <TabsTrigger
                   value="register"
-                  className="text-xs font-bold rounded-md data-[state=active]:bg-white data-[state=active]:text-mocha-700 data-[state=active]:shadow-sm transition-all"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   회원가입
                 </TabsTrigger>

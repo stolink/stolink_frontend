@@ -2,7 +2,11 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-export type LinguisticMode = "off" | "dialogue" | "adverb-adjective" | "paragraph-length";
+export type LinguisticMode =
+  | "off"
+  | "dialogue"
+  | "adverb-adjective"
+  | "paragraph-length";
 
 export interface LinguisticFocusOptions {
   /**
@@ -60,7 +64,12 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
       cycleLinguisticMode:
         () =>
         ({ commands }) => {
-          const modes: LinguisticMode[] = ["off", "dialogue", "adverb-adjective", "paragraph-length"];
+          const modes: LinguisticMode[] = [
+            "off",
+            "dialogue",
+            "adverb-adjective",
+            "paragraph-length",
+          ];
           const currentIndex = modes.indexOf(this.options.mode);
           const nextIndex = (currentIndex + 1) % modes.length;
           return commands.setLinguisticMode(modes[nextIndex]);
@@ -69,6 +78,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
   },
 
   addProseMirrorPlugins() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const extension = this;
 
     return [
@@ -107,7 +117,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                   decorations.push(
                     Decoration.inline(pos, pos + text.length, {
                       style: `opacity: ${extension.options.dimOpacity}`,
-                    })
+                    }),
                   );
                 } else {
                   // Dim non-dialogue parts
@@ -118,7 +128,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                       decorations.push(
                         Decoration.inline(pos + lastEnd, range.from, {
                           style: `opacity: ${extension.options.dimOpacity}`,
-                        })
+                        }),
                       );
                     }
                     // Highlight dialogue
@@ -126,7 +136,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                       Decoration.inline(range.from, range.to, {
                         class: "linguistic-dialogue",
                         style: "opacity: 1; color: inherit;",
-                      })
+                      }),
                     );
                     lastEnd = range.to - pos;
                   }
@@ -135,7 +145,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                     decorations.push(
                       Decoration.inline(pos + lastEnd, pos + text.length, {
                         style: `opacity: ${extension.options.dimOpacity}`,
-                      })
+                      }),
                     );
                   }
                 }
@@ -153,10 +163,15 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                   let match;
                   while ((match = pattern.exec(text)) !== null) {
                     decorations.push(
-                      Decoration.inline(pos + match.index, pos + match.index + match[0].length, {
-                        class: "linguistic-adverb",
-                        style: "background-color: rgba(239, 68, 68, 0.2); border-radius: 2px;",
-                      })
+                      Decoration.inline(
+                        pos + match.index,
+                        pos + match.index + match[0].length,
+                        {
+                          class: "linguistic-adverb",
+                          style:
+                            "background-color: rgba(239, 68, 68, 0.2); border-radius: 2px;",
+                        },
+                      ),
                     );
                   }
                 }
@@ -167,10 +182,15 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                   let match;
                   while ((match = pattern.exec(text)) !== null) {
                     decorations.push(
-                      Decoration.inline(pos + match.index, pos + match.index + match[0].length, {
-                        class: "linguistic-adjective",
-                        style: "background-color: rgba(59, 130, 246, 0.2); border-radius: 2px;",
-                      })
+                      Decoration.inline(
+                        pos + match.index,
+                        pos + match.index + match[0].length,
+                        {
+                          class: "linguistic-adjective",
+                          style:
+                            "background-color: rgba(59, 130, 246, 0.2); border-radius: 2px;",
+                        },
+                      ),
                     );
                   }
                 }
@@ -196,7 +216,7 @@ export const LinguisticFocus = Extension.create<LinguisticFocusOptions>({
                 decorations.push(
                   Decoration.node(pos, pos + node.nodeSize, {
                     style: `background-color: ${bgColor}; border-radius: 4px;`,
-                  })
+                  }),
                 );
 
                 return false;
