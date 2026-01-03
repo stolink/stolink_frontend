@@ -68,8 +68,8 @@ export function AuthCard({
   });
 
   const onGoogleLogin = () => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
-    const BACKEND_URL = API_URL.replace(/\/api\/?$/, "");
+    const BACKEND_URL =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
     window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
   };
 

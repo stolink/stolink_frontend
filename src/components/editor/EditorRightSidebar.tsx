@@ -46,24 +46,6 @@ export default function EditorRightSidebar({
 }: EditorRightSidebarProps) {
   if (!isOpen) return null;
 
-  // Tab configuration for icon-only display
-  const tabs = [
-    {
-      value: "foreshadowing",
-      icon: Sparkles,
-      label: "복선",
-      tourId: "foreshadowing-panel",
-    },
-    { value: "ai", icon: Bot, label: "AI", tourId: "ai-panel" },
-    {
-      value: "consistency",
-      icon: AlertTriangle,
-      label: "체크",
-      tourId: undefined,
-    },
-    { value: "inspector", icon: Info, label: "정보", tourId: undefined },
-  ] as const;
-
   return (
     <aside className="w-72 border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-hidden animate-in slide-in-from-right duration-300">
       {/* Toggle Button - Left Edge Strip */}
@@ -77,38 +59,48 @@ export default function EditorRightSidebar({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">
-        {/* Header with Tabs - Icon-only with active label */}
-        <div className="px-2 pt-2.5 pb-2 shrink-0 bg-transparent z-10">
+        {/* Header with Tabs - Grid Layout to prevent overflow */}
+        <div className="px-2 pt-3 pb-2 shrink-0 bg-transparent z-10">
           <Tabs
             value={activeTab}
             onValueChange={(v) => onTabChange(v as RightSidebarTab)}
             className="w-full"
           >
-            <TabsList className="flex w-full h-9 bg-mocha-50/50 p-0.5 rounded-lg border border-mocha-100/40 gap-0.5">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.value;
-                return (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className={cn(
-                      "flex-1 h-8 rounded-md transition-all duration-200 flex items-center justify-center gap-1.5",
-                      "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-espresso-800",
-                      "text-mocha-400 hover:text-mocha-500 hover:bg-mocha-100/30",
-                    )}
-                    data-tour={tab.tourId}
-                    title={tab.label}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {isActive && (
-                      <span className="text-[10px] font-semibold tracking-tight">
-                        {tab.label}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                );
-              })}
+            <TabsList className="grid w-full grid-cols-4 h-10 bg-mocha-50/40 p-1 rounded-xl border border-mocha-100/30 backdrop-blur-md">
+              <TabsTrigger
+                value="foreshadowing"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                data-tour="foreshadowing-panel"
+                title="복선 관리"
+              >
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">복선</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="ai"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                data-tour="ai-panel"
+                title="AI 체크봇"
+              >
+                <Bot className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">AI</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="consistency"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                title="일관성 체크"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">체크</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="inspector"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                title="문서 정보"
+              >
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">정보</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
