@@ -31,7 +31,7 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}/api"
-          VITE_BACKEND_URL: "http://${{ vars.CLOUDFRONT_URL_DEV }}"
+          VITE_BACKEND_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}"
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL_DEV }}/media"
 
       - name: Generate version info
