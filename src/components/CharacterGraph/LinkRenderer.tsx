@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number },
+    coords?: { x: number; y: number }
   ) => void;
   onClick?: (link: RelationshipLink) => void;
 }
@@ -46,11 +46,11 @@ export const LinkRenderer = memo(function LinkRenderer({
   // D3 데이터 바인딩
   useEffect(() => {
     if (groupRef.current) {
-      const sel = d3.select(groupRef.current).selectAll("path");
-      sel.datum(link);
+      // [Fix] Bind data to the GROUP element so the parent's optimized tick handler can access it
+      d3.select(groupRef.current).datum(link);
 
-      // Path 'd' attribute is managed by parent index.tsx's tick handler for performance and curvature support.
-      // We only bind data here.
+      // Also bind to paths to ensure child elements have access if needed
+      d3.select(groupRef.current).selectAll("path").datum(link);
     }
   }, [link]);
 
@@ -126,7 +126,9 @@ export const LinkRenderer = memo(function LinkRenderer({
     <g
       ref={groupRef}
       className={
-        onClick ? "cursor-pointer pointer-events-auto" : "pointer-events-none"
+        (onClick
+          ? "cursor-pointer pointer-events-auto"
+          : "pointer-events-none") + " link-group" // Add class for D3 selection
       }
       onClick={(e) => {
         e.stopPropagation();

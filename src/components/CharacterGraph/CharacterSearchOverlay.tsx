@@ -138,7 +138,7 @@ export function CharacterSearchOverlay({
           />
           <Input
             ref={inputRef}
-            placeholder="캐릭터 검색 (초성 지원: ㅈㅂㅈ → 장발장)"
+            placeholder="캐릭터 검색"
             className={cn(
               "pl-10 pr-10 h-[52px] bg-white/80 backdrop-blur-md shadow-sm border-2 border-transparent transition-all duration-300",
               "placeholder:text-muted-foreground/70 text-lg",

@@ -142,18 +142,12 @@ export const CharacterGraph = forwardRef<
       // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
       const relationCounts = calculateRelationCounts(initialLinks);
 
-      // Clear and rebuild character map
-      nodeCharacterMapRef.current.clear();
-
       const nodes = characters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
 
         // Fallback: _id가 null이면 인덱스 기반 임시 ID 사용
         const nodeId = char._id || `temp-node-${index}`;
-
-        // Store mapping for safe lookup in handleNodeClick
-        nodeCharacterMapRef.current.set(nodeId, char);
 
         return {
           id: nodeId,
@@ -167,6 +161,22 @@ export const CharacterGraph = forwardRef<
 
       return nodes;
     }, [characters, initialLinks]);
+
+    // Update node character map separately (fix useMemo side effect)
+    useEffect(() => {
+      nodeCharacterMapRef.current.clear();
+      initialNodes.forEach((node) => {
+        // Find original char by id (fallback to index logic if needed, but id is safest)
+        // Since initialNodes are derived from characters, we can match by ID
+        const originalChar = characters.find(
+          (c) =>
+            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id)
+        );
+        if (originalChar) {
+          nodeCharacterMapRef.current.set(node.id, originalChar);
+        }
+      });
+    }, [initialNodes, characters]);
 
     // [수정 포인트] BFS for Flow Depth & Universal Curvature
     const processedLinks = useMemo(() => {
@@ -392,13 +402,14 @@ export const CharacterGraph = forwardRef<
         frameCount++;
 
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
-        const linkSel = g.selectAll<SVGPathElement, RelationshipLink>(
-          "path[class*='link-path']"
+        // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
+        const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
+          ".link-group"
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
         // 1. 필수 업데이트 - 링크 위치 (매 프레임)
-        linkSel.each(function (d) {
+        linkGroupSel.each(function (d) {
           if (!d) return;
           const source = d.source as unknown as CharacterNode;
           const target = d.target as unknown as CharacterNode;
@@ -438,11 +449,10 @@ export const CharacterGraph = forwardRef<
 
           const pathD = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
 
-          // Select all paths in this link group and update 'd'
-          // This assumes linkSel is selecting the GROUPS, not paths directly
-          // But looking at previous code: linkSel = g.selectAll(".character-link path")??
-          // If linkSel is paths, then 'this' is the path element.
-          d3.select(this).attr("d", pathD);
+          // [Optimized] Apply 'd' attribute to ALL paths within this group at once
+          // This avoids re-calculating the geometry for each layer (shadow, glow, flow, hitbox...)
+          // 'this' refers to the <g> element
+          d3.select(this).selectAll("path").attr("d", pathD);
         });
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)

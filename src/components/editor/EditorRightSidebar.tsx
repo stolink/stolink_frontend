@@ -58,43 +58,43 @@ export default function EditorRightSidebar({
       </button>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header with Tabs */}
-        <div className="h-12 px-2 border-b border-mocha-100/50 flex items-center shrink-0 bg-cloud-50">
+      <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">
+        {/* Header with Tabs - Refined Style */}
+        <div className="h-12 px-2.5 border-b border-mocha-100 flex items-center shrink-0 bg-white/40 sticky top-0 z-10 backdrop-blur-sm">
           <Tabs
             value={activeTab}
             onValueChange={(v) => onTabChange(v as RightSidebarTab)}
             className="flex-1"
           >
-            <TabsList className="grid w-full grid-cols-4 h-8 bg-mocha-100/40 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-4 h-9 bg-mocha-50/80 p-1 rounded-lg border border-mocha-100/20">
               <TabsTrigger
                 value="foreshadowing"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-medium px-1 h-7 rounded-[6px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 data-[state=active]:ring-1 data-[state=active]:ring-black/5 text-mocha-400 transition-all duration-200"
                 data-tour="foreshadowing-panel"
               >
-                <Sparkles className="h-3 w-3 mr-1 text-mocha-500" />
+                <Sparkles className="h-3.5 w-3.5 mr-1.5 opacity-70" />
                 복선
               </TabsTrigger>
               <TabsTrigger
                 value="ai"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-medium px-1 h-7 rounded-[6px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 data-[state=active]:ring-1 data-[state=active]:ring-black/5 text-mocha-400 transition-all duration-200"
                 data-tour="ai-panel"
               >
-                <Bot className="h-3 w-3 mr-1 text-mocha-500" />
-                AI
+                <Bot className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                Check-bot
               </TabsTrigger>
               <TabsTrigger
                 value="consistency"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-medium px-1 h-7 rounded-[6px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 data-[state=active]:ring-1 data-[state=active]:ring-black/5 text-mocha-400 transition-all duration-200"
               >
-                <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                <AlertTriangle className="h-3.5 w-3.5 mr-1.5 opacity-70" />
                 체크
               </TabsTrigger>
               <TabsTrigger
                 value="inspector"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-medium px-1 h-7 rounded-[6px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 data-[state=active]:ring-1 data-[state=active]:ring-black/5 text-mocha-400 transition-all duration-200"
               >
-                <Info className="h-3 w-3 mr-1 text-mocha-400" />
+                <Info className="h-3.5 w-3.5 mr-1.5 opacity-70" />
                 정보
               </TabsTrigger>
             </TabsList>
@@ -105,7 +105,7 @@ export default function EditorRightSidebar({
         <div
           className={cn(
             "flex-1",
-            activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto",
+            activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto"
           )}
         >
           {activeTab === "inspector" && (
