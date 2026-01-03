@@ -113,13 +113,13 @@ export const FocusMode = Extension.create<FocusModeOptions>({
                 decorations.push(
                   Decoration.node(pos, nodeEnd, {
                     class: extension.options.focusedClass,
-                  })
+                  }),
                 );
               } else {
                 decorations.push(
                   Decoration.node(pos, nodeEnd, {
                     class: extension.options.unfocusedClass,
-                  })
+                  }),
                 );
               }
 

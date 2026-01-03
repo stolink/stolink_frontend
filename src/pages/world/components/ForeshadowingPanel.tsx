@@ -2,7 +2,14 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useForeshadowingStore } from "@/stores";
 import type { Foreshadowing } from "@/types";
-import { Sparkles, CheckCircle, MapPin, ArrowRight, Clock, BookMarked } from "lucide-react";
+import {
+  Sparkles,
+  CheckCircle,
+  MapPin,
+  ArrowRight,
+  Clock,
+  BookMarked,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyIndicator } from "./EmptyIndicator";
 
@@ -101,10 +108,12 @@ export function ForeshadowingPanel({
           )}
         >
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              activeStatus === "pending" ? "bg-white/20" : "bg-primary/10"
-            )}>
+            <div
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                activeStatus === "pending" ? "bg-white/20" : "bg-primary/10",
+              )}
+            >
               <Clock
                 className={cn(
                   "w-4 h-4",
@@ -136,14 +145,18 @@ export function ForeshadowingPanel({
           )}
         >
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              activeStatus === "recovered" ? "bg-white/20" : "bg-emerald-50"
-            )}>
+            <div
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                activeStatus === "recovered" ? "bg-white/20" : "bg-emerald-50",
+              )}
+            >
               <CheckCircle
                 className={cn(
                   "w-4 h-4",
-                  activeStatus === "recovered" ? "text-white" : "text-emerald-500",
+                  activeStatus === "recovered"
+                    ? "text-white"
+                    : "text-emerald-500",
                 )}
               />
             </div>
@@ -169,12 +182,16 @@ export function ForeshadowingPanel({
           <div className="editorial-card p-3 bg-white/80">
             <div className="flex items-center justify-between text-xs">
               <span className="text-stone-500">총 복선</span>
-              <span className="font-bold text-stone-800">{allForeshadowings.length}</span>
+              <span className="font-bold text-stone-800">
+                {allForeshadowings.length}
+              </span>
             </div>
             <div className="mt-2 h-1.5 bg-stone-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all"
-                style={{ width: `${allForeshadowings.length > 0 ? (recoveredCount / allForeshadowings.length) * 100 : 0}%` }}
+                style={{
+                  width: `${allForeshadowings.length > 0 ? (recoveredCount / allForeshadowings.length) * 100 : 0}%`,
+                }}
               />
             </div>
           </div>
@@ -248,7 +265,9 @@ export function ForeshadowingPanel({
                           )}
                         />
                       </div>
-                      <h3 className="editorial-name text-base truncate">#{fs.tag}</h3>
+                      <h3 className="editorial-name text-base truncate">
+                        #{fs.tag}
+                      </h3>
                     </div>
                     <div className="flex flex-wrap items-center gap-1 shrink-0">
                       {getImportanceBadge(fs.importance)}
@@ -279,7 +298,9 @@ export function ForeshadowingPanel({
                             appearance.isRecovery &&
                               "border-emerald-100 bg-emerald-50/30",
                           )}
-                          style={{ animationDelay: `${(cardIdx * 60) + (idx * 40)}ms` }}
+                          style={{
+                            animationDelay: `${cardIdx * 60 + idx * 40}ms`,
+                          }}
                           onClick={() => {
                             if (appearance.documentId && onNavigateToSection) {
                               onNavigateToSection(

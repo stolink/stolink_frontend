@@ -23,10 +23,7 @@ export function CharacterAppearances({
               className="timeline-item editorial-fade-in"
               style={{ animationDelay: `${idx * 80}ms` }}
             >
-              <a
-                href="#"
-                className="block editorial-card p-4 hover-lift group"
-              >
+              <a href="#" className="block editorial-card p-4 hover-lift group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-stone-900 group-hover:text-primary transition-colors">

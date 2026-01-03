@@ -12,13 +12,26 @@ interface CharacterRelationshipsProps {
 // 관계 유형에 따른 색상 클래스 결정
 const getRelationshipClass = (relation: string): string => {
   const lowerRelation = relation.toLowerCase();
-  if (lowerRelation.includes("적") || lowerRelation.includes("hostile") || lowerRelation.includes("enemy")) {
+  if (
+    lowerRelation.includes("적") ||
+    lowerRelation.includes("hostile") ||
+    lowerRelation.includes("enemy")
+  ) {
     return "relationship-hostile";
   }
-  if (lowerRelation.includes("연인") || lowerRelation.includes("romantic") || lowerRelation.includes("love")) {
+  if (
+    lowerRelation.includes("연인") ||
+    lowerRelation.includes("romantic") ||
+    lowerRelation.includes("love")
+  ) {
     return "relationship-romantic";
   }
-  if (lowerRelation.includes("친구") || lowerRelation.includes("동료") || lowerRelation.includes("friendly") || lowerRelation.includes("ally")) {
+  if (
+    lowerRelation.includes("친구") ||
+    lowerRelation.includes("동료") ||
+    lowerRelation.includes("friendly") ||
+    lowerRelation.includes("ally")
+  ) {
     return "relationship-friendly";
   }
   return "";

@@ -58,11 +58,11 @@ function transformBackendCharacter(backendChar: any): Character {
   const aliases = safeParse(backendChar.aliases, backendChar.aliasesJson || []);
   const appearance = safeParse(
     backendChar.appearance,
-    backendChar.appearanceJson || {}
+    backendChar.appearanceJson || {},
   );
   const personality = safeParse(
     backendChar.personality,
-    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] }
+    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
   // 🆕 백엔드 relationships 배열을 relations.graph로 매핑
@@ -154,7 +154,7 @@ export const characterService = {
   getAll: async (projectId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
-      `/projects/${projectId}/characters`
+      `/projects/${projectId}/characters`,
     );
 
     // Transform backend response to frontend type
@@ -178,7 +178,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.post<ApiResponse<any>>(
       `/projects/${projectId}/characters`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -190,7 +190,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.patch<ApiResponse<any>>(
       `/characters/${id}`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -205,7 +205,7 @@ export const characterService = {
 
   regenerateImage: async (id: string) => {
     const response = await api.post<ApiResponse<{ jobId: string }>>(
-      `/characters/${id}/regenerate`
+      `/characters/${id}/regenerate`,
     );
     return response.data;
   },

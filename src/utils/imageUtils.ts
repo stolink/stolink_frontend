@@ -3,7 +3,7 @@
  * In development environment (Docker), it replaces internal 'minio' hostname with 'localhost'.
  */
 export const resolveImageUrl = (
-  url: string | undefined | null
+  url: string | undefined | null,
 ): string | undefined => {
   if (!url) return undefined;
 

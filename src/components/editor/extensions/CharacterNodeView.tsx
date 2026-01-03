@@ -12,7 +12,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
 
   // Find character data from DEMO_CHARACTERS (new schema: _id, profile.name)
   const character = DEMO_CHARACTERS.find(
-    (c) => c._id === id || c.profile?.name === label
+    (c) => c._id === id || c.profile?.name === label,
   );
 
   // Find item data from DEMO_ITEMS (if not a character)

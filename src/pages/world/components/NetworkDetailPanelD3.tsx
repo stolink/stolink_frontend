@@ -1,4 +1,13 @@
-import { X, Users, BookOpen, User, Heart, Skull, Network, TrendingUp } from "lucide-react";
+import {
+  X,
+  Users,
+  BookOpen,
+  User,
+  Heart,
+  Skull,
+  Network,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -69,7 +78,10 @@ export function NetworkDetailPanelD3({
       {/* Editorial Header */}
       <div className="p-6 bg-gradient-to-br from-white/90 to-cloud-50/90 border-b border-stone-100/50">
         <div className="flex items-start justify-between mb-5">
-          <Badge variant="outline" className={cn("text-xs font-medium", roleColor)}>
+          <Badge
+            variant="outline"
+            className={cn("text-xs font-medium", roleColor)}
+          >
             {roleLabel}
           </Badge>
           <Button
@@ -131,7 +143,9 @@ export function NetworkDetailPanelD3({
               <TrendingUp className="h-4 w-4 text-amber-500/60" />
               <span className="editorial-label">등장</span>
             </div>
-            <div className="text-2xl font-bold text-stone-800 editorial-name">-</div>
+            <div className="text-2xl font-bold text-stone-800 editorial-name">
+              -
+            </div>
           </div>
         </div>
       </div>
@@ -203,7 +217,9 @@ export function NetworkDetailPanelD3({
           ) : (
             <div className="editorial-empty-state py-8">
               <Users className="editorial-empty-state-icon h-8 w-8" />
-              <p className="editorial-empty-state-title text-sm">연결된 인물 없음</p>
+              <p className="editorial-empty-state-title text-sm">
+                연결된 인물 없음
+              </p>
               <p className="editorial-empty-state-description text-xs">
                 이 캐릭터와 연결된 관계가 없습니다.
               </p>

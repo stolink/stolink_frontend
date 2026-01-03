@@ -68,7 +68,9 @@ export function CharacterTraits({
       ) : (
         <div className="editorial-empty-state py-8">
           <Heart className="editorial-empty-state-icon h-10 w-10" />
-          <p className="editorial-empty-state-title text-base">성격 특성 없음</p>
+          <p className="editorial-empty-state-title text-base">
+            성격 특성 없음
+          </p>
           <p className="editorial-empty-state-description text-sm">
             캐릭터의 성격을 정의하는 특성을 추가해보세요.
           </p>
