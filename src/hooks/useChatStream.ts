@@ -55,15 +55,7 @@ interface UseChatStreamOptions {
  * ```
  */
 export function useChatStream(options?: UseChatStreamOptions) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "안녕하세요! 작품에 대해 질문해주세요. 캐릭터, 복선, 스토리 흐름 등 무엇이든 도와드릴게요.",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentSources, setCurrentSources] = useState<SourceChunk[]>([]);
@@ -169,7 +161,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   setCurrentSources([]);
                 } else if (data.type === "error") {
                   throw new Error(
-                    data.error || "알 수 없는 오류가 발생했습니다.",
+                    data.error || "알 수 없는 오류가 발생했습니다."
                   );
                 }
               } catch (parseError) {
@@ -217,7 +209,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         abortControllerRef.current = null;
       }
     },
-    [streaming, options, sessionId],
+    [streaming, options, sessionId]
   );
 
   const cancelStream = useCallback(async () => {
@@ -242,15 +234,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
   const resetSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content:
-          "안녕하세요! 작품에 대해 질문해주세요. 캐릭터, 복선, 스토리 흐름 등 무엇이든 도와드릴게요.",
-        timestamp: new Date(),
-      },
-    ]);
+    setMessages([]);
   }, []);
 
   return {

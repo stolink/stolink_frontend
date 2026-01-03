@@ -58,44 +58,48 @@ export default function EditorRightSidebar({
       </button>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header with Tabs */}
-        <div className="h-12 px-2 border-b border-mocha-100/50 flex items-center shrink-0 bg-cloud-50">
+      <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">
+        {/* Header with Tabs - Grid Layout to prevent overflow */}
+        <div className="px-2 pt-3 pb-2 shrink-0 bg-transparent z-10">
           <Tabs
             value={activeTab}
             onValueChange={(v) => onTabChange(v as RightSidebarTab)}
-            className="flex-1"
+            className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-4 h-8 bg-mocha-100/40 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-4 h-10 bg-mocha-50/40 p-1 rounded-xl border border-mocha-100/30 backdrop-blur-md">
               <TabsTrigger
                 value="foreshadowing"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 data-tour="foreshadowing-panel"
+                title="복선 관리"
               >
-                <Sparkles className="h-3 w-3 mr-1 text-mocha-500" />
-                복선
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">복선</span>
               </TabsTrigger>
               <TabsTrigger
                 value="ai"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 data-tour="ai-panel"
+                title="AI 체크봇"
               >
-                <Bot className="h-3 w-3 mr-1 text-mocha-500" />
-                AI
+                <Bot className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">AI</span>
               </TabsTrigger>
               <TabsTrigger
                 value="consistency"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                title="일관성 체크"
               >
-                <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
-                체크
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">체크</span>
               </TabsTrigger>
               <TabsTrigger
                 value="inspector"
-                className="text-[11px] px-1.5 h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 transition-all"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                title="문서 정보"
               >
-                <Info className="h-3 w-3 mr-1 text-mocha-400" />
-                정보
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">정보</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>

@@ -99,7 +99,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -341,8 +341,8 @@ export default function WorldPage() {
   return (
     <div className="h-full w-full flex flex-col bg-stone-50">
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
-        {/* Floating Glass Header */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0">
+        {/* Floating Glass Header - Fixed to Global Header Area */}
+        <div className="fixed top-1 left-1/2 -translate-x-1/2 z-[60] px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0 scale-[0.8] origin-top">
           {/* Tab Navigation - Pill Style with borders */}
           <TabsList className="bg-transparent p-0 h-auto gap-1">
             <TabsTrigger
@@ -709,13 +709,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source,
+              selectedRelationship?.source
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source,
+                selectedRelationship?.source
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -724,13 +724,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target,
+              selectedRelationship?.target
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target,
+                selectedRelationship?.target
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target
