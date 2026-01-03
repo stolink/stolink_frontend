@@ -1,9 +1,22 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, Square, Trash2, FileText, Sparkles } from "lucide-react";
+import {
+  Send,
+  Square,
+  RotateCcw,
+  Sparkles,
+  Network,
+  Quote,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useChatStream, type SourceChunk } from "@/hooks/useChatStream";
+import {
+  useChatStream,
+  type SourceChunk,
+  type ChatMessage,
+} from "@/hooks/useChatStream";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AIAssistantPanelProps {
@@ -55,147 +68,150 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-cloud-50 relative font-sans">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-mocha-100/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col select-none cursor-default py-1">
-            <span className="text-xl font-serif font-bold tracking-tight text-espresso-900 leading-tight">
+    <div className="flex flex-col h-full bg-[#FBFBF9] relative font-sans overflow-hidden">
+      {/* Header with refined Identity */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-mocha-100/40 bg-white/60 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
+        <div className="flex flex-col select-none cursor-default group">
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-display font-bold tracking-tight text-espresso-900 leading-none">
               Check
             </span>
-            <div className="flex items-center gap-2 ml-0.5 -mt-0.5">
-              <div className="h-[1px] w-3 bg-mocha-200" />
-              <span className="text-[9px] font-sans font-black tracking-[0.3em] text-mocha-400 uppercase leading-none">
-                bot
-              </span>
-            </div>
+            <span className="text-xs font-sans font-black tracking-[0.2em] text-mocha-400 uppercase leading-none opacity-80 group-hover:text-mocha-600 transition-colors">
+              bot
+            </span>
           </div>
+          <div className="mt-1.5 h-[3px] w-6 bg-mocha-200 group-hover:w-10 transition-all duration-500 rounded-full" />
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={resetSession}
-          className="h-8 w-8 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50/50 transition-colors"
-          title="대화 초기화"
+          className="h-9 w-9 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-xl"
+          title="새 대화 시작"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <RotateCcw className="h-4.5 w-4.5" />
         </Button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 scrollbar-thin scrollbar-thumb-mocha-100 scrollbar-track-transparent">
         <AnimatePresence mode="wait">
           {messages.length === 0 ? (
             <motion.div
               key="empty-state"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center h-full text-center p-4"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="flex flex-col items-center justify-center h-full text-center p-8"
             >
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.4, 0.8, 0.4],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="w-16 h-16 rounded-full bg-mocha-100/40 flex items-center justify-center mb-6 relative"
-              >
-                <div className="absolute inset-0 rounded-full border border-mocha-200/30 animate-ping [animation-duration:4s]" />
-                <Sparkles className="h-6 w-6 text-mocha-400" />
-              </motion.div>
-              <motion.p
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="text-base text-espresso-900 font-sans font-medium tracking-tight mb-2"
-              >
-                무엇이 궁금하신가요?
-              </motion.p>
-              <p className="text-xs text-mocha-400/80 font-sans tracking-tight">
-                작품의 세계관, 인물, 스토리에 대해 자유롭게 대화하세요.
+              <div className="relative mb-8">
+                <motion.div
+                  animate={{
+                    rotate: 360,
+                  }}
+                  transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="absolute inset-0 opacity-10"
+                >
+                  <Network className="w-24 h-24 text-mocha-400" />
+                </motion.div>
+                <div className="w-20 h-20 rounded-2xl bg-mocha-50 flex items-center justify-center relative z-10 shadow-paper">
+                  <Sparkles className="h-8 w-8 text-mocha-500" />
+                </div>
+              </div>
+              <h3 className="text-xl font-display text-espresso-900 mb-2">
+                지적 여정을 시작하세요
+              </h3>
+              <p className="text-sm text-mocha-400 font-sans max-w-[240px] leading-relaxed">
+                GraphRAG 기반의 Check-Bot이 책의 방대한 맥락을 연결하여
+                답해드립니다.
               </p>
             </motion.div>
           ) : (
-            <div key="message-list" className="space-y-6">
+            <div key="message-list" className="space-y-10">
               {messages.map((message) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={message.id}
-                  className={cn(
-                    "flex flex-col gap-1 max-w-[92%]",
-                    message.role === "user"
-                      ? "ml-auto items-end"
-                      : "mr-auto items-start"
-                  )}
-                >
-                  {/* Role Header (Assistant only) */}
-                  {message.role === "assistant" && (
-                    <span className="text-[10px] font-sans tracking-widest text-mocha-400 ml-1 mb-0.5 font-bold uppercase">
-                      check-bot
-                    </span>
-                  )}
-
-                  <div
-                    className={cn(
-                      "px-4 py-3 text-[0.93rem] leading-7 shadow-sm transition-all",
-                      message.role === "user"
-                        ? "bg-mocha-600 text-white rounded-2xl rounded-tr-sm shadow-mocha-900/10"
-                        : "bg-white border border-mocha-100/60 text-espresso-900 rounded-2xl rounded-tl-sm"
-                    )}
-                  >
-                    <p className="whitespace-pre-wrap font-sans font-normal tracking-wide">
-                      {message.content}
-                    </p>
-
-                    {/* Citations inside bubble */}
-                    {message.role === "assistant" &&
-                      message.sources &&
-                      message.sources.length > 0 && (
-                        <SourceList sources={message.sources} />
-                      )}
-                  </div>
-                </motion.div>
+                <MessageBubble key={message.id} message={message} />
               ))}
 
               {/* Streaming Response */}
-              {streaming && (
-                <div className="flex flex-col gap-1 max-w-[92%] mr-auto items-start">
-                  <span className="text-[10px] font-sans tracking-widest text-mocha-400 ml-1 mb-0.5 font-bold uppercase">
-                    check-bot
-                  </span>
-                  <div className="bg-white border border-mocha-100/60 text-espresso-900 rounded-2xl rounded-tl-sm px-4 py-3 text-[0.93rem] leading-7 shadow-sm">
-                    <p className="whitespace-pre-wrap font-sans font-normal tracking-wide">
+              {streaming && currentResponse && (
+                <div className="flex flex-col gap-3 mr-auto items-start max-w-[95%]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-px w-4 bg-mocha-100" />
+                    <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase">
+                      check-bot
+                    </span>
+                  </div>
+                  <div className="bg-white border border-mocha-100/50 text-espresso-900 rounded-2xl shadow-paper p-5 w-full">
+                    <div className="text-[0.95rem] leading-[1.8] font-sans font-normal tracking-normal whitespace-pre-wrap">
                       {currentResponse}
-                      <span className="inline-block w-1.5 h-4 bg-mocha-500 align-middle ml-1 animate-pulse rounded-sm" />
-                    </p>
-
+                      <motion.span
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 0.8, repeat: Infinity }}
+                        className="inline-block w-1.5 h-4 bg-mocha-400 align-middle ml-1 rounded-sm"
+                      />
+                    </div>
                     {currentSources.length > 0 && (
-                      <SourceList sources={currentSources} />
+                      <div className="mt-6 pt-6 border-t border-mocha-100/30">
+                        <SourceList sources={currentSources} />
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Loading (Thinking) */}
+              {/* Generative Loading State */}
               {streaming && !currentResponse && (
-                <div className="flex flex-col gap-1 max-w-[92%] mr-auto items-start">
-                  <span className="text-[10px] font-sans tracking-widest text-mocha-400 ml-1 mb-0.5 font-bold uppercase">
-                    check-bot
-                  </span>
-                  <div className="bg-white border border-mocha-100/60 rounded-2xl rounded-tl-sm px-4 py-4 shadow-sm">
-                    <div className="flex gap-2 items-center h-4">
-                      <div className="w-1.5 h-1.5 rounded-full bg-mocha-200 animate-bounce [animation-delay:-0.3s]" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-mocha-200 animate-bounce [animation-delay:-0.15s]" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-mocha-200 animate-bounce" />
+                <div className="flex flex-col gap-3 mr-auto items-start">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-px w-4 bg-mocha-100" />
+                    <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase">
+                      analyzing graph
+                    </span>
+                  </div>
+                  <div className="bg-white border border-mocha-100/50 rounded-2xl p-6 shadow-paper">
+                    <div className="flex gap-3 items-center">
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.3, 0.7, 0.3],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        className="w-2 h-2 rounded-full bg-mocha-400"
+                      />
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.3, 0.7, 0.3],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 0.3,
+                        }}
+                        className="w-2 h-2 rounded-full bg-mocha-300"
+                      />
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.3, 0.7, 0.3],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 0.6,
+                        }}
+                        className="w-2 h-2 rounded-full bg-mocha-200"
+                      />
                     </div>
                   </div>
                 </div>
@@ -203,39 +219,40 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
             </div>
           )}
         </AnimatePresence>
-
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 pt-0">
-        <div className="relative group transition-all">
+      {/* Input Area - Marginalia Style */}
+      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-[#FBFBF9] via-[#FBFBF9] to-transparent">
+        <div className="relative group transition-all duration-300">
           <Textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              projectId ? "작품에 대해 질문하세요" : "프로젝트를 선택해주세요"
+              projectId
+                ? "책의 이음새에 대해 무엇을 물어볼까요?"
+                : "프로젝트를 선택해주세요"
             }
             disabled={streaming || !projectId}
-            className="min-h-[56px] max-h-[160px] w-full resize-none border border-mocha-100/80 bg-white p-4 pr-12 text-[0.93rem] rounded-xl shadow-sm focus:ring-1 focus:ring-mocha-300 focus:border-mocha-300 transition-all placeholder:text-mocha-300/60 font-sans"
+            className="min-h-[64px] max-h-[160px] w-full resize-none border-mocha-200/60 bg-white/80 p-5 pr-14 text-[0.95rem] rounded-2xl shadow-paper focus:ring-2 focus:ring-mocha-100 focus:border-mocha-300 backdrop-blur-sm transition-all placeholder:text-mocha-300/80 font-serif italic"
             rows={1}
             style={{
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
           />
-          <div className="absolute right-2 bottom-2">
+          <div className="absolute right-3 bottom-3">
             {streaming ? (
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
                 onClick={cancelStream}
-                className="h-10 w-10 text-mocha-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300"
               >
-                <Square className="h-4 w-4 fill-current" />
+                <Square className="h-4.5 w-4.5 fill-current animate-pulse" />
               </Button>
             ) : (
               <Button
@@ -243,13 +260,18 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                 size="icon"
                 disabled={!input.trim() || !projectId}
                 className={cn(
-                  "h-9 w-9 rounded-lg transition-all duration-300 flex items-center justify-center",
+                  "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
                   input.trim()
-                    ? "bg-mocha-600 text-white shadow-mocha-500/20 shadow-lg hover:bg-mocha-700"
-                    : "bg-mocha-50 text-mocha-200 border-mocha-100/50"
+                    ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
+                    : "bg-white border-mocha-100 text-mocha-200",
                 )}
               >
-                <Send className="h-4 w-4" />
+                <Send
+                  className={cn(
+                    "h-4.5 w-4.5 transition-transform duration-300",
+                    input.trim() && "translate-x-0.5 -translate-y-0.5",
+                  )}
+                />
               </Button>
             )}
           </div>
@@ -260,7 +282,60 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
 }
 
 /**
- * RAG 검색 출처 목록 컴포넌트 (Perplexity Style / Accordion)
+ * Message Bubble component with Serif/Sans pairing
+ */
+function MessageBubble({ message }: { message: ChatMessage }) {
+  const isUser = message.role === "user";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "flex flex-col gap-3 w-full",
+        isUser ? "items-end" : "items-start",
+      )}
+    >
+      {/* Label */}
+      <div
+        className={cn(
+          "flex items-center gap-2 mb-1",
+          isUser ? "flex-row-reverse" : "flex-row",
+        )}
+      >
+        <div className="h-px w-4 bg-mocha-100" />
+        <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase text-opacity-80">
+          {isUser ? "Reader's Thought" : "Check-bot"}
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          "max-w-[95%] p-5 transition-all duration-300 relative",
+          isUser
+            ? "text-espresso-800 font-serif italic text-lg leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
+            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
+        )}
+      >
+        {!isUser && (
+          <div className="absolute -left-1 -top-1">
+            <Quote className="w-4 h-4 text-mocha-100 opacity-50" />
+          </div>
+        )}
+        <div className="whitespace-pre-wrap">{message.content}</div>
+
+        {!isUser && message.sources && message.sources.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-mocha-100/30">
+            <SourceList sources={message.sources} />
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * RAG Source List with structural connectivity
  */
 function SourceList({ sources }: { sources: SourceChunk[] }) {
   const [expanded, setExpanded] = useState(false);
@@ -268,18 +343,23 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
   if (!sources || sources.length === 0) return null;
 
   return (
-    <div className="mt-3 pt-3 border-t border-mocha-100/50 font-sans">
+    <div className="font-sans">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-[11px] bg-mocha-50/50 hover:bg-mocha-100/50 text-mocha-700 font-medium px-2.5 py-1.5 rounded-md transition-colors group"
+        className="group flex items-center gap-3 text-[11px] font-bold text-mocha-400 hover:text-mocha-600 transition-colors"
       >
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="h-3 w-3 text-mocha-500" />
-          <span>{sources.length}개의 문서를 참조함</span>
+        <div className="flex items-center justify-center p-1.5 rounded-lg bg-mocha-50/50 group-hover:bg-mocha-100/50 transition-colors">
+          <Network className="h-3 w-3" />
         </div>
-        <div className="text-mocha-400 group-hover:text-mocha-600 font-normal">
-          {expanded ? "접기" : "펼치기"}
-        </div>
+        <span className="uppercase tracking-[0.1em]">
+          {sources.length} Connected Contexts
+        </span>
+        <div className="flex-1 h-px bg-mocha-50" />
+        {expanded ? (
+          <ChevronUp className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
       </button>
 
       <AnimatePresence>
@@ -288,24 +368,30 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="mt-2 space-y-2 overflow-hidden"
+            className="mt-6 space-y-6 overflow-hidden pl-2"
           >
             {sources.map((source, idx) => (
               <div
                 key={source.chunk_uuid}
-                className="group flex flex-col gap-1 text-[11px] bg-cloud-50/80 border border-mocha-100/40 rounded-lg p-2.5 hover:bg-white hover:border-mocha-200/60 hover:shadow-sm transition-all"
+                className="relative pl-6 group/source"
               >
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-mocha-100 text-[9px] font-bold text-mocha-600 shrink-0">
-                    {idx + 1}
-                  </span>
-                  <span className="font-semibold text-espresso-800 truncate">
-                    {source.metadata?.document_title || "제목 없는 문서"}
-                  </span>
+                {/* Vertical Line */}
+                <div className="absolute left-[7.5px] top-[14px] bottom-[-24px] w-px bg-mocha-100 last:bottom-0 group-last/source:hidden" />
+                {/* Node */}
+                <div className="absolute left-0 top-1 w-4 h-4 rounded-full border border-mocha-100 bg-white flex items-center justify-center z-10 shadow-sm transition-transform group-hover/source:scale-110">
+                  <div className="w-1.5 h-1.5 rounded-full bg-mocha-400 group-hover/source:bg-sage-600 transition-colors" />
                 </div>
 
-                <div className="pl-6 text-espresso-600 leading-relaxed line-clamp-2">
-                  "{source.content}"
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-mocha-300 uppercase tracking-tighter">
+                    Source {idx + 1}
+                  </span>
+                  <span className="text-xs font-bold text-espresso-800 leading-tight">
+                    {source.metadata?.document_title || "Untitled Fragment"}
+                  </span>
+                  <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic">
+                    "{source.content}"
+                  </div>
                 </div>
               </div>
             ))}

@@ -68,12 +68,6 @@ export const NodeRenderer = memo(function NodeRenderer({
     return truncateName(node.name, maxLen);
   }, [node.name, isImportant]);
 
-  // 라벨 크기 추정 (pill 배경용)
-  const estimatedLabelWidth = useMemo(() => {
-    const charWidth = isImportant ? 14 : 8;
-    return displayName.length * charWidth + 16;
-  }, [displayName, isImportant]);
-
   // Initial-based avatar (이미지 없는 노드용)
   const initial = getInitial(node.name);
   const gradient = ROLE_GRADIENTS[node.role || "other"] || ROLE_GRADIENTS.other;
@@ -213,46 +207,29 @@ export const NodeRenderer = memo(function NodeRenderer({
         </>
       )}
 
-      {/* 이름 라벨 - Pill 배경 + 줌 반응형 */}
+      {/* 이름 라벨 - Minimalist Serif style */}
       {showLabel && (
         <g
-          transform={`translate(0, ${radius + (isImportant ? 24 : 14)})`}
+          transform={`translate(0, ${radius + (isImportant ? 20 : 12)})`}
           style={{
             opacity: labelOpacity,
             transition: "opacity 200ms ease-out",
           }}
         >
-          {/* Pill 배경 */}
-          <rect
-            x={-estimatedLabelWidth / 2}
-            y={-10}
-            width={estimatedLabelWidth}
-            height={isImportant ? 26 : 20}
-            rx={isImportant ? 13 : 10}
-            fill="white"
-            fillOpacity={0.92}
-            stroke={roleColor}
-            strokeWidth={1}
-            strokeOpacity={0.3}
-            style={{
-              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.08))",
-            }}
-          />
-          {/* 라벨 텍스트 */}
           <text
             textAnchor="middle"
             dominantBaseline="central"
-            y={isImportant ? 3 : 0}
-            fontSize={isImportant ? 16 : 12}
+            fontSize={Math.max(16, radius * 0.38 + 4)}
             fontWeight={isImportant ? 700 : 500}
-            fontFamily="'Pretendard', 'Noto Sans KR', system-ui, sans-serif"
-            fill={isSelected ? "#5F7D5F" : "#3D3A38"}
+            fontFamily="'DM Serif Display', serif"
+            fill="#3D302A"
             style={{
               userSelect: "none",
-              letterSpacing: "-0.01em",
+              textShadow:
+                "0 1px 4px rgba(255,255,255,0.8), 0 0 2px rgba(255,255,255,0.4)",
             }}
           >
-            {displayName}
+            {node.name}
           </text>
         </g>
       )}
