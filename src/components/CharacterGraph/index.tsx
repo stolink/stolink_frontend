@@ -159,6 +159,7 @@ export const CharacterGraph = forwardRef<
           group: factionName,
           imageUrl: char.imageUrl, // Map imageUrl from character conversion
           relationCount: relationCounts[char._id] || 0,
+          status: char.status, // 캐릭터 상태 (alive, dead, unknown 등)
         };
       });
 

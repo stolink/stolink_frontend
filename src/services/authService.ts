@@ -11,8 +11,7 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
+  expiresIn: number; // 초 단위
 }
 
 export const authService = {
@@ -41,12 +40,10 @@ export const authService = {
     return response.data;
   },
 
-  refresh: async (refreshToken?: string) => {
-    // refreshToken이 없으면 빈 문자열이라도 보내서 백엔드의 @RequestBody 검증 통과 유도
-    // null보다는 ""가 서버측 null 체크나 타입 파싱에서 더 안전함
-    const response = await api.post<
-      ApiResponse<{ accessToken: string; refreshToken: string }>
-    >("/auth/refresh", { refreshToken: refreshToken || "" });
+  refresh: async () => {
+    // 쿠키 기반 - body 없이 POST (쿠키 자동 전송)
+    const response =
+      await api.post<ApiResponse<{ expiresIn: number }>>("/auth/refresh");
     return response.data;
   },
 

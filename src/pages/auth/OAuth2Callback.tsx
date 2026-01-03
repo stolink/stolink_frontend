@@ -6,7 +6,6 @@ import { authService } from "@/services/authService";
 export default function OAuth2Callback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const updateTokens = useAuthStore((state) => state.updateTokens);
   const setUser = useAuthStore((state) => state.setUser);
 
   // React.StrictMode에서 두 번 실행 방지
@@ -14,41 +13,36 @@ export default function OAuth2Callback() {
 
   useEffect(() => {
     if (processedRef.current) return;
+    processedRef.current = true;
 
     const processLogin = async () => {
-      const accessToken = searchParams.get("accessToken");
-      const refreshToken = searchParams.get("refreshToken"); // 혹시 URL로 올 수도 있음
+      const success = searchParams.get("success");
+      const error = searchParams.get("error");
 
-      if (accessToken) {
-        processedRef.current = true;
-
+      if (success === "true") {
+        // 성공 → 사용자 정보 조회
         try {
-          // 1. 토큰 저장 (Refresh Token은 쿠키에 있거나 URL에 있음)
-          // URL에 refreshToken이 없으면 빈 문자열 (쿠키 사용)
-          updateTokens(accessToken, refreshToken || "");
-
-          // 2. 사용자 정보 가져오기
-          // (client interceptor가 방금 저장한 accessToken을 헤더에 넣음)
           const userResponse = await authService.getMe();
-
-          // 3. 최종 로그인 상태 설정
-          setUser(userResponse.data, accessToken);
-
-          // 4. 메인으로 이동 (replace: true로 히스토리에서 토큰 URL 제거)
+          setUser(userResponse.data);
           navigate("/library", { replace: true });
-        } catch (error) {
-          console.error("OAuth2 Login Failed:", error);
+        } catch (err) {
+          console.error("OAuth2 Login Failed:", err);
           navigate("/auth?error=oauth_failed", { replace: true });
         }
+      } else if (error === "login_required") {
+        // 구글에 로그인 안 됨 → 일반 로그인으로 안내
+        navigate("/auth?message=google_login_required", { replace: true });
+      } else if (error) {
+        // 기타 에러
+        navigate(`/auth?error=${error}`, { replace: true });
       } else {
-        // 토큰이 없으면 로그인 실패 처리
-        console.error("No access token found in URL");
-        navigate("/auth?error=no_token", { replace: true });
+        // success도 error도 없는 경우
+        navigate("/auth?error=unknown", { replace: true });
       }
     };
 
     processLogin();
-  }, [searchParams, navigate, updateTokens, setUser]);
+  }, [searchParams, navigate, setUser]);
 
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">

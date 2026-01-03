@@ -1,6 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/stores";
-import { tokenRefreshManager } from "./tokenRefreshManager";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -11,23 +10,19 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: true, // 쿠키 자동 전송
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor: Add Authorization header and X-User-Id
+// Request interceptor: X-User-Id 추가 (선택적)
 api.interceptors.request.use(
   (config) => {
-    const { user, accessToken } = useAuthStore.getState();
+    const { user } = useAuthStore.getState();
 
-    // 1. Access Token이 있다면 Authorization 헤더 우선 사용
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    // 2. 토큰이 없고 User ID가 있다면 X-User-Id 사용 (레거시 대응용)
-    else if (user?.id) {
+    // User ID가 있다면 X-User-Id 헤더 사용 (레거시 대응용)
+    if (user?.id) {
       config.headers["X-User-Id"] = user.id;
     }
 
@@ -36,7 +31,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor: Handle 401 with token refresh
+// Response interceptor: 401 시 토큰 재발급 시도
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -57,15 +52,12 @@ api.interceptors.response.use(
       }
 
       try {
-        // 토큰 재발급 시도 (Mutex 패턴으로 동시 요청 처리)
-        const newToken = await tokenRefreshManager.refreshToken();
-
-        // 새 토큰으로 원래 요청 재시도
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        // 토큰 재발급 시도 (쿠키 자동 전송)
+        await api.post("/auth/refresh");
+        // 새 토큰은 쿠키에 자동 설정됨, 원래 요청 재시도
         return api(originalRequest);
       } catch (refreshError) {
         // 토큰 재발급 실패 시 로그아웃
-        tokenRefreshManager.reset();
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }
