@@ -7,10 +7,10 @@ import { RELATION_PALETTE } from "./constants";
  * Character extras['관계']에서 RelationshipLink 배열 생성 (레거시 데이터 지원용)
  */
 export function generateLinksFromCharacters(
-  characters: Character[]
+  characters: Character[],
 ): RelationshipLink[] {
   console.warn(
-    "generateLinksFromCharacters is deprecated. Use extractRelationshipLinks from @/utils/relationshipMapper instead."
+    "generateLinksFromCharacters is deprecated. Use extractRelationshipLinks from @/utils/relationshipMapper instead.",
   );
   const links: RelationshipLink[] = [];
   const linkSet = new Set<string>();
@@ -43,7 +43,7 @@ export function generateLinksFromCharacters(
       const targetId = rel.target;
 
       const targetChar = characters.find(
-        (c) => c._id === targetId || c.profile?.name === targetId
+        (c) => c._id === targetId || c.profile?.name === targetId,
       );
 
       if (targetChar) {
@@ -76,7 +76,7 @@ export function generateLinksFromCharacters(
  * 링크 목록을 기반으로 각 캐릭터의 관계 수(차수, Degree Centrality)를 계산합니다.
  */
 export function calculateRelationCounts(
-  links: RelationshipLink[]
+  links: RelationshipLink[],
 ): Record<string, number> {
   const counts: Record<string, number> = {};
 
@@ -100,7 +100,7 @@ export function calculateRelationCounts(
 export function getRelationshipColor(
   type: RelationType,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _strength: number
+  _strength: number,
 ): string {
   const palette = RELATION_PALETTE[type];
   if (!palette) return "#9ca3af"; // Default gray
@@ -108,3 +108,108 @@ export function getRelationshipColor(
   // Unified color (Strength ignored per user request)
   return palette.standard;
 }
+
+// =====================================================
+// 🔍 검색 유틸리티 (초성 검색 지원)
+// =====================================================
+
+/** 한글 초성 배열 */
+const CHOSUNG = [
+  "ㄱ",
+  "ㄲ",
+  "ㄴ",
+  "ㄷ",
+  "ㄸ",
+  "ㄹ",
+  "ㅁ",
+  "ㅂ",
+  "ㅃ",
+  "ㅅ",
+  "ㅆ",
+  "ㅇ",
+  "ㅈ",
+  "ㅉ",
+  "ㅊ",
+  "ㅋ",
+  "ㅌ",
+  "ㅍ",
+  "ㅎ",
+];
+
+/**
+ * 한글 문자열에서 초성만 추출합니다.
+ * 예: "장발장" → "ㅈㅂㅈ"
+ */
+export function getChosung(str: string): string {
+  return str
+    .split("")
+    .map((char) => {
+      const code = char.charCodeAt(0) - 44032;
+      // 한글 범위가 아니면 원문자 반환
+      if (code < 0 || code > 11171) return char;
+      return CHOSUNG[Math.floor(code / 588)];
+    })
+    .join("");
+}
+
+/**
+ * Fuzzy 검색 + 초성 검색을 지원하는 매칭 함수
+ * @param name 검색 대상 이름
+ * @param query 검색어
+ * @returns 매칭 여부
+ */
+export function matchesSearch(name: string, query: string): boolean {
+  if (!query.trim()) return true;
+
+  const lowerName = name.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+
+  // 1. 일반 포함 검색
+  if (lowerName.includes(lowerQuery)) return true;
+
+  // 2. 초성 검색 (query가 한글인 경우)
+  const nameChosung = getChosung(name);
+  const queryChosung = getChosung(query);
+  if (nameChosung.includes(queryChosung)) return true;
+
+  return false;
+}
+
+// =====================================================
+// 👤 아바타 유틸리티
+// =====================================================
+
+/**
+ * 이름에서 표시용 이니셜을 추출합니다.
+ * 한글: 첫 글자 (예: "장발장" → "장")
+ * 영문: 첫 글자 대문자 (예: "John" → "J")
+ */
+export function getInitial(name: string): string {
+  if (!name || name.trim().length === 0) return "?";
+  return name.trim().charAt(0).toUpperCase();
+}
+
+/**
+ * 이름을 지정된 길이로 자릅니다. (truncation)
+ * @param name 원본 이름
+ * @param maxLength 최대 길이 (기본 8)
+ */
+export function truncateName(name: string, maxLength = 8): string {
+  if (!name) return "";
+  if (name.length <= maxLength) return name;
+  return name.slice(0, maxLength) + "…";
+}
+
+// =====================================================
+// 🎨 역할별 그라데이션 색상
+// =====================================================
+
+/** 역할별 배경 그라데이션 (이미지 없는 노드용) */
+export const ROLE_GRADIENTS: Record<string, { from: string; to: string }> = {
+  protagonist: { from: "#5F7D5F", to: "#7A9878" }, // Sage Green
+  antagonist: { from: "#B14B4B", to: "#D97B6F" }, // Russet Red
+  mentor: { from: "#7C6BA8", to: "#9D8DC4" }, // Muted Purple
+  sidekick: { from: "#4B9F7D", to: "#6BBFA0" }, // Emerald
+  supporting: { from: "#64748B", to: "#94A3B8" }, // Slate
+  other: { from: "#8B929E", to: "#A8AFB8" }, // Neutral Grey
+};

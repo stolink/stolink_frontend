@@ -1,3 +1,4 @@
+// Development comment to force Vite re-bundle
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -22,12 +23,11 @@ import type {
 } from "@/types";
 import { roleLabels } from "./constants";
 
-// D3 CharacterGraph
+// D3 CharacterGraph (내장 컨트롤 사용)
 import {
   CharacterGraph,
   type CharacterGraphRef,
 } from "@/components/CharacterGraph";
-import { CharacterSearchOverlay } from "@/components/CharacterGraph/CharacterSearchOverlay";
 
 // Hooks
 import { useCharacters } from "@/hooks/useCharacters";
@@ -35,7 +35,6 @@ import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Components
-import { NetworkControlsD3 } from "./components/NetworkControlsD3";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { EmptyIndicator } from "./components/EmptyIndicator";
@@ -226,7 +225,12 @@ export default function WorldPage() {
     };
   };
 
-  const handleNodeClick = (character: Character) => {
+  const handleNodeClick = (character: Character | null) => {
+    if (!character) {
+      setSelectedCharacter(null);
+      setGraphFocusId(null);
+      return;
+    }
     const enrichedChar = enrichCharacterWithMockData(character);
     const nextChar =
       selectedCharacter?._id === enrichedChar._id ? null : enrichedChar;
@@ -244,7 +248,11 @@ export default function WorldPage() {
     setIsModalOpen(true);
   };
 
-  const handleLinkClick = (link: RelationshipLink) => {
+  const handleLinkClick = (link: RelationshipLink | null) => {
+    if (!link) {
+      // Handle link deselection (if applicable, though usually clicking background just clears node selection)
+      return;
+    }
     // Resolve source/target IDs (D3 replaces strings with objects)
     const sourceId =
       typeof link.source === "object"
@@ -328,24 +336,6 @@ export default function WorldPage() {
       history: mockHistory || link.history,
     };
     setSelectedRelationship(detailedRel);
-  };
-
-  const handleSearchSelect = async (character: Character) => {
-    // 1. 그래프 하이라이팅 즉시 적용 (가벼움)
-    setGraphFocusId(character._id);
-
-    // React 렌더링과 D3 애니메이션이 겹치지 않도록 프레임 분리 (Double RAF)
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve)),
-    );
-
-    // 2. 줌 애니메이션 실행 (부하 없음 - 리렌더링 최소화 상태)
-    if (graphRef.current) {
-      await graphRef.current.focusNode(character._id);
-    }
-
-    // 3. 애니메이션 종료 후 상세 패널 표시 (무거운 리렌더링 지연)
-    setSelectedCharacter(character);
   };
 
   return (
@@ -438,19 +428,6 @@ export default function WorldPage() {
                 </div>
               )}
 
-              {/* Search Overlay */}
-              <CharacterSearchOverlay
-                characters={characters}
-                onSelect={handleSearchSelect}
-                onSearch={setSearchHighlightedIds}
-              />
-
-              {/* Controls & Legend */}
-              <NetworkControlsD3
-                relationTypeFilter={relationTypeFilter}
-                onFilterChange={setRelationTypeFilter}
-              />
-
               {/* Detail Sidebar */}
               <NetworkDetailPanelD3
                 selectedCharacter={selectedCharacter}
@@ -460,7 +437,7 @@ export default function WorldPage() {
                 onViewProfile={() => setIsModalOpen(true)}
               />
 
-              {/* D3 CharacterGraph */}
+              {/* D3 CharacterGraph - 내장 검색/컨트롤 사용 */}
               <CharacterGraph
                 characters={characters}
                 links={links}
@@ -468,7 +445,10 @@ export default function WorldPage() {
                 onLinkClick={handleLinkClick}
                 selectedNodeId={graphFocusId || selectedCharacter?._id || null}
                 relationTypeFilter={relationTypeFilter}
+                onFilterChange={setRelationTypeFilter}
                 highlightedNodeIds={searchHighlightedIds}
+                onSearchChange={setSearchHighlightedIds}
+                showSearch={true}
                 ref={graphRef}
               />
             </div>

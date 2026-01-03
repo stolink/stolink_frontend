@@ -498,6 +498,64 @@ mark {
   }
 }
 
+/* Living Constellation Graph Animations */
+
+/* Flowing energy along edges - creates moving dash effect */
+@keyframes flowEnergy {
+  0% {
+    stroke-dashoffset: 36;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Node breathing animation - subtle "alive" feel */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Ripple effect on node click/select */
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Orbital ring rotation for important characters */
+@keyframes orbitalSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glow pulse for highlighted nodes */
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.7;
+    filter: blur(12px);
+  }
+}
+
 @keyframes writing {
   0% {
     transform: translate(0, 0) rotate(0deg);
