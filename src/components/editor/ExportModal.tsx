@@ -246,6 +246,16 @@ export default function ExportModal({
       return;
     }
 
+    if (!projectId) {
+      toast({
+        title: "프로젝트 정보가 없습니다",
+        description:
+          "프로젝트 ID를 확인할 수 없습니다. 페이지를 새로고침해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPublishing(true);
 
     try {
@@ -306,11 +316,23 @@ export default function ExportModal({
 
       // 3. 커뮤니티로 리다이렉트 (/write?draftId={UUID})
       window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Draft 저장 실패:", error);
+
+      // 구체적인 에러 메시지 추출
+      const errorMessage =
+        (
+          error as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          }
+        )?.response?.data?.message ||
+        (error as { message?: string })?.message ||
+        "알 수 없는 오류가 발생했습니다.";
+
       toast({
         title: "배포 준비 실패",
-        description: "잠시 후 다시 시도해주세요.",
+        description: `${errorMessage}\n\n백엔드 서버(localhost:8080)가 실행 중인지 확인해주세요.`,
         variant: "destructive",
       });
     } finally {
