@@ -29,9 +29,61 @@ export interface ProfileSnapshot {
   name: string;
   age?: number;
   gender?: string;
-  personality?: string[]; // 핵심 성격 키워드
-  backstory?: string;
+  role?: string;
   imageUrl?: string;
+  // Extended profile
+  occupation?: string;
+  birthplace?: string;
+  family?: string;
+  backstory?: string;
+  faction?: string;
+  aliases?: string[];
+  firstAppearance?: string;
+  // Personality (full object, not just coreTraits)
+  personality?: {
+    coreTraits?: string[];
+    strengths?: string[];
+    flaws?: string[];
+    values?: string[];
+  };
+  // Appearance (full object)
+  appearance?: {
+    physique?: string;
+    skinTone?: string;
+    eyes?: string;
+    nose?: string;
+    mouth?: string;
+    hairStyle?: string;
+    hairColor?: string;
+    attire?: string | string[];
+    expression?: string;
+    scarsTattoos?: string | string[];
+    styleContext?: {
+      artStyle?: string;
+    };
+  };
+  // Motivation & Mood
+  motivation?: string;
+  currentMood?: {
+    emotion?: string;
+    trigger?: string | null;
+    intensity?: number;
+  };
+  // Relations
+  relations?: {
+    graph?: Array<{
+      target: string;
+      type: string;
+      description?: string;
+      history?: string | null;
+      strength?: number;
+    }>;
+  };
+  // Meta
+  meta?: {
+    createdAt?: string | null;
+    updatedAt?: string | null;
+  };
 }
 
 // Draft 생성 요청 (API RequestBody)
