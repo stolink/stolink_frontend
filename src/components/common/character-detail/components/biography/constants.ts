@@ -4,16 +4,16 @@
 import {
   Baby,
   Skull,
-  Zap, // action
-  MessageCircle, // dialogue
-  Lightbulb, // discovery
+  Activity, // action (was Zap)
+  MessageSquareQuote, // dialogue (was MessageCircle)
+  Compass, // discovery (was Lightbulb)
   Swords, // conflict
-  CheckCircle, // resolution
-  GitBranch, // transition
-  Eye, // revelation
-  Scale, // decision
-  Users, // encounter
-  LogOut, // departure
+  Flag, // resolution (was CheckCircle)
+  Footprints, // transition (was GitBranch)
+  Key, // revelation (was Eye)
+  GitBranch, // decision (was Scale)
+  Handshake, // encounter (was Users)
+  DoorOpen, // departure (was LogOut)
   MapPin, // arrival
   Sparkles, // transformation
   Circle,
@@ -23,16 +23,16 @@ import type { EventTypeConfig } from "./types";
 
 /** 사건 유형별 아이콘 */
 export const EVENT_TYPE_ICONS: Record<string, LucideIcon> = {
-  action: Zap,
-  dialogue: MessageCircle,
-  discovery: Lightbulb,
+  action: Activity,
+  dialogue: MessageSquareQuote,
+  discovery: Compass,
   conflict: Swords,
-  resolution: CheckCircle,
-  transition: GitBranch,
-  revelation: Eye,
-  decision: Scale,
-  encounter: Users,
-  departure: LogOut,
+  resolution: Flag,
+  transition: Footprints,
+  revelation: Key,
+  decision: GitBranch,
+  encounter: Handshake,
+  departure: DoorOpen,
   arrival: MapPin,
   transformation: Sparkles,
   birth: Baby,
