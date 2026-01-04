@@ -29,9 +29,9 @@ const processQueue = (error: Error | null) => {
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // 쿠키 자동 전송
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Content-Type은 axios가 데이터 타입에 따라 자동 설정
+  // - 일반 객체: application/json
+  // - FormData: multipart/form-data
 });
 
 // Request interceptor: X-User-Id 추가 (선택적)
@@ -46,7 +46,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor: 401 시 토큰 재발급 시도
@@ -102,7 +102,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

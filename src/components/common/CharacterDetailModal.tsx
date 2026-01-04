@@ -66,7 +66,7 @@ export default function CharacterDetailModal({
 }: CharacterDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [imageJobId, setImageJobId] = useState<string | null>(null);
 
@@ -109,12 +109,12 @@ export default function CharacterDetailModal({
       onTimeout: () => {
         setImageJobId(null);
       },
-    }
+    },
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -138,7 +138,7 @@ export default function CharacterDetailModal({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   const { toast } = useToast();
@@ -166,7 +166,7 @@ export default function CharacterDetailModal({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -183,7 +183,7 @@ export default function CharacterDetailModal({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -231,7 +231,7 @@ export default function CharacterDetailModal({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>
+          selectedSetting as unknown as Record<string, unknown>,
         );
 
         setImageJobId(jobId);
@@ -254,7 +254,7 @@ export default function CharacterDetailModal({
       selectedSettingId,
       manualPrompt,
       toast,
-    ]
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -278,7 +278,7 @@ export default function CharacterDetailModal({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance
+      editedCharacter.appearance,
     );
 
     if (onSave) {
@@ -300,7 +300,7 @@ export default function CharacterDetailModal({
         return { ...prev, [field]: value };
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -316,7 +316,7 @@ export default function CharacterDetailModal({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
@@ -480,6 +480,17 @@ export default function CharacterDetailModal({
                       </div>
                     </div>
 
+                    {/* Quick Visuals */}
+                    <div className="space-y-4">
+                      <h3 className="editorial-section-heading">
+                        <Palette className="h-5 w-5 text-primary/70" />
+                        외모 요약
+                      </h3>
+                      <CharacterVisual
+                        appearance={displayCharacter.appearance}
+                        isEditMode={false}
+                      />
+                    </div>
                     {/* Quick Story Appearances */}
                     <CharacterAppearances appearances={appearances} />
                   </TabsContent>
@@ -502,7 +513,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -525,7 +536,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -548,7 +559,7 @@ export default function CharacterDetailModal({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"

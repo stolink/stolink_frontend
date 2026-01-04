@@ -273,12 +273,31 @@ export default function ExportModal({
             c._id,
             {
               id: c._id,
+              // Basic profile
               name: c.profile?.name,
               age: c.profile?.age || undefined,
               gender: c.profile?.gender,
-              personality: c.personality?.coreTraits,
-              backstory: c.profile?.backstory,
+              role: c.role,
               imageUrl: c.imageUrl || undefined,
+              // Extended profile
+              occupation: c.profile?.occupation || undefined,
+              birthplace: c.profile?.birthplace || undefined,
+              family: c.profile?.family || undefined,
+              backstory: c.profile?.backstory || undefined,
+              faction: c.profile?.faction?.name || undefined,
+              aliases: c.aliases || undefined,
+              firstAppearance: c.firstAppearance || undefined,
+              // Personality
+              personality: c.personality || undefined,
+              // Appearance
+              appearance: c.appearance || undefined,
+              // Motivation & Mood
+              motivation: c.motivation || undefined,
+              currentMood: c.currentMood || undefined,
+              // Relations (already have graph, but include full data for context)
+              relations: c.relations || undefined,
+              // Meta
+              meta: c.meta || undefined,
             },
           ]),
         ),
@@ -294,7 +313,7 @@ export default function ExportModal({
         title: targetTitle,
         content: targetContent,
         graphSnapshot,
-        workTitle: projectTitle,
+        workTitle: projectTitle || targetTitle || "제목 없음",
         workSynopsis: projectDescription,
         workGenre: projectGenre,
         workCoverUrl: projectCoverImage,
