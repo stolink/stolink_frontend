@@ -23,6 +23,8 @@ import {
   Type,
   Minimize2,
   Share2,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -65,6 +67,7 @@ interface EditorToolbarProps {
   onShowReader?: () => void;
   onToggleSnapshot?: () => void;
   onExport?: () => void;
+  analysisStatus?: "idle" | "analyzing" | "completed" | "error";
 }
 
 interface ToolbarButtonProps {
@@ -92,7 +95,7 @@ function ToolbarButton({
         "h-8 w-8 p-0 rounded-lg flex items-center justify-center transition-colors duration-200",
         "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
         isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
-        disabled && "opacity-40 cursor-not-allowed",
+        disabled && "opacity-40 cursor-not-allowed"
       )}
       title={tooltip}
     >
@@ -110,6 +113,7 @@ export function EditorToolbar({
   onToggleRightSidebar,
   onToggleFocusMode,
   onExport,
+  analysisStatus,
 }: EditorToolbarProps) {
   if (!editor) {
     return null;
@@ -127,7 +131,7 @@ export function EditorToolbar({
     <div
       className={cn(
         "relative flex items-center gap-1 px-4 py-[9px] border-b-2 border-mocha-400/30 bg-white shadow-sm sticky top-0 z-10 flex-wrap transition-all",
-        className,
+        className
       )}
     >
       {/* Decorative accent line */}
@@ -176,7 +180,7 @@ export function EditorToolbar({
               "h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors",
               currentHeadingLevel > 0
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
             )}
           >
             <Type className="h-3.5 w-3.5" />
@@ -269,7 +273,7 @@ export function EditorToolbar({
               "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
               editor.isActive("highlight")
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
             )}
             title="하이라이트"
           >
@@ -402,6 +406,34 @@ export function EditorToolbar({
       </div>
 
       <div className="flex-1" />
+
+      {/* Analysis Status Indicator */}
+      {analysisStatus === "analyzing" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100"
+          title="AI가 변경사항을 분석 중입니다..."
+        >
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span className="text-[10px] font-bold">분석 중</span>
+        </motion.div>
+      )}
+
+      {analysisStatus === "completed" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 2 }} // 2초 후 사라짐 (부모에서 제어하거나 여기서 exit 처리)
+          className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-full bg-green-50 text-green-600 border border-green-100"
+        >
+          <CheckCircle2 className="h-3 w-3" />
+          <span className="text-[10px] font-bold">분석 완료</span>
+        </motion.div>
+      )}
+
       <motion.div
         initial={false}
         animate={{ scale: [1, 1.02, 1] }}
