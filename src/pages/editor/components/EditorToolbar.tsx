@@ -77,6 +77,9 @@ interface EditorToolbarProps {
   // Export
   onExport?: () => void;
 
+  // Analysis Status
+  analysisStatus: "idle" | "analyzing" | "completed" | "error";
+
   // Pagination removed for infinite scroll
 }
 
@@ -111,6 +114,7 @@ export function EditorToolbar({
   onShowReader,
   onToggleSnapshot,
   onExport,
+  analysisStatus,
   // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
@@ -148,6 +152,20 @@ export function EditorToolbar({
             )}
           >
             {characterCount.toLocaleString()}자
+          </span>
+        )}
+
+        {analysisStatus === "analyzing" && (
+          <span className="text-xs text-primary animate-pulse font-medium">
+            분석중...
+          </span>
+        )}
+        {analysisStatus === "completed" && (
+          <span className="text-xs text-green-500 font-medium">분석 완료</span>
+        )}
+        {analysisStatus === "error" && (
+          <span className="text-xs text-destructive font-medium">
+            분석 실패
           </span>
         )}
 
