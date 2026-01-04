@@ -329,6 +329,34 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
   // ============================================================
+  // Analysis Status Logic (UI Feedback)
+  // ============================================================
+
+  const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
+  const [analysisDisplayStatus, setAnalysisDisplayStatus] = useState<
+    "idle" | "analyzing" | "completed" | "error"
+  >("idle");
+  const prevAnalyzingRef = useRef(isAnalyzing);
+
+  useEffect(() => {
+    // 분석 시작
+    if (isAnalyzing && !prevAnalyzingRef.current) {
+      setAnalysisDisplayStatus("analyzing");
+    }
+    // 분석 완료 (false로 변경됨)
+    else if (!isAnalyzing && prevAnalyzingRef.current) {
+      setAnalysisDisplayStatus("completed");
+      // 3초 후 idle로 복귀
+      const timer = setTimeout(() => {
+        setAnalysisDisplayStatus("idle");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+
+    prevAnalyzingRef.current = isAnalyzing;
+  }, [isAnalyzing]);
+
+  // ============================================================
   // Editor Handlers Hook
   // ============================================================
 
@@ -706,6 +734,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 setExportInitialTab("export");
                 setShowExport(true);
               }}
+              analysisStatus={analysisDisplayStatus}
             />
           )}
 
