@@ -66,7 +66,7 @@ export function BiographyTree({
   // 컨텐츠 전체 너비
   const contentWidth = Math.max(
     sortedEvents.length * SPACING + CONTAINER_PADDING * 2,
-    800,
+    800
   );
 
   const handleNodeClick = useCallback(
@@ -74,7 +74,7 @@ export function BiographyTree({
       onEventClick(eventId);
       setDetailOpen(true);
     },
-    [onEventClick],
+    [onEventClick]
   );
 
   const closeDetail = useCallback(() => {
@@ -95,16 +95,20 @@ export function BiographyTree({
   return (
     <div
       className={cn(
-        "relative w-full h-[500px] rounded-2xl overflow-hidden border border-stone-200",
-        className,
+        "relative w-full h-[500px] rounded-2xl overflow-hidden border border-stone-200/60 shadow-paper bg-cloud-50",
+        className
       )}
     >
       {/* 타임라인 방향 표시 */}
-      <div className="absolute left-3 top-3 z-30 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-md border border-stone-200">
-        <span className="text-xs font-semibold text-stone-600">← 과거</span>
+      <div className="absolute left-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
+        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+          ← 과거
+        </span>
       </div>
-      <div className="absolute right-3 top-3 z-30 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-md border border-stone-200">
-        <span className="text-xs font-semibold text-stone-600">현재 →</span>
+      <div className="absolute right-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
+        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+          현재 →
+        </span>
       </div>
 
       {/* 스크롤 가능한 메인 영역 */}
@@ -179,7 +183,7 @@ export function BiographyTree({
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{
                       backgroundColor: getEventTypeConfig(
-                        selectedEvent.event_type,
+                        selectedEvent.event_type
                       ).accentColor,
                     }}
                   >
@@ -394,7 +398,7 @@ function SignpostNode({
         whileTap={{ scale: 0.95 }}
         className={cn(
           "relative flex items-center justify-center rounded-lg shadow-lg transition-all",
-          isSelected && "ring-2 ring-white ring-offset-2",
+          isSelected && "ring-2 ring-white ring-offset-2"
         )}
         style={{
           width: isMajor ? 44 : 36,

@@ -491,7 +491,6 @@ export default function CharacterDetailModal({
                         isEditMode={false}
                       />
                     </div>
-
                     {/* Quick Story Appearances */}
                     <CharacterAppearances appearances={appearances} />
                   </TabsContent>

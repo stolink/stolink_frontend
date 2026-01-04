@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useToast } from "@/hooks/useToast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -73,6 +74,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ========== 새로운 상태 변수들 ==========
@@ -89,7 +91,7 @@ export default function LibraryPage() {
 
   // ========== 정렬 상태 ==========
   const [sortBy, setSortBy] = useState<"updatedAt" | "createdAt" | "title">(
-    "updatedAt",
+    "updatedAt"
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -110,7 +112,7 @@ export default function LibraryPage() {
   // ========== 표지 변경 상태 ==========
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [coverUpdateTargetId, setCoverUpdateTargetId] = useState<string | null>(
-    null,
+    null
   );
 
   const {
@@ -134,7 +136,7 @@ export default function LibraryPage() {
   const projects = projectsData?.projects || [];
 
   const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ========== 편집 모드 핸들러 ==========
@@ -150,7 +152,7 @@ export default function LibraryPage() {
   // 책 선택/해제 토글
   const toggleBookSelection = (id: string) => {
     setSelectedBooks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
     );
   };
 
@@ -176,11 +178,19 @@ export default function LibraryPage() {
       setShowDeleteConfirm(false);
 
       if (failedIds.length > 0) {
-        alert(`${failedIds.length}개의 프로젝트 삭제에 실패했습니다.`);
+        toast({
+          title: "삭제 실패",
+          description: `${failedIds.length}개의 프로젝트 삭제에 실패했습니다.`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("[LibraryPage] Batch delete failed:", error);
-      alert("프로젝트 삭제 중 오류가 발생했습니다.");
+      toast({
+        title: "오류 발생",
+        description: "프로젝트 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     } finally {
       setIsDeletingBatch(false);
     }
@@ -204,7 +214,7 @@ export default function LibraryPage() {
       });
       const projectData = getApiData(
         projectResponse,
-        "Failed to create project",
+        "Failed to create project"
       );
       const projectId = projectData.id;
 
@@ -215,7 +225,7 @@ export default function LibraryPage() {
       });
       const chapterData = getApiData(
         chapterResponse,
-        "Failed to create default chapter",
+        "Failed to create default chapter"
       );
       const chapterId = chapterData.id;
 
@@ -232,7 +242,7 @@ export default function LibraryPage() {
       try {
         const sectionData = getApiData(
           sectionResponse,
-          "Failed to create section",
+          "Failed to create section"
         );
         _create(mapBackendToFrontend(sectionData));
       } catch {
@@ -245,7 +255,11 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
-      alert("작품 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      toast({
+        title: "작품 생성 실패",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setIsCreatingProject(false);
     }
@@ -292,7 +306,7 @@ export default function LibraryPage() {
       const uploadResponse = await manuscriptService.upload(
         projectId,
         rawText,
-        file.name,
+        file.name
       );
 
       const jobData = uploadResponse.data;
@@ -313,9 +327,11 @@ export default function LibraryPage() {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
 
       // 5. 라이브러리에서 확인할 수 있도록 알림
-      alert(
-        `"${title}" 원고 처리가 시작되었습니다. 완료되면 알림을 받으실 수 있습니다.`,
-      );
+      toast({
+        title: "원고 처리 시작",
+        description: `"${title}" 원고 처리가 시작되었습니다.`,
+        variant: "success",
+      });
     } catch (error) {
       console.error("Import failed:", error);
 
@@ -324,14 +340,19 @@ export default function LibraryPage() {
         (error.name === "QuotaExceededError" ||
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
-        alert(
-          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
-        );
+        toast({
+          title: "저장 용량 부족",
+          description:
+            "브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
+          variant: "destructive",
+        });
       } else {
-        alert(
-          "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류"),
-        );
+        toast({
+          title: "가져오기 실패",
+          description:
+            error instanceof Error ? error.message : "알 수 없는 오류",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -355,7 +376,11 @@ export default function LibraryPage() {
     const file = e.target.files?.[0];
     if (file && coverUpdateTargetId) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("이미지 크기는 5MB 이하여야 합니다.");
+        toast({
+          title: "파일 크기 초과",
+          description: "이미지 크기는 5MB 이하여야 합니다.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -495,8 +520,7 @@ export default function LibraryPage() {
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
-                    !isEditMode &&
-                      "bg-white border-input text-muted-foreground",
+                    !isEditMode && "bg-white border-input text-muted-foreground"
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -519,7 +543,7 @@ export default function LibraryPage() {
                     "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
                     viewMode === "grid"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600",
+                      : "text-muted-foreground hover:text-mocha-600"
                   )}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -530,7 +554,7 @@ export default function LibraryPage() {
                     "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
                     viewMode === "list"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600",
+                      : "text-muted-foreground hover:text-mocha-600"
                   )}
                 >
                   <List className="h-4 w-4" />
@@ -602,7 +626,7 @@ export default function LibraryPage() {
             "grid gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1"
           )}
           initial={false}
           animate="visible"

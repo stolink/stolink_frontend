@@ -8,6 +8,24 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+// 동시 refresh 요청 방지를 위한 상태
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: Error | null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // 쿠키 자동 전송
@@ -43,23 +61,43 @@ api.interceptors.response.use(
       originalRequest &&
       !originalRequest._retry
     ) {
-      originalRequest._retry = true;
-
       // /auth/refresh 요청 자체가 실패한 경우는 재시도하지 않음
       if (originalRequest.url?.includes("/auth/refresh")) {
         useAuthStore.getState().logout();
         return Promise.reject(error);
       }
 
+      // 이미 refresh 중이라면 큐에 추가하고 대기
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
         // 토큰 재발급 시도 (쿠키 자동 전송)
         await api.post("/auth/refresh");
-        // 새 토큰은 쿠키에 자동 설정됨, 원래 요청 재시도
+        // 새 토큰은 쿠키에 자동 설정됨
+        processQueue(null);
+        // 원래 요청 재시도
         return api(originalRequest);
       } catch (refreshError) {
-        // 토큰 재발급 실패 시 로그아웃
+        // 토큰 재발급 실패 시 대기 중인 요청들도 실패 처리
+        processQueue(refreshError as Error);
+        // 로그아웃
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 

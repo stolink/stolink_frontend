@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "@/hooks/useToast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,6 +48,7 @@ export function AuthCard({
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string>("");
   const [activeTab, setActiveTab] = useState("login");
+  const { toast } = useToast();
 
   // React Query hooks
   const { mutate: login, isPending: isLoginPending } = useLogin();
@@ -97,7 +99,11 @@ export function AuthCard({
           // useRegister 내부에서 페이지 이동을 처리하더라도, 여기서 추가 작업을 할 수 있음
           // 현재 useRegister가 /auth?tab=login으로 이동시키므로
           // 모달에서는 "가입 완료! 로그인해주세요" 메시지를 띄우거나 탭을 전환해야 함.
-          alert("가입이 완료되었습니다. 로그인해주세요.");
+          toast({
+            title: "가입 완료!",
+            description: "로그인해주세요.",
+            variant: "success",
+          });
           setActiveTab("login");
         },
         onError: (err) => handleApiError(err, "회원가입에 실패했습니다"),
