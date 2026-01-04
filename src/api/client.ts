@@ -11,9 +11,9 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // 쿠키 자동 전송
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Content-Type은 axios가 데이터 타입에 따라 자동 설정
+  // - 일반 객체: application/json
+  // - FormData: multipart/form-data
 });
 
 // Request interceptor: X-User-Id 추가 (선택적)
