@@ -39,17 +39,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 
 // Hooks & Components & Constants
 import { useCharacterData } from "./character-detail/hooks/useCharacterData";
 import { CharacterHeader } from "./character-detail/components/CharacterHeader";
 import { CharacterTraits } from "./character-detail/components/CharacterTraits";
-import { CharacterArc } from "./character-detail/components/CharacterArc";
+
 import { CharacterRelationships } from "./character-detail/components/CharacterRelationships";
 import { CharacterAppearances } from "./character-detail/components/CharacterAppearances";
 import { CharacterAdditionalDetails } from "./character-detail/components/CharacterAdditionalDetails";
 import { CharacterVisual } from "./character-detail/components/CharacterVisual";
+import { CharacterBiography } from "./character-detail/components/CharacterBiography";
 
 interface CharacterDetailModalProps {
   character: Character | null;
@@ -137,7 +137,7 @@ export default function CharacterDetailModal({
     }
   }
 
-  const { traits, relationships, appearances, arcProgress } = useCharacterData(
+  const { traits, relationships, appearances } = useCharacterData(
     displayCharacter, // displayCharacter 사용
   );
 
@@ -410,11 +410,11 @@ export default function CharacterDetailModal({
                   </TabsTrigger>
                   <span className="text-stone-300 self-center">·</span>
                   <TabsTrigger
-                    value="story"
+                    value="biography"
                     className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
                   >
                     <BookOpen className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    스토리
+                    인물 일대기
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -492,8 +492,8 @@ export default function CharacterDetailModal({
                       />
                     </div>
 
-                    {/* Quick Story Progress */}
-                    <CharacterArc progress={arcProgress} />
+                    {/* Quick Story Appearances */}
+                    <CharacterAppearances appearances={appearances} />
                   </TabsContent>
 
                   {/* PROFILE TAB (New Detailed Fields) */}
@@ -501,32 +501,6 @@ export default function CharacterDetailModal({
                     value="profile"
                     className="space-y-8 m-0 outline-none editorial-fade-in"
                   >
-                    {/* Backstory - Pull Quote Style */}
-                    <div className="space-y-4">
-                      <h3 className="editorial-section-heading">
-                        <BookOpen className="h-5 w-5 text-primary/70" />
-                        배경 스토리
-                      </h3>
-                      {isEditMode ? (
-                        <Textarea
-                          value={displayCharacter.profile.backstory}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              "profile.backstory",
-                              e.target.value,
-                            )
-                          }
-                          className="min-h-[160px] leading-relaxed font-serif"
-                          placeholder="캐릭터의 과거와 배경을 입력하세요."
-                        />
-                      ) : (
-                        <div className="pull-quote">
-                          {displayCharacter.profile.backstory ||
-                            "아직 입력된 배경 스토리가 없습니다. 캐릭터의 과거, 성장 배경, 중요한 사건들을 기록해보세요."}
-                        </div>
-                      )}
-                    </div>
-
                     {/* Detailed Info Cards - Editorial Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="editorial-card p-4 hover-lift">
@@ -685,14 +659,18 @@ export default function CharacterDetailModal({
                     <CharacterRelationships relationships={relationships} />
                   </TabsContent>
 
-                  {/* STORY TAB */}
+                  {/* BIOGRAPHY TAB */}
                   <TabsContent
-                    value="story"
+                    value="biography"
                     className="space-y-8 m-0 outline-none editorial-fade-in"
                   >
-                    <CharacterAppearances appearances={appearances} />
-                    <Separator className="bg-stone-200" />
-                    <CharacterArc progress={arcProgress} />
+                    <CharacterBiography
+                      backstory={displayCharacter.profile.backstory}
+                      isEditMode={isEditMode}
+                      onBackstoryChange={(value: string) =>
+                        handleFieldChange("profile.backstory", value)
+                      }
+                    />
                   </TabsContent>
                 </div>
               </ScrollArea>
