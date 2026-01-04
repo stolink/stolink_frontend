@@ -123,32 +123,34 @@ export function BiographyEventNode({
       >
         {/* 라벨 배경 */}
         <rect
-          x={x - 50}
-          y={y + labelY - 10}
-          width={100}
-          height={20}
-          rx={4}
+          x={x - 55}
+          y={y + labelY - 14}
+          width={110}
+          height={24}
+          rx={6}
           fill="white"
-          fillOpacity={0.85}
+          fillOpacity={0.95}
           className="pointer-events-none"
+          filter="drop-shadow(0 2px 4px rgba(61, 48, 42, 0.08))"
         />
 
         {/* 타이틀 텍스트 */}
         <text
           x={x}
-          y={y + labelY + 4}
+          y={y + labelY + 2}
           textAnchor="middle"
           className={cn(
-            "text-xs font-medium pointer-events-none",
-            "fill-espresso-900",
+            "text-xs font-semibold pointer-events-none",
+            "fill-espresso-900"
           )}
           style={{
-            fontFamily: "'Pretendard', sans-serif",
-            fontSize: 11,
+            fontFamily: "'Spectral', serif",
+            fontSize: 12,
+            letterSpacing: "-0.01em",
           }}
         >
-          {event.narrative_summary.length > 10
-            ? `${event.narrative_summary.slice(0, 10)}...`
+          {event.narrative_summary.length > 12
+            ? `${event.narrative_summary.slice(0, 12)}...`
             : event.narrative_summary}
         </text>
 
@@ -156,12 +158,12 @@ export function BiographyEventNode({
         {event.participants.length > 0 && (
           <text
             x={x}
-            y={y + labelY + 16}
+            y={y + labelY + 18}
             textAnchor="middle"
-            className="text-[9px] fill-stone-400 pointer-events-none"
-            style={{ fontFamily: "'Pretendard', sans-serif" }}
+            className="text-[10px] fill-stone-400 pointer-events-none italic"
+            style={{ fontFamily: "'Spectral', serif" }}
           >
-            {event.participants.length}명 참여
+            with {event.participants.length} others
           </text>
         )}
       </motion.g>

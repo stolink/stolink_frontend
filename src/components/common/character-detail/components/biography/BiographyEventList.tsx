@@ -22,13 +22,13 @@ export function BiographyEventList({
   // 상위에서 정렬된 events를 넘겨주는 것이 좋음.
 
   return (
-    <div className="space-y-4">
-      <h4 className="text-sm font-semibold text-stone-500 uppercase tracking-wider px-1">
+    <div className="space-y-6">
+      <h4 className="font-heading text-lg text-espresso-900 border-b-2 border-mocha-200 pb-1 inline-block">
         사건 목록 ({events.length})
       </h4>
 
       {events.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {events.map((event, idx) => {
             const config = getEventTypeConfig(event.event_type);
             const isMajor = getImportanceLevel(event.importance) === "major";
@@ -42,50 +42,64 @@ export function BiographyEventList({
               >
                 <div
                   className={cn(
-                    "block editorial-card p-4 hover-lift group cursor-pointer transition-all border",
+                    "block p-5 group cursor-pointer transition-all duration-300 ease-out border rounded-xl",
+                    "bg-white shadow-sm hover:shadow-paper-hover hover:-translate-y-0.5",
                     isSelected
-                      ? "ring-2 ring-primary ring-offset-2 border-primary"
-                      : "border-transparent hover:border-stone-200",
+                      ? "ring-2 ring-mocha-500 ring-offset-2 border-mocha-500/50 bg-mocha-50/10"
+                      : "border-stone-200/60 hover:border-mocha-300/60"
                   )}
                   onClick={() => onEventClick(event.event_id)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
                       {/* 아이콘 + 번호 */}
                       <div
-                        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                        style={{ backgroundColor: config.accentColor }}
+                        className={cn(
+                          "flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-105",
+                          isMajor
+                            ? "bg-gradient-to-br from-mocha-400 to-mocha-600"
+                            : "bg-stone-100"
+                        )}
+                        style={
+                          !isMajor
+                            ? { backgroundColor: config.accentColor }
+                            : {}
+                        }
                       >
                         {createElement(getEventTypeIcon(event.event_type), {
-                          className: "w-5 h-5 text-white",
+                          className: cn(
+                            "w-6 h-6",
+                            isMajor ? "text-white" : "text-stone-600"
+                          ),
+                          style: !isMajor ? { color: config.color } : {},
                         })}
                       </div>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-bold text-stone-400">
-                            #{idx + 1}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-stone-400 font-mono">
+                            #{String(idx + 1).padStart(2, "0")}
                           </span>
                           {isMajor && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-semibold">
-                              주요 사건
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-bold border border-red-100/50">
+                              MAJOR
                             </span>
                           )}
-                          <span className="text-xs text-stone-400">
-                            · {config.label}
+                          <span className="text-xs text-stone-500 font-medium tracking-wide">
+                            {config.label}
                           </span>
                         </div>
                         <h5
                           className={cn(
-                            "text-base font-semibold transition-colors truncate pr-4",
+                            "text-lg font-serif font-bold transition-colors truncate pr-4 leading-tight",
                             isSelected
-                              ? "text-primary"
-                              : "text-stone-900 group-hover:text-primary",
+                              ? "text-mocha-900"
+                              : "text-espresso-900 group-hover:text-mocha-700"
                           )}
                         >
                           {event.narrative_summary}
                         </h5>
-                        <p className="text-sm text-stone-500 truncate mt-0.5">
+                        <p className="text-sm text-stone-600 truncate mt-1 font-serif leading-relaxed opacity-80">
                           {event.description || "상세 설명 없음"}
                         </p>
                       </div>
@@ -93,10 +107,10 @@ export function BiographyEventList({
 
                     <ChevronRight
                       className={cn(
-                        "h-5 w-5 transition-all text-stone-300",
+                        "h-5 w-5 transition-all duration-300 ease-out text-stone-300",
                         isSelected
-                          ? "text-primary translate-x-1"
-                          : "group-hover:text-primary group-hover:translate-x-1",
+                          ? "text-mocha-500 translate-x-1"
+                          : "group-hover:text-mocha-400 group-hover:translate-x-1"
                       )}
                     />
                   </div>
