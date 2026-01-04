@@ -30,7 +30,7 @@ import {
 } from "@/components/CharacterGraph";
 
 // Hooks
-import { useCharacters } from "@/hooks/useCharacters";
+import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -66,6 +66,8 @@ export default function WorldPage() {
     enabled: !!projectId,
   });
 
+  const updateCharacterMutation = useUpdateCharacter();
+
   const queryClient = useQueryClient();
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
@@ -99,7 +101,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -441,6 +443,20 @@ export default function WorldPage() {
               <CharacterGraph
                 characters={characters}
                 links={links}
+                onNodeDragEnd={async (node) => {
+                  if (node.id.startsWith("temp-node") || !node.x || !node.y)
+                    return;
+                  try {
+                    await updateCharacterMutation.mutateAsync({
+                      id: node.id,
+                      payload: {
+                        graphPosition: { x: node.x, y: node.y },
+                      },
+                    });
+                  } catch (e) {
+                    console.error("Failed to save node position:", e);
+                  }
+                }}
                 onNodeClick={handleNodeClick}
                 onLinkClick={handleLinkClick}
                 selectedNodeId={graphFocusId || selectedCharacter?._id || null}
@@ -709,13 +725,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
+              selectedRelationship?.source,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
+                selectedRelationship?.source,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -724,13 +740,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
+              selectedRelationship?.target,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
+                selectedRelationship?.target,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target

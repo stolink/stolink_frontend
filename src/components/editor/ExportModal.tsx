@@ -242,6 +242,7 @@ export default function ExportModal({
     setIsPublishing(true);
 
     try {
+      // 1. 스냅샷 데이터 생성
       const graphSnapshot = {
         nodes: characters.map((c) => ({
           id: c._id,
@@ -249,6 +250,12 @@ export default function ExportModal({
           role: c.role,
           group: c.profile?.faction?.name || undefined,
           imageUrl: c.imageUrl || undefined,
+          // DB에 저장된 시각적 좌표가 있으면 포함 (Storead 보존용)
+          x: c.graphPosition?.x,
+          y: c.graphPosition?.y,
+          // 고정 여부 (일단 좌표가 있으면 고정된 것으로 간주할 수도 있음)
+          fx: c.graphPosition?.x,
+          fy: c.graphPosition?.y,
         })),
         links: links.map((l) => {
           const relation = characters
@@ -277,6 +284,10 @@ export default function ExportModal({
         ),
       };
 
+      console.log("graphSnapshot:", graphSnapshot);
+      console.log("graphSnapshot.nodes.length:", graphSnapshot.nodes.length);
+      console.log("graphSnapshot.links.length:", graphSnapshot.links.length);
+
       const { data: draft } = await draftService.create({
         documentId: selectedDocId,
         projectId,
@@ -289,7 +300,18 @@ export default function ExportModal({
         workCoverUrl: projectCoverImage,
       });
 
-      window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
+      // 3. 커뮤니티로 리다이렉트 (/write?draftId={UUID})
+      // window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
+      window.open(`${COMMUNITY_URL}/write?draftId=${draft.id}`, "_blank");
+
+      // 성공 메시지
+      toast({
+        title: "배포 준비 완료!",
+        description: "새 탭에서 커뮤니티 페이지가 열렸습니다.",
+      });
+
+      setIsPublishing(false);
+      onClose();
     } catch (error: unknown) {
       console.error("Draft 저장 실패:", error);
 

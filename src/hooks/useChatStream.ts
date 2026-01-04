@@ -157,7 +157,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   setCurrentSources([]);
                 } else if (data.type === "error") {
                   throw new Error(
-                    data.error || "알 수 없는 오류가 발생했습니다."
+                    data.error || "알 수 없는 오류가 발생했습니다.",
                   );
                 }
               } catch (parseError) {
@@ -205,7 +205,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         abortControllerRef.current = null;
       }
     },
-    [streaming, options, sessionId]
+    [streaming, options, sessionId],
   );
 
   const cancelStream = useCallback(async () => {
