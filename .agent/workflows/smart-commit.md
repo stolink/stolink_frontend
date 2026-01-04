@@ -80,7 +80,14 @@ git diff --staged --stat
 
 **변경사항이 있는 경우에만 실행**:
 
+> [!IMPORTANT]
+> **원자적 커밋(Atomic Commits)**: 변경사항이 여러 기능이나 서로 다른 수정 사항을 포함하고 있다면, `git add -p` 등을 사용하여 **기능별로 커밋을 나누어** 진행하십시오. 한 번에 모든 변경사항을 하나의 커밋으로 묶지 마십시오.
+
 ```bash
+# 기능별로 나누어 스테이징 및 커밋 (필요시 반복)
+# git add <file_functional_group>
+# git commit -m "<type>(<scope>): <설명>"
+
 # Conventional Commit 메시지 생성 (diff 분석 기반)
 # Hook 실행을 위해 --no-verify 제거 (Lint/Type Check 수행)
 git commit -m "<type>: <설명>"
@@ -282,6 +289,7 @@ rm .pr_body_temp.md
 3. **PR 존재 확인 필수** - gh pr view로 확인 후 생성/업데이트 결정
 4. **변경사항 없어도 PR 상태 확인** - 기존 PR이 있으면 업데이트 가능
 5. **이슈 자동 연결**: 브랜치 이름에 번호(예: `feature/12-foo`)가 있으면 해당 이슈를 연결하고, 없으면 새로 생성합니다.
+6. **기능별 커밋 분리**: 하나의 커밋에 너무 많은 변경사항을 담지 말고 기능 단위로 나누어 커밋하십시오.
 
 ---
 
