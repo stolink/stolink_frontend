@@ -48,7 +48,7 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
@@ -92,12 +92,12 @@ export default function CharacterDetailDialog({
       onTimeout: () => {
         setImageJobId(null);
       },
-    }
+    },
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -121,7 +121,7 @@ export default function CharacterDetailDialog({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   const { toast } = useToast();
@@ -149,7 +149,7 @@ export default function CharacterDetailDialog({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -166,7 +166,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -214,7 +214,7 @@ export default function CharacterDetailDialog({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>
+          selectedSetting as unknown as Record<string, unknown>,
         );
 
         setImageJobId(jobId);
@@ -237,7 +237,7 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
-    ]
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -261,7 +261,7 @@ export default function CharacterDetailDialog({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance
+      editedCharacter.appearance,
     );
 
     if (onSave) {
@@ -283,7 +283,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -299,7 +299,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
@@ -532,7 +532,7 @@ export default function CharacterDetailDialog({
                                   >
                                     #{trait}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -581,7 +581,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -604,7 +604,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -627,7 +627,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"

@@ -185,7 +185,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -219,7 +219,7 @@ export default function WorldPage() {
   useEffect(() => {
     if (selectedCharacter && characters.length > 0) {
       const updatedCharacter = characters.find(
-        (c) => c._id === selectedCharacter._id
+        (c) => c._id === selectedCharacter._id,
       );
       if (updatedCharacter) {
         // Only update if imageUrl or other relevant data changed
@@ -731,12 +731,19 @@ export default function WorldPage() {
         onClose={() => setIsModalOpen(false)}
         onSave={async (updatedChar) => {
           try {
+            if (!updateCharacterMutation) return;
+
+            // _id is required for update
+            if (!updatedChar._id) {
+              console.error("Character ID is missing for update");
+              return;
+            }
+
             await updateCharacterMutation.mutateAsync({
               id: updatedChar._id,
               payload: {
-                role: updatedChar.role,
-                status: updatedChar.status,
-                // 스키마 호환성을 위해 profile 내부와 최상위 필드 모두 업데이트 시도
+                role: updatedChar.role || "extra",
+                status: updatedChar.status || "active",
                 profile: updatedChar.profile,
                 name: updatedChar.name,
                 age: updatedChar.age,
@@ -760,13 +767,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
+              selectedRelationship?.source,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
+                selectedRelationship?.source,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -775,13 +782,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
+              selectedRelationship?.target,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
+                selectedRelationship?.target,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target
