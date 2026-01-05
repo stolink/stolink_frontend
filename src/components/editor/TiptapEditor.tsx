@@ -300,12 +300,23 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     useEffect(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (editor && (editor.commands as any).setTypewriterPosition) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.commands as any).setTypewriterPosition(typewriterMode);
-        } catch (e) {
-          console.warn("Failed to set typewriter position:", e);
-        }
+        // 에디터 뷰가 마운트될 때까지 대기 후 실행
+        const timer = setTimeout(() => {
+          try {
+            if (
+              editor &&
+              !editor.isDestroyed &&
+              editor.view &&
+              editor.view.dom
+            ) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (editor.commands as any).setTypewriterPosition(typewriterMode);
+            }
+          } catch {
+            // 에디터가 아직 마운트되지 않은 경우 무시
+          }
+        }, 100);
+        return () => clearTimeout(timer);
       }
     }, [editor, typewriterMode]);
 
