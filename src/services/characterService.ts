@@ -4,6 +4,8 @@ import type {
   Character,
   CharacterRole,
   CharacterProfile,
+  CharacterAppearance,
+  CharacterPersonality,
   SimpleCharacter,
 } from "@/types/character";
 import { resolveImageUrl } from "@/utils/imageUtils";
@@ -29,6 +31,8 @@ export interface CreateCharacterInput {
   profile: Partial<CharacterProfile> & { name: string };
   aliases?: string[];
   status?: string;
+  appearance?: Partial<CharacterAppearance>;
+  personality?: Partial<CharacterPersonality>;
   graphPosition?: { x: number; y: number };
 }
 

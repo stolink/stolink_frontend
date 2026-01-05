@@ -130,7 +130,6 @@ export const VISUAL_TRANSLATION_MAP: Record<string, string> = {
   Almond: "아몬드형",
   Gentle: "온화함",
   Fierce: "사나움",
-  Cold: "차가움",
   Warm: "따뜻함",
 
   // Clothing / Style
@@ -177,7 +176,7 @@ export function translateVisualValue(value: string): string {
 
     // 만약 절반 이상 번역되었다면 번역된 문장 반환, 아니면 원본 반환 (어색함 방지)
     const translatedCount = translatedWords.filter(
-      (w, i) => w !== words[i]
+      (w, i) => w !== words[i],
     ).length;
     if (translatedCount > 0) {
       return translatedWords.join(" ");

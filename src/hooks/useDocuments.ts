@@ -73,8 +73,8 @@ export function useDocumentTree(projectId: string) {
       }
     },
     enabled: !!projectId,
-    staleTime: 0, // Always refetch to get latest tree from backend
-    refetchOnMount: "always", // Force refetch when component mounts
+    staleTime: 30000, // 30s - Reduces unnecessary tree refetches while maintaining sync via mutations
+    refetchOnMount: "always", // Force refetch when component mounts to ensure latest tree
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
       if (
@@ -216,7 +216,8 @@ export function useDocumentContent(id: string | null) {
     },
     initialPageParam: 1,
     enabled: !!id,
-    staleTime: 0,
+    staleTime: 60000, // 1 min - Content is stable unless mutated
+    gcTime: 1000 * 60 * 10, // 10 mins cache for better UX when switching back to recently visited sections
     retry: (failureCount, error) => {
       if (
         (error as { response?: { status?: number } })?.response?.status === 404

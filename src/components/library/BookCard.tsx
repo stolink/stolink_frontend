@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { StatusChip, type ProjectStatusType } from "./StatusChip";
 import { useManuscriptJobStore } from "@/stores/useManuscriptJobStore";
+import { PerformanceImage } from "@/components/common/PerformanceImage";
 
 // ✅ API 형식 통일 - 대문자만 사용
 export type ProjectStatus = "Writing" | "Complete";
@@ -163,10 +164,11 @@ export function BookCard({
           <>
             {/* Blurred Background Layer (Fill) */}
             <div className="absolute inset-0 overflow-hidden">
-              <img
+              <PerformanceImage
                 src={coverImage}
                 alt=""
                 className="h-full w-full object-cover blur-2xl opacity-40 scale-125"
+                aspectRatio={3 / 4}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
@@ -174,10 +176,11 @@ export function BookCard({
             {/* Main Image Layer (Contain with Shadow) */}
             <div className="relative h-full w-full p-6 flex items-center justify-center">
               <div className="relative h-full w-full shadow-2xl transition-transform duration-500 group-hover:scale-[1.03]">
-                <img
+                <PerformanceImage
                   src={coverImage}
                   alt={title}
                   className="h-full w-full object-contain rounded-sm"
+                  aspectRatio={3 / 4}
                 />
               </div>
             </div>

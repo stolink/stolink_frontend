@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, ElementType } from "react";
+import { useState, useEffect, useCallback, type ElementType } from "react";
 import {
   Dialog,
   DialogContent,
@@ -526,15 +526,15 @@ export default function CharacterDetailModal({
                               <ProfileItem
                                 label="나이"
                                 value={
-                                  displayCharacter.age
-                                    ? `${displayCharacter.age}세`
+                                  displayCharacter.profile.age
+                                    ? `${displayCharacter.profile.age}세`
                                     : undefined
                                 }
                                 icon={UserRound}
                               />
                               <ProfileItem
                                 label="성별"
-                                value={displayCharacter.gender}
+                                value={displayCharacter.profile.gender}
                                 icon={Users2}
                               />
                             </div>
