@@ -1,4 +1,0 @@
-
-> sto-link@0.0.0 lint
-> eslint . --ext .ts,.tsx
-

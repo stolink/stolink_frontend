@@ -34,6 +34,7 @@ import {
   useUpdateProject,
 } from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
+import { useLogout } from "@/hooks/useAuth";
 import {
   documentService,
   mapBackendToFrontend,
@@ -69,7 +70,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function LibraryPage() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { mutate: performLogout } = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -584,8 +586,8 @@ export default function LibraryPage() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => {
-                        logout();
-                        navigate("/");
+                        performLogout();
+                        // navigate handled by useLogout hook
                       }}
                       className="text-red-600 focus:text-red-600"
                     >
