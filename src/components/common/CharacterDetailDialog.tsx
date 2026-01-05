@@ -1,47 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useState, useEffect, useCallback, ElementType } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
   Save,
   X,
-  MapPin,
-  Briefcase,
-  Users2,
-  Flag,
-  Compass,
-  UserRound,
-  Palette,
-  Heart,
-  Users,
-  BookOpen,
-  Wand2,
+  Compass, // Overview
+  UserRound, // Profile
+  Palette, // Appearance
+  Heart, // Personality
+  Users, // Relationships
+  BookOpen, // Biography
 } from "lucide-react";
+
 import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Hooks & Components & Constants
-import { useCharacterData } from "./character-detail/hooks/useCharacterData";
+import { useCharacterData } from "@/hooks/useCharacterData";
 import { CharacterHeader } from "./character-detail/components/CharacterHeader";
 import { CharacterTraits } from "./character-detail/components/CharacterTraits";
 
@@ -66,8 +48,9 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null,
+    null
   );
+  const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
 
   // Fetch fresh character data
@@ -109,12 +92,12 @@ export default function CharacterDetailDialog({
       onTimeout: () => {
         setImageJobId(null);
       },
-    },
+    }
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id,
+    character?._id
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -138,7 +121,7 @@ export default function CharacterDetailDialog({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter, // displayCharacter 사용
+    displayCharacter // displayCharacter 사용
   );
 
   const { toast } = useToast();
@@ -166,7 +149,7 @@ export default function CharacterDetailDialog({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>,
+      settingOverride?: Record<string, unknown>
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -183,7 +166,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -231,7 +214,7 @@ export default function CharacterDetailDialog({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>,
+          selectedSetting as unknown as Record<string, unknown>
         );
 
         setImageJobId(jobId);
@@ -254,7 +237,7 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
-    ],
+    ]
   );
 
   const handleEdit = useCallback(() => {
@@ -278,7 +261,7 @@ export default function CharacterDetailDialog({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance,
+      editedCharacter.appearance
     );
 
     if (onSave) {
@@ -300,7 +283,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    [],
+    []
   );
 
   const handleAppearanceChange = useCallback(
@@ -316,7 +299,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    [],
+    []
   );
 
   if (!character) {
@@ -328,27 +311,26 @@ export default function CharacterDetailDialog({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] lg:max-w-7xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-white border border-stone-200 shadow-2xl rounded-xl">
-        {/* Custom Close Button (since default might be hidden/obscured) */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 z-50 rounded-full p-2 bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white transition-all shadow-sm"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      {/* Custom Dialog Content with Modern Glassmorphism */}
+      <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none ring-0 sm:rounded-3xl duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
+        {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
+        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-[#FDFCFB]/95 via-[#F7F5F3]/90 to-[#F2EFE9]/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-stone-200/60 ring-1 ring-stone-900/5 isolate">
+          {/* 🌊 Living Background (Warm Aurora Blobs) */}
+          <div className="absolute inset-0 -z-10 bg-stone-50/40 opacity-50">
+            {/* Primary Tone (Mocha/Warm) */}
+            <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-b from-primary/10 to-orange-100/20 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
+            {/* Neutral Warm Stone */}
+            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-stone-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
+            {/* Soft Cloud Highlight */}
+            <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-[#F5F5F0]/30 rounded-full blur-[80px] mix-blend-overlay animate-pulse-slow delay-1000" />
+          </div>
 
-        <DialogTitle className="sr-only">
-          {displayCharacter?.profile?.name || "캐릭터 상세 정보"}
-        </DialogTitle>
-        <DialogDescription className="sr-only">
-          캐릭터 상세 정보를 확인하고 수정할 수 있는 모달입니다.
-        </DialogDescription>
+          {/* Paper Texture Overlay for "Warm & Soft" Feel */}
+          <div className="absolute inset-0 -z-0 opacity-[0.4] pointer-events-none mix-blend-soft-light bg-[url('https://grainy-gradients.vercel.app/noise.svg')] contrast-125" />
 
-        <div className="flex flex-col lg:flex-row h-full overflow-hidden">
-          {/* Left Sidebar (Fixed) */}
-          <div className="w-full lg:w-[400px] bg-stone-50 border-b lg:border-b-0 lg:border-r border-stone-200 p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-none">
+          {/* Left Sidebar (Character Identity) - Warm Frosted Panel */}
+          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-white/80 to-[#FAF9F6]/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-stone-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">
             <CharacterHeader
               character={displayCharacter}
               optimisticImageUrl={tempImageUrl}
@@ -361,84 +343,91 @@ export default function CharacterDetailDialog({
             />
           </div>
 
-          {/* Right Content (Tabs) */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-white">
+          {/* Right Content (Tabs & Details) */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-transparent relative z-0">
             <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
               defaultValue="overview"
               className="flex-1 flex flex-col rounded-none h-full"
             >
-              <div className="border-b border-stone-200 px-6 bg-gradient-to-b from-white to-stone-50/50 sticky top-0 z-10">
-                <TabsList className="h-14 w-full justify-start gap-1 bg-transparent p-0">
-                  <TabsTrigger
-                    value="overview"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <Compass className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    개요
-                  </TabsTrigger>
-                  <span className="text-stone-300 self-center">·</span>
-                  <TabsTrigger
-                    value="profile"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <UserRound className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    프로필
-                  </TabsTrigger>
-                  <span className="text-stone-300 self-center">·</span>
-                  <TabsTrigger
-                    value="appearance"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <Palette className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    외모
-                  </TabsTrigger>
-                  <span className="text-stone-300 self-center">·</span>
-                  <TabsTrigger
-                    value="personality"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <Heart className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    성격
-                  </TabsTrigger>
-                  <span className="text-stone-300 self-center">·</span>
-                  <TabsTrigger
-                    value="relationships"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <Users className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    관계
-                  </TabsTrigger>
-                  <span className="text-stone-300 self-center">·</span>
-                  <TabsTrigger
-                    value="biography"
-                    className="group h-full rounded-none border-b-2 border-transparent px-4 font-medium text-muted-foreground transition-all data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold bg-transparent shadow-none hover:text-foreground"
-                  >
-                    <BookOpen className="h-4 w-4 mr-2 opacity-60 group-data-[state=active]:opacity-100 group-data-[state=active]:text-primary transition-all" />
-                    인물 일대기
-                  </TabsTrigger>
+              {/* ✨ Warm Stone Floating Tab Bar */}
+              <div className="border-b border-stone-200/40 px-6 py-3 bg-gradient-to-r from-[#FAF9F6]/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
+                <TabsList className="h-10 w-full justify-start gap-2 bg-[#F5F5F0]/50 p-1 rounded-full border border-stone-200/50 shadow-inner">
+                  <TabItem value="overview" icon={Compass} label="개요" />
+                  <TabItem value="profile" icon={UserRound} label="프로필" />
+                  <TabItem value="appearance" icon={Palette} label="외모" />
+                  <TabItem value="personality" icon={Heart} label="성격" />
+                  <TabItem value="relationships" icon={Users} label="관계" />
+                  <TabItem value="biography" icon={BookOpen} label="기록" />
                 </TabsList>
+
+                {/* Right Side Actions (Save/Cancel) - Hide in Biography Tab (It has own buttons) */}
+                <div className="ml-auto flex items-center gap-2">
+                  {isEditMode && activeTab !== "biography" ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancel}
+                        className="text-stone-500 hover:text-stone-800 hover:bg-white/20"
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-5 shadow-lg shadow-stone-900/10"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        저장하기
+                      </Button>
+                    </>
+                  ) : (
+                    /* View Mode Close Button (Custom Placement for aesthetics) */
+                    !isEditMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="text-stone-400 hover:text-stone-800 hover:bg-stone-100/50 rounded-full w-8 h-8 ml-2 mr-2"
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    )
+                  )}
+                </div>
+
+                {/* Close Button (Mobile Only, Desktop uses Dialog default X but we can customize) */}
+                <div className="block lg:hidden ml-2">
+                  {/* Mobile close button logic provided by Dialog primitive usually, but explicit can handle custom layout */}
+                </div>
               </div>
 
-              {/* Tab Contents */}
-              <ScrollArea className="flex-1 bg-stone-50/30">
-                <div className="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
+              {/* Tab Contents Area */}
+              <ScrollArea className="flex-1 bg-transparent">
+                <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-10 pb-20">
                   {/* OVERVIEW TAB */}
                   <TabsContent
                     value="overview"
                     className="space-y-8 m-0 outline-none editorial-fade-in"
                   >
                     {/* Image Gen Settings Block */}
-                    <div className="editorial-card p-6 space-y-5">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Wand2 className="w-5 h-5 text-primary" />
+                    {/* Image Gen Settings Block - Glass Card */}
+                    <div className="relative group overflow-hidden rounded-3xl p-6 transition-all hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.01] duration-300 border border-white/60 bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md shadow-lg">
+                      {/* Glossy Reflection */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+                      <div className="flex items-center gap-5 relative z-10">
+                        <div className="p-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20 text-white ring-4 ring-white/50">
+                          <Wand2 className="w-6 h-6 animate-pulse-slow" />
                         </div>
                         <div>
-                          <h3 className="editorial-name text-lg">
-                            AI 이미지 생성
+                          <h3 className="editorial-name text-xl text-stone-900">
+                            스튜디오
                           </h3>
-                          <p className="magazine-caption text-xs mt-0.5">
-                            캐릭터 시각화 설정
+                          <p className="magazine-caption text-sm mt-0.5 text-stone-500">
+                            AI와 함께 캐릭터의 모습을 이끌어내세요
                           </p>
                         </div>
                       </div>
@@ -480,16 +469,95 @@ export default function CharacterDetailDialog({
                       </div>
                     </div>
 
-                    {/* Quick Visuals */}
-                    <div className="space-y-4">
-                      <h3 className="editorial-section-heading">
-                        <Palette className="h-5 w-5 text-primary/70" />
-                        외모 요약
-                      </h3>
-                      <CharacterVisual
-                        appearance={displayCharacter.appearance}
-                        isEditMode={false}
-                      />
+                    {/* Character Essentials Summary - Enhanced Visuals */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left: Core Profile & Personality */}
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 px-1">
+                            <UserRound className="h-4 w-4 text-primary/70" />
+                            <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                              핵심 프로필
+                            </h3>
+                          </div>
+
+                          <div className="editorial-card p-6 space-y-5 bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all rounded-3xl group">
+                            <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm relative z-10">
+                              <ProfileItem
+                                label="직업"
+                                value={displayCharacter.profile.occupation}
+                                icon={Briefcase}
+                              />
+                              <ProfileItem
+                                label="소속"
+                                value={displayCharacter.profile.faction?.name}
+                                icon={Flag}
+                              />
+                              <ProfileItem
+                                label="나이"
+                                value={
+                                  displayCharacter.age
+                                    ? `${displayCharacter.age}세`
+                                    : undefined
+                                }
+                                icon={UserRound}
+                              />
+                              <ProfileItem
+                                label="성별"
+                                value={displayCharacter.gender}
+                                icon={Users2}
+                              />
+                            </div>
+                            {/* Decorative Icon Watermark */}
+                            <UserRound className="absolute -bottom-4 -right-4 w-32 h-32 text-stone-900/[0.03] group-hover:scale-110 transition-transform duration-500" />
+                          </div>
+                        </div>
+
+                        {/* Personality Traits - Tags */}
+                        {(displayCharacter.personality?.coreTraits?.length ||
+                          0) > 0 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 px-1">
+                              <Heart className="h-4 w-4 text-primary/70" />
+                              <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                                성격 키워드
+                              </h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {displayCharacter.personality.coreTraits.map(
+                                (trait, i) => (
+                                  <span
+                                    key={i}
+                                    className="px-4 py-1.5 rounded-full bg-white/60 text-stone-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
+                                  >
+                                    #{trait}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Visual Summary - Glass Card */}
+                      <div className="space-y-4 h-full">
+                        <div className="flex items-center gap-2 px-1">
+                          <Palette className="h-4 w-4 text-primary/70" />
+                          <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                            외모 특징
+                          </h3>
+                        </div>
+                        <div className="editorial-card p-6 space-y-4 h-full bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl relative overflow-hidden group">
+                          {/* Decorative Icon Watermark */}
+                          <Palette className="absolute -top-6 -right-6 w-32 h-32 text-stone-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
+                          <div className="relative z-10">
+                            <CharacterVisual
+                              appearance={displayCharacter.appearance}
+                              isEditMode={false}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     {/* Quick Story Appearances */}
                     <CharacterAppearances appearances={appearances} />
@@ -513,7 +581,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -536,7 +604,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -559,7 +627,7 @@ export default function CharacterDetailDialog({
                             onChange={(e) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -669,6 +737,8 @@ export default function CharacterDetailDialog({
                       onBackstoryChange={(value: string) =>
                         handleFieldChange("profile.backstory", value)
                       }
+                      onSave={handleSave}
+                      onCancel={handleCancel}
                     />
                   </TabsContent>
                 </div>
@@ -676,24 +746,57 @@ export default function CharacterDetailDialog({
             </Tabs>
           </div>
         </div>
-
-        {/* Edit Mode Action Bar */}
-        {isEditMode && (
-          <div className="border-t border-stone-200 bg-stone-50 px-6 py-4 flex items-center justify-end gap-3">
-            <Button variant="outline" onClick={handleCancel} className="gap-2">
-              <X className="h-4 w-4" />
-              취소
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="gap-2 bg-stone-900 hover:bg-stone-800 text-white"
-            >
-              <Save className="h-4 w-4" />
-              저장
-            </Button>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
+  );
+}
+// Helper Component for Tabs
+function TabItem({
+  value,
+  icon: Icon,
+  label,
+}: {
+  value: string;
+  icon: ElementType;
+  label: string;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="group relative h-8 px-5 rounded-full font-medium text-stone-500 transition-all
+      data-[state=active]:text-primary-foreground data-[state=active]:bg-stone-800 data-[state=active]:shadow-lg
+      data-[state=active]:ring-2 data-[state=active]:ring-white/50
+      hover:text-stone-900 hover:bg-white/50"
+    >
+      <span className="relative z-10 flex items-center gap-2">
+        <Icon className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <span className="text-sm tracking-tight">{label}</span>
+      </span>
+    </TabsTrigger>
+  );
+}
+
+// Helper for Profile Items
+function ProfileItem({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value?: string | number | null;
+  icon: ElementType;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-stone-400">
+        <Icon className="w-3 h-3" />
+        <span className="text-xs font-medium uppercase tracking-wider">
+          {label}
+        </span>
+      </div>
+      <span className="text-base font-semibold text-stone-800 pl-0.5">
+        {value || <span className="text-stone-300 font-normal italic">-</span>}
+      </span>
+    </div>
   );
 }

@@ -35,6 +35,10 @@ const queryClient = new QueryClient({
   },
 });
 
+// Connect QueryClient to API client for cache clearing on logout
+import { setQueryClient } from "@/api/client";
+setQueryClient(queryClient);
+
 import { useAuthInit } from "@/hooks/useAuthInit";
 
 function App() {
@@ -127,3 +131,6 @@ function App() {
 }
 
 export default App;
+// test
+// test
+// husky test Mon Jan  5 19:05:50 KST 2026

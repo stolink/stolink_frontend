@@ -10,8 +10,8 @@ import type {
   TreeConfig,
   Branch,
   TreeStructure,
-} from "./types";
-import { getImportanceLevel } from "./types";
+} from "@/types/biography";
+import { getImportanceLevel } from "@/types/biography";
 import { DEFAULT_TREE_CONFIG } from "./constants";
 
 /** 시드 기반 의사 난수 생성기 */
@@ -30,7 +30,7 @@ function generateHorizontalTrunk(
   startX: number,
   centerY: number,
   endX: number,
-  random: () => number,
+  random: () => number
 ): { path: string; getYAtX: (x: number) => { top: number; bottom: number } } {
   const length = endX - startX;
   const segments = 50;
@@ -113,7 +113,7 @@ function generateTaperedBranch(
   angle: number, // degrees, 0 = 오른쪽, 90 = 위
   startThickness: number,
   endThickness: number,
-  random: () => number,
+  random: () => number
 ): { path: string; tipX: number; tipY: number } {
   const segments = 10;
   const angleRad = (angle * Math.PI) / 180;
@@ -183,7 +183,7 @@ function sortEventsByPrevId(events: BiographyEvent[]): BiographyEvent[] {
   let current = firstEvent;
   while (sorted.length < events.length) {
     const next = events.find(
-      (e) => e.prev_event_id === current.event_id && !usedIds.has(e.event_id),
+      (e) => e.prev_event_id === current.event_id && !usedIds.has(e.event_id)
     );
     if (!next) break;
     sorted.push(next);
@@ -208,7 +208,7 @@ interface UseBiographyTreeOptions {
  */
 export function useBiographyTree(
   events: BiographyEvent[],
-  options: UseBiographyTreeOptions = {},
+  options: UseBiographyTreeOptions = {}
 ): TreeStructure {
   const seed =
     options.seed ??
@@ -252,7 +252,7 @@ export function useBiographyTree(
       configTrunkStartX,
       centerY,
       trunkEndX,
-      random,
+      random
     );
 
     // 가지 생성 (각 이벤트마다 하나)
@@ -290,7 +290,7 @@ export function useBiographyTree(
         branchAngle,
         startThickness,
         endThickness,
-        random,
+        random
       );
 
       // 노드 위치

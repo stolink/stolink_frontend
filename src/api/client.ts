@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/stores";
+import { QueryClient } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -26,6 +27,20 @@ const processQueue = (error: Error | null) => {
   failedQueue = [];
 };
 
+// QueryClient 인스턴스를 저장 (App에서 설정)
+let queryClientInstance: QueryClient | null = null;
+
+export const setQueryClient = (client: QueryClient) => {
+  queryClientInstance = client;
+};
+
+const clearCacheAndLogout = () => {
+  useAuthStore.getState().logout();
+  if (queryClientInstance) {
+    queryClientInstance.clear();
+  }
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // 쿠키 자동 전송
@@ -46,7 +61,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor: 401 시 토큰 재발급 시도
@@ -63,7 +78,7 @@ api.interceptors.response.use(
     ) {
       // /auth/refresh 요청 자체가 실패한 경우는 재시도하지 않음
       if (originalRequest.url?.includes("/auth/refresh")) {
-        useAuthStore.getState().logout();
+        clearCacheAndLogout();
         return Promise.reject(error);
       }
 
@@ -93,8 +108,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // 토큰 재발급 실패 시 대기 중인 요청들도 실패 처리
         processQueue(refreshError as Error);
-        // 로그아웃
-        useAuthStore.getState().logout();
+        // 로그아웃 및 캐시 정리
+        clearCacheAndLogout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -102,7 +117,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

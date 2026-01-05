@@ -7,8 +7,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { BiographyEvent } from "./types";
-import { getImportanceLevel } from "./types";
+import type { BiographyEvent } from "@/types/biography";
+import { getImportanceLevel } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig } from "./constants";
 import { createElement } from "react";
 import {

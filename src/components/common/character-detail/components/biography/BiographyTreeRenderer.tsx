@@ -5,8 +5,8 @@
  */
 import { createElement } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { TreeStructure, Branch } from "./types";
-import { getImportanceLevel } from "./types";
+import type { TreeStructure, Branch } from "@/types/biography";
+import { getImportanceLevel } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig, INK_COLORS } from "./constants";
 import { cn } from "@/lib/utils";
 
