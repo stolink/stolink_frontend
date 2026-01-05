@@ -60,6 +60,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentSources, setCurrentSources] = useState<SourceChunk[]>([]);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
@@ -85,6 +87,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
       // 스트리밍 상태 초기화
       setStreaming(true);
+      setAnalyzing(true);
+      setAnalysisComplete(false);
       setCurrentResponse("");
       setCurrentSources([]);
 
@@ -123,6 +127,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         const decoder = new TextDecoder();
         let accumulatedResponse = "";
         let sources: SourceChunk[] = [];
+        let isFirstToken = true; // 로컬 플래그로 첫 토큰 감지
 
         while (true) {
           const { done, value } = await reader.read();
@@ -137,6 +142,12 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 const data = JSON.parse(line.slice(6)) as StreamToken;
 
                 if (data.type === "token" && data.content) {
+                  // 첫 토큰 도착 = 분석 완료
+                  if (isFirstToken) {
+                    isFirstToken = false;
+                    setAnalyzing(false);
+                    setAnalysisComplete(true);
+                  }
                   accumulatedResponse += data.content;
                   setCurrentResponse(accumulatedResponse);
                 } else if (data.type === "sources" && data.sources) {
@@ -231,15 +242,24 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const resetSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
     setMessages([]);
+    setAnalyzing(false);
+    setAnalysisComplete(false);
+  }, []);
+
+  const clearAnalysisComplete = useCallback(() => {
+    setAnalysisComplete(false);
   }, []);
 
   return {
     messages,
     streaming,
+    analyzing,
+    analysisComplete,
     currentResponse,
     currentSources,
     sendMessage,
     cancelStream,
     resetSession,
+    clearAnalysisComplete,
   };
 }

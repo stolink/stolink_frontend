@@ -8,3 +8,4 @@ export * from "./foreshadowing";
 export * from "./api"; // API response types
 export * from "./document";
 export * from "./characterGraph"; // D3 그래프 타입
+export * from "./analysisTypes";

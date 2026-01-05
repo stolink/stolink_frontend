@@ -1,3 +1,4 @@
+import React from "react";
 import { type Editor } from "@tiptap/react";
 import {
   Bold,
@@ -95,7 +96,7 @@ function ToolbarButton({
         "h-8 w-8 p-0 rounded-lg flex items-center justify-center transition-colors duration-200",
         "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
         isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
-        disabled && "opacity-40 cursor-not-allowed"
+        disabled && "opacity-40 cursor-not-allowed",
       )}
       title={tooltip}
     >
@@ -114,6 +115,7 @@ export function EditorToolbar({
   onToggleFocusMode,
   onExport,
   analysisStatus,
+  characterCount,
 }: EditorToolbarProps) {
   if (!editor) {
     return null;
@@ -131,12 +133,11 @@ export function EditorToolbar({
     <div
       className={cn(
         "relative flex items-center gap-1 px-4 py-[9px] border-b-2 border-mocha-400/30 bg-white shadow-sm sticky top-0 z-10 flex-wrap transition-all",
-        className
+        className,
       )}
     >
       {/* Decorative accent line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-mocha-300 via-mocha-500 to-mocha-300 opacity-60" />
-
       {/* Left Sidebar Toggle */}
       {onToggleSidebar && (
         <ToolbarButton
@@ -147,9 +148,7 @@ export function EditorToolbar({
           <PanelLeft className="h-4 w-4" />
         </ToolbarButton>
       )}
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* History */}
       <div className="flex items-center gap-0.5 mr-2">
         <ToolbarButton
@@ -167,9 +166,7 @@ export function EditorToolbar({
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Heading Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -180,7 +177,7 @@ export function EditorToolbar({
               "h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors",
               currentHeadingLevel > 0
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
             )}
           >
             <Type className="h-3.5 w-3.5" />
@@ -228,9 +225,7 @@ export function EditorToolbar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Basic Formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -260,9 +255,7 @@ export function EditorToolbar({
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Highlight Colors */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -273,7 +266,7 @@ export function EditorToolbar({
               "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
               editor.isActive("highlight")
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
             )}
             title="하이라이트"
           >
@@ -335,9 +328,7 @@ export function EditorToolbar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Alignment */}
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
@@ -360,9 +351,7 @@ export function EditorToolbar({
       >
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
-
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Lists & Blocks */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -391,7 +380,6 @@ export function EditorToolbar({
       >
         <Minus className="h-4 w-4" />
       </ToolbarButton>
-
       <div className="flex items-center gap-1 ml-2">
         {onToggleFocusMode && (
           <ToolbarButton onClick={onToggleFocusMode} tooltip="집중 모드 (F11)">
@@ -404,9 +392,7 @@ export function EditorToolbar({
           </ToolbarButton>
         )}
       </div>
-
       <div className="flex-1" />
-
       {/* Analysis Status Indicator */}
       {analysisStatus === "analyzing" && (
         <motion.div
@@ -420,7 +406,6 @@ export function EditorToolbar({
           <span className="text-[10px] font-bold">분석 중</span>
         </motion.div>
       )}
-
       {analysisStatus === "completed" && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -433,20 +418,18 @@ export function EditorToolbar({
           <span className="text-[10px] font-bold">분석 완료</span>
         </motion.div>
       )}
-
-      <motion.div
-        initial={false}
-        animate={{ scale: [1, 1.02, 1] }}
-        transition={{ duration: 0.3, repeat: 0 }}
-        key={editor.storage.characterCount.characters()}
-        className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
-      >
-        {editor.storage.characterCount.characters().toLocaleString()}자 ·{" "}
-        {editor.storage.characterCount.words().toLocaleString()}단어
-      </motion.div>
-
+      {characterCount !== undefined && (
+        <motion.div
+          initial={false}
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 0.3, repeat: 0 }}
+          key={characterCount}
+          className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
+        >
+          {characterCount.toLocaleString()}자
+        </motion.div>
+      )}
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-
       {/* Right Sidebar Toggle */}
       {onToggleRightSidebar && (
         <ToolbarButton

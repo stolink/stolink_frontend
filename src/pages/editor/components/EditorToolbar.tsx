@@ -41,9 +41,7 @@ interface EditorToolbarProps {
   onSaveTitle: () => void;
   onCancelEditTitle: () => void;
   isDemo: boolean;
-  selectedSectionId: string | null;
-
-  // Character count
+  selectedSectionId: string | null; // Character count
   characterCount: number;
 
   // View mode

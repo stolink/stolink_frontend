@@ -12,6 +12,7 @@ import {
   DEMO_CHAPTERS,
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
+import { debounce } from "lodash-es";
 import { useEditorStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { type ChapterNode } from "@/components/editor/sidebar";
@@ -150,6 +151,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // EditorContent ref (통합 뷰 저장 강제 호출용)
   const editorContentRef = useRef<EditorContentHandle>(null);
+
+  // Character Count Debouncer
+  // UI 업데이트 빈도를 줄여 렌더링 최적화 (1초)
+  const debouncedSetCharacterCount = useMemo(
+    () => debounce((count: number) => setCharacterCount(count), 1000),
+    [],
+  );
+
+  // Cleanup debounce
+  useEffect(() => {
+    return () => {
+      debouncedSetCharacterCount.cancel();
+    };
+  }, [debouncedSetCharacterCount]);
+
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
     isDemo ? "chapter-1" : null,
@@ -184,6 +200,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   );
   const toggleFocusMode = useEditorSettingStore(
     (state) => state.toggleFocusMode,
+  );
+  const performanceMode = useEditorSettingStore(
+    (state) => state.behavior.performanceMode,
   );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
@@ -368,7 +387,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveTimeoutRef,
     handleSelectFolder,
     handleContentChange,
-    handleCharacterCountChange,
     handleAddChapter,
     handleAddSection,
     handleRenameChapter,
@@ -509,9 +527,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       }
       prevCountRef.current = count;
 
-      handleCharacterCountChange(count, setCharacterCount);
+      // UI State 업데이트 (Performance Mode일 때만 Debounce)
+      if (performanceMode) {
+        debouncedSetCharacterCount(count);
+      } else {
+        setCharacterCount(count);
+      }
     },
-    [handleCharacterCountChange],
+    [debouncedSetCharacterCount, performanceMode],
   );
 
   // ============================================================
@@ -527,6 +550,13 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveContentRef,
     lastContentRef,
     saveTimeoutRef,
+    getLatestContent: useCallback(() => {
+      // Editor 모드일 때만 EditorContent에서 최신 내용 조회
+      if (viewMode === "editor" && editorContentRef.current) {
+        return editorContentRef.current.getContent();
+      }
+      return "";
+    }, [viewMode]),
   });
 
   // Split & Create Section Logic

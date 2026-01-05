@@ -37,6 +37,7 @@ interface NetworkControlsProps {
   onGroupingChange?: (enabled: boolean) => void;
   hoveredType?: RelationType | null;
   onHoverType?: (type: RelationType | null) => void;
+  onSimulateCollapse?: () => void;
 }
 
 /**
@@ -52,6 +53,7 @@ export function NetworkControls({
   onGroupingChange,
   hoveredType,
   onHoverType,
+  onSimulateCollapse,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -205,6 +207,23 @@ export function NetworkControls({
                     <p className="text-[9px] text-stone-400 leading-tight">
                       진영별로 노드를 그룹화합니다
                     </p>
+                  </div>
+                )}
+
+                {/* Simulation Debug (Temp) */}
+                {onSimulateCollapse && (
+                  <div className="pt-2 border-t border-stone-100 space-y-1.5">
+                    <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                      Simulation
+                    </Label>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={onSimulateCollapse}
+                      className="w-full h-7 text-[10px] font-medium"
+                    >
+                      Trigger Collapse 💥
+                    </Button>
                   </div>
                 )}
               </div>
