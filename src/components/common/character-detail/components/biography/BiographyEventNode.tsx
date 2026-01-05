@@ -45,8 +45,8 @@ export function BiographyEventNode({
   onClick,
 }: BiographyEventNodeProps) {
   const { event, x, y, angle } = node;
-  const config = getEventTypeConfig(event.event_type);
-  const icon = getEventTypeIcon(event.event_type);
+  const config = getEventTypeConfig(event.eventType);
+  const icon = getEventTypeIcon(event.eventType);
   const isMajor = getImportanceLevel(event.importance) === "major";
 
   // 라벨 위치 결정 (위쪽/아래쪽)
@@ -141,7 +141,7 @@ export function BiographyEventNode({
           textAnchor="middle"
           className={cn(
             "text-xs font-semibold pointer-events-none",
-            "fill-espresso-900"
+            "fill-espresso-900",
           )}
           style={{
             fontFamily: "'Spectral', serif",
@@ -149,9 +149,9 @@ export function BiographyEventNode({
             letterSpacing: "-0.01em",
           }}
         >
-          {event.narrative_summary.length > 12
-            ? `${event.narrative_summary.slice(0, 12)}...`
-            : event.narrative_summary}
+          {event.narrativeSummary.length > 12
+            ? `${event.narrativeSummary.slice(0, 12)}...`
+            : event.narrativeSummary}
         </text>
 
         {/* 참여자 수 표시 */}

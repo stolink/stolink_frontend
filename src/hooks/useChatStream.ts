@@ -7,12 +7,12 @@ const API_URL = import.meta.env.VITE_API_URL || "/ai-api";
  * RAG 검색 결과 소스 청크
  */
 export interface SourceChunk {
-  chunk_uuid: string;
+  chunkUuid: string;
   content: string;
-  similarity_score: number;
+  similarityScore: number;
   metadata?: {
-    document_id?: string;
-    document_title?: string;
+    documentId?: string;
+    documentTitle?: string;
     chapter?: string;
   };
 }
@@ -107,9 +107,9 @@ export function useChatStream(options?: UseChatStreamOptions) {
           headers,
           body: JSON.stringify({
             message,
-            project_id: projectId,
-            user_id: userId,
-            session_id: sessionId,
+            projectId: projectId,
+            userId: userId,
+            sessionId: sessionId,
           }),
           signal: abortControllerRef.current.signal,
           credentials: "include", // 쿠키 자동 전송
@@ -229,7 +229,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
       await fetch(`${API_URL}/chat/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId }),
+        body: JSON.stringify({ sessionId }),
       });
     } catch (err) {
       console.error("Failed to stop generation:", err);
