@@ -19,24 +19,27 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RelationType } from "@/types";
-import { RELATION_LABELS, RELATION_COLORS_HEX } from "./constants";
+import {
+  RELATION_LABELS,
+  RELATION_COLORS_HEX,
+  type UIRelationType,
+} from "./constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <Users className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
 };
 
 interface NetworkControlsProps {
-  relationTypeFilter: RelationType | "all";
-  onFilterChange: (value: RelationType | "all") => void;
+  relationTypeFilter: UIRelationType | "all";
+  onFilterChange: (value: UIRelationType | "all") => void;
   enableGrouping?: boolean;
   onGroupingChange?: (enabled: boolean) => void;
-  hoveredType?: RelationType | null;
-  onHoverType?: (type: RelationType | null) => void;
+  hoveredType?: UIRelationType | null;
+  onHoverType?: (type: UIRelationType | null) => void;
   onSimulateCollapse?: () => void;
   /** 주요 캐릭터만 보기 필터 */
   showMainOnly?: boolean;
@@ -67,7 +70,7 @@ export function NetworkControls({
       ? "모든 관계"
       : RELATION_LABELS[relationTypeFilter];
 
-  const relationTypes = Object.keys(RELATION_LABELS) as RelationType[];
+  const relationTypes = Object.keys(RELATION_LABELS) as UIRelationType[];
 
   return (
     <>
@@ -144,7 +147,7 @@ export function NetworkControls({
                       <DropdownMenuRadioGroup
                         value={relationTypeFilter}
                         onValueChange={(v) =>
-                          onFilterChange(v as RelationType | "all")
+                          onFilterChange(v as UIRelationType | "all")
                         }
                       >
                         <DropdownMenuRadioItem

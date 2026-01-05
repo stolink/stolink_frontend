@@ -1,4 +1,4 @@
-import type { Character } from "@/types";
+import type { Character, RelationType } from "@/types";
 import type { RelationshipLink } from "@/types/characterGraph";
 import type { AnalysisResultData } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
@@ -37,11 +37,11 @@ export function calculateAnalysisDiff(
       const newChar: Character = {
         _id: `temp-${Date.now()}-${Math.random()}`,
         projectId: "temp",
-        role: backendChar.role || "supporting",
+        role: (backendChar.role || "supporting") as Character["role"],
         profile: {
           characterId: "",
           name: backendChar.name,
-          age: backendChar.age,
+          age: backendChar.age ?? null,
           gender: backendChar.gender || "unknown",
           race: backendChar.race || "unknown",
           personality: {
@@ -141,7 +141,7 @@ export function calculateAnalysisDiff(
           id: `new-rel-${Date.now()}-${Math.random()}`,
           source: sourceChar._id,
           target: targetChar._id,
-          type: rel.relation_type,
+          type: rel.relation_type as RelationType,
           strength: rel.strength,
           description: rel.description,
           curvature: 0.2,
@@ -171,4 +171,18 @@ export function calculateAnalysisDiff(
     updatedRelations,
     removedRelations,
   };
+}
+
+/**
+ * Simple string hashing function for change detection.
+ * Not cryptographically secure, but enough for idempotency checks.
+ */
+export function calculateContentHash(content: string): string {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash.toString(36);
 }

@@ -11,22 +11,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Character, RelationshipLink, RelationType } from "@/types";
+import type { Character, RelationshipLink } from "@/types";
 import {
   RELATION_LABELS,
   ROLE_LABELS,
+  type UIRelationType,
 } from "@/components/CharacterGraph/constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 색상 클래스
-const RELATION_BADGE_COLORS: Record<RelationType, string> = {
+const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   friendly: "bg-emerald-500 text-white border-emerald-500",
   hostile: "bg-rose-500 text-white border-rose-500",
   romantic: "bg-pink-400 text-white border-pink-400",
 };
 
 // 관계 타입별 아이콘
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <User className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
@@ -203,11 +204,12 @@ export function NetworkDetailPanelD3({
                         variant="outline"
                         className={cn(
                           "mt-1.5 text-[10px] px-2 py-0.5 h-5 gap-1 rounded-full",
-                          RELATION_BADGE_COLORS[relType],
+                          RELATION_BADGE_COLORS[relType as UIRelationType] ||
+                            "bg-stone-200 text-stone-600",
                         )}
                       >
-                        {RELATION_ICONS[relType]}
-                        {RELATION_LABELS[relType]}
+                        {RELATION_ICONS[relType as UIRelationType]}
+                        {RELATION_LABELS[relType as UIRelationType] || relType}
                       </Badge>
                     </div>
                   </li>

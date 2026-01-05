@@ -1,8 +1,11 @@
-import type { RelationType, CharacterRole } from "@/types";
+import type { CharacterRole } from "@/types";
 
 // =====================================================
 // 🎨 색상 설정
 // =====================================================
+
+// UI에서 사용하는 관계 타입 (3가지로 제한)
+export type UIRelationType = "friendly" | "hostile" | "romantic";
 
 export const MOCHA_COLORS = {
   500: "#A47764", // Primary
@@ -24,7 +27,7 @@ export const RELATION_COLORS_HEX = {
 
 // 관계 타입별 색상 팔레트 (Strength 기반 3단계 - 채도/명도 변화)
 export const RELATION_PALETTE: Record<
-  RelationType,
+  UIRelationType,
   { weak: string; standard: string; deep: string }
 > = {
   friendly: {
@@ -45,7 +48,7 @@ export const RELATION_PALETTE: Record<
 };
 
 // 관계 타입별 기본 색상 (Standard 기준)
-export const RELATION_COLORS: Record<RelationType, string> = {
+export const RELATION_COLORS: Record<UIRelationType, string> = {
   friendly: RELATION_COLORS_HEX.friendly,
   hostile: RELATION_COLORS_HEX.hostile,
   romantic: RELATION_COLORS_HEX.romantic,
@@ -53,7 +56,7 @@ export const RELATION_COLORS: Record<RelationType, string> = {
 
 // 관계 타입별 라벨 (한글)
 // 관계 타입별 라벨 (한글)
-export const RELATION_LABELS: Record<RelationType, string> = {
+export const RELATION_LABELS: Record<UIRelationType, string> = {
   friendly: "우호",
   hostile: "적대",
   romantic: "로맨스",

@@ -28,7 +28,11 @@ export function generateMockAnalysisData(
       gender: "female",
       race: "human",
       mbti: null,
-      personality: ["희생적", "대담함"],
+      personality: {
+        coreTraits: ["희생적", "대담함"],
+        flaws: ["짝사랑"],
+        values: ["사랑"],
+      },
       backstory:
         "테나르디에의 딸. 마리우스를 짝사랑하며 비극적인 운명을 맞이함.",
       occupation: "빈민",

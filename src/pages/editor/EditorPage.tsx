@@ -218,6 +218,61 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const location = useLocation();
   const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
 
+  // ============================================================
+  // 1. Core Data Hooks (Must be first)
+  // ============================================================
+  const {
+    content: documentContent,
+    saveContent,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useDocumentContent(isDemo ? null : selectedSectionId);
+
+  // ============================================================
+  // 2. Data for Analysis (Must be before Analysis Hook)
+  // ============================================================
+
+  // Fetch Characters for Export/Publish Snapshot
+  const { data: characters = [] } = useCharacters(projectId, {
+    enabled: !isDemo,
+  });
+
+  // Compute Links for Graph Snapshot
+  const graphLinks = useMemo(() => {
+    if (isDemo || !characters.length) return [];
+
+    const links: Array<{
+      source: string;
+      target: string;
+      id: string | number;
+      type: string;
+      strength: number;
+    }> = [];
+    const processedLinkIds = new Set<string>();
+
+    characters.forEach((char) => {
+      const relGraph = char.relations?.graph || [];
+      relGraph.forEach((rel) => {
+        // Use source from relation or fallback to char._id
+        const sourceId = char._id;
+        const linkId = `${sourceId}-${rel.target}`;
+
+        if (processedLinkIds.has(linkId)) return;
+        processedLinkIds.add(linkId);
+
+        links.push({
+          source: sourceId,
+          target: rel.target,
+          id: linkId,
+          type: rel.type,
+          strength: rel.strength,
+        });
+      });
+    });
+    return links;
+  }, [characters, isDemo]);
+
   // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
   const navigationSectionId = (
     location.state as { selectedSectionId?: string } | null
@@ -273,7 +328,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     // Optional: Handle error toast here
   });
 
-  // Save Wrapper to Trigger Analysis
   const saveWithAnalysis = useCallback(
     async (content: string) => {
       if (!selectedSectionId) return;
@@ -290,6 +344,44 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     },
     [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
   );
+
+  // Manual Trigger Handler
+  const handleManualAnalysis = useCallback(() => {
+    if (!selectedSectionId || isDemo) return;
+
+    // Force add current content to buffer (even if unchanged)
+    // Note: We need current content. We can get it from documentContent or ref.
+    // Ideally use saveWithAnalysis to ensure everything is synced.
+    // But if no change, saveWithAnalysis might be redundant?
+    // Let's just use addToBuffer + flushAndAnalyze.
+
+    // We need the latest content.
+    // If we are in Editor mode, we can try to get it from ref if needed,
+    // but documentContent should be up to date if we are just viewing.
+    // However, if user is typing, documentContent might track it.
+
+    // Simplest: just flush what we have. But if buffer empty, we want to force current doc.
+    const content =
+      editorContentRef.current?.getContent() || documentContent || "";
+
+    if (content) {
+      console.log(
+        "[EditorPage] Manual analysis triggered for",
+        selectedSectionId,
+      );
+
+      // Before triggering, we can check if it would be skipped (optional UX improvement)
+      // For now, let's just trigger and let the hook handle skipping with a message.
+      addToBuffer(selectedSectionId, content);
+      flushAndAnalyze();
+    }
+  }, [
+    selectedSectionId,
+    isDemo,
+    addToBuffer,
+    flushAndAnalyze,
+    documentContent,
+  ]);
 
   // 페이지 이탈/브라우저 종료 시 버퍼 flush (useProjectAnalysis handles auto-flush internally too)
   useEffect(() => {
@@ -354,53 +446,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // ============================================================
 
   const { tree: documentTree, documents } = useDocumentTree(projectId);
-  const {
-    content: documentContent,
-    saveContent,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useDocumentContent(isDemo ? null : selectedSectionId);
-
-  // Fetch Characters for Export/Publish Snapshot
-  const { data: characters = [] } = useCharacters(projectId, {
-    enabled: !isDemo,
-  });
-
-  // Compute Links for Graph Snapshot
-  const graphLinks = useMemo(() => {
-    if (isDemo || !characters.length) return [];
-
-    const links: Array<{
-      source: string;
-      target: string;
-      id: string | number;
-      type: string;
-      strength: number;
-    }> = [];
-    const processedLinkIds = new Set<string>();
-
-    characters.forEach((char) => {
-      const relGraph = char.relations?.graph || [];
-      relGraph.forEach((rel) => {
-        // Use source from relation or fallback to char._id
-        const sourceId = char._id;
-        const linkId = `${sourceId}-${rel.target}`;
-
-        if (processedLinkIds.has(linkId)) return;
-        processedLinkIds.add(linkId);
-
-        links.push({
-          source: sourceId,
-          target: rel.target,
-          id: linkId,
-          type: rel.type,
-          strength: rel.strength,
-        });
-      });
-    });
-    return links;
-  }, [characters, isDemo]);
 
   const {
     createDocument,
@@ -824,11 +869,16 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleRightSidebar={toggleRightSidebar}
               onShowReader={isDemo ? undefined : () => setShowReader(true)}
               onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={() => {
-                setExportInitialTab("export");
-                setShowExport(true);
-              }}
+              onExport={
+                isDemo
+                  ? undefined
+                  : () => {
+                      setExportInitialTab("export");
+                      setShowExport(true);
+                    }
+              }
               analysisStatus={analysisDisplayStatus}
+              onTriggerAnalysis={isDemo ? undefined : handleManualAnalysis}
             />
           )}
 

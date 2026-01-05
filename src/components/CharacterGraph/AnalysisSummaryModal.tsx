@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -18,6 +18,56 @@ import {
   Link2,
   CheckCircle2,
 } from "lucide-react";
+
+// Simple Confetti Component using Framer Motion
+const ConfettiParticle = ({ delay = 0 }: { delay?: number }) => {
+  const [randomValues, setRandomValues] = useState<{
+    randomX: number;
+    randomY: number;
+    randomRotate: number;
+    color: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const colors = ["#A47764", "#BD9B8D", "#5B7B4B", "#FFD700", "#FF6B6B"];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRandomValues({
+      randomX: Math.random() * 400 - 200,
+      randomY: Math.random() * -300 - 100,
+      randomRotate: Math.random() * 360,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }, []);
+
+  if (!randomValues) return null;
+
+  const { randomX, randomY, randomRotate, color } = randomValues;
+
+  return (
+    <motion.div
+      initial={{ opacity: 1, x: 0, y: 0, scale: 0 }}
+      animate={{
+        opacity: [1, 1, 0],
+        x: randomX,
+        y: randomY,
+        rotate: randomRotate,
+        scale: [0, 1, 0.5],
+      }}
+      transition={{ duration: 1.5, delay, ease: "easeOut" }}
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        width: "8px",
+        height: "8px",
+        backgroundColor: color,
+        borderRadius: "50%",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    />
+  );
+};
 import { cn } from "@/lib/utils";
 
 interface AnalysisSummaryModalProps {
@@ -60,7 +110,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
       scale: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 400,
         damping: 35,
         staggerChildren: 0.08,
@@ -79,7 +129,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: "spring", stiffness: 400, damping: 30 },
+      transition: { type: "spring" as const, stiffness: 400, damping: 30 },
     },
   };
 
@@ -145,6 +195,13 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                     MozOsxFontSmoothing: "grayscale",
                   }}
                 >
+                  {/* Confetti Explosion on Mount */}
+                  <div className="absolute top-1/2 left-1/2 pointer-events-none">
+                    {[...Array(20)].map((_, i) => (
+                      <ConfettiParticle key={i} delay={i * 0.02} />
+                    ))}
+                  </div>
+
                   {/* Accessibility: Hidden Title and Description */}
                   <VisuallyHidden>
                     <DialogPrimitive.Title>
@@ -219,11 +276,13 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                             backgroundClip: "text",
                           }}
                         >
-                          Narrative Changes
+                          세계관 분석 완료
                         </h2>
                         <p className="text-stone-500 font-sans text-sm max-w-md leading-relaxed">
-                          이야기 구조의 변화를 분석한 결과입니다. 캐릭터와
-                          관계의 새로운 흐름을 확인하세요.
+                          AI가 본문을 분석하여 새로운 설정 데이터를
+                          추출했습니다.
+                          <br />
+                          발견된 캐릭터와 관계의 변화를 확인해보세요.
                         </p>
                       </div>
 

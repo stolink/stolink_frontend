@@ -44,6 +44,8 @@ interface AnalysisBufferStore {
   lastFlushAt: number;
   isAnalyzing: boolean;
   currentJobId: string | null;
+  activeJobs: Record<string, string>; // projectId -> jobId 매핑
+  lastAnalyzedHashes: Record<string, string>; // documentId -> contentHash
 
   // 액션
   setProjectId: (projectId: string | null) => void;
@@ -53,6 +55,9 @@ interface AnalysisBufferStore {
   shouldAutoFlush: () => boolean;
   setAnalyzing: (analyzing: boolean) => void;
   setJobId: (id: string | null) => void;
+  setLastAnalyzedHashes: (hashes: Record<string, string>) => void;
+  // Job 완료/실패 시 해당 프로젝트의 Job ID 제거
+  clearJobId: (projectId: string) => void;
 
   // 유틸리티
   getBufferSummary: () => { charCount: number; documentCount: number };
@@ -67,6 +72,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       lastFlushAt: Date.now(),
       isAnalyzing: false,
       currentJobId: null,
+      activeJobs: {}, // 초기화
+      lastAnalyzedHashes: {},
 
       setProjectId: (projectId) => {
         set((state) => {
@@ -75,6 +82,20 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.projectId = projectId;
             state.buffer = [];
             state.bufferCharCount = 0;
+            state.lastAnalyzedHashes = {};
+
+            // 프로젝트 변경 시 Job ID 복원
+            if (projectId && state.activeJobs[projectId]) {
+              console.log(
+                `[Store] Restoring Job ID for project ${projectId}: ${state.activeJobs[projectId]}`,
+              );
+              state.currentJobId = state.activeJobs[projectId];
+              // Job이 있다는 건 보통 분석 중/완료 대기 상태임
+              state.isAnalyzing = true;
+            } else {
+              state.currentJobId = null;
+              state.isAnalyzing = false;
+            }
           }
         });
       },
@@ -150,6 +171,30 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       setJobId: (id) => {
         set((state) => {
           state.currentJobId = id;
+          if (state.projectId && id) {
+            state.activeJobs[state.projectId] = id;
+          } else if (state.projectId && id === null) {
+            // setJobId(null) 호출 시 activeJobs에서도 제거
+            delete state.activeJobs[state.projectId];
+          }
+        });
+      },
+
+      clearJobId: (projectId) => {
+        set((state) => {
+          delete state.activeJobs[projectId];
+          if (state.projectId === projectId) {
+            state.currentJobId = null;
+            state.isAnalyzing = false;
+          }
+        });
+      },
+      setLastAnalyzedHashes: (hashes) => {
+        set((state) => {
+          state.lastAnalyzedHashes = {
+            ...state.lastAnalyzedHashes,
+            ...hashes,
+          };
         });
       },
 
@@ -171,6 +216,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         bufferCharCount: state.bufferCharCount,
         lastFlushAt: state.lastFlushAt,
         currentJobId: state.currentJobId,
+        activeJobs: state.activeJobs, // 추가
+        lastAnalyzedHashes: state.lastAnalyzedHashes,
       }),
     },
   ),

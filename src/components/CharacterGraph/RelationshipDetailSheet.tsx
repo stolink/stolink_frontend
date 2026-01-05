@@ -15,12 +15,9 @@ import {
   Skull,
   User,
 } from "lucide-react";
-import type {
-  DetailedRelationship,
-  BackendRelationshipType,
-} from "@/types/character";
+import type { DetailedRelationship } from "@/types/character";
 import { cn } from "@/lib/utils";
-import { getRelationshipColor } from "./utils";
+import { getRelationshipColor, type UIRelationType } from "./utils";
 
 interface RelationshipDetailSheetProps {
   relationship: DetailedRelationship | null;
@@ -32,13 +29,13 @@ interface RelationshipDetailSheetProps {
 
 // Local constants removed in favor of getRelationshipColor helper
 
-const RELATION_ICONS: Record<BackendRelationshipType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <User className="w-4 h-4" />,
   hostile: <Skull className="w-4 h-4" />,
   romantic: <Heart className="w-4 h-4" />,
 };
 
-const RELATION_LABELS: Record<BackendRelationshipType, string> = {
+const RELATION_LABELS: Record<UIRelationType, string> = {
   friendly: "우호적",
   hostile: "적대적",
   romantic: "로맨틱",
@@ -65,8 +62,7 @@ export function RelationshipDetailSheet({
   } = relationship;
 
   // Use relationship.relationType if available, otherwise fallback to type
-  const displayType = (relationship.relationType ||
-    type) as BackendRelationshipType;
+  const displayType = (relationship.relationType || type) as UIRelationType;
   const color = getRelationshipColor(displayType, strength);
   const label = RELATION_LABELS[displayType] || displayType;
   const icon = RELATION_ICONS[displayType] || <Activity className="w-4 h-4" />;
@@ -180,7 +176,7 @@ export function RelationshipDetailSheet({
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {history.map((event: any, idx: number) => {
                     const eventColorHex = getRelationshipColor(
-                      event.type as BackendRelationshipType,
+                      event.type as UIRelationType,
                       5,
                     ); // Default strength
 
@@ -219,9 +215,8 @@ export function RelationshipDetailSheet({
                               className="text-[10px] px-1.5 py-0 h-5"
                               style={{ borderColor: "currentColor" }}
                             >
-                              {RELATION_LABELS[
-                                event.type as BackendRelationshipType
-                              ] || event.type}
+                              {RELATION_LABELS[event.type as UIRelationType] ||
+                                event.type}
                             </Badge>
                           </div>
                         </div>
@@ -245,7 +240,7 @@ export function RelationshipDetailSheet({
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-stone-500 bg-white">
-                    {RELATION_LABELS[evolvedFrom as BackendRelationshipType] ||
+                    {RELATION_LABELS[evolvedFrom as UIRelationType] ||
                       evolvedFrom}
                   </Badge>
                   <span className="text-stone-400">→</span>

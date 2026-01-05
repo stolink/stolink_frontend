@@ -1,10 +1,39 @@
-import type { BackendCharacter } from "./character";
 import type { BackendEvent } from "./event";
 import type { BackendSection } from "./section";
 
 // ============================================
 // Backend Response Types (snake_case)
 // ============================================
+
+/** Backend character format from analysis API response */
+export interface BackendCharacter {
+  name: string;
+  role?: "protagonist" | "antagonist" | "supporting" | "mentor" | string;
+  age?: number;
+  gender?: string;
+  race?: string;
+  backstory?: string;
+  personality?: {
+    core_traits?: string[];
+    flaws?: string[];
+    values?: string[];
+  };
+  appearance?: {
+    physique?: string;
+    hair_color?: string;
+    hair_style?: string;
+    eyes?: string;
+    attire?: string[];
+    expression?: string;
+  };
+  faction?: {
+    name?: string;
+    social?: {
+      rank?: string;
+      influence?: number;
+    };
+  };
+}
 
 export interface BackendRelationship {
   source: string;

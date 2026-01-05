@@ -15,7 +15,7 @@ import type {
   SSEFailedEvent,
 } from "@/types/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+// Removed unused API_URL
 
 interface UseProjectAnalysisOptions {
   enabled?: boolean;
@@ -41,6 +41,20 @@ export function useProjectAnalysis(
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
+  const pendingHashesRef = useRef<Record<string, string>>({});
+
+  // Callbacks refs (to avoid effect re-runs)
+  const onCompleteRef = useRef(onAnalysisComplete);
+  const onErrorRef = useRef(onAnalysisError);
+
+  // Stuck detection
+  const stuckCountRef = useRef(0);
+  const lastProgressRef = useRef(-1);
+
+  useEffect(() => {
+    onCompleteRef.current = onAnalysisComplete;
+    onErrorRef.current = onAnalysisError;
+  }, [onAnalysisComplete, onAnalysisError]);
 
   // 버퍼 스토어 (Global State)
   const {
@@ -51,6 +65,7 @@ export function useProjectAnalysis(
     getBufferSummary,
     currentJobId,
     setJobId,
+    setLastAnalyzedHashes,
     isAnalyzing, // Store state
   } = useAnalysisBufferStore();
 
@@ -69,9 +84,9 @@ export function useProjectAnalysis(
     }
   }, []);
 
-  // Job SSE 연결 (currentJobId 감지)
+  // Project Status SSE 연결 (projectId 감지)
   useEffect(() => {
-    if (!currentJobId || !enabled) {
+    if (!projectId || !enabled) {
       cleanup();
       return;
     }
@@ -81,16 +96,16 @@ export function useProjectAnalysis(
 
     cleanup();
 
-    const url = `${API_URL}/ai/jobs/${currentJobId}/stream`;
-    console.log("[useProjectAnalysis] Connecting to job SSE:", url);
+    const url = aiService.getProjectStatusStreamUrl(projectId);
+    console.log("[useProjectAnalysis] Connecting to project status SSE:", url);
 
     const eventSource = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
       console.log(
-        "[useProjectAnalysis] SSE connection opened for job:",
-        currentJobId,
+        "[useProjectAnalysis] SSE connection opened for project:",
+        projectId,
       );
       setAnalysisError(null);
     };
@@ -106,6 +121,11 @@ export function useProjectAnalysis(
         const data = JSON.parse(e.data) as SSEProgressEvent;
         setAnalysisProgress(data.percent);
         console.log(`[useProjectAnalysis] Progress: ${data.percent}%`);
+
+        // If progress started, ensure we are in analyzing state
+        if (data.percent > 0 && data.percent < 100) {
+          setBufferAnalyzing(true);
+        }
       } catch {
         console.warn("[useProjectAnalysis] Failed to parse progress:", e.data);
       }
@@ -124,9 +144,11 @@ export function useProjectAnalysis(
         setJobId(null);
 
         if (data.result) {
-          onAnalysisComplete?.(data.result);
+          // Finalize analyzed hashes into store for idempotency
+          setLastAnalyzedHashes(pendingHashesRef.current);
+          pendingHashesRef.current = {};
+          onCompleteRef.current?.(data.result);
         }
-        cleanup();
       } catch (err) {
         console.error(
           "[useProjectAnalysis] Failed to parse completed:",
@@ -136,8 +158,7 @@ export function useProjectAnalysis(
         setAnalysisError("Failed to parse analysis result");
         setBufferAnalyzing(false);
         setJobId(null);
-        onAnalysisError?.("Failed to parse analysis result");
-        cleanup();
+        onErrorRef.current?.("Failed to parse analysis result");
       }
     });
 
@@ -149,21 +170,14 @@ export function useProjectAnalysis(
         setAnalysisError(data.error);
         setBufferAnalyzing(false);
         setJobId(null);
-        onAnalysisError?.(data.error);
-        cleanup();
+        onErrorRef.current?.(data.error);
       } catch {
         console.error("[useProjectAnalysis] Failed to parse failed:", e.data);
-        cleanup();
       }
     });
 
     eventSource.onerror = (e) => {
       console.error("[useProjectAnalysis] SSE connection error", e);
-      // Don't close immediately on generic error, wait for retry or explicit failed event?
-      // Standard EventSource re-connects automatically.
-      // But if it's a fatal error (404, 500), we might want to stop.
-      // For now, let it retry or rely on heartbeat timeout (backend side).
-      // However, if we need to detect disconnect:
       if (eventSource.readyState === EventSource.CLOSED) {
         setBufferAnalyzing(false);
         setJobId(null);
@@ -174,27 +188,59 @@ export function useProjectAnalysis(
       cleanup();
     };
   }, [
-    currentJobId,
+    projectId,
     enabled,
     cleanup,
     setBufferAnalyzing,
     setJobId,
-    onAnalysisComplete,
-    onAnalysisError,
+    setLastAnalyzedHashes,
+    // Removed onAnalysisComplete and onAnalysisError from dependencies
   ]);
 
   // 분석 트리거 (버퍼 flush 후 분석 시작)
   const triggerAnalysis = useCallback(async () => {
-    if (!projectId || isAnalyzing) return;
-
-    const bufferContent = flush();
-
-    if (bufferContent.length === 0) {
-      console.log("[useProjectAnalysis] No content to analyze");
+    if (!projectId) {
+      console.log("[useProjectAnalysis] Trigger skipped: No projectId");
+      return;
+    }
+    if (isAnalyzing) {
+      console.log("[useProjectAnalysis] Trigger skipped: Already analyzing");
       return;
     }
 
+    const { buffer: currentBuffer, lastAnalyzedHashes } =
+      useAnalysisBufferStore.getState();
+
+    if (currentBuffer.length === 0) {
+      console.log("[useProjectAnalysis] Trigger skipped: Buffer empty");
+      return;
+    }
+
+    // 1. Idempotency Check (Hashing)
+    const currentHashes: Record<string, string> = {};
+    let hasChanges = false;
+
+    currentBuffer.forEach((chunk) => {
+      const hash = aiService.calculateContentHash(chunk.content);
+      currentHashes[chunk.documentId] = hash;
+      if (lastAnalyzedHashes[chunk.documentId] !== hash) {
+        hasChanges = true;
+      }
+    });
+
+    if (!hasChanges) {
+      console.log(
+        "[useProjectAnalysis] Trigger skipped: No content changes detected via hashing",
+      );
+      // Flush even if skipped? No, keep it in buffer until analyzed?
+      // Actually, if it's already analyzed, we should clear the buffer.
+      flush();
+      return;
+    }
+
+    const bufferContent = flush();
     const documentIds = bufferContent.map((chunk) => chunk.documentId);
+
     console.log(
       "[useProjectAnalysis] Starting analysis for",
       documentIds.length,
@@ -211,7 +257,11 @@ export function useProjectAnalysis(
 
       if (jobId) {
         console.log("[useProjectAnalysis] Job started:", jobId);
-        setJobId(jobId); // This triggers the SSE useEffect
+        setJobId(jobId);
+        // Store current hashes to track what we are analyzing
+        // We will finalize this into lastAnalyzedHashes upon completion
+        // For now, just save them in a ref to use when completed
+        pendingHashesRef.current = currentHashes;
       } else {
         throw new Error("No jobId returned from analyze API");
       }
@@ -220,16 +270,9 @@ export function useProjectAnalysis(
         error instanceof Error ? error.message : "Analysis request failed";
       setAnalysisError(errorMsg);
       setBufferAnalyzing(false);
-      onAnalysisError?.(errorMsg);
+      onErrorRef.current?.(errorMsg);
     }
-  }, [
-    projectId,
-    isAnalyzing,
-    flush,
-    setBufferAnalyzing,
-    onAnalysisError,
-    setJobId,
-  ]);
+  }, [projectId, isAnalyzing, flush, setBufferAnalyzing, setJobId]);
 
   // Flush and analyze (강제 실행)
   const flushAndAnalyze = useCallback(async () => {
@@ -260,6 +303,114 @@ export function useProjectAnalysis(
   // Cleanup on unmount (Reset global analyzing state if needed? No, persist it)
   // But if components unmount, SSE closes. Job continues on server.
   // Re-mount should pick it up via currentJobId persistence.
+
+  // Job Status Recovery (Page Reload / Re-mount handling)
+  // If we have a currentJobId, check its status and update accordingly
+  useEffect(() => {
+    let mounted = true;
+
+    const checkJobStatus = async () => {
+      if (!currentJobId) {
+        // No job ID - make sure we're not stuck in analyzing state
+        if (isAnalyzing) {
+          console.log(
+            "[useProjectAnalysis] No job ID but isAnalyzing is true. Resetting.",
+          );
+          setBufferAnalyzing(false);
+        }
+        return;
+      }
+
+      try {
+        console.log(
+          "[useProjectAnalysis] Checking status for existing job:",
+          currentJobId,
+        );
+        const status =
+          await aiService.getJobStatus<AnalysisResultData>(currentJobId);
+
+        if (!mounted) return;
+
+        console.log("[useProjectAnalysis] Job status recovered:", status);
+
+        const normalizedStatus = status.status.toLowerCase();
+
+        if (normalizedStatus === "completed") {
+          console.log(
+            "[useProjectAnalysis] Job completed while disconnected. Finalizing.",
+          );
+          setAnalysisProgress(100);
+          setBufferAnalyzing(false);
+          setJobId(null);
+
+          if (status.result) {
+            onCompleteRef.current?.(status.result);
+          }
+        } else if (normalizedStatus === "failed") {
+          console.log("[useProjectAnalysis] Job failed while disconnected.");
+          setAnalysisError(status.error || "Analysis job failed");
+          setBufferAnalyzing(false);
+          setJobId(null);
+          onErrorRef.current?.(status.error || "Analysis job failed");
+        } else {
+          // 'pending' or 'processing'
+          console.log(
+            "[useProjectAnalysis] Job still in progress. Syncing state.",
+          );
+
+          // Stuck Detection logic (Logging only)
+          const currentProgress = status.progress || 0;
+          if (currentProgress === lastProgressRef.current) {
+            stuckCountRef.current += 1;
+            if (stuckCountRef.current % 5 === 0) {
+              console.log(
+                `[useProjectAnalysis] Job progressing slowly... (Count: ${stuckCountRef.current})`,
+              );
+            }
+          } else {
+            stuckCountRef.current = 0;
+            lastProgressRef.current = currentProgress;
+          }
+
+          // Do NOT force reset even if stuck, as analysis might take long (>10 mins)
+          // Just continue polling via interval setup below.
+
+          // Project Mismatch Check Removed (Store handles mapping via activeJobs)
+          setBufferAnalyzing(true);
+          setAnalysisProgress(currentProgress);
+        }
+      } catch (error: unknown) {
+        console.warn("[useProjectAnalysis] Failed to check job status:", error);
+        // If 404 or any error, the job is likely gone. Reset state.
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError?.response?.status === 404) {
+          console.log(
+            "[useProjectAnalysis] Job not found (404). Resetting state.",
+          );
+        } else {
+          console.log(
+            "[useProjectAnalysis] Job status check failed. Resetting state to be safe.",
+          );
+        }
+        setBufferAnalyzing(false);
+        setJobId(null);
+      }
+    };
+
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    // Run check immediately if we have a job ID
+    if (currentJobId) {
+      checkJobStatus();
+      // Fallback: Poll every 4 seconds in case SSE fails
+      intervalId = setInterval(checkJobStatus, 4000);
+    }
+
+    return () => {
+      mounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [currentJobId, setBufferAnalyzing, setJobId, isAnalyzing]);
 
   return {
     isAnalyzing,

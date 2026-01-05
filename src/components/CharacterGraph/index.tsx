@@ -10,17 +10,12 @@ import {
 import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import { cn } from "@/lib/utils";
-import type {
-  Character,
-  CharacterNode,
-  RelationshipLink,
-  RelationType,
-} from "@/types";
+import type { Character, CharacterNode, RelationshipLink } from "@/types";
 import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS } from "./constants";
+import { GROUP_COLORS, type UIRelationType } from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
@@ -36,8 +31,8 @@ interface CharacterGraphProps {
   onNodeClick?: (character: Character | null) => void;
   onLinkClick?: (link: RelationshipLink | null) => void;
   selectedNodeId?: string | null;
-  relationTypeFilter?: RelationType | "all";
-  onFilterChange?: (filter: RelationType | "all") => void;
+  relationTypeFilter?: UIRelationType | "all";
+  onFilterChange?: (filter: UIRelationType | "all") => void;
   highlightedNodeIds?: string[] | null;
   /** 검색 결과 노드 ID 변경 콜백 */
   onSearchChange?: (matchingIds: string[] | null) => void;
@@ -82,10 +77,10 @@ export const CharacterGraph = forwardRef<
     const [isDragging, setIsDragging] = useState(false);
     const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
     const [hoveredRelationType, setHoveredRelationType] =
-      useState<RelationType | null>(null);
-    const [internalFilter, setInternalFilter] = useState<RelationType | "all">(
-      relationTypeFilter,
-    );
+      useState<UIRelationType | null>(null);
+    const [internalFilter, setInternalFilter] = useState<
+      UIRelationType | "all"
+    >(relationTypeFilter);
     const [showMainOnly, setShowMainOnly] = useState(false);
 
     // 외부에서 필터 변경 시 내부 상태 동기화
@@ -94,7 +89,7 @@ export const CharacterGraph = forwardRef<
     }, [relationTypeFilter]);
 
     const handleFilterChange = useCallback(
-      (filter: RelationType | "all") => {
+      (filter: UIRelationType | "all") => {
         setInternalFilter(filter);
         onFilterChange?.(filter);
       },
@@ -1072,10 +1067,19 @@ export const CharacterGraph = forwardRef<
         {/* Relationship Event Tooltip on Hover */}
         {hoveredLinkData && (
           <RelationshipEventTooltip
-            type={hoveredLinkData.link.type}
+            type={hoveredLinkData.link.type as UIRelationType}
             strength={hoveredLinkData.link.strength}
             description={hoveredLinkData.link.description}
-            events={hoveredLinkData.link.history || []}
+            events={
+              (hoveredLinkData.link.history || []) as {
+                eventId: string;
+                title: string;
+                chapter?: string;
+                type: UIRelationType;
+                reason?: string;
+                date?: string;
+              }[]
+            }
             sourceName={
               typeof hoveredLinkData.link.source === "object"
                 ? (hoveredLinkData.link.source as CharacterNode).name
@@ -1131,3 +1135,6 @@ export const CharacterGraph = forwardRef<
     );
   },
 );
+
+export { AnalysisSummaryModal } from "./AnalysisSummaryModal";
+export default CharacterGraph;

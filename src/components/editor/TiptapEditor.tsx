@@ -114,7 +114,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     const [showZoomControls, setShowZoomControls] = useState(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
-    const scrollPositionRef = useRef<number>(0);
+    // Track last HTML sent to parent to prevent sync focus loops
+    const lastEmittedHTMLRef = useRef<string>("");
 
     // 복선 태그 삭제 감지용 ref (에디터 본문에서 #복선태그 삭제 시 미회수 상태로 복구)
     const prevForeshadowingIdsRef = useRef<Set<string>>(new Set());
@@ -324,7 +325,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
           // 2. Content Change (HTML Generation is expensive)
           if (onContentChangeRef.current) {
-            onContentChangeRef.current(editor.getHTML());
+            const html = editor.getHTML();
+            lastEmittedHTMLRef.current = html;
+            onContentChangeRef.current(html);
           }
         }, 500),
       [],
@@ -451,16 +454,24 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       if (editor && initialContent !== undefined) {
         const currentHTML = editor.getHTML();
         const sanitizedContent = sanitizeEditorContent(initialContent);
-        const isDifferent = currentHTML !== sanitizedContent;
+
+        // Check if content is actually different from current OR last saved content
+        // This prevents the "Save -> Refetch -> setContent -> Change Event -> Save" loop
+        const isDifferentFromCurrent = currentHTML !== sanitizedContent;
+        const isDifferentFromLastSaved =
+          lastEmittedHTMLRef.current !== sanitizedContent;
         const isFocused = editor.isFocused;
 
         // Only update if content is different AND editor is not focused
-        // If focused, we assume the user is typing and we shouldn't overwrite with old server data
-        if (isDifferent && !isFocused) {
+        if (isDifferentFromCurrent && isDifferentFromLastSaved && !isFocused) {
+          console.log("[TiptapEditor] Syncing content from server/store", {
+            documentId,
+          });
           editor.commands.setContent(sanitizedContent);
+          lastEmittedHTMLRef.current = sanitizedContent;
         }
       }
-    }, [editor, initialContent]);
+    }, [editor, initialContent, documentId]);
 
     if (!editor) {
       return null;
