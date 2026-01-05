@@ -31,7 +31,9 @@ import {
 
 // Hooks
 import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
-import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
+import { useAnalyzeStory } from "@/hooks/useAI";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Components
@@ -153,18 +155,21 @@ export default function WorldPage() {
   const updateCharacterMutation = useUpdateCharacter();
 
   const queryClient = useQueryClient();
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const { setJobId, setAnalyzing } = useAnalysisBufferStore();
 
-  // Polling for analysis status
-  const { progress, isPolling } = useAIJobPolling(currentJobId, {
-    onComplete: () => {
-      // 분석 완료 시 데이터 리프레시
-      queryClient.invalidateQueries({
-        queryKey: ["characters", "list", projectId],
-      });
-      setCurrentJobId(null);
-    },
-  });
+  // Polling for analysis status (Global)
+  const { isAnalyzing: isPolling, analysisProgress: progress } =
+    useProjectAnalysis(projectId, {
+      onAnalysisComplete: () => {
+        // 분석 완료 시 데이터 리프레시
+        queryClient.invalidateQueries({
+          queryKey: ["characters", "list", projectId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["characters", projectId],
+        });
+      },
+    });
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -176,7 +181,8 @@ export default function WorldPage() {
         documentIds: [], // Empty means analyze all for now
       });
       if (result.data?.jobId) {
-        setCurrentJobId(result.data.jobId);
+        setJobId(result.data.jobId);
+        setAnalyzing(true);
       }
     } catch (err) {
       console.error("Analysis failed:", err);

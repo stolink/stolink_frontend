@@ -43,6 +43,7 @@ export type UpdateCharacterInput = Partial<CreateCharacterInput>;
 
 /**
  * 백엔드 응답 → 프론트엔드 Character 타입 변환
+ * callback_result.json 스키마 기준 (snake_case → camelCase)
  */
 // Helper to safe parse or return object
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,97 +62,164 @@ const safeParse = (data: any, defaultVal: any) => {
 function transformBackendCharacter(backendChar: any): Character {
   // Parse JSON fields (handle both stringified JSON and pre-parsed objects)
   const aliases = safeParse(backendChar.aliases, backendChar.aliasesJson || []);
-  const appearance = safeParse(
+  const rawAppearance = safeParse(
     backendChar.appearance,
     backendChar.appearanceJson || {},
   );
-  const personality = safeParse(
+
+  // 🆕 callback_result.json 기준: profile.personality는 객체 (core_traits, flaws, values)
+  const profilePersonality = backendChar.profile?.personality || {};
+  const rawPersonality = safeParse(
     backendChar.personality,
     backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
-  // 🆕 백엔드 relationships 배열을 relations.graph로 매핑
-  const relationshipsGraph = Array.isArray(backendChar.relationships)
+  // 🆕 callback_result.json 기준: relations.graph에서 직접 매핑
+
+  const relationsGraph = Array.isArray(backendChar.relations?.graph)
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      backendChar.relationships.map((rel: any) => ({
-        target: rel.target || rel.targetId,
-        type: rel.type || rel.relationType || rel.relation_type || "friendly",
+      backendChar.relations.graph.map((rel: any) => ({
+        target: rel.target,
+        type: rel.type || "ALLY",
         history: rel.history || null,
         strength: rel.strength || 5,
         description: rel.description || "",
+        // 🆕 callback_result.json: public_stance, private_feeling
+        publicStance: rel.public_stance || rel.publicStance,
+        privateFeeling: rel.private_feeling || rel.privateFeeling,
       }))
-    : [];
+    : // Fallback: 기존 relationships 배열 형식
+      Array.isArray(backendChar.relationships)
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        backendChar.relationships.map((rel: any) => ({
+          target: rel.target || rel.targetId,
+          type: rel.type || rel.relationType || rel.relation_type || "ALLY",
+          history: rel.history || null,
+          strength: rel.strength || 5,
+          description: rel.description || "",
+          publicStance: rel.public_stance,
+          privateFeeling: rel.private_feeling,
+        }))
+      : [];
+
+  // 🆕 callback_result.json: current_mood 객체 처리
+  const currentMood = backendChar.current_mood || backendChar.currentMood || {};
+
+  // 🆕 callback_result.json: meta 객체 (snake_case)
+  const meta = backendChar.meta || {};
 
   return {
-    _id: backendChar.id,
-    projectId: backendChar.projectId,
+    _id: backendChar._id || backendChar.id,
+    projectId: backendChar.projectId || "",
     role: backendChar.role || "other",
     profile: {
-      characterId: backendChar.id || "",
+      characterId:
+        backendChar.profile?.character_id ||
+        backendChar.profile?.characterId ||
+        backendChar._id ||
+        "",
       name: backendChar.profile?.name || backendChar.name || "Unknown",
-      age: backendChar.profile?.age,
-      gender: backendChar.profile?.gender || backendChar.gender, // fallback to root gender
-      race: backendChar.profile?.race || backendChar.race, // fallback to root race
-      mbti: backendChar.profile?.mbti || backendChar.mbti, // fallback to root mbti
+      age: backendChar.profile?.age ?? null,
+      gender: backendChar.profile?.gender || backendChar.gender || "unknown",
+      race: backendChar.profile?.race || backendChar.race || "unknown",
+      mbti: backendChar.profile?.mbti || backendChar.mbti || null,
       occupation: backendChar.profile?.occupation,
       birthplace: backendChar.profile?.birthplace,
       family: backendChar.profile?.family,
-      personality: backendChar.profile?.personality || [],
-      backstory: backendChar.backstory || backendChar.profile?.backstory || "",
+      // 🆕 profile.personality는 이제 객체 (ProfilePersonality)
+      personality: {
+        coreTraits:
+          profilePersonality.core_traits ||
+          profilePersonality.coreTraits ||
+          rawPersonality.core_traits ||
+          rawPersonality.coreTraits ||
+          [],
+        flaws: profilePersonality.flaws || rawPersonality.flaws || [],
+        values: profilePersonality.values || rawPersonality.values || [],
+      },
+      backstory: backendChar.profile?.backstory || backendChar.backstory || "",
       faction: {
         name: backendChar.profile?.faction?.name || null,
-        social: backendChar.profile?.faction?.social || {
-          rank: "unknown",
-          influence: 0,
-          factionReputation: {},
+        social: {
+          rank: backendChar.profile?.faction?.social?.rank || "COMMON",
+          influence: backendChar.profile?.faction?.social?.influence || 0,
+          // 🆕 callback_result.json: faction_reputation
+          factionReputation:
+            backendChar.profile?.faction?.social?.faction_reputation ||
+            backendChar.profile?.faction?.social?.factionReputation ||
+            {},
         },
       },
     },
-    aliases: backendChar.profile?.aliases || aliases || [],
-    status: backendChar.status || "active",
+    aliases: backendChar.aliases || aliases || [],
+    status: backendChar.status || "alive",
     motivation: backendChar.motivation,
     firstAppearance: backendChar.firstAppearance,
+    // 🆕 callback_result.json: appearance 필드 (snake_case → camelCase)
     appearance: {
-      physique: appearance.physique || "",
-      skinTone: appearance.skinTone || "",
-      eyes: appearance.eyes || "",
-      nose: appearance.nose || "",
-      mouth: appearance.mouth || "",
-      hairStyle: appearance.hairStyle || "",
-      hairColor: appearance.hairColor || "",
+      physique: rawAppearance.physique || "",
+      skinTone: rawAppearance.skin_tone || rawAppearance.skinTone || "",
+      eyes: rawAppearance.eyes || "",
+      nose: rawAppearance.nose || "",
+      mouth: rawAppearance.mouth || "",
+      hairStyle: rawAppearance.hair_style || rawAppearance.hairStyle || "",
+      hairColor: rawAppearance.hair_color || rawAppearance.hairColor || "",
       attire:
-        appearance.attire || (appearance.clothing ? [appearance.clothing] : []),
-      expression: appearance.expression || "",
+        rawAppearance.attire ||
+        (rawAppearance.clothing ? [rawAppearance.clothing] : []),
+      expression: rawAppearance.expression || "",
       scarsTattoos:
-        appearance.scarsTattoos ||
-        (appearance.distinctive_features
-          ? [appearance.distinctive_features]
+        rawAppearance.scars_tattoos ||
+        rawAppearance.scarsTattoos ||
+        (rawAppearance.distinctive_features
+          ? [rawAppearance.distinctive_features]
           : []),
-      styleContext: appearance.styleContext || { artStyle: "default" },
+      styleContext: {
+        artStyle:
+          rawAppearance.style_context?.art_style ||
+          rawAppearance.styleContext?.artStyle ||
+          "Digital Illustration",
+      },
     },
+    // Character.personality - profile.personality와 동일하게 매핑
     personality: {
-      coreTraits: personality.coreTraits || personality.core_traits || [],
-      flaws: personality.flaws || personality.flaws || [],
-      values: personality.values || personality.values || [],
+      coreTraits:
+        profilePersonality.core_traits ||
+        profilePersonality.coreTraits ||
+        rawPersonality.core_traits ||
+        rawPersonality.coreTraits ||
+        [],
+      flaws: profilePersonality.flaws || rawPersonality.flaws || [],
+      values: profilePersonality.values || rawPersonality.values || [],
     },
     relations: {
-      graph: relationshipsGraph,
-      eventRefs: [],
-      locationContext: "",
+      graph: relationsGraph,
+      // 🆕 callback_result.json: event_refs, location_context
+      eventRefs:
+        backendChar.relations?.event_refs ||
+        backendChar.relations?.eventRefs ||
+        [],
+      locationContext:
+        backendChar.relations?.location_context ||
+        backendChar.relations?.locationContext ||
+        "",
     },
+    // 🆕 callback_result.json: current_mood (snake_case)
     currentMood: {
-      emotion: "",
-      intensity: 0,
-      trigger: null,
+      emotion: currentMood.emotion || "",
+      intensity: currentMood.intensity || 0,
+      trigger: currentMood.trigger || null,
     },
     inventory: [],
+    // 🆕 callback_result.json: meta (snake_case)
     meta: {
-      createdAt: backendChar.createdAt || null,
-      updatedAt: backendChar.updatedAt || null,
-      dataVersion: "1.0",
-      lockVersion: 0,
+      createdAt: meta.created_at || meta.createdAt || null,
+      updatedAt: meta.updated_at || meta.updatedAt || null,
+      dataVersion: meta.data_version || meta.dataVersion || "2.0.0",
+      lockVersion: meta.lock_version || meta.lockVersion || 0,
     },
     imageUrl: resolveImageUrl(backendChar.imageUrl),
+    embedding: backendChar.embedding,
     graphPosition: backendChar.graphPosition || undefined,
   };
 }

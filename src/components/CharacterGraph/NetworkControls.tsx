@@ -38,6 +38,9 @@ interface NetworkControlsProps {
   hoveredType?: RelationType | null;
   onHoverType?: (type: RelationType | null) => void;
   onSimulateCollapse?: () => void;
+  /** 주요 캐릭터만 보기 필터 */
+  showMainOnly?: boolean;
+  onShowMainOnlyChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -54,6 +57,8 @@ export function NetworkControls({
   hoveredType,
   onHoverType,
   onSimulateCollapse,
+  showMainOnly = false,
+  onShowMainOnlyChange,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -191,6 +196,24 @@ export function NetworkControls({
                     </button>
                   )}
                 </div>
+
+                {/* 주요 캐릭터만 필터 */}
+                {onShowMainOnlyChange && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                        주요 캐릭터만
+                      </Label>
+                      <Switch
+                        checked={showMainOnly}
+                        onChange={onShowMainOnlyChange}
+                      />
+                    </div>
+                    <p className="text-[9px] text-stone-400 leading-tight">
+                      주인공, 적대자 및 관계가 많은 캐릭터만 표시
+                    </p>
+                  </div>
+                )}
 
                 {/* 그룹 토글 */}
                 {onGroupingChange && (

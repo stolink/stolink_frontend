@@ -42,7 +42,9 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   evolvedFrom?: RelationType;
   since?: string;
   // New fields from schema
+  /** public_stance from relations.graph[] */
   publicStance?: string;
+  /** private_feeling from relations.graph[] */
   privateFeeling?: string;
   /** Curve factor for multiple links between same nodes (-1 to 1) */
   curvature?: number;

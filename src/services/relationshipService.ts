@@ -1,7 +1,19 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
 
+/**
+ * 관계 타입 (callback_result.json 기반 확장)
+ */
 export type RelationshipType =
+  // 🆕 callback_result.json에서 사용하는 대문자 타입
+  | "ALLY"
+  | "RIVAL"
+  | "NEUTRAL"
+  | "ROMANTIC"
+  | "ENEMY"
+  | "MENTOR"
+  | "FAMILY"
+  // Legacy lowercase values
   | "friendly"
   | "hostile"
   | "neutral"
@@ -16,10 +28,42 @@ export interface Relationship {
   target?: { id: string; name?: string; [key: string]: unknown };
   type: RelationshipType;
   strength: number; // 1-10
+  description?: string;
+  bidirectional?: boolean;
   extras?: {
     description?: string;
     since?: string;
     [key: string]: unknown;
+  };
+}
+
+/**
+ * 백엔드 독립 relationships 배열 타입 (callback_result.json)
+ */
+export interface BackendRelationship {
+  source: string; // 캐릭터 이름
+  target: string; // 캐릭터 이름
+  relation_type: string;
+  strength: number;
+  description: string;
+  bidirectional: boolean;
+}
+
+/**
+ * callback_result.json relationships 배열 → 프론트엔드 타입 변환
+ */
+export function transformBackendRelationship(
+  rel: BackendRelationship,
+  index: number,
+): Relationship {
+  return {
+    id: `rel-${rel.source}-${rel.target}-${index}`,
+    sourceId: rel.source,
+    targetId: rel.target,
+    type: rel.relation_type as RelationshipType,
+    strength: rel.strength,
+    description: rel.description,
+    bidirectional: rel.bidirectional,
   };
 }
 
@@ -42,14 +86,14 @@ export const relationshipService = {
   getAll: async () => {
     throw new Error(
       "GET /projects/{projectId}/relationships endpoint has been removed. " +
-        "Use characterService.getAll() and extract from character.relationships instead."
+        "Use characterService.getAll() and extract from character.relationships instead.",
     );
   },
 
   create: async (payload: CreateRelationshipInput) => {
     const response = await api.post<ApiResponse<Relationship>>(
       "/relationships",
-      payload
+      payload,
     );
     return response.data;
   },
@@ -57,14 +101,14 @@ export const relationshipService = {
   update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
     const response = await api.patch<ApiResponse<Relationship>>(
       `/relationships/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
 
   delete: async (id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/relationships/${id}`
+      `/relationships/${id}`,
     );
     return response.data;
   },

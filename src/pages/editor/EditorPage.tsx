@@ -56,8 +56,16 @@ import {
 import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
 import { useCharacters } from "@/hooks/useCharacters";
-import { useProjectSSE } from "@/hooks/useProjectSSE";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
+import type { AnalysisDiff } from "@/types/analysisTypes";
+import type {
+  AnalysisResultData,
+  ConsistencyReport,
+} from "@/types/analysisResult";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -218,16 +226,72 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // ============================================================
   // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
   // ============================================================
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
-    isDemo ? null : projectId,
-    { enabled: !isDemo },
-  );
-  // TODO: 저장 흐름에 addToBuffer 연결 (useEditorHandlers 확장 필요)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
+  // ============================================================
+  // Analysis Integration (Polling & Buffer)
+  // ============================================================
+  const queryClient = useQueryClient();
+  const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
+  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  const [consistencyReport, setConsistencyReport] =
+    useState<ConsistencyReport | null>(null);
+  const addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
 
-  // 페이지 이탈/브라우저 종료 시 버퍼 flush
+  const handleAnalysisComplete = useCallback(
+    (result: AnalysisResultData) => {
+      // 1. Calculate Diff
+      // Note: graphLinks items are converted to RelationshipLink structure in calculateAnalysisDiff if needed
+      // or we pass compatible structure. graphLinks here is from EditorPage computed.
+      // We might need to map graphLinks to strict RelationshipLink type if they differ.
+      // Computed graphLinks in EditorPage has { source, target, id, type, strength }.
+      // RelationshipLink has these plus curvature etc. Minimal fields overlap is fine for Utils.
+
+      const diff = calculateAnalysisDiff(
+        characters,
+        // @ts-expect-error - graphLinks structure is compatible enough for diffing
+        graphLinks,
+        result,
+      );
+
+      setAnalysisDiff(diff);
+      setShowAnalysisSummary(true);
+
+      // 2. Store Consistency Report (if available)
+      if (result.consistencyReport) {
+        setConsistencyReport(result.consistencyReport);
+      }
+
+      // 3. Refresh Data
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
+    [characters, graphLinks, projectId, queryClient],
+  );
+
+  const { flushAndAnalyze } = useProjectAnalysis(isDemo ? null : projectId, {
+    enabled: !isDemo,
+    onAnalysisComplete: handleAnalysisComplete,
+    // Optional: Handle error toast here
+  });
+
+  // Save Wrapper to Trigger Analysis
+  const saveWithAnalysis = useCallback(
+    async (content: string) => {
+      if (!selectedSectionId) return;
+
+      // 1. Save to DB
+      await saveContent(content);
+
+      // 2. Add to Analysis Buffer & Flush if needed
+      if (!isDemo) {
+        addToBuffer(selectedSectionId, content);
+        // Trigger analysis immediately on save as requested
+        flushAndAnalyze();
+      }
+    },
+    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
+  );
+
+  // 페이지 이탈/브라우저 종료 시 버퍼 flush (useProjectAnalysis handles auto-flush internally too)
   useEffect(() => {
     if (isDemo) return;
 
@@ -238,8 +302,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      // 컴포넌트 언마운트 시에도 flush
-      flushAndAnalyze();
     };
   }, [isDemo, flushAndAnalyze]);
 
@@ -403,7 +465,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent,
+    saveContent: saveWithAnalysis, // Use the wrapper instead of raw saveContent
     updateDocument,
     updateDocumentMutation,
     createDocument,
@@ -840,6 +902,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 }
               }
             }}
+            consistencyReport={consistencyReport}
+            isAnalyzing={isAnalyzing}
+            onRefreshAnalysis={flushAndAnalyze}
           />
         )}
 
@@ -940,6 +1005,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         onCreate={handleConfirmCreateSection}
         defaultTitle={splitState?.title}
       />
+      {/* Analysis Summary Modal */}
+      {analysisDiff && (
+        <AnalysisSummaryModal
+          isOpen={showAnalysisSummary}
+          onClose={() => setShowAnalysisSummary(false)}
+          diff={analysisDiff}
+        />
+      )}
     </div>
   );
 }

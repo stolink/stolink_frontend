@@ -1,10 +1,11 @@
-import { StickyNote, Bot, Sparkles, AlertTriangle } from "lucide-react";
+import { StickyNote, Bot, Sparkles, Lightbulb } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import AIAssistantPanel from "@/components/editor/AIAssistantPanel";
-import ConsistencyPanel from "@/components/editor/ConsistencyPanel";
+import InsightsPanel from "@/components/editor/InsightsPanel";
 import InspectorPanel from "@/components/editor/InspectorPanel";
 import ForeshadowingPanel from "@/components/editor/ForeshadowingPanel";
+import type { ConsistencyReport } from "@/types/analysisResult";
 
 export type RightSidebarTab = "memo" | "foreshadowing" | "ai" | "consistency";
 
@@ -21,6 +22,12 @@ interface EditorRightSidebarProps {
   newForeshadowingId?: string | null;
   /** 위치 클릭 시 에디터 이동 콜백 */
   onNavigateToPosition?: (documentId: string) => void;
+  /** 분석 결과: 일관성 리포트 */
+  consistencyReport?: ConsistencyReport | null;
+  /** 분석 진행 중 여부 */
+  isAnalyzing?: boolean;
+  /** 분석 새로고침 콜백 */
+  onRefreshAnalysis?: () => void;
 }
 
 export default function EditorRightSidebar({
@@ -32,6 +39,9 @@ export default function EditorRightSidebar({
   sectionTitle = "",
   newForeshadowingId,
   onNavigateToPosition,
+  consistencyReport,
+  isAnalyzing,
+  onRefreshAnalysis,
 }: EditorRightSidebarProps) {
   if (!isOpen) return null;
 
@@ -76,10 +86,10 @@ export default function EditorRightSidebar({
               <TabsTrigger
                 value="consistency"
                 className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
-                title="일관성 체크"
+                title="인사이트 (일관성 체크)"
               >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">체크</span>
+                <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">인사이트</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -102,7 +112,14 @@ export default function EditorRightSidebar({
             />
           )}
           {activeTab === "ai" && <AIAssistantPanel projectId={projectId} />}
-          {activeTab === "consistency" && <ConsistencyPanel />}
+          {activeTab === "consistency" && (
+            <InsightsPanel
+              projectId={projectId}
+              consistencyReport={consistencyReport}
+              isAnalyzing={isAnalyzing}
+              onRefresh={onRefreshAnalysis}
+            />
+          )}
         </div>
       </div>
     </aside>

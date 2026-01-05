@@ -43,6 +43,7 @@ interface AnalysisBufferStore {
   bufferCharCount: number;
   lastFlushAt: number;
   isAnalyzing: boolean;
+  currentJobId: string | null;
 
   // 액션
   setProjectId: (projectId: string | null) => void;
@@ -51,6 +52,7 @@ interface AnalysisBufferStore {
   clearBuffer: () => void;
   shouldAutoFlush: () => boolean;
   setAnalyzing: (analyzing: boolean) => void;
+  setJobId: (id: string | null) => void;
 
   // 유틸리티
   getBufferSummary: () => { charCount: number; documentCount: number };
@@ -64,6 +66,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       bufferCharCount: 0,
       lastFlushAt: Date.now(),
       isAnalyzing: false,
+      currentJobId: null,
 
       setProjectId: (projectId) => {
         set((state) => {
@@ -82,7 +85,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // 같은 문서의 이전 청크가 있으면 교체 (덮어쓰기)
           const existingIndex = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId
+            (chunk) => chunk.documentId === documentId,
           );
 
           if (existingIndex >= 0) {
@@ -144,6 +147,12 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
+      setJobId: (id) => {
+        set((state) => {
+          state.currentJobId = id;
+        });
+      },
+
       getBufferSummary: () => {
         const state = get();
         return {
@@ -161,9 +170,10 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         buffer: state.buffer,
         bufferCharCount: state.bufferCharCount,
         lastFlushAt: state.lastFlushAt,
+        currentJobId: state.currentJobId,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // 설정 상수 export (테스트 및 UI 표시용)

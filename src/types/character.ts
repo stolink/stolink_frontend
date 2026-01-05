@@ -7,9 +7,21 @@
 // =====================================================
 
 /**
- * 관계 타입 (3종으로 단순화)
+ * 관계 타입 (callback_result.json 기반 확장)
+ * Backend uses uppercase, frontend accepts both for compatibility
  */
-export type RelationType = "friendly" | "hostile" | "romantic";
+export type RelationType =
+  | "ALLY"
+  | "RIVAL"
+  | "NEUTRAL"
+  | "ROMANTIC"
+  | "ENEMY"
+  | "MENTOR"
+  | "FAMILY"
+  // Legacy lowercase values for backward compatibility
+  | "friendly"
+  | "hostile"
+  | "romantic";
 
 // Legacy aliases for compatibility
 export type BackendRelationshipType = RelationType;
@@ -31,6 +43,16 @@ export type CharacterRole =
 // =====================================================
 
 /**
+ * 프로필 내 성격 정보 (callback_result.json schema)
+ * Backend fields: core_traits, flaws, values
+ */
+export interface ProfilePersonality {
+  coreTraits: string[]; // core_traits from backend
+  flaws: string[];
+  values: string[];
+}
+
+/**
  * 캐릭터 프로필 정보
  */
 export interface CharacterProfile {
@@ -40,11 +62,12 @@ export interface CharacterProfile {
   gender: string;
   race: string;
   mbti: string | null;
-  personality: string[];
+  /** personality는 이제 객체입니다 (callback_result.json 기준) */
+  personality: ProfilePersonality;
   backstory: string;
-  occupation?: string; // Added
-  birthplace?: string; // Added
-  family?: string; // Added
+  occupation?: string;
+  birthplace?: string;
+  family?: string;
   faction: {
     name: string | null;
     social: {
@@ -88,13 +111,18 @@ export interface CharacterPersonality {
 
 /**
  * 캐릭터 관계 (임베딩된 그래프 노드)
+ * callback_result.json schema: relations.graph[]
  */
 export interface CharacterRelation {
   target: string;
-  type: RelationType;
+  type: RelationType | string; // String for flexibility with new types
   history: string | null;
   strength: number;
   description: string;
+  /** public_stance from backend */
+  publicStance?: string;
+  /** private_feeling from backend */
+  privateFeeling?: string;
 }
 
 /**
