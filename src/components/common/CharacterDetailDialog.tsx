@@ -51,19 +51,19 @@ import { CharacterAdditionalDetails } from "./character-detail/components/Charac
 import { CharacterVisual } from "./character-detail/components/CharacterVisual";
 import { CharacterBiography } from "./character-detail/components/CharacterBiography";
 
-interface CharacterDetailModalProps {
+interface CharacterDetailDialogProps {
   character: Character | null;
   isOpen: boolean;
   onClose: () => void;
   onSave?: (updated: Character) => void;
 }
 
-export default function CharacterDetailModal({
+export default function CharacterDetailDialog({
   character,
   isOpen,
   onClose,
   onSave,
-}: CharacterDetailModalProps) {
+}: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
     null,

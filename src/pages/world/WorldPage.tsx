@@ -12,7 +12,7 @@ import {
   Network,
   UserRound,
 } from "lucide-react";
-import CharacterDetailModal from "@/components/common/CharacterDetailModal";
+import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
   Character,
@@ -708,8 +708,8 @@ export default function WorldPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Character Detail Modal */}
-      <CharacterDetailModal
+      {/* Character Detail Dialog */}
+      <CharacterDetailDialog
         character={selectedCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
