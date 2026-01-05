@@ -72,7 +72,7 @@ interface DemoChapterTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -152,11 +152,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const editorContentRef = useRef<EditorContentHandle>(null);
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null
+    isDemo ? "chapter-1" : null,
   );
   // selectedSectionId = currently editing section in editor
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -169,19 +169,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
 
   // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode
+    (state) => state.behavior.typewriterMode,
   );
   const toggleTypewriterMode = useEditorSettingStore(
-    (state) => state.toggleTypewriterMode
+    (state) => state.toggleTypewriterMode,
   );
   const isTypewriterMode = typewriterMode !== "off";
 
   // Focus mode from settings store
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode
+    (state) => state.behavior.focusMode,
   );
   const toggleFocusMode = useEditorSettingStore(
-    (state) => state.toggleFocusMode
+    (state) => state.toggleFocusMode,
   );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
@@ -194,13 +194,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
 
+  // 쿼리 파라미터에서 documentId 추출 (storead에서 수정 버튼 클릭 시)
+  const queryDocumentId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("documentId");
+  }, [location.search]);
+
   // ============================================================
   // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
   // ============================================================
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
     isDemo ? null : projectId,
-    { enabled: !isDemo }
+    { enabled: !isDemo },
   );
   // TODO: 저장 흐름에 addToBuffer 연결 (useEditorHandlers 확장 필요)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -240,9 +246,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId
+            (doc) => doc.projectId === projectId,
           ),
-    [allDocuments, projectId, isDemo]
+    [allDocuments, projectId, isDemo],
   );
 
   const previewChapters = useMemo(() => {
@@ -261,7 +267,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     if (isDemo) return "데모 작품";
     if (project?.title) return project.title;
     const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder"
+      (doc: Document) => doc.type === "folder",
     );
     return folder?.title || "내 작품";
   }, [project?.title, localDocuments, isDemo]);
@@ -431,6 +437,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     }
   }, [navigationSectionId, isDemo, viewMode, setViewMode]);
 
+  // 쿼리 파라미터의 documentId로 해당 문서로 이동 (storead에서 수정 버튼 클릭 시)
+  useEffect(() => {
+    if (queryDocumentId && !isDemo) {
+      console.log("[EditorPage] queryDocumentId로 문서 선택:", queryDocumentId);
+      setSelectedSectionId(queryDocumentId);
+      // 에디터 뷰 모드로 전환
+      if (viewMode !== "editor") {
+        setViewMode("editor");
+      }
+      // URL에서 쿼리 파라미터 제거 (뒤로가기 시 재적용 방지)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [queryDocumentId, isDemo, viewMode, setViewMode]);
+
   // ============================================================
   // Computed Data
   // ============================================================
@@ -502,14 +523,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         import("@/stores/useWritingStatsStore").then(
           ({ useWritingStatsStore }) => {
             useWritingStatsStore.getState().recordActivity(delta);
-          }
+          },
         );
       }
       prevCountRef.current = count;
 
       handleCharacterCountChange(count, setCharacterCount);
     },
-    [handleCharacterCountChange]
+    [handleCharacterCountChange],
   );
 
   // ============================================================
@@ -580,7 +601,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       setSplitState(null); // 일반 생성 모드
       setCreateSectionModalOpen(true);
     },
-    [selectedSectionId, documents]
+    [selectedSectionId, documents],
   );
 
   const handleConfirmCreateSection = async (title: string) => {
@@ -637,7 +658,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full"
+        isDemo ? "h-screen" : "h-full",
       )}
     >
       {/* Demo Header */}
