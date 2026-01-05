@@ -1,4 +1,4 @@
-import type { BiographyEvent } from "./types";
+import type { BiographyEvent } from "@/types/biography";
 
 /** prev_event_id 기반 정렬 */
 export function sortEventsByPrevId(events: BiographyEvent[]): BiographyEvent[] {
@@ -12,7 +12,7 @@ export function sortEventsByPrevId(events: BiographyEvent[]): BiographyEvent[] {
   let current = firstEvent;
   while (sorted.length < events.length) {
     const next = events.find(
-      (e) => e.prev_event_id === current.event_id && !usedIds.has(e.event_id),
+      (e) => e.prev_event_id === current.event_id && !usedIds.has(e.event_id)
     );
     if (!next) break;
     sorted.push(next);

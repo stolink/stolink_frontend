@@ -5,8 +5,8 @@ import { createElement } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Users, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { BiographyEvent } from "./types";
-import { getImportanceLevel } from "./types";
+import type { BiographyEvent } from "@/types/biography";
+import { getImportanceLevel } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig } from "./constants";
 
 interface EventDetailPanelProps {

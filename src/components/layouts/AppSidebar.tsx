@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/stores";
+import { useLogout } from "@/hooks/useAuth";
 import mainLogo from "@/assets/main_logo.png";
 
 interface AppSidebarProps {
@@ -20,7 +21,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { mutate: performLogout } = useLogout();
 
   const navItems = [
     { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
@@ -34,8 +36,8 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
   ];
 
   const handleLogout = () => {
-    logout();
-    navigate("/");
+    performLogout();
+    // navigate is handled by useLogout hook
   };
 
   const handleSettings = () => {
@@ -73,7 +75,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-white text-mocha-600 shadow-sm border border-cloud-100"
-                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600",
+                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600"
               )
             }
           >
