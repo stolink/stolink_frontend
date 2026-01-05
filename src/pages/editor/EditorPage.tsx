@@ -278,6 +278,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isFetchingNextPage,
   } = useDocumentContent(isDemo ? null : selectedSectionId);
 
+  const {
+    createDocument,
+    updateDocument: updateDocumentMutation,
+    deleteDocument,
+    reorderDocuments,
+    moveDocument,
+  } = useDocumentMutations(projectId);
+  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
+
   // ============================================================
   // 2. Data for Analysis (Must be before Analysis Hook)
   // ============================================================
@@ -448,54 +457,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [exportInitialTab, setExportInitialTab] = useState<
     "export" | "publish"
   >("export");
-
-  const { data: project } = useProject(projectId, { enabled: !isDemo });
-  const allDocuments = useDocumentStore((state) => state.documents);
-  const localDocuments = useMemo(
-    () =>
-      isDemo
-        ? []
-        : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
-          ),
-    [allDocuments, projectId, isDemo],
-  );
-
-  const previewChapters = useMemo(() => {
-    if (isDemo) return [];
-    return (localDocuments ?? [])
-      .filter((doc): doc is Document => doc?.type === "text")
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((doc) => ({
-        id: doc.id,
-        title: doc.title,
-        content: doc.content ?? "",
-      }));
-  }, [localDocuments, isDemo]);
-
-  const projectTitle = useMemo(() => {
-    if (isDemo) return "데모 작품";
-    if (project?.title) return project.title;
-    const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder",
-    );
-    return folder?.title || "내 작품";
-  }, [project?.title, localDocuments, isDemo]);
-
-  // ============================================================
-  // Document Hooks (for non-demo mode)
-  // ============================================================
-
-  const { tree: documentTree, documents } = useDocumentTree(projectId);
-
-  const {
-    createDocument,
-    updateDocument: updateDocumentMutation,
-    deleteDocument,
-    reorderDocuments,
-    moveDocument,
-  } = useDocumentMutations(projectId);
-  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
   // ============================================================
   // Analysis Status Logic (UI Feedback)
