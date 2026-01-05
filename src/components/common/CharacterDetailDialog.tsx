@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, ElementType } from "react";
+import { useState, useEffect, useCallback, type ElementType } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +12,11 @@ import {
   Heart, // Personality
   Users, // Relationships
   BookOpen, // Biography
+  Wand2,
+  Briefcase,
+  Flag,
+  Users2,
+  MapPin,
 } from "lucide-react";
 
 import { isEqual } from "lodash-es";
@@ -21,6 +26,15 @@ import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Hooks & Components & Constants
 import { useCharacterData } from "@/hooks/useCharacterData";
@@ -463,7 +477,9 @@ export default function CharacterDetailDialog({
                             placeholder="예: 비를 맞고 있는, 활짝 웃는..."
                             className="bg-white border-stone-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
-                            onChange={(e) => setManualPrompt(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => setManualPrompt(e.target.value)}
                           />
                         </div>
                       </div>
@@ -496,15 +512,15 @@ export default function CharacterDetailDialog({
                               <ProfileItem
                                 label="나이"
                                 value={
-                                  displayCharacter.age
-                                    ? `${displayCharacter.age}세`
+                                  displayCharacter.profile.age
+                                    ? `${displayCharacter.profile.age}세`
                                     : undefined
                                 }
                                 icon={UserRound}
                               />
                               <ProfileItem
                                 label="성별"
-                                value={displayCharacter.gender}
+                                value={displayCharacter.profile.gender}
                                 icon={Users2}
                               />
                             </div>
@@ -578,7 +594,9 @@ export default function CharacterDetailDialog({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.occupation || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.occupation",
                                 e.target.value,
@@ -601,7 +619,9 @@ export default function CharacterDetailDialog({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.birthplace",
                                 e.target.value,
@@ -624,7 +644,9 @@ export default function CharacterDetailDialog({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.family || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.family",
                                 e.target.value,

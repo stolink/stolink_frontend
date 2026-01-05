@@ -66,7 +66,7 @@ export const VISUAL_TRANSLATION_MAP: Record<string, string> = {
   Pessimistic: "비관적",
   Romantic: "낭만적",
   Realistic: "현실적",
-  Cold: "냉철함", // Colors/Eyes와 중복될 수 있으나 문맥상...
+
   Impulsive: "충동적",
   Compassionate: "동정심 많음",
 
@@ -177,7 +177,7 @@ export function translateVisualValue(value: string): string {
 
     // 만약 절반 이상 번역되었다면 번역된 문장 반환, 아니면 원본 반환 (어색함 방지)
     const translatedCount = translatedWords.filter(
-      (w, i) => w !== words[i]
+      (w, i) => w !== words[i],
     ).length;
     if (translatedCount > 0) {
       return translatedWords.join(" ");
