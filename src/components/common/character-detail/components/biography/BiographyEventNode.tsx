@@ -4,8 +4,8 @@
 import { createElement } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { BranchNode } from "./types";
-import { getImportanceLevel } from "./types";
+import type { BranchNode } from "@/types/biography";
+import { getImportanceLevel } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig } from "./constants";
 
 interface BiographyEventNodeProps {

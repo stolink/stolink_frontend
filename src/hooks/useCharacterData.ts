@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Character } from "@/types";
 import { useCharacters } from "@/hooks/useCharacters";
-import { relationLabels } from "../constants";
+import { relationLabels } from "@/data/constants/characterDetailConstants";
 
 /**
  * 캐릭터 데이터에서 UI 표시용 데이터 추출 (새 스키마 대응)
@@ -53,6 +53,7 @@ export function useCharacterData(character: Character | null) {
       return {
         name: targetName,
         relation: relationLabel,
+        type: rel.type || "friendly", // Pass original type for UI logic
       };
     });
   }, [character?.relations?.graph, allCharacters]);

@@ -1,12 +1,19 @@
 import type { CSSProperties } from "react";
-import type { EditorSettings, FontFamily, Theme, EditorWidth } from "@/stores/types/editorSettings";
+import type {
+  EditorSettings,
+  FontFamily,
+  Theme,
+  EditorWidth,
+} from "@/types/editorSettings";
 
 /**
  * Font family CSS value mapping
  */
 const FONT_FAMILY_MAP: Record<FontFamily, string> = {
-  system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
-  pretendard: "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  system:
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+  pretendard:
+    "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
   "noto-sans-kr": "'Noto Sans KR', sans-serif",
   "spoqa-han-sans": "'Spoqa Han Sans Neo', sans-serif",
   "ridi-batang": "'RIDIBatang', serif",
@@ -41,12 +48,35 @@ const THEME_CLASS_MAP: Record<Theme, string> = {
 /**
  * Theme color mapping
  */
-const THEME_COLORS: Record<Theme, { bg: string; text: string; selection: string }> = {
-  light: { bg: "#F8F8F7", text: "#2D2A28", selection: "rgba(95, 125, 95, 0.2)" },
-  dark: { bg: "#2D2D2D", text: "#E5E5E5", selection: "rgba(130, 161, 130, 0.3)" },
-  sepia: { bg: "#F4ECD8", text: "#5C4033", selection: "rgba(139, 115, 85, 0.25)" },
-  "eye-care": { bg: "#FAF9F6", text: "#3D3D3D", selection: "rgba(95, 125, 95, 0.2)" },
-  "true-black": { bg: "#000000", text: "#CCCCCC", selection: "rgba(130, 161, 130, 0.35)" },
+const THEME_COLORS: Record<
+  Theme,
+  { bg: string; text: string; selection: string }
+> = {
+  light: {
+    bg: "#F8F8F7",
+    text: "#2D2A28",
+    selection: "rgba(95, 125, 95, 0.2)",
+  },
+  dark: {
+    bg: "#2D2D2D",
+    text: "#E5E5E5",
+    selection: "rgba(130, 161, 130, 0.3)",
+  },
+  sepia: {
+    bg: "#F4ECD8",
+    text: "#5C4033",
+    selection: "rgba(139, 115, 85, 0.25)",
+  },
+  "eye-care": {
+    bg: "#FAF9F6",
+    text: "#3D3D3D",
+    selection: "rgba(95, 125, 95, 0.2)",
+  },
+  "true-black": {
+    bg: "#000000",
+    text: "#CCCCCC",
+    selection: "rgba(130, 161, 130, 0.35)",
+  },
 };
 
 /**
@@ -60,7 +90,9 @@ function getIndentValue(indent: number): string {
  * Get CSS custom properties from editor settings
  * Use this to apply styles via CSS variables for performance
  */
-export function getEditorCSSVariables(settings: EditorSettings): Record<string, string> {
+export function getEditorCSSVariables(
+  settings: EditorSettings
+): Record<string, string> {
   const theme = settings.visual?.theme ?? "light";
   const themeColors = THEME_COLORS[theme] ?? THEME_COLORS.light;
   const fontFamily = settings.typography?.fontFamily ?? "pretendard";
@@ -68,7 +100,8 @@ export function getEditorCSSVariables(settings: EditorSettings): Record<string, 
 
   return {
     // Typography
-    "--st-editor-font-family": FONT_FAMILY_MAP[fontFamily] ?? FONT_FAMILY_MAP.pretendard,
+    "--st-editor-font-family":
+      FONT_FAMILY_MAP[fontFamily] ?? FONT_FAMILY_MAP.pretendard,
     "--st-editor-font-size": `${settings.typography?.fontSize ?? 16}px`,
     "--st-editor-line-height": String(settings.typography?.lineHeight ?? 1.8),
     "--st-editor-letter-spacing": `${settings.typography?.letterSpacing ?? 0}em`,

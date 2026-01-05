@@ -1,7 +1,7 @@
 /**
  * 인물 일대기 목데이터 (API 응답 구조)
  */
-import type { BiographyEvent } from "./types";
+import type { BiographyEvent } from "@/types/biography";
 
 export const MOCK_BIOGRAPHY_EVENTS: BiographyEvent[] = [
   {

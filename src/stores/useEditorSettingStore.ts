@@ -12,8 +12,8 @@ import type {
   EditorWidth,
   TypewriterMode,
   CaretStyle,
-} from "./types/editorSettings";
-import { getDefaultEditorSettings } from "./types/editorSettings";
+} from "@/types/editorSettings";
+import { getDefaultEditorSettings } from "@/types/editorSettings";
 
 interface EditorSettingActions {
   // Typography actions

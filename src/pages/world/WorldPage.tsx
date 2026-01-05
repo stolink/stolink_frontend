@@ -101,7 +101,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -129,6 +129,22 @@ export default function WorldPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Sync selectedCharacter with latest data from characters array
+  // This ensures the sidebar updates when character data changes (e.g., image generation)
+  useEffect(() => {
+    if (selectedCharacter && characters.length > 0) {
+      const updatedCharacter = characters.find(
+        (c) => c._id === selectedCharacter._id
+      );
+      if (updatedCharacter) {
+        // Only update if imageUrl or other relevant data changed
+        if (updatedCharacter.imageUrl !== selectedCharacter.imageUrl) {
+          setSelectedCharacter(enrichCharacterWithMockData(updatedCharacter));
+        }
+      }
+    }
+  }, [characters, selectedCharacter]);
 
   // Character.relationships에서 관계 데이터 추출 (using hook)
   const links: RelationshipLink[] = useRelationshipLinks(characters);
@@ -713,7 +729,26 @@ export default function WorldPage() {
         character={selectedCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={() => {}} // Read-only in this view for now
+        onSave={async (updatedChar) => {
+          try {
+            await updateCharacterMutation.mutateAsync({
+              id: updatedChar._id,
+              payload: {
+                role: updatedChar.role,
+                status: updatedChar.status,
+                // 스키마 호환성을 위해 profile 내부와 최상위 필드 모두 업데이트 시도
+                profile: updatedChar.profile,
+                name: updatedChar.name,
+                age: updatedChar.age,
+                gender: updatedChar.gender,
+                appearance: updatedChar.appearance,
+                personality: updatedChar.personality,
+              },
+            });
+          } catch (error) {
+            console.error("Failed to save character:", error);
+          }
+        }}
       />
 
       {/* Relationship Detail Sidebar */}
@@ -725,13 +760,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source,
+              selectedRelationship?.source
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source,
+                selectedRelationship?.source
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -740,13 +775,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target,
+              selectedRelationship?.target
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target,
+                selectedRelationship?.target
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target

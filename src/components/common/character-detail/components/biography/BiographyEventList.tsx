@@ -1,7 +1,7 @@
 import { BookOpen, ChevronRight } from "lucide-react";
-import type { BiographyEvent } from "./types";
+import type { BiographyEvent } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig } from "./constants";
-import { getImportanceLevel } from "./types";
+import { getImportanceLevel } from "@/types/biography";
 import { createElement } from "react";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +91,7 @@ export function BiographyEventList({
                         </div>
                         <h5
                           className={cn(
-                            "text-lg font-serif font-bold transition-colors truncate pr-4 leading-tight",
+                            "text-lg font-serif font-bold transition-colors pr-4 leading-tight break-words whitespace-normal",
                             isSelected
                               ? "text-mocha-900"
                               : "text-espresso-900 group-hover:text-mocha-700"
@@ -99,7 +99,7 @@ export function BiographyEventList({
                         >
                           {event.narrative_summary}
                         </h5>
-                        <p className="text-sm text-stone-600 truncate mt-1 font-serif leading-relaxed opacity-80">
+                        <p className="text-sm text-stone-600 mt-1 font-serif leading-relaxed opacity-80 break-words whitespace-pre-wrap">
                           {event.description || "상세 설명 없음"}
                         </p>
                       </div>

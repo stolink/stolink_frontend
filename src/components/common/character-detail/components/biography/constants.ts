@@ -19,7 +19,7 @@ import {
   Circle,
   type LucideIcon,
 } from "lucide-react";
-import type { EventTypeConfig } from "./types";
+import type { EventTypeConfig } from "@/types/biography";
 
 /** 사건 유형별 아이콘 */
 export const EVENT_TYPE_ICONS: Record<string, LucideIcon> = {

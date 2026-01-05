@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
-import { roleLabels } from "../constants";
+import { roleLabels } from "@/data/constants/characterDetailConstants";
 
 interface CharacterHeaderProps {
   character: Character;
