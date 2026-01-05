@@ -114,6 +114,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     const [showZoomControls, setShowZoomControls] = useState(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
+    const scrollPositionRef = useRef<number>(0);
     // Track last HTML sent to parent to prevent sync focus loops
     const lastEmittedHTMLRef = useRef<string>("");
 
