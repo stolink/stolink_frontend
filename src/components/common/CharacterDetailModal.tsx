@@ -13,6 +13,10 @@ import {
   Users, // Relationships
   BookOpen, // Biography
   Wand2, // Image generation loading
+  Briefcase, // Profile - occupation
+  Flag, // Profile - origin
+  MapPin, // Profile - location
+  Users2, // Profile - affiliations
 } from "lucide-react";
 
 import { isEqual } from "lodash-es";
