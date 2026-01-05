@@ -89,7 +89,7 @@ api.interceptors.response.use(
         // 쿠키가 갱신된 상태에서 요청을 다시 보냄
         return api(originalRequest);
       } catch (refreshError) {
-        // 토큰 재발급 실패 시 로그아웃
+        // 토큰 재발급 실패 시 로그아웃 및 캐시 정리
         clearCacheAndLogout();
         return Promise.reject(refreshError);
       }

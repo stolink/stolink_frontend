@@ -218,9 +218,58 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const location = useLocation();
   const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
 
+  // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
+  const navigationSectionId = (
+    location.state as { selectedSectionId?: string } | null
+  )?.selectedSectionId;
+
+  // 쿼리 파라미터에서 documentId 추출 (storead에서 수정 버튼 클릭 시)
+  const queryDocumentId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("documentId");
+  }, [location.search]);
+
   // ============================================================
   // 1. Core Data Hooks (Must be first)
   // ============================================================
+  const { data: project } = useProject(projectId, { enabled: !isDemo });
+  const allDocuments = useDocumentStore((state) => state.documents);
+  const localDocuments = useMemo(
+    () =>
+      isDemo
+        ? []
+        : Object.values(allDocuments).filter(
+            (doc) => doc.projectId === projectId,
+          ),
+    [allDocuments, projectId, isDemo],
+  );
+
+  const previewChapters = useMemo(() => {
+    if (isDemo) return [];
+    return (localDocuments ?? [])
+      .filter((doc): doc is Document => doc?.type === "text")
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        content: doc.content ?? "",
+      }));
+  }, [localDocuments, isDemo]);
+
+  const projectTitle = useMemo(() => {
+    if (isDemo) return "데모 작품";
+    if (project?.title) return project.title;
+    const folder = localDocuments?.find(
+      (doc: Document) => doc.type === "folder",
+    );
+    return folder?.title || "내 작품";
+  }, [project?.title, localDocuments, isDemo]);
+
+  // ============================================================
+  // Document Hooks (for non-demo mode)
+  // ============================================================
+
+  const { tree: documentTree, documents } = useDocumentTree(projectId);
   const {
     content: documentContent,
     saveContent,
@@ -273,14 +322,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return links;
   }, [characters, isDemo]);
 
-  // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
-  const navigationSectionId = (
-    location.state as { selectedSectionId?: string } | null
-  )?.selectedSectionId;
-
-  // ============================================================
-  // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
-  // ============================================================
   // ============================================================
   // Analysis Integration (Polling & Buffer)
   // ============================================================
@@ -557,6 +598,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       window.history.replaceState({}, document.title);
     }
   }, [navigationSectionId, isDemo, viewMode, setViewMode]);
+
+  // 쿼리 파라미터의 documentId로 해당 문서로 이동 (storead에서 수정 버튼 클릭 시)
+  useEffect(() => {
+    if (queryDocumentId && !isDemo) {
+      console.log("[EditorPage] queryDocumentId로 문서 선택:", queryDocumentId);
+      setSelectedSectionId(queryDocumentId);
+      // 에디터 뷰 모드로 전환
+      if (viewMode !== "editor") {
+        setViewMode("editor");
+      }
+      // URL에서 쿼리 파라미터 제거 (뒤로가기 시 재적용 방지)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [queryDocumentId, isDemo, viewMode, setViewMode]);
 
   // ============================================================
   // Computed Data

@@ -31,6 +31,9 @@ import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -38,9 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Hooks & Components & Constants
 import { useCharacterData } from "@/hooks/useCharacterData";
@@ -53,19 +53,19 @@ import { CharacterAdditionalDetails } from "./character-detail/components/Charac
 import { CharacterVisual } from "./character-detail/components/CharacterVisual";
 import { CharacterBiography } from "./character-detail/components/CharacterBiography";
 
-interface CharacterDetailModalProps {
+interface CharacterDetailDialogProps {
   character: Character | null;
   isOpen: boolean;
   onClose: () => void;
   onSave?: (updated: Character) => void;
 }
 
-export default function CharacterDetailModal({
+export default function CharacterDetailDialog({
   character,
   isOpen,
   onClose,
   onSave,
-}: CharacterDetailModalProps) {
+}: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
     null,
@@ -493,7 +493,9 @@ export default function CharacterDetailModal({
                             placeholder="예: 비를 맞고 있는, 활짝 웃는..."
                             className="bg-white border-stone-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
-                            onChange={(e) => setManualPrompt(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => setManualPrompt(e.target.value)}
                           />
                         </div>
                       </div>
@@ -608,7 +610,9 @@ export default function CharacterDetailModal({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.occupation || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.occupation",
                                 e.target.value,
@@ -631,7 +635,9 @@ export default function CharacterDetailModal({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.birthplace",
                                 e.target.value,
@@ -654,7 +660,9 @@ export default function CharacterDetailModal({
                         {isEditMode ? (
                           <Input
                             value={displayCharacter.profile.family || ""}
-                            onChange={(e) =>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
                               handleFieldChange(
                                 "profile.family",
                                 e.target.value,

@@ -14,7 +14,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import CharacterDetailModal from "@/components/common/CharacterDetailModal";
+import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
   Character,
@@ -798,23 +798,38 @@ export default function WorldPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Character Detail Modal */}
-      <CharacterDetailModal
+      {/* Character Detail Dialog */}
+      <CharacterDetailDialog
         character={activeCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={async (updatedChar) => {
           try {
+            if (!updateCharacterMutation) return;
+
+            // _id is required for update
+            if (!updatedChar._id) {
+              console.error("Character ID is missing for update");
+              return;
+            }
+
+            // TODO: CreateCharacterInput 타입 정의가 appearance/personality를 포함하도록 업데이트 필요
+            // 현재는 빌드 에러 방지를 위해 any 캐스팅 사용
+            const payload = {
+              role: updatedChar.role || "extra",
+              status: updatedChar.status || "active",
+              profile: {
+                ...updatedChar.profile,
+                name: updatedChar.profile.name,
+              },
+              appearance: updatedChar.appearance,
+              personality: updatedChar.personality,
+            };
+
             await updateCharacterMutation.mutateAsync({
               id: updatedChar._id,
-              payload: {
-                role: updatedChar.role,
-                status: updatedChar.status,
-                // 스키마 호환성을 위해 profile 내부 필드 업데이트
-                profile: updatedChar.profile,
-                appearance: updatedChar.appearance,
-                personality: updatedChar.personality,
-              },
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              payload: payload as any,
             });
           } catch (error) {
             console.error("Failed to save character:", error);
