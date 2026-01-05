@@ -6,7 +6,7 @@ import { BiographyTree } from "./biography/BiographyTree";
 import { sortEventsByPrevId } from "./biography/utils";
 import { BiographyEventList } from "./biography/BiographyEventList";
 import { MOCK_BIOGRAPHY_EVENTS } from "./biography/mockData";
-import type { BiographyEvent } from "./biography/types";
+import type { BiographyEvent } from "@/types/biography";
 
 interface CharacterBiographyProps {
   backstory: string;
