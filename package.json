@@ -75,7 +75,7 @@
     "docx": "^9.5.1",
     "epub-gen-memory": "^1.1.2",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.23.26",
+    "framer-motion": "^11.18.2",
     "html2pdf.js": "^0.12.1",
     "iconv-lite": "^0.7.1",
     "idb-keyval": "^6.2.2",
