@@ -9,24 +9,6 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-// 동시 refresh 요청 방지를 위한 상태
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: Error | null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
-  });
-  failedQueue = [];
-};
-
 // QueryClient 인스턴스를 저장 (App에서 설정)
 let queryClientInstance: QueryClient | null = null;
 
@@ -61,7 +43,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor: 401 시 토큰 재발급 시도
@@ -82,42 +64,39 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // 이미 refresh 중이라면 큐에 추가하고 대기
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => {
-            return api(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        // 토큰 재발급 시도 (쿠키 자동 전송)
-        await api.post("/auth/refresh");
-        // 새 토큰은 쿠키에 자동 설정됨
-        processQueue(null);
-        // 원래 요청 재시도
+        // Web Locks API를 사용하여 탭 간 동기화
+        // 'auth_refresh_lock'을 획득한 탭만 refresh 요청을 수행
+        await navigator.locks.request("auth_refresh_lock", async () => {
+          // 마지막 refresh 시간을 확인하여 중복 요청 방지 (2초 내 재요청이면 스킵)
+          const lastRefreshTime = localStorage.getItem("last_refresh_time");
+          const now = Date.now();
+
+          if (lastRefreshTime && now - parseInt(lastRefreshTime) < 2000) {
+            // 이미 다른 탭/요청에서 refresh를 완료함 -> 바로 재시도
+            return;
+          }
+
+          // 토큰 재발급 시도
+          await api.post("/auth/refresh");
+          localStorage.setItem("last_refresh_time", now.toString());
+        });
+
+        // 락 해제 후 원래 요청 재시도
+        // 락 내에서 refresh가 성공했거나, 다른 탭이 이미 성공했으므로
+        // 쿠키가 갱신된 상태에서 요청을 다시 보냄
         return api(originalRequest);
       } catch (refreshError) {
-        // 토큰 재발급 실패 시 대기 중인 요청들도 실패 처리
-        processQueue(refreshError as Error);
-        // 로그아웃 및 캐시 정리
+        // 토큰 재발급 실패 시 로그아웃
         clearCacheAndLogout();
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

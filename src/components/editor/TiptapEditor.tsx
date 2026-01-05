@@ -27,6 +27,7 @@ import { ForeshadowingSuggest } from "./extensions/ForeshadowingSuggest";
 import { TypewriterScroll } from "./extensions/TypewriterScroll";
 import { FocusMode } from "./extensions/FocusMode";
 import { SmartPunctuation } from "./extensions/SmartPunctuation";
+import { AutoFormatter } from "./extensions/AutoFormatter";
 import { useForeshadowingStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { getEditorCSSVariables } from "@/lib/editor-styles";
@@ -227,6 +228,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }),
         FocusMode.configure({}),
         SmartPunctuation,
+        AutoFormatter.configure({
+          maxEmptyLines: 1, // 최대 연속 빈 줄 1개 까지만 허용 (가독성 최적화)
+        }),
       ];
 
       return exts;
