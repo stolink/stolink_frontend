@@ -314,7 +314,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             }
           } catch {
             // 에디터가 아직 마운트되지 않은 경우 무시
-            console.debug("Typewriter position will be applied after mount");
           }
         }, 100);
         return () => clearTimeout(timer);

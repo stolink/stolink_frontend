@@ -204,7 +204,11 @@ export default function LibraryPage() {
   const handleCreateProject = async () => {
     // 로그인 상태 확인
     if (!user?.id) {
-      alert("작품을 생성하려면 로그인이 필요합니다.");
+      toast({
+        title: "로그인 필요",
+        description: "작품을 생성하려면 로그인이 필요합니다.",
+        variant: "destructive",
+      });
       navigate("/");
       return;
     }
@@ -354,10 +358,12 @@ export default function LibraryPage() {
           variant: "destructive",
         });
       } else {
-        alert(
-          "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류"),
-        );
+        toast({
+          title: "가져오기 실패",
+          description:
+            error instanceof Error ? error.message : "알 수 없는 오류",
+          variant: "destructive",
+        });
       }
     }
   };
