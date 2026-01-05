@@ -57,6 +57,90 @@ const items = [
 
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 
+// Mock extras data for 장발장 and 자베르
+const MOCK_EXTRAS: Record<
+  string,
+  Record<string, string | number | string[]>
+> = {
+  "lm-001": {
+    // 장발장 - 기본 정보
+    나이: "약 45세",
+    성별: "남성",
+    직업: "전 죄수 → 공장주 → 시장",
+    출생지: "프랑스 파베롤",
+    // 외모 정보
+    신장: "180cm",
+    체격: "매우 건장함",
+    머리카락: "백발 (은빛)",
+    눈: "깊고 온화한 눈빛",
+    특징: "굳은 손, 잔잔한 미소",
+    // 성격 및 내면
+    성격: ["자비로움", "희생적", "고독함", "속죄의식"],
+    약점: "과거에 대한 죄책감",
+    목표: "코제트의 행복",
+    특기: "초인적 완력, 정원 가꾸기",
+    명대사: "사랑하는 것, 그것이 전부다",
+    // 등장 정보
+    등장: [
+      "1권 2장 - 디뉴 마을",
+      "1권 5장 - 몽트뢰유",
+      "3권 8장 - 파리",
+      "4권 12장 - 바리케이드",
+      "5권 9장 - 코제트의 결혼",
+    ],
+    // 관계 정보
+    관계: [
+      "코제트 (양녀)",
+      "자베르 (숙적)",
+      "미리엘 주교 (은인)",
+      "판틴 (약속)",
+      "마리우스 (사위)",
+    ],
+  },
+  "lm-002": {
+    // 자베르 - 기본 정보
+    나이: "약 50세",
+    성별: "남성",
+    직업: "경감",
+    출생지: "감옥 (부모 모두 죄수)",
+    // 외모 정보
+    신장: "175cm",
+    체격: "야위고 단단함",
+    머리카락: "검은색, 짧게 정돈",
+    눈: "날카롭고 차가운 시선",
+    특징: "구레나룻, 경직된 표정",
+    // 성격 및 내면
+    성격: ["냉혹함", "정의감", "완고함", "흑백논리"],
+    약점: "융통성 없음",
+    목표: "법의 완벽한 집행",
+    특기: "추적, 법률 지식, 변장",
+    명대사: "법 앞에 예외는 없다",
+    // 등장 정보
+    등장: [
+      "1권 2장 - 툴롱 감옥",
+      "1권 7장 - 법정",
+      "3권 5장 - 파리 추격",
+      "4권 12장 - 바리케이드",
+      "5권 4장 - 하수도",
+    ],
+    // 관계 정보
+    관계: [
+      "장발장 (숙적/추적 대상)",
+      "테나르디에 (정보원)",
+      "마리우스 (구출 대상)",
+    ],
+  },
+};
+
+function enrichCharacterWithMockData(character: Character): Character {
+  const mockExtras = MOCK_EXTRAS[character._id];
+  if (!mockExtras) return character;
+
+  return {
+    ...character,
+    // Note: extras doesn't exist in new schema, keep as-is for demo compatibility
+  };
+}
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -140,6 +224,7 @@ export default function WorldPage() {
       if (updatedCharacter) {
         // Only update if imageUrl or other relevant data changed
         if (updatedCharacter.imageUrl !== selectedCharacter.imageUrl) {
+          // eslint-disable-next-line
           setSelectedCharacter(enrichCharacterWithMockData(updatedCharacter));
         }
       }
@@ -157,91 +242,6 @@ export default function WorldPage() {
       </div>
     );
   }
-
-  // Mock extras data for 장발장 and 자베르
-  const MOCK_EXTRAS: Record<
-    string,
-    Record<string, string | number | string[]>
-  > = {
-    "lm-001": {
-      // 장발장 - 기본 정보
-      나이: "약 45세",
-      성별: "남성",
-      직업: "전 죄수 → 공장주 → 시장",
-      출생지: "프랑스 파베롤",
-      // 외모 정보
-      신장: "180cm",
-      체격: "매우 건장함",
-      머리카락: "백발 (은빛)",
-      눈: "깊고 온화한 눈빛",
-      특징: "굳은 손, 잔잔한 미소",
-      // 성격 및 내면
-      성격: ["자비로움", "희생적", "고독함", "속죄의식"],
-      약점: "과거에 대한 죄책감",
-      목표: "코제트의 행복",
-      특기: "초인적 완력, 정원 가꾸기",
-      명대사: "사랑하는 것, 그것이 전부다",
-      // 등장 정보
-      등장: [
-        "1권 2장 - 디뉴 마을",
-        "1권 5장 - 몽트뢰유",
-        "3권 8장 - 파리",
-        "4권 12장 - 바리케이드",
-        "5권 9장 - 코제트의 결혼",
-      ],
-      // 관계 정보
-      관계: [
-        "코제트 (양녀)",
-        "자베르 (숙적)",
-        "미리엘 주교 (은인)",
-        "판틴 (약속)",
-        "마리우스 (사위)",
-      ],
-    },
-    "lm-002": {
-      // 자베르 - 기본 정보
-      나이: "약 50세",
-      성별: "남성",
-      직업: "경감",
-      출생지: "감옥 (부모 모두 죄수)",
-      // 외모 정보
-      신장: "175cm",
-      체격: "야위고 단단함",
-      머리카락: "검은색, 짧게 정돈",
-      눈: "날카롭고 차가운 시선",
-      특징: "구레나룻, 경직된 표정",
-      // 성격 및 내면
-      성격: ["냉혹함", "정의감", "완고함", "흑백논리"],
-      약점: "융통성 없음",
-      목표: "법의 완벽한 집행",
-      특기: "추적, 법률 지식, 변장",
-      명대사: "법 앞에 예외는 없다",
-      // 등장 정보
-      등장: [
-        "1권 2장 - 툴롱 감옥",
-        "1권 7장 - 법정",
-        "3권 5장 - 파리 추격",
-        "4권 12장 - 바리케이드",
-        "5권 4장 - 하수도",
-      ],
-      // 관계 정보
-      관계: [
-        "장발장 (숙적/추적 대상)",
-        "테나르디에 (정보원)",
-        "마리우스 (구출 대상)",
-      ],
-    },
-  };
-
-  const enrichCharacterWithMockData = (character: Character): Character => {
-    const mockExtras = MOCK_EXTRAS[character._id];
-    if (!mockExtras) return character;
-
-    return {
-      ...character,
-      // Note: extras doesn't exist in new schema, keep as-is for demo compatibility
-    };
-  };
 
   const handleNodeClick = (character: Character | null) => {
     if (!character) {

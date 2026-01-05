@@ -20,15 +20,6 @@ import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Hooks & Components & Constants

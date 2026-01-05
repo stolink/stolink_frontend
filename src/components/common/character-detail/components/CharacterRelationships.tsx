@@ -1,13 +1,5 @@
 import { useMemo } from "react";
-import {
-  Users,
-  User,
-  Heart,
-  Swords,
-  Handshake,
-  HelpCircle,
-  Gem,
-} from "lucide-react";
+import { Users, User, Heart, Swords, Handshake, Gem } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RelationshipUI {
