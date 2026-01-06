@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   PenLine,
   BookOpen,
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/stores";
 import { useLogout } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
 import mainLogo from "@/assets/main_logo.png";
 import { PerformanceImage } from "@/components/common/PerformanceImage";
 
@@ -21,7 +22,6 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
-  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { mutate: performLogout } = useLogout();
 
@@ -41,8 +41,13 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
     // navigate is handled by useLogout hook
   };
 
+  const { toast } = useToast();
+
   const handleSettings = () => {
-    navigate("/settings");
+    toast({
+      title: "준비 중입니다",
+      description: "개인 설정 페이지는 곧 업데이트될 예정입니다.",
+    });
   };
 
   return (
