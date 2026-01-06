@@ -163,7 +163,11 @@ export function EditorToolbar({
             <DropdownMenuItem
               key={level}
               onClick={() =>
-                editor.chain().focus().toggleHeading({ level }).run()
+                editor
+                  .chain()
+                  .focus()
+                  .toggleHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 })
+                  .run()
               }
             >
               <div className="flex items-center gap-2">
