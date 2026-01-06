@@ -110,13 +110,35 @@ export function useForceSimulation(
       simulationRef.current.stop();
     }
 
+    // [CLEANING] 노드 목록에 존재하지 않는 ID를 참조하는 링크 필터링
+    const validNodeIds = new Set(nodesCopy.map((n) => n.id));
+    const validLinks = linksCopy.filter((link) => {
+      // d3-force는 simulation 시작 후 link.source를 객체로 변환하므로 타입 처리 필요
+      const sourceId =
+        typeof link.source === "object"
+          ? (link.source as CharacterNode).id
+          : link.source;
+      const targetId =
+        typeof link.target === "object"
+          ? (link.target as CharacterNode).id
+          : link.target;
+
+      const isValid = validNodeIds.has(sourceId) && validNodeIds.has(targetId);
+      if (!isValid) {
+        console.warn(
+          `[D3 Cleaning] Filtered link with missing node: ${sourceId} -> ${targetId}`,
+        );
+      }
+      return isValid;
+    });
+
     // 새 시뮬레이션 생성
     const newSimulation = d3
       .forceSimulation<CharacterNode, RelationshipLink>(nodesCopy)
       .force(
         "link",
         d3
-          .forceLink<CharacterNode, RelationshipLink>(linksCopy)
+          .forceLink<CharacterNode, RelationshipLink>(validLinks)
           .id((d) => d.id)
           .distance(FORCE_CONFIG.linkDistance)
           .strength(
