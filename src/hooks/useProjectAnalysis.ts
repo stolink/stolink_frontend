@@ -252,7 +252,7 @@ export function useProjectAnalysis(
     setAnalysisProgress(0);
 
     try {
-      const response = await aiService.analyzeStory(projectId, documentIds);
+      const response = await aiService.analyzeStory(projectId, bufferContent);
       const jobId = response.data?.jobId;
 
       if (jobId) {
