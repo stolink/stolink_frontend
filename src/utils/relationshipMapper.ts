@@ -50,6 +50,22 @@ export function extractRelationshipLinks(
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
 
+  // 0. ID 및 이름 매핑 생성 (Name Resolution용)
+  const idSet = new Set<string>();
+  const nameToIdMap = new Map<string, string>();
+
+  characters.forEach((char) => {
+    const id = char._id || (char as { id?: string }).id;
+    const name = char.profile?.name || (char as { name?: string }).name;
+
+    if (id) {
+      idSet.add(id);
+      if (name) {
+        nameToIdMap.set(name, id);
+      }
+    }
+  });
+
   characters.forEach((char) => {
     // 1. 관계 데이터 추출 (새 스키마 relations.graph 또는 백엔드 직결 relationships 필드)
     const relationGraph =
@@ -57,9 +73,7 @@ export function extractRelationshipLinks(
       (char as { relationships?: unknown[] }).relationships;
 
     if (!Array.isArray(relationGraph)) {
-      console.warn(
-        `Character ${char._id || (char as { id?: string }).id} (${char.profile?.name || (char as { name?: string }).name}) missing relations.graph or relationships array`,
-      );
+      // console.warn(...) // Reduce noise
       return;
     }
 
@@ -82,25 +96,41 @@ export function extractRelationshipLinks(
       }) => {
         // 2. 소스/타겟 ID 추출 (id 또는 _id)
         const characterId = char._id || (char as { id?: string }).id;
-        const sourceId = rel.source || characterId;
-        const targetId = rel.target;
+        const rawSourceId = rel.source || characterId;
+        const rawTargetId = rel.target;
 
-        // target ID 검증
-        if (!targetId) {
-          console.warn(
-            `Invalid relationship for character ${char._id}: missing target`,
-          );
+        if (!rawSourceId || !rawTargetId) {
           return;
+        }
+
+        // 3. ID Resolution (이름인 경우 ID로 변환)
+        let sourceId = rawSourceId;
+        let targetId = rawTargetId;
+
+        // Source ID 확인
+        if (!idSet.has(sourceId)) {
+          if (nameToIdMap.has(sourceId)) {
+            sourceId = nameToIdMap.get(sourceId)!;
+          } else {
+            // Source가 유효하지 않으면 스킵 (단, 보통 source는 자기 자신이므로 안전)
+            return;
+          }
+        }
+
+        // Target ID 확인
+        if (!idSet.has(targetId)) {
+          if (nameToIdMap.has(targetId)) {
+            targetId = nameToIdMap.get(targetId)!;
+          } else {
+            // Target을 찾을 수 없으면 링크 생성 불가 (D3 에러 방지)
+            console.warn(
+              `Target node not found for relationship: ${rawSourceId} -> ${rawTargetId}`,
+            );
+            return;
+          }
         }
 
         // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
-        if (!sourceId || !targetId) {
-          console.warn(
-            `Invalid relationship for character ${char._id}: missing source or target`,
-          );
-          return;
-        }
-
         const pairKey =
           sourceId < targetId
             ? `${sourceId}-${targetId}`
