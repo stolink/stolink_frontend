@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
 import { ROLE_LABELS } from "./constants";
@@ -175,7 +175,7 @@ export function CharacterSearchOverlay({
         {/* Keyboard shortcut hint */}
         {!isFocused && !query && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 pointer-events-none">
-            <kbd className="px-1.5 py-0.5 bg-stone-100 rounded text-[10px] font-mono">
+            <kbd className="px-1.5 py-0.5 bg-stone-100 rounded text-[10px] ">
               ⌘K
             </kbd>
           </div>

@@ -10,7 +10,7 @@ import {
   DialogPortal,
   DialogOverlay,
 } from "@/components/ui/dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 const AlertDialog = Dialog;
@@ -26,7 +26,7 @@ const AlertDialogContent = React.forwardRef<
     ref={ref}
     className={cn(
       "max-w-[400px]", // Slightly narrower than default Dialog
-      className
+      className,
     )}
     {...props}
   />
@@ -53,9 +53,9 @@ const AlertDialogCancel = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      buttonVariants({ variant: "outline" }),
+      buttonVariants({ intent: "outline" }),
       "mt-2 sm:mt-0",
-      className
+      className,
     )}
     {...props}
   />

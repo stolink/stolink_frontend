@@ -109,7 +109,7 @@ export function CharacterRelationships({
             <Gem className="w-6 h-6 text-mocha-500" />
           </div>
           <div>
-            <h2 className="text-xl font-serif font-bold text-espresso-900">
+            <h2 className="text-xl  font-bold text-espresso-900">
               인물 관계도
             </h2>
             <p className="text-sm text-mocha-500 mt-1">

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 // CardContent removed if truly unused. Lint said Card and CardContent were unused.
 // I'll check if I should remove it entirely.
 import {
@@ -13,6 +14,7 @@ import {
   Network,
   UserRound,
   X,
+  CheckCircle2,
 } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
@@ -31,14 +33,12 @@ import {
   type CharacterGraphRef,
   AnalysisSummaryModal,
 } from "@/components/CharacterGraph";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
-import type { AnalysisResultData } from "@/types/analysisResult";
+import { AnalysisResultData } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 
 // Hooks
 import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useAnalyzeStory } from "@/hooks/useAI";
-import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -47,7 +47,7 @@ import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 // Mock Places
 const places = [
@@ -64,6 +64,10 @@ const items = [
 ];
 
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
+import { MOCK_CHARACTERS } from "@/data/mockWorldData";
+
+// UI Refactoring Flag: Set to true to use dummy data
+const USE_DUMMY_DATA = false;
 
 // Mock extras data for 장발장 and 자베르
 const MOCK_EXTRAS: Record<
@@ -156,40 +160,204 @@ export default function WorldPage() {
   const queryClient = useQueryClient();
 
   // projectId is guaranteed to be string here
-  const { data: characters = [] } = useCharacters(projectId || "", {
-    enabled: !!projectId,
+  const { data: realCharacters = [] } = useCharacters(projectId || "", {
+    enabled: !!projectId && !USE_DUMMY_DATA,
   });
+
+  // Switch between real and dummy data
+  const characters = USE_DUMMY_DATA ? MOCK_CHARACTERS : realCharacters;
 
   const updateCharacterMutation = useUpdateCharacter();
 
   const { setJobId, setAnalyzing } = useAnalysisBufferStore();
 
   const [, setAnalysisResult] = useState<AnalysisResultData | null>(null);
+  // FORCE: 테스트용 - 분석 시뮬레이션
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
-  // Polling for analysis status (Global)
-  const { isAnalyzing: isPollingRaw, analysisProgress: progress } =
-    useProjectAnalysis(projectId ?? null, {
-      onAnalysisComplete: (result) => {
-        // 1. 분석 결과 저장 및 Diff 계산
-        if (result) {
-          console.log("Analysis completed, result:", result);
-          const diff = calculateAnalysisDiff(characters, links, result);
-          setAnalysisResult(result);
-          setAnalysisDiff(diff);
-          setIsAnalysisModalOpen(true);
-        }
+  // FORCE: 분석 시뮬레이션 (분석중 4초 → 분석 완료 모달)
+  const [forceAnalyzing, setForceAnalyzing] = useState(false);
+  const [forceProgress, setForceProgress] = useState(0);
 
-        // 2. 데이터 리프레시 (백엔드에 이미 반영되었을 수 있으므로)
-        queryClient.invalidateQueries({
-          queryKey: ["characters", "list", projectId],
+  const runAnalysisSimulation = useCallback(() => {
+    if (forceAnalyzing) return; // Prevent multiple triggers
+
+    setForceAnalyzing(true);
+    setForceProgress(0);
+
+    // 프로그레스 애니메이션 (0 → 100 over 3.5초, eased)
+    let startTime: number | null = null;
+    const duration = 3500; // 3.5초동안 프로그레스
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+
+      // Ease-out cubic for smooth deceleration
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // Cubic ease-out
+      const progress = Math.round(eased * 100);
+
+      setForceProgress(progress);
+
+      if (elapsed < duration) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+
+    // 4초 후 분석 완료 → 1초 대기 후 모달 (분석 완료 상태를 충분히 보여줌)
+    const timer = setTimeout(() => {
+      setForceProgress(100);
+
+      // 프로그레스 100 도달 후 1초 대기 후 모달 표시
+      setTimeout(() => {
+        setForceAnalyzing(false);
+        setAnalysisDiff({
+          newCharacters: [
+            {
+              _id: "c-03",
+              role: "supporting",
+              status: "active",
+              profile: {
+                name: "코제트 (아동)",
+                backstory:
+                  "팡틴의 딸. 몽페르메유의 여관에서 학대받으며 자라고 있는 8세 소녀.",
+                faction: { name: "가족" },
+              },
+            } as Character,
+            {
+              _id: "c-07",
+              role: "antagonist",
+              status: "active",
+              profile: {
+                name: "테나르디에",
+                backstory:
+                  "몽페르메유의 여관 주인. 코제트를 맡아 기르며 착취하고 있다.",
+                faction: { name: "테나르디에" },
+              },
+            } as Character,
+            {
+              _id: "c-19",
+              role: "antagonist",
+              status: "active",
+              profile: {
+                name: "테나르디에 부인",
+                backstory:
+                  "탐욕스럽고 잔인한 여관 안주인. 코제트를 하녀처럼 부린다.",
+                faction: { name: "테나르디에" },
+              },
+            } as Character,
+            {
+              _id: "c-10",
+              role: "supporting",
+              status: "deceased",
+              profile: {
+                name: "팡틴",
+                backstory:
+                  "공장에서 쫓겨난 후 코제트의 양육비를 위해 모든 것을 희생하고 병사함.",
+                faction: { name: "가족" },
+              },
+            } as Character,
+            {
+              _id: "c-09",
+              role: "mentor",
+              status: "deceased",
+              profile: {
+                name: "미리엘 주교",
+                backstory:
+                  "은식기를 훔친 장발장을 용서하고 그를 선의 길로 인도한 성인.",
+                faction: { name: "교회" },
+              },
+            } as Character,
+          ],
+          updatedCharacters: [
+            {
+              id: "c-01",
+              changes: [
+                "신분 노출: 마들렌 시장 → 전과자 장발장",
+                "성향 변화: 고뇌하는 구도자로 심화",
+              ],
+            },
+            {
+              id: "c-02",
+              changes: [
+                "의심 확신: 시장을 장발장으로 특정",
+                "목표 변경: 체포 영장 청구",
+              ],
+            },
+          ],
+          newRelations: [
+            {
+              id: "rel-01",
+              source: "c-01",
+              target: "c-02",
+              type: "hostile",
+              strength: 10,
+              description: "쫓고 쫓기는 숙적 관계 형성",
+            },
+            {
+              id: "rel-02",
+              source: "c-01",
+              target: "c-10",
+              type: "friendly",
+              strength: 10,
+              description: "임종 직전 코제트를 부탁받음 (구원)",
+            },
+            {
+              id: "rel-03",
+              source: "c-10",
+              target: "c-03",
+              type: "FAMILY",
+              strength: 10,
+              description: "목숨보다 소중한 모녀 관계",
+            },
+            {
+              id: "rel-04",
+              source: "c-07",
+              target: "c-03",
+              type: "hostile",
+              strength: 9,
+              description: "아동 학대 및 노동 착취",
+            },
+          ],
+          updatedRelations: [
+            {
+              id: "old-rel-1",
+              changes: ["적대감 심화 (자베르 -> 장발장)"],
+            },
+          ],
+          removedRelations: [],
         });
-      },
-    });
+        setIsAnalysisModalOpen(true);
+      }, 1000);
+    }, 3500);
 
-  // 캐릭터 데이터가 있어도 분석 중이면 로딩 표시 (취소 버튼이 있으므로 안전)
-  const isPolling = isPollingRaw;
+    return () => clearTimeout(timer);
+  }, [forceAnalyzing]);
+
+  // Handle Cmd+K for analysis trigger
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        runAnalysisSimulation();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [runAnalysisSimulation]);
+
+  // Polling for analysis status (Global) - 실제 로직은 주석 처리
+  // const { isAnalyzing: isPollingRaw, analysisProgress: progress } =
+  //   useProjectAnalysis(projectId ?? null, { ... });
+
+  // FORCE: 시뮬레이션 값 사용
+  const isPolling = forceAnalyzing;
+  const progress = forceProgress;
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -374,29 +542,29 @@ export default function WorldPage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-stone-50 overflow-hidden relative">
+    <div className="h-full w-full flex flex-col bg-paper overflow-hidden relative selection:bg-mocha-100 selection:text-mocha-900">
       {/* ─────────────────────────────────────────────────────────────
           GLOBAL LOADING OVERLAY (Shutter Animation)
       ───────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {isPolling && (
           <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-auto overflow-hidden">
-            {/* Top Shutter */}
+            {/* Top Shutter - Removed harsh border for seamless feel */}
             <motion.div
               initial={{ y: "-100%" }}
               animate={{ y: 0 }}
               exit={{ y: "-100%" }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-0 left-0 w-full h-1/2 bg-[#FDFCFB] border-b border-stone-100" // Premium paper color
+              className="absolute top-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_1px_10px_rgba(164,119,100,0.05)]"
             />
 
-            {/* Bottom Shutter */}
+            {/* Bottom Shutter - Removed harsh border */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute bottom-0 left-0 w-full h-1/2 bg-[#FDFCFB] border-t border-stone-100"
+              className="absolute bottom-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_-1px_10px_rgba(164,119,100,0.05)]"
             />
 
             {/* Center Content */}
@@ -407,35 +575,88 @@ export default function WorldPage() {
               transition={{ delay: 0.2, duration: 0.4 }}
               className="relative z-10 flex flex-col items-center gap-8 max-w-md w-full px-6"
             >
-              {/* Logo / Spinner */}
+              {/* Logo / Spinner / Complete Icon */}
               <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-white shadow-2xl flex items-center justify-center relative z-10">
-                  <Sparkles className="w-10 h-10 text-mocha-500 animate-pulse" />
-                </div>
+                <AnimatePresence mode="wait">
+                  {progress < 100 ? (
+                    <motion.div
+                      key="analyzing"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="w-20 h-20 rounded-2xl bg-paper border border-cloud-200 shadow-paper-floating flex items-center justify-center relative z-10"
+                    >
+                      <Sparkles className="w-10 h-10 text-mocha-500 animate-pulse" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="complete"
+                      initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        rotate: 0,
+                        x: [0, -2, 2, -2, 2, 0], // Shaking effect
+                      }}
+                      transition={{
+                        duration: 0.5,
+                        type: "spring",
+                        x: {
+                          repeat: Infinity,
+                          duration: 0.15,
+                          repeatDelay: 0.5,
+                        },
+                      }}
+                      className="w-20 h-20 rounded-2xl bg-green-50 border border-green-200 shadow-paper-floating flex items-center justify-center relative z-10"
+                    >
+                      <CheckCircle2 className="w-10 h-10 text-green-600" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {/* Decorative glow */}
-                <div className="absolute inset-0 bg-mocha-400 blur-2xl opacity-20 animate-pulse" />
+                <div
+                  className={cn(
+                    "absolute inset-0 blur-2xl opacity-10 animate-pulse transition-colors duration-500",
+                    progress < 100 ? "bg-mocha-400" : "bg-green-400",
+                  )}
+                />
               </div>
 
-              <div className="text-center space-y-3">
-                <h3 className="font-display text-3xl font-bold text-stone-800 tracking-tight">
-                  세계관 분석 중...
-                </h3>
-                <p className="text-stone-500 font-sans text-base leading-relaxed">
-                  AI가 본문을 읽고 캐릭터와 관계를 추출하고 있습니다.
+              <div className="text-center space-y-4">
+                <motion.h3
+                  key={progress === 100 ? "done" : "doing"}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl font-bold text-stone-900 tracking-tight"
+                >
+                  {progress < 100 ? "세계관 분석 중..." : "분석 완료!"}
+                </motion.h3>
+                <p className="text-stone-500 font-sans text-sm leading-relaxed max-w-xs mx-auto">
+                  {progress < 100
+                    ? "AI가 본문을 데이터화하여 세계관과 인물 관계를 추출하고 있습니다."
+                    : "성공적으로 데이터를 추출했습니다. 잠시 후 결과가 표시됩니다."}
                   <br />
-                  <span className="text-mocha-600 font-bold text-lg mt-2 block">
+                  <span
+                    className={cn(
+                      "font-bold text-xl mt-4 block tabular-nums transition-colors duration-500",
+                      progress < 100 ? "text-mocha-500" : "text-green-600",
+                    )}
+                  >
                     {progress}%
                   </span>
                 </p>
                 <Progress
                   value={progress}
-                  className="h-1.5 w-64 bg-stone-100 mx-auto rounded-full"
+                  className={cn(
+                    "h-1.5 w-64 mx-auto rounded-full overflow-hidden transition-colors duration-500",
+                    progress < 100 ? "bg-cloud-200" : "bg-green-100",
+                  )}
                 />
               </div>
 
               {/* Cancel Button */}
               <Button
-                variant="ghost"
+                intent="ghost"
                 className="mt-4 text-stone-400 hover:text-red-500 hover:bg-white/50 transition-colors"
                 onClick={() => {
                   if (
@@ -464,40 +685,40 @@ export default function WorldPage() {
 
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
-        <div className="fixed top-1 left-1/2 -translate-x-1/2 z-[60] px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0 scale-[0.8] origin-top">
-          {/* Tab Navigation - Pill Style with borders */}
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
+          {/* Tab Navigation - Pill Style */}
           <TabsList className="bg-transparent p-0 h-auto gap-1">
             <TabsTrigger
               value="graph"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-mocha-500 data-[state=active]:text-white data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-muted transition-all font-medium"
             >
               <Network className="h-3.5 w-3.5" />
               관계도
             </TabsTrigger>
             <TabsTrigger
               value="characters"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <UserRound className="h-3.5 w-3.5" />
               캐릭터
             </TabsTrigger>
             <TabsTrigger
               value="places"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <MapPin className="h-3.5 w-3.5" />
               장소
             </TabsTrigger>
             <TabsTrigger
               value="items"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <Sword className="h-3.5 w-3.5" />
               아이템
             </TabsTrigger>
             <TabsTrigger
               value="foreshadowing"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <Sparkles className="h-3.5 w-3.5" />
               복선
@@ -508,7 +729,7 @@ export default function WorldPage() {
         {/* Character Graph - D3.js (Full Bleed) */}
         <TabsContent
           value="graph"
-          className="flex-1 m-0 overflow-hidden relative bg-stone-50"
+          className="flex-1 m-0 overflow-hidden relative bg-paper"
         >
           {characters.length === 0 && !isPolling ? (
             <div className="h-full flex items-center justify-center p-6">
@@ -611,7 +832,7 @@ export default function WorldPage() {
                     onClick={() => handleCardClick(character)}
                   >
                     {/* Image Section - 70% height */}
-                    <div className="relative flex-[7] overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50">
+                    <div className="relative flex-[7] overflow-hidden bg-muted">
                       {character.imageUrl ? (
                         <>
                           <img
@@ -641,8 +862,8 @@ export default function WorldPage() {
                     </div>
 
                     {/* Info Section - 30% height */}
-                    <div className="flex-[3] p-4 bg-white flex flex-col justify-center border-t border-stone-100">
-                      <h3 className="editorial-name text-base line-clamp-1 group-hover:text-primary transition-colors">
+                    <div className="flex-[3] p-4 bg-paper flex flex-col justify-center border-t border-cloud-100">
+                      <h3 className="text-base font-bold text-stone-900 line-clamp-1 group-hover:text-mocha-500 transition-colors">
                         {character.profile?.name ||
                           (character as { name?: string }).name ||
                           "이름 없음"}

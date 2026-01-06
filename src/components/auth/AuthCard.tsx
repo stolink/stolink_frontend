@@ -5,10 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card } from "@stolink/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLogin, useRegister } from "@/hooks/useAuth";
 
@@ -107,20 +107,20 @@ export function AuthCard({
           setActiveTab("login");
         },
         onError: (err) => handleApiError(err, "회원가입에 실패했습니다"),
-      }
+      },
     );
   };
 
   return (
     <Card
-      className={`w-full overflow-hidden bg-white rounded-[2rem] shadow-xl border-none ${className}`}
+      className={`w-full overflow-hidden bg-paper rounded-[2rem] shadow-xl border-none ${className}`}
       style={{
         boxShadow: "0 25px 50px -12px rgba(61, 48, 42, 0.25)", // Warm Mocha Shadow
       }}
     >
       <div className="flex flex-col md:flex-row min-h-[550px]">
         {/* Left Column: Auth Form */}
-        <div className="flex-1 p-8 md:p-10 bg-white">
+        <div className="flex-1 p-8 md:p-10 bg-paper">
           <div className="mb-8">
             <h2 className="text-2xl font-heading font-bold text-ink tracking-tight mb-1">
               {activeTab === "login" ? "다시 만나서 반갑습니다" : "새로운 시작"}
@@ -136,7 +136,7 @@ export function AuthCard({
             {/* Google Login (Primary) */}
             <Button
               type="button"
-              className="w-full h-11 text-sm font-bold relative bg-white border border-cloud-50 text-ink/80 hover:bg-cloud-50 hover:text-ink hover:border-mocha-400 transition-all duration-200 shadow-sm"
+              className="w-full h-11 text-sm font-bold relative bg-paper border border-cloud-50 text-ink/80 hover:bg-cloud-50 hover:text-ink hover:border-mocha-400 transition-all duration-200 shadow-sm"
               onClick={onGoogleLogin}
             >
               <svg
@@ -169,7 +169,7 @@ export function AuthCard({
                 <span className="w-full border-t border-cloud-50" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase">
-                <span className="bg-white px-3 text-ink/30 font-bold tracking-widest">
+                <span className="bg-paper px-3 text-ink/30 font-bold tracking-widest">
                   또는 이메일로 계속하기
                 </span>
               </div>
@@ -186,13 +186,13 @@ export function AuthCard({
               <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-cloud-50/80 p-1.5 rounded-xl">
                 <TabsTrigger
                   value="login"
-                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-paper data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   로그인
                 </TabsTrigger>
                 <TabsTrigger
                   value="register"
-                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-paper data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   회원가입
                 </TabsTrigger>
@@ -214,7 +214,7 @@ export function AuthCard({
                       id="email"
                       type="email"
                       placeholder="name@example.com"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
+                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
                       {...loginForm.register("email")}
                     />
                     {loginForm.formState.errors.email && (
@@ -242,7 +242,7 @@ export function AuthCard({
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                        className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
                         {...loginForm.register("password")}
                       />
                       <button
@@ -301,7 +301,7 @@ export function AuthCard({
                     </Label>
                     <Input
                       id="reg-nickname"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
+                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
                       {...registerForm.register("nickname")}
                     />
                   </div>
@@ -316,7 +316,7 @@ export function AuthCard({
                       id="reg-pass"
                       type="password"
                       placeholder="8자 이상"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
                       {...registerForm.register("password")}
                     />
                   </div>
@@ -330,7 +330,7 @@ export function AuthCard({
                     <Input
                       id="reg-confirm"
                       type="password"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
                       {...registerForm.register("confirmPassword")}
                     />
                   </div>

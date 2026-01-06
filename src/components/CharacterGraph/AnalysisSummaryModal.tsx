@@ -150,7 +150,6 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
       <AnimatePresence>
         {isOpen && (
           <DialogPrimitive.Portal forceMount>
-            {/* Premium Backdrop: Warm blur with subtle gradient */}
             <DialogPrimitive.Overlay asChild>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -158,10 +157,9 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50"
                 style={{
-                  background:
-                    "linear-gradient(135deg, rgba(164, 119, 100, 0.08) 0%, rgba(61, 48, 42, 0.12) 100%)",
-                  backdropFilter: "blur(16px) saturate(1.2)",
-                  WebkitBackdropFilter: "blur(16px) saturate(1.2)",
+                  background: "rgba(241, 240, 236, 0.85)", // Restored soft ivory background
+                  backdropFilter: "blur(20px) saturate(1.2)",
+                  WebkitBackdropFilter: "blur(20px) saturate(1.2)",
                 }}
               />
             </DialogPrimitive.Overlay>
@@ -176,19 +174,12 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                   className="relative w-full max-w-4xl overflow-hidden flex flex-col max-h-[88vh]"
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(253, 252, 251, 0.97) 0%, rgba(241, 240, 236, 0.99) 100%)",
+                      "linear-gradient(180deg, #F5F4F0 0%, #FFFFFF 100%)", // Restored Warm Ivory Gradient
                     backdropFilter: "blur(24px)",
                     WebkitBackdropFilter: "blur(24px)",
-                    borderRadius: "2rem",
-                    border: "1px solid rgba(255, 255, 255, 0.6)",
-                    boxShadow: `
-                      0 0 0 1px rgba(0, 0, 0, 0.03),
-                      0 2px 4px rgba(61, 48, 42, 0.02),
-                      0 8px 16px rgba(61, 48, 42, 0.04),
-                      0 24px 48px rgba(61, 48, 42, 0.08),
-                      0 48px 96px rgba(61, 48, 42, 0.12),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.8)
-                    `,
+                    borderRadius: "3rem",
+                    border: "1px solid rgba(164, 119, 100, 0.15)",
+                    boxShadow: "0 32px 64px -12px rgba(61, 48, 42, 0.12)",
                     isolation: "isolate",
                     transform: "translateZ(0)",
                     WebkitFontSmoothing: "antialiased",
@@ -235,9 +226,9 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                       whileTap={{ scale: 0.95 }}
                       className="absolute top-6 right-6 p-3 rounded-full transition-all duration-300 group"
                       style={{
-                        background: "rgba(255, 255, 255, 0.5)",
+                        background: "rgba(var(--paper), 0.5)",
                         backdropFilter: "blur(10px)",
-                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        border: "1px solid rgba(var(--paper), 0.3)",
                         boxShadow: "0 2px 8px rgba(61, 48, 42, 0.06)",
                       }}
                     >
@@ -265,24 +256,41 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                           </span>
                         </div>
 
-                        {/* Main title with gradient */}
+                        {/* Main title with gradient + Wavy Animation + TV Optimized High Contrast */}
                         <h2
-                          className="text-4xl sm:text-5xl font-display font-bold leading-tight tracking-tight"
+                          className="text-6xl sm:text-8xl font-black leading-tight tracking-tighter"
                           style={{
-                            background:
-                              "linear-gradient(135deg, #3D302A 0%, #5D4A40 50%, #7D5A4B 100%)",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            backgroundClip: "text",
+                            color: "#A47764", // Pure Mocha color for text
+                            // Removed background-clip and shadow that looks like a box
+                            textShadow: "0 2px 0 rgba(255, 255, 255, 0.8)", // Clean bottom highlight
                           }}
                         >
-                          세계관 분석 완료
+                          {"세계관 분석 완료".split("").map((char, i) => (
+                            <motion.span
+                              key={i}
+                              initial={{ y: 0 }}
+                              animate={{
+                                y: [0, -12, 0], // Increased wave height for larger font
+                              }}
+                              transition={{
+                                duration: 0.8,
+                                delay: i * 0.08,
+                                repeat: Infinity,
+                                repeatDelay: 1.5,
+                                ease: "easeInOut",
+                              }}
+                              style={{ display: "inline-block" }}
+                            >
+                              {char === " " ? "\u00A0" : char}
+                            </motion.span>
+                          ))}
                         </h2>
-                        <p className="text-stone-500 font-sans text-sm max-w-md leading-relaxed">
+                        <p className="text-mocha-700 font-sans text-lg sm:text-2xl font-bold max-w-2xl leading-relaxed mt-6">
                           AI가 본문을 분석하여 새로운 설정 데이터를
                           추출했습니다.
                           <br />
-                          발견된 캐릭터와 관계의 변화를 확인해보세요.
+                          작품의 인물 관계와 설정이 어떻게 변했는지
+                          확인해보세요.
                         </p>
                       </div>
 
@@ -294,10 +302,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                         className="flex flex-col items-center gap-2 p-6 min-w-[120px]"
                         style={{
                           background:
-                            "linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)",
+                            "linear-gradient(135deg, rgba(var(--paper), 0.8) 0%, rgba(var(--paper), 0.4) 100%)",
                           backdropFilter: "blur(20px)",
                           borderRadius: "1rem",
-                          border: "1px solid rgba(255, 255, 255, 0.6)",
+                          border: "1px solid rgba(var(--paper), 0.6)",
                           boxShadow: `
                             0 4px 24px rgba(164, 119, 100, 0.1),
                             0 8px 32px rgba(61, 48, 42, 0.05),
@@ -313,7 +321,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                             type: "spring",
                             stiffness: 300,
                           }}
-                          className="text-5xl font-display font-bold text-mocha-600"
+                          className="text-5xl  font-bold text-mocha-600"
                         >
                           {totalChanges}
                         </motion.span>
@@ -360,12 +368,12 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                             background:
                               activeTab === tab.id
                                 ? "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)"
-                                : "rgba(255, 255, 255, 0.5)",
+                                : "rgba(var(--paper), 0.5)",
                             backdropFilter: "blur(10px)",
                             border:
                               activeTab === tab.id
                                 ? "1px solid rgba(164, 119, 100, 0.3)"
-                                : "1px solid rgba(255, 255, 255, 0.4)",
+                                : "1px solid rgba(var(--paper), 0.4)",
                             boxShadow:
                               activeTab === tab.id
                                 ? "0 4px 16px rgba(164, 119, 100, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
@@ -413,7 +421,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <TrendingUp className="w-3 h-3 text-emerald-600" />
                                   </div>
-                                  <h3 className="font-display text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-stone-800 font-semibold">
                                     새로운 등장인물
                                   </h3>
                                   <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
@@ -430,18 +438,18 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       className="group p-6 rounded-2xl transition-all duration-500 cursor-default"
                                       style={{
                                         background:
-                                          "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%)",
+                                          "linear-gradient(135deg, rgba(var(--paper), 0.9) 0%, rgba(var(--paper), 0.6) 100%)",
                                         backdropFilter: "blur(20px)",
                                         border:
-                                          "1px solid rgba(255, 255, 255, 0.6)",
+                                          "1px solid rgba(var(--paper), 0.6)",
                                         boxShadow:
-                                          "0 4px 20px rgba(61, 48, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
+                                          "0 4px 20px rgba(61, 48, 42, 0.04), inset 0 1px 0 rgba(var(--paper), 0.8)",
                                       }}
                                     >
                                       <div className="flex gap-5">
                                         {/* Avatar */}
                                         <div
-                                          className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-display font-bold text-white shrink-0 group-hover:scale-105 transition-transform"
+                                          className="w-14 h-14 rounded-xl flex items-center justify-center text-xl  font-bold text-white shrink-0 group-hover:scale-105 transition-transform"
                                           style={{
                                             background:
                                               "linear-gradient(135deg, #5B7B4B 0%, #7D9A6A 100%)",
@@ -455,7 +463,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-3">
                                             <div>
-                                              <h4 className="text-lg font-display font-semibold text-stone-800 group-hover:text-mocha-700 transition-colors">
+                                              <h4 className="text-lg  font-semibold text-stone-800 group-hover:text-mocha-700 transition-colors">
                                                 {char.profile.name}
                                               </h4>
                                               <p className="text-xs text-stone-400 mt-0.5">
@@ -488,7 +496,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center">
                                     <GitCommitHorizontal className="w-3 h-3 text-mocha-600" />
                                   </div>
-                                  <h3 className="font-display text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-stone-800 font-semibold">
                                     캐릭터 변화
                                   </h3>
                                   <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
@@ -504,7 +512,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       transition={{ delay: idx * 0.05 }}
                                       className="p-5 rounded-xl border-l-4 border-mocha-300"
                                       style={{
-                                        background: "rgba(255, 255, 255, 0.5)",
+                                        background: "rgba(var(--paper), 0.5)",
                                         backdropFilter: "blur(10px)",
                                       }}
                                     >
@@ -567,7 +575,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
                                     <Link2 className="w-3 h-3 text-blue-600" />
                                   </div>
-                                  <h3 className="font-display text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-stone-800 font-semibold">
                                     새로운 관계
                                   </h3>
                                   <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
@@ -584,10 +592,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       className="group p-6 rounded-2xl transition-all duration-300"
                                       style={{
                                         background:
-                                          "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%)",
+                                          "linear-gradient(135deg, rgba(var(--paper), 0.9) 0%, rgba(var(--paper), 0.6) 100%)",
                                         backdropFilter: "blur(20px)",
                                         border:
-                                          "1px solid rgba(255, 255, 255, 0.6)",
+                                          "1px solid rgba(var(--paper), 0.6)",
                                         boxShadow:
                                           "0 4px 20px rgba(61, 48, 42, 0.04)",
                                       }}
@@ -595,17 +603,63 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       <div className="flex items-center gap-6">
                                         <div
                                           className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider"
-                                          style={{
-                                            background:
-                                              "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
-                                            color: "white",
-                                            boxShadow:
-                                              "0 2px 8px rgba(164, 119, 100, 0.25)",
-                                          }}
+                                          style={(() => {
+                                            const type = rel.type.toLowerCase();
+                                            if (
+                                              type === "bad" ||
+                                              type === "hostile" ||
+                                              type === "enemy"
+                                            ) {
+                                              return {
+                                                background:
+                                                  "linear-gradient(135deg, #EF4444 0%, #F87171 100%)",
+                                                color: "white",
+                                                boxShadow:
+                                                  "0 2px 8px rgba(239, 68, 68, 0.25)",
+                                              };
+                                            }
+                                            if (
+                                              type === "friendly" ||
+                                              type === "ally"
+                                            ) {
+                                              return {
+                                                background:
+                                                  "linear-gradient(135deg, #15803D 0%, #22c55e 100%)",
+                                                color: "white",
+                                                boxShadow:
+                                                  "0 2px 8px rgba(21, 128, 61, 0.25)",
+                                              };
+                                            }
+                                            if (type === "family") {
+                                              return {
+                                                background:
+                                                  "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
+                                                color: "white",
+                                                boxShadow:
+                                                  "0 2px 8px rgba(14, 165, 233, 0.25)",
+                                              };
+                                            }
+                                            if (type === "romance") {
+                                              return {
+                                                background:
+                                                  "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
+                                                color: "white",
+                                                boxShadow:
+                                                  "0 2px 8px rgba(236, 72, 153, 0.25)",
+                                              };
+                                            }
+                                            return {
+                                              background:
+                                                "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
+                                              color: "white",
+                                              boxShadow:
+                                                "0 2px 8px rgba(164, 119, 100, 0.25)",
+                                            };
+                                          })()}
                                         >
                                           {rel.type}
                                         </div>
-                                        <p className="flex-1 text-lg font-serif text-stone-700 italic">
+                                        <p className="flex-1 text-lg  text-stone-700 italic">
                                           "{rel.description}"
                                         </p>
                                         <motion.div
@@ -628,7 +682,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
                                     <Activity className="w-3 h-3 text-amber-600" />
                                   </div>
-                                  <h3 className="font-display text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-stone-800 font-semibold">
                                     관계 변화
                                   </h3>
                                   <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
@@ -644,7 +698,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       transition={{ delay: idx * 0.05 }}
                                       className="p-5 rounded-xl border-l-4 border-amber-300"
                                       style={{
-                                        background: "rgba(255, 255, 255, 0.5)",
+                                        background: "rgba(var(--paper), 0.5)",
                                         backdropFilter: "blur(10px)",
                                       }}
                                     >
@@ -672,7 +726,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
                                     <Trash2 className="w-3 h-3 text-rose-500" />
                                   </div>
-                                  <h3 className="font-display text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-stone-800 font-semibold">
                                     종료된 관계
                                   </h3>
                                   <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
@@ -683,10 +737,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                     <motion.div
                                       variants={itemVariants}
                                       key={id}
-                                      className="p-4 rounded-xl border border-dashed border-stone-200 bg-stone-50/50 flex items-center gap-4"
+                                      className="p-4 rounded-xl border border-dashed border-stone-200 bg-muted/50 flex items-center gap-4"
                                     >
                                       <Trash2 className="w-4 h-4 text-stone-300" />
-                                      <span className="text-sm text-stone-400 font-mono">
+                                      <span className="text-sm text-stone-400 ">
                                         Relation #{id.slice(-8)}
                                       </span>
                                     </motion.div>
@@ -700,7 +754,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                               updatedRelCount === 0 &&
                               removedRelCount === 0 && (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                                  <div className="w-16 h-16 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
+                                  <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
                                     <Link2 className="w-8 h-8 text-stone-300" />
                                   </div>
                                   <p className="text-stone-400 font-medium">
@@ -721,7 +775,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                     className="relative px-10 sm:px-14 py-6 flex justify-between items-center"
                     style={{
                       background:
-                        "linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 100%)",
+                        "linear-gradient(180deg, rgba(var(--paper), 0) 0%, rgba(var(--paper), 0.8) 100%)",
                       borderTop: "1px solid rgba(0, 0, 0, 0.03)",
                     }}
                   >

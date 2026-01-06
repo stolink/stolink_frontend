@@ -1,6 +1,6 @@
 import { useState, useLayoutEffect } from "react";
 import { X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 export interface TourStep {
@@ -154,7 +154,7 @@ export default function GuidedTour({
         {/* Navigation - 버튼이 항상 같은 위치에 있어서 클릭이 편함 */}
         <div className="flex items-center justify-between">
           <Button
-            variant="ghost"
+            intent="ghost"
             size="sm"
             onClick={handleSkip}
             className="text-muted-foreground"
@@ -164,12 +164,12 @@ export default function GuidedTour({
 
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              intent="outline"
               size="sm"
               onClick={handlePrev}
               disabled={currentStep === 0}
               className={cn(
-                currentStep === 0 && "opacity-50 cursor-not-allowed"
+                currentStep === 0 && "opacity-50 cursor-not-allowed",
               )}
             >
               <ChevronLeft className="h-4 w-4" />

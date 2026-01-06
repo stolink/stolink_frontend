@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@stolink/ui";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
 import { roleLabels } from "@/data/constants/characterDetailConstants";

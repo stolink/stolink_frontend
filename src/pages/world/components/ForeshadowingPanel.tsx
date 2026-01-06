@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@stolink/ui";
 import { useForeshadowingStore } from "@/stores";
 import type { Foreshadowing } from "@/types";
 import {
@@ -57,7 +57,7 @@ export function ForeshadowingPanel({
       case "pending":
         return (
           <Badge
-            variant="outline"
+            intent="outline"
             className="bg-mocha-50 text-mocha-700 border-mocha-200"
           >
             미회수
@@ -66,7 +66,7 @@ export function ForeshadowingPanel({
       case "recovered":
         return (
           <Badge
-            variant="outline"
+            intent="outline"
             className="bg-sage-50 text-sage-700 border-sage-200"
           >
             회수 완료
@@ -80,10 +80,7 @@ export function ForeshadowingPanel({
   const getImportanceBadge = (importance?: Foreshadowing["importance"]) => {
     if (!importance || importance !== "major") return null;
     return (
-      <Badge
-        variant="outline"
-        className="bg-red-50 text-red-700 border-red-200"
-      >
+      <Badge intent="outline" className="bg-red-50 text-red-700 border-red-200">
         중요
       </Badge>
     );
@@ -92,7 +89,7 @@ export function ForeshadowingPanel({
   return (
     <div className="flex h-full bg-cloud-50 overflow-hidden editorial-fade-in">
       {/* 왼쪽 사이드 내비게이션 - Editorial Style */}
-      <div className="w-56 border-r border-stone-100 bg-gradient-to-b from-white to-cloud-50/50 flex flex-col p-4 gap-3 shrink-0">
+      <div className="w-56 border-r border-cloud-100 bg-cloud-50 flex flex-col p-4 gap-3 shrink-0">
         <div className="flex items-center gap-2 px-2 mb-2">
           <BookMarked className="h-4 w-4 text-primary" />
           <span className="editorial-label">복선 현황</span>
@@ -101,10 +98,10 @@ export function ForeshadowingPanel({
         <button
           onClick={() => setActiveStatus("pending")}
           className={cn(
-            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
+            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 border",
             activeStatus === "pending"
-              ? "bg-primary text-white shadow-lg shadow-primary/20"
-              : "text-stone-600 hover:bg-white hover:shadow-md",
+              ? "bg-mocha-500 text-white border-mocha-500 shadow-paper-floating"
+              : "text-stone-500 border-transparent hover:bg-cloud-100",
           )}
         >
           <div className="flex items-center gap-3">
@@ -138,10 +135,10 @@ export function ForeshadowingPanel({
         <button
           onClick={() => setActiveStatus("recovered")}
           className={cn(
-            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
+            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 border",
             activeStatus === "recovered"
-              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-              : "text-stone-600 hover:bg-white hover:shadow-md",
+              ? "bg-emerald-500 text-white border-emerald-500 shadow-paper-floating"
+              : "text-stone-500 border-transparent hover:bg-cloud-100",
           )}
         >
           <div className="flex items-center gap-3">
@@ -174,21 +171,18 @@ export function ForeshadowingPanel({
           </span>
         </button>
 
-        {/* Summary Stats */}
-        <div className="mt-auto pt-4 border-t border-stone-100">
-          <div className="text-[10px] text-stone-400 uppercase tracking-wider mb-2 px-2">
-            전체 현황
+        <div className="mt-auto pt-4 border-t border-cloud-100">
+          <div className="text-[10px] text-stone-400 uppercase tracking-widest mb-3 px-2 font-bold">
+            통계
           </div>
-          <div className="editorial-card p-3 bg-white/80">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-stone-500">총 복선</span>
-              <span className="font-bold text-stone-800">
-                {allForeshadowings.length}
-              </span>
+          <div className="p-3 bg-white border border-cloud-100 rounded-xl shadow-paper">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase">
+              <span className="text-stone-400">총 복선</span>
+              <span className="text-stone-900">{allForeshadowings.length}</span>
             </div>
-            <div className="mt-2 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+            <div className="mt-3 h-1.5 bg-cloud-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all"
+                className="h-full bg-mocha-500 rounded-full transition-all"
                 style={{
                   width: `${allForeshadowings.length > 0 ? (recoveredCount / allForeshadowings.length) * 100 : 0}%`,
                 }}
@@ -223,8 +217,8 @@ export function ForeshadowingPanel({
               <div
                 key={fs.id}
                 className={cn(
-                  "editorial-card group relative overflow-hidden hover-lift editorial-fade-in",
-                  fs.importance === "major" && "ring-1 ring-rose-200",
+                  "bg-white border border-cloud-200 rounded-2xl group relative overflow-hidden transition-all duration-300 hover:border-mocha-300 shadow-paper",
+                  fs.importance === "major" && "ring-1 ring-red-100",
                 )}
                 style={{ animationDelay: `${cardIdx * 60}ms` }}
               >
@@ -294,9 +288,9 @@ export function ForeshadowingPanel({
                         <button
                           key={idx}
                           className={cn(
-                            "timeline-item flex items-center gap-3 w-full text-left p-3 rounded-xl border border-stone-100 bg-white hover:bg-primary/5 hover:border-primary/20 transition-all group/item shadow-sm disabled:opacity-50 disabled:cursor-not-allowed editorial-fade-in",
+                            "flex items-center gap-3 w-full text-left p-3 rounded-xl border border-cloud-50 bg-cloud-50 hover:bg-mocha-50 hover:border-mocha-200 transition-all group/item shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
                             appearance.isRecovery &&
-                              "border-emerald-100 bg-emerald-50/30",
+                              "border-emerald-100 bg-emerald-50",
                           )}
                           style={{
                             animationDelay: `${cardIdx * 60 + idx * 40}ms`,

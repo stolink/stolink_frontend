@@ -4,7 +4,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@stolink/ui";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -76,7 +76,7 @@ export function RelationshipDetailSheet({
             <SheetHeader className="space-y-4">
               <div className="flex items-center justify-between">
                 <Badge
-                  variant="outline"
+                  intent="outline"
                   className={cn("text-white gap-1.5 px-3 py-1")}
                   style={{ backgroundColor: color, borderColor: color }}
                 >
@@ -85,7 +85,7 @@ export function RelationshipDetailSheet({
                 </Badge>
                 {bidirectional && (
                   <Badge
-                    variant="secondary"
+                    intent="secondary"
                     className="gap-1 bg-stone-100 text-stone-600 hover:bg-stone-200"
                   >
                     <ArrowLeftRight className="w-3 h-3" />
@@ -94,7 +94,7 @@ export function RelationshipDetailSheet({
                 )}
               </div>
 
-              <SheetTitle className="text-2xl font-serif font-bold text-stone-900 leading-tight">
+              <SheetTitle className="text-2xl  font-bold text-stone-900 leading-tight">
                 <span className="block text-stone-500 text-base font-sans font-medium mb-1">
                   Source
                 </span>
@@ -211,7 +211,7 @@ export function RelationshipDetailSheet({
                           )}
                           <div className="mt-2 flex items-center gap-2">
                             <Badge
-                              variant="outline"
+                              intent="outline"
                               className="text-[10px] px-1.5 py-0 h-5"
                               style={{ borderColor: "currentColor" }}
                             >
@@ -239,7 +239,7 @@ export function RelationshipDetailSheet({
                   <span className="text-sm font-medium">이전 관계</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="text-stone-500 bg-white">
+                  <Badge intent="outline" className="text-stone-500 bg-white">
                     {RELATION_LABELS[evolvedFrom as UIRelationType] ||
                       evolvedFrom}
                   </Badge>

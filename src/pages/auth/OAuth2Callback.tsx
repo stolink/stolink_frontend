@@ -45,7 +45,7 @@ export default function OAuth2Callback() {
   }, [searchParams, navigate, setUser]);
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600  gap-4">
       <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
       <p>로그인 처리 중...</p>
     </div>

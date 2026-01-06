@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -118,7 +118,7 @@ export function NetworkControls({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="outline"
+                        intent="outline"
                         size="sm"
                         className={cn(
                           "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-stone-200",
@@ -243,7 +243,7 @@ export function NetworkControls({
                       Simulation
                     </Label>
                     <Button
-                      variant="destructive"
+                      intent="destructive"
                       size="sm"
                       onClick={onSimulateCollapse}
                       className="w-full h-7 text-[10px] font-medium"

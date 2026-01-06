@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart, Plus, X, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/design-system/components/Button";
+import { Input } from "@stolink/ui";
+import { Button } from "@stolink/ui";
 
 interface CharacterTraitsProps {
   traits: string[];

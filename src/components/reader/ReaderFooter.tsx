@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import type { Theme } from "./theme";
 import { getThemeStyle } from "./theme";
@@ -45,12 +45,12 @@ export function ReaderFooter({
         className={cn(
           "px-4 flex items-center justify-between border-t shrink-0 transition-all duration-300",
           styles.header,
-          showControls ? "h-14 opacity-100" : "h-0 opacity-0 overflow-hidden"
+          showControls ? "h-14 opacity-100" : "h-0 opacity-0 overflow-hidden",
         )}
         onMouseEnter={onShowControls}
       >
         <Button
-          variant="ghost"
+          intent="ghost"
           onClick={onPrev}
           disabled={!hasPrev}
           className="gap-2"
@@ -66,7 +66,7 @@ export function ReaderFooter({
         </div>
 
         <Button
-          variant="ghost"
+          intent="ghost"
           onClick={onNext}
           disabled={!hasNext}
           className="gap-2"

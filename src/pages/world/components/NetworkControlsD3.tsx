@@ -1,5 +1,5 @@
 import { Layers, ChevronDown, Heart, Users, Skull } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +49,7 @@ export function NetworkControlsD3({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="outline"
+              intent="outline"
               size="sm"
               className={cn(
                 "w-full justify-between gap-1 h-7 text-xs bg-white/80 hover:bg-white border-stone-200",

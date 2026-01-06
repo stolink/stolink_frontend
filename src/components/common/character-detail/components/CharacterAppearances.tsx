@@ -1,5 +1,5 @@
 import { BookOpen, ChevronRight, MoreHorizontal } from "lucide-react";
-import { Button } from "@/design-system/components/Button";
+import { Button } from "@stolink/ui";
 
 interface CharacterAppearancesProps {
   appearances: string[];
