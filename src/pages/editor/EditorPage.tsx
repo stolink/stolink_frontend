@@ -42,31 +42,6 @@ import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
 import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
 
-// Refactored Components
-import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
-import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
-import SnapshotPanel from "@/components/editor/SnapshotPanel";
-import ExportGatewayModal from "@/components/editor/ExportGatewayModal";
-import DemoHeader from "@/components/editor/DemoHeader";
-// SectionStrip removed - minimizing distractions for writer focus
-// ScriveningsEditor & OutlineView removed (moved to EditorContent)
-// EditorSettingsPanel removed (not currently used)
-
-// Refactored Hooks
-import { useEditorHandlers } from "./hooks/useEditorHandlers";
-import { useKeyboardSave } from "./hooks/useKeyboardSave";
-import { useEditorEffects } from "./hooks/useEditorEffects";
-
-// Refactored Components
-import { EditorToolbar } from "./components/EditorToolbar";
-import {
-  EditorContent,
-  type EditorContentHandle,
-} from "./components/EditorContent";
-import { CreateSectionModal } from "./components/CreateSectionModal";
-import { useBulkDocumentContent } from "@/hooks/useDocuments";
-import { useCharacters } from "@/hooks/useCharacters";
-import { useProjectSSE } from "@/hooks/useProjectSSE";
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
@@ -223,39 +198,6 @@ export default function EditorPage({ isDemo = false }) {
   // ============================================================
   // 1. Core Data Hooks
   // ============================================================
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
-    isDemo ? null : projectId,
-    { enabled: !isDemo },
-  );
-  // TODO: 저장 흐름에 addToBuffer 연결 (useEditorHandlers 확장 필요)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
-
-  // 페이지 이탈/브라우저 종료 시 버퍼 flush
-  useEffect(() => {
-    if (isDemo) return;
-
-    const handleBeforeUnload = () => {
-      flushAndAnalyze();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      // 컴포넌트 언마운트 시에도 flush
-      flushAndAnalyze();
-    };
-  }, [isDemo, flushAndAnalyze]);
-
-  // ============================================================
-  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
-  // ============================================================
-  const [showReader, setShowReader] = useState(false);
-  const [showSnapshot, setShowSnapshot] = useState(false);
-  // Export & Publish State
-  const [showExport, setShowExport] = useState(false);
-
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore(
     (state) => (state as { documents: Record<string, Document> }).documents,
@@ -587,93 +529,20 @@ export default function EditorPage({ isDemo = false }) {
         </header>
       )}
 
-      {/* Project Header moved to ProjectLayout for global consistency */}
-
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Sidebar - In focus mode, hover trigger on left edge */}
-        {isFocusMode ? (
-          <div
-            className="group absolute left-0 top-0 bottom-0 z-40"
-            style={{ width: "8px" }}
-          >
-            {/* Hover trigger zone */}
-            <div className="absolute inset-0 hover:cursor-pointer" />
-            {/* Sidebar appears on hover - with focus mode styling to hide drag handles */}
-            <div className="absolute left-0 top-0 bottom-0 w-64 bg-card/95 backdrop-blur-sm border-r border-border shadow-2xl transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out overflow-hidden focus-mode-sidebar">
-              <EditorLeftSidebar
-                chapters={chapterTreeData}
-                selectedChapterId={selectedSectionId || selectedFolderId}
-                onSelectChapter={handleSelectFolder}
-                onAddChapter={handleAddChapter}
-                onRenameChapter={handleRenameChapter}
-                onDeleteChapter={handleDeleteChapter}
-                onReorderChapter={handleReorderChapter}
-                onMoveToFolder={handleMoveToFolder}
-                isOpen={true}
-              />
-            </div>
-          </div>
-        ) : (
-          <EditorLeftSidebar
-            chapters={chapterTreeData}
-            selectedChapterId={selectedSectionId || selectedFolderId}
-            onSelectChapter={handleSelectFolder}
-            onAddChapter={handleAddChapter}
-            onRenameChapter={handleRenameChapter}
-            onDeleteChapter={handleDeleteChapter}
-            onReorderChapter={handleReorderChapter}
-            onMoveToFolder={handleMoveToFolder}
-            isOpen={isSidebarVisible}
-          />
-        )}
-
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-w-0 bg-card">
-          {/* Toolbar */}
-          {/* Toolbar */}
-          {!isFocusMode && (
-            <EditorToolbar
-              isSidebarVisible={isSidebarVisible}
-              onToggleSidebar={toggleSidebar}
-              currentFolderTitle={currentFolderTitle}
-              currentSectionTitle={currentSectionTitle}
-              sectionPath={sectionPath}
-              isEditingTitle={isEditingTitle}
-              editedTitle={editedTitle}
-              onEditedTitleChange={setEditedTitle}
-              onStartEditTitle={() => {
-                if (!isDemo && selectedSectionId) {
-                  setEditedTitle(currentSectionTitle);
-                  setIsEditingTitle(true);
-                }
-              }}
-              onSaveTitle={() => {
-                if (editedTitle.trim() && editedTitle !== currentSectionTitle) {
-                  if (selectedSectionId) {
-                    updateDocument({
-                      title: editedTitle.trim(),
-                    });
-                  }
-                }
-                setIsEditingTitle(false);
-              }}
-              onCancelEditTitle={() => setIsEditingTitle(false)}
-              isDemo={isDemo}
-              selectedSectionId={selectedSectionId}
-              characterCount={characterCount}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-              splitViewEnabled={splitView.enabled}
-              onToggleSplitView={toggleSplitView}
-              onToggleFocusMode={toggleFocusMode}
-              isTypewriterMode={isTypewriterMode}
-              onToggleTypewriterMode={toggleTypewriterMode}
-              rightSidebarOpen={rightSidebarOpen}
-              onToggleRightSidebar={toggleRightSidebar}
-              onShowReader={isDemo ? undefined : () => setShowReader(true)}
-              onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={() => setShowExport(true)}
-              analysisStatus={analysisDisplayStatus}
+      <div className="flex flex-1 overflow-hidden">
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <EditorLeftSidebar
+              chapters={sidebarChapters}
+              selectedChapterId={selectedSectionId}
+              onSelectChapter={handleSelectSection}
+              onAddChapter={handleAddChapter}
+              onRenameChapter={handleRenameChapter}
+              onDeleteChapter={handleDeleteChapter}
+              onMoveToFolder={handleMoveToFolder}
+              onReorderChapter={handleReorderChapter}
+              isOpen={isSidebarOpen}
+              onToggle={() => setIsSidebarOpen(false)}
             />
           )}
         </AnimatePresence>
@@ -744,28 +613,13 @@ export default function EditorPage({ isDemo = false }) {
           activeTab="ai" // Default tab
           onTabChange={() => {}} // Placeholder
           documentId={selectedSectionId}
-          currentContent={currentContent}
-          documentTitle={currentSectionTitle}
-          onRestore={(content) => {
-            handleContentChange(content);
-          }}
-          isOpen={showSnapshot}
-          onClose={() => setShowSnapshot(false)}
-        />
-
-        {/* Export Gateway Modal - 파일 다운로드 / 커뮤니티 배포 선택 */}
-        <ExportGatewayModal
-          isOpen={showExport}
-          onClose={() => setShowExport(false)}
-          currentId={selectedSectionId || undefined}
-          characters={characters}
-          links={graphLinks}
-          documents={documents}
           projectId={projectId}
-          projectTitle={project?.title}
-          projectDescription={project?.description}
-          projectGenre={project?.genre}
-          projectCoverImage={project?.coverImage}
+          sectionTitle={
+            documents.find((d) => d.id === selectedSectionId)?.title
+          }
+          consistencyReport={consistencyReport}
+          isAnalyzing={analysisStatus === "analyzing"}
+          onRefreshAnalysis={handleManualAnalysis}
         />
       </div>
 
