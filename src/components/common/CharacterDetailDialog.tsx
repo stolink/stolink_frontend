@@ -44,6 +44,7 @@ import {
 
 // Hooks & Components & Constants
 import { useCharacterData } from "@/hooks/useCharacterData";
+import { useCharacterEvents } from "@/hooks/useEvents";
 import { CharacterHeader } from "./character-detail/components/CharacterHeader";
 import { CharacterTraits } from "./character-detail/components/CharacterTraits";
 
@@ -142,6 +143,12 @@ export default function CharacterDetailDialog({
 
   const { traits, relationships, appearances } = useCharacterData(
     displayCharacter, // displayCharacter 사용
+  );
+
+  // 캐릭터의 이벤트(일대기) 조회
+  const { data: characterEvents = [] } = useCharacterEvents(
+    displayCharacter?._id ?? null,
+    { enabled: !!displayCharacter?._id && isOpen },
   );
 
   const { toast } = useToast();
@@ -776,6 +783,7 @@ export default function CharacterDetailDialog({
                       onBackstoryChange={(value: string) =>
                         handleFieldChange("profile.backstory", value)
                       }
+                      events={characterEvents}
                       onSave={handleSave}
                       onCancel={handleCancel}
                     />

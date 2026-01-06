@@ -54,7 +54,11 @@ import type {
   ConsistencyReport,
 } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
-import { type CharacterRelation, type Character } from "@/types/character";
+import {
+  type CharacterRelation,
+  type Character,
+  type RelationType,
+} from "@/types/character";
 
 // Utils & Data
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
@@ -79,6 +83,7 @@ function buildDemoChapterTree(
   chapters.forEach((chapter) => {
     map.set(chapter.id, {
       ...chapter,
+      type: chapter.type === "chapter" ? "folder" : "text",
       children: [],
       synopsis: "",
       metadata: {
@@ -248,28 +253,31 @@ export default function EditorPage({ isDemo = false }) {
 
   const graphLinks = useMemo(() => {
     if (isDemo) return [];
-    interface GraphLink {
+    // Import RelationshipLink from types/characterGraph instead of defining locally to avoid mismatch
+    interface LocalGraphLink {
       id: string;
       source: string;
       target: string;
-      type: string;
+      type: RelationType;
       strength: number;
       description: string;
     }
-    const links: GraphLink[] = [];
+    const links: LocalGraphLink[] = [];
     characters.forEach((char: Character) => {
       char.relations?.graph?.forEach((rel: CharacterRelation) => {
         links.push({
           id: `${char._id}-${rel.target}`,
           source: char._id,
           target: rel.target,
-          type: rel.type,
+          type: (rel.type as RelationType) || "friendly",
           strength: rel.strength,
           description: rel.description,
         });
       });
     });
-    return links;
+    // Cast to unknown first to avoid structural mismatch complaints, though properties align
+    // calculateAnalysisDiff expects RelationshipLink[]
+    return links as unknown as import("@/types/characterGraph").RelationshipLink[];
   }, [characters, isDemo]);
 
   // ============================================================

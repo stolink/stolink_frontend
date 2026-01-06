@@ -5,7 +5,6 @@ import { Button } from "@stolink/ui";
 import { BiographyTree } from "./biography/BiographyTree";
 import { sortEventsByPrevId } from "./biography/utils";
 import { BiographyEventList } from "./biography/BiographyEventList";
-import { MOCK_BIOGRAPHY_EVENTS } from "./biography/mockData";
 import type { BiographyEvent } from "@/types/biography";
 
 interface CharacterBiographyProps {
@@ -28,11 +27,10 @@ export function CharacterBiography({
 }: CharacterBiographyProps) {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // 실제 이벤트 데이터가 없으면 목데이터 사용
   // useMemo로 정렬된 데이터 계산
+  // 실제 이벤트 데이터가 없으면 빈 배열 (UI에서 empty state 표시)
   const displayEvents = useMemo(() => {
-    const rawEvents =
-      events && events.length > 0 ? events : MOCK_BIOGRAPHY_EVENTS;
+    const rawEvents = events && events.length > 0 ? events : [];
     return sortEventsByPrevId(rawEvents);
   }, [events]);
 

@@ -2,6 +2,8 @@
  * 인물 일대기 시각화 관련 타입 정의
  */
 
+import type { BackendEvent } from "./event";
+
 /** 사건 유형 (API 응답 기반) */
 export type BiographyEventType =
   | "action" // 행동
@@ -38,6 +40,26 @@ export interface BiographyEvent {
 /** 중요도 수준 판별 헬퍼 */
 export function getImportanceLevel(importance: number): "major" | "minor" {
   return importance >= 7 ? "major" : "minor";
+}
+
+/**
+ * BackendEvent → BiographyEvent 변환
+ * 백엔드 snake_case를 프론트엔드 camelCase로 변환
+ */
+export function transformEventToBiography(event: BackendEvent): BiographyEvent {
+  return {
+    eventId: event.event_id,
+    eventType: event.event_type as BiographyEventType,
+    narrativeSummary: event.narrative_summary,
+    description: event.description,
+    participants: event.participants || [],
+    locationRef: event.location_ref || null,
+    prevEventId: event.prev_event_id || null,
+    visualScene: null, // Not available from backend
+    timestamp: event.timestamp || null,
+    importance: event.importance || 5,
+    changesMade: event.changes_made || null,
+  };
 }
 
 /** 나무 가지 노드 */

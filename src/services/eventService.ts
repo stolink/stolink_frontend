@@ -1,3 +1,5 @@
+import api from "@/api/client";
+import type { ApiResponse } from "@/types/api";
 import type { Event, BackendEvent } from "@/types/event";
 
 /**
@@ -9,7 +11,7 @@ export function transformBackendEvent(backendEvent: BackendEvent): Event {
     eventType: backendEvent.event_type,
     narrativeSummary: backendEvent.narrative_summary,
     description: backendEvent.description,
-    participants: backendEvent.participants,
+    participants: backendEvent.participants || [],
     locationRef: backendEvent.location_ref,
     prevEventId: backendEvent.prev_event_id,
     timestamp: backendEvent.timestamp,
@@ -20,6 +22,42 @@ export function transformBackendEvent(backendEvent: BackendEvent): Event {
 }
 
 export const eventService = {
-  // Placeholder for future API integration
+  /**
+   * 특정 캐릭터의 참여 이벤트 조회
+   * GET /api/characters/:id/events
+   */
+  getByCharacter: async (characterId: string): Promise<Event[]> => {
+    try {
+      const response = await api.get<ApiResponse<BackendEvent[]>>(
+        `/characters/${characterId}/events`,
+      );
+      const data = response.data.data;
+      if (!Array.isArray(data)) return [];
+      return data.map(transformBackendEvent);
+    } catch (error) {
+      console.warn("[eventService] getByCharacter failed:", error);
+      return [];
+    }
+  },
+
+  /**
+   * 프로젝트의 모든 이벤트 조회
+   * GET /api/projects/:id/events
+   */
+  getByProject: async (projectId: string): Promise<Event[]> => {
+    try {
+      const response = await api.get<ApiResponse<BackendEvent[]>>(
+        `/projects/${projectId}/events`,
+      );
+      const data = response.data.data;
+      if (!Array.isArray(data)) return [];
+      return data.map(transformBackendEvent);
+    } catch (error) {
+      console.warn("[eventService] getByProject failed:", error);
+      return [];
+    }
+  },
+
+  /** 변환 함수 export */
   transform: transformBackendEvent,
 };
