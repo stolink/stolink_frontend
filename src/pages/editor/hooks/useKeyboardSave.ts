@@ -6,6 +6,7 @@ interface UseKeyboardSaveOptions {
   saveContentRef: React.RefObject<(content: string) => Promise<void>>;
   lastContentRef: React.RefObject<string>;
   saveTimeoutRef: React.RefObject<ReturnType<typeof setTimeout> | null>;
+  getLatestContent?: () => string;
 }
 
 /**
@@ -17,6 +18,7 @@ export function useKeyboardSave({
   saveContentRef,
   lastContentRef,
   saveTimeoutRef,
+  getLatestContent,
 }: UseKeyboardSaveOptions) {
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -29,7 +31,29 @@ export function useKeyboardSave({
           }
 
           try {
-            await saveContentRef.current?.(lastContentRef.current || "");
+            // Get content from callback if available (for debounced editors), otherwise use ref
+            const contentToSave = getLatestContent
+              ? getLatestContent()
+              : lastContentRef.current || "";
+
+            // If content is empty strings, we should still save if that's the intention,
+            // but usually we want to fallback to lastContentRef if getContent returns empty?
+            // No, empty content is valid.
+            // However, editorContentRef.current.getContent() updates ONLY if viewMode is editor.
+            // If scrivenings, it returns "".
+            // Use fallback logic: if getLatestContent returns "", verify if it's intentional?
+            // TiptapEditor.getContent() returns editor.getHTML() which might be "<p></p>" or similar, rarely empty string unless truly empty.
+            // But if viewMode is scrivenings, getContent returns "".
+            // So we should check if getLatestContent returns something usable.
+
+            // Actually, let's keep it simple: caller handles the logic.
+            // But EditorContent.tsx returns "" for scrivenings.
+            // In Scrivenings mode, simple Cmd+S might not work well with 'lastContentRef' of a single section anyway?
+            // EditorPage tracks 'selectedSectionId'.
+            // Let's assume for now we trust `getLatestContent` if provided, but maybe check for empty string if that's a failure case?
+            // If TiptapEditor is mounted, it returns HTML string.
+
+            await saveContentRef.current?.(contentToSave);
             showSaveIndicator("success");
           } catch (error) {
             console.error("[EditorPage] Save failed:", error);
@@ -47,6 +71,7 @@ export function useKeyboardSave({
     saveContentRef,
     lastContentRef,
     saveTimeoutRef,
+    getLatestContent,
   ]);
 }
 

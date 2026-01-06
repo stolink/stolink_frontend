@@ -18,6 +18,45 @@ import {
   Link2,
   CheckCircle2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Helper function for badge styles, derived from feature branch logic
+const getRelationBadgeStyle = (type: string) => {
+  const lowerType = type.toLowerCase();
+  if (lowerType.includes("hostile") || lowerType.includes("enemy")) {
+    return {
+      background: "linear-gradient(135deg, #EF4444 0%, #F87171 100%)",
+      color: "white",
+      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.25)",
+    };
+  }
+  if (lowerType.includes("friendly") || lowerType.includes("ally")) {
+    return {
+      background: "linear-gradient(135deg, #15803D 0%, #22c55e 100%)",
+      color: "white",
+      boxShadow: "0 2px 8px rgba(21, 128, 61, 0.25)",
+    };
+  }
+  if (lowerType.includes("family")) {
+    return {
+      background: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
+      color: "white",
+      boxShadow: "0 2px 8px rgba(14, 165, 233, 0.25)",
+    };
+  }
+  if (lowerType.includes("romance")) {
+    return {
+      background: "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
+      color: "white",
+      boxShadow: "0 2px 8px rgba(236, 72, 153, 0.25)",
+    };
+  }
+  return {
+    background: "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
+    color: "white",
+    boxShadow: "0 2px 8px rgba(164, 119, 100, 0.25)",
+  };
+};
 
 // Simple Confetti Component using Framer Motion
 const ConfettiParticle = ({ delay = 0 }: { delay?: number }) => {
@@ -68,7 +107,6 @@ const ConfettiParticle = ({ delay = 0 }: { delay?: number }) => {
     />
   );
 };
-import { cn } from "@/lib/utils";
 
 interface AnalysisSummaryModalProps {
   isOpen: boolean;
@@ -150,6 +188,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
       <AnimatePresence>
         {isOpen && (
           <DialogPrimitive.Portal forceMount>
+            {/* Premium Backdrop: Warm blur with subtle gradient */}
             <DialogPrimitive.Overlay asChild>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -232,7 +271,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                         boxShadow: "0 2px 8px rgba(61, 48, 42, 0.06)",
                       }}
                     >
-                      <X className="w-5 h-5 text-stone-400 group-hover:text-stone-700 transition-colors" />
+                      <X className="w-5 h-5 text-mocha-400 group-hover:text-mocha-700 transition-colors" />
                     </motion.button>
 
                     {/* Header content */}
@@ -261,7 +300,6 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                           className="text-6xl sm:text-8xl font-black leading-tight tracking-tighter"
                           style={{
                             color: "#A47764", // Pure Mocha color for text
-                            // Removed background-clip and shadow that looks like a box
                             textShadow: "0 2px 0 rgba(255, 255, 255, 0.8)", // Clean bottom highlight
                           }}
                         >
@@ -286,11 +324,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                           ))}
                         </h2>
                         <p className="text-mocha-700 font-sans text-lg sm:text-2xl font-bold max-w-2xl leading-relaxed mt-6">
-                          AI가 본문을 분석하여 새로운 설정 데이터를
-                          추출했습니다.
-                          <br />
-                          작품의 인물 관계와 설정이 어떻게 변했는지
-                          확인해보세요.
+                          발견된 캐릭터와 관계의 변화를 확인해보세요.
                         </p>
                       </div>
 
@@ -325,7 +359,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                         >
                           {totalChanges}
                         </motion.span>
-                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-[0.15em]">
+                        <span className="text-[9px] font-bold text-mocha-400 uppercase tracking-[0.15em]">
                           Total Updates
                         </span>
                       </motion.div>
@@ -421,10 +455,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <TrendingUp className="w-3 h-3 text-emerald-600" />
                                   </div>
-                                  <h3 className=" text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-espresso-800 font-semibold">
                                     새로운 등장인물
                                   </h3>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
+                                  <div className="h-px flex-1 bg-gradient-to-r from-cloud-200 to-transparent" />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -463,10 +497,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-3">
                                             <div>
-                                              <h4 className="text-lg  font-semibold text-stone-800 group-hover:text-mocha-700 transition-colors">
+                                              <h4 className="text-lg  font-semibold text-espresso-800 group-hover:text-mocha-700 transition-colors">
                                                 {char.profile.name}
                                               </h4>
-                                              <p className="text-xs text-stone-400 mt-0.5">
+                                              <p className="text-xs text-mocha-400 mt-0.5">
                                                 {char.role} ·{" "}
                                                 {char.profile.faction?.name ||
                                                   "무소속"}
@@ -477,7 +511,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                             </span>
                                           </div>
                                           {char.profile.backstory && (
-                                            <p className="text-sm text-stone-500 mt-3 line-clamp-2 leading-relaxed italic">
+                                            <p className="text-sm text-mocha-500 mt-3 line-clamp-2 leading-relaxed italic">
                                               "{char.profile.backstory}"
                                             </p>
                                           )}
@@ -496,10 +530,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center">
                                     <GitCommitHorizontal className="w-3 h-3 text-mocha-600" />
                                   </div>
-                                  <h3 className=" text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-espresso-800 font-semibold">
                                     캐릭터 변화
                                   </h3>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
+                                  <div className="h-px flex-1 bg-gradient-to-r from-cloud-200 to-transparent" />
                                 </div>
 
                                 <div className="space-y-4">
@@ -525,7 +559,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                             <span className="text-xs font-bold text-mocha-500 uppercase tracking-wider">
                                               Character Update
                                             </span>
-                                            <span className="text-xs text-stone-400">
+                                            <span className="text-xs text-mocha-400">
                                               #{update.id.slice(-6)}
                                             </span>
                                           </div>
@@ -533,7 +567,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                             {update.changes.map((change, i) => (
                                               <li
                                                 key={i}
-                                                className="flex items-start gap-3 text-sm text-stone-600"
+                                                className="flex items-start gap-3 text-sm text-mocha-600"
                                               >
                                                 <CheckCircle2 className="w-4 h-4 text-mocha-400 mt-0.5 shrink-0" />
                                                 <span>{change}</span>
@@ -551,10 +585,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                             {/* Empty state */}
                             {newCharCount === 0 && updatedCharCount === 0 && (
                               <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="w-16 h-16 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
-                                  <Users className="w-8 h-8 text-stone-300" />
+                                <div className="w-16 h-16 rounded-2xl bg-cloud-100 flex items-center justify-center mb-4">
+                                  <Users className="w-8 h-8 text-mocha-300" />
                                 </div>
-                                <p className="text-stone-400 font-medium">
+                                <p className="text-mocha-400 font-medium">
                                   캐릭터 변경사항이 없습니다
                                 </p>
                               </div>
@@ -575,10 +609,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
                                     <Link2 className="w-3 h-3 text-blue-600" />
                                   </div>
-                                  <h3 className=" text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-espresso-800 font-semibold">
                                     새로운 관계
                                   </h3>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
+                                  <div className="h-px flex-1 bg-gradient-to-r from-cloud-200 to-transparent" />
                                 </div>
 
                                 <div className="grid gap-4">
@@ -603,68 +637,18 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       <div className="flex items-center gap-6">
                                         <div
                                           className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider"
-                                          style={(() => {
-                                            const type = rel.type.toLowerCase();
-                                            if (
-                                              type === "bad" ||
-                                              type === "hostile" ||
-                                              type === "enemy"
-                                            ) {
-                                              return {
-                                                background:
-                                                  "linear-gradient(135deg, #EF4444 0%, #F87171 100%)",
-                                                color: "white",
-                                                boxShadow:
-                                                  "0 2px 8px rgba(239, 68, 68, 0.25)",
-                                              };
-                                            }
-                                            if (
-                                              type === "friendly" ||
-                                              type === "ally"
-                                            ) {
-                                              return {
-                                                background:
-                                                  "linear-gradient(135deg, #15803D 0%, #22c55e 100%)",
-                                                color: "white",
-                                                boxShadow:
-                                                  "0 2px 8px rgba(21, 128, 61, 0.25)",
-                                              };
-                                            }
-                                            if (type === "family") {
-                                              return {
-                                                background:
-                                                  "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
-                                                color: "white",
-                                                boxShadow:
-                                                  "0 2px 8px rgba(14, 165, 233, 0.25)",
-                                              };
-                                            }
-                                            if (type === "romance") {
-                                              return {
-                                                background:
-                                                  "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
-                                                color: "white",
-                                                boxShadow:
-                                                  "0 2px 8px rgba(236, 72, 153, 0.25)",
-                                              };
-                                            }
-                                            return {
-                                              background:
-                                                "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
-                                              color: "white",
-                                              boxShadow:
-                                                "0 2px 8px rgba(164, 119, 100, 0.25)",
-                                            };
-                                          })()}
+                                          style={getRelationBadgeStyle(
+                                            rel.type,
+                                          )}
                                         >
                                           {rel.type}
                                         </div>
-                                        <p className="flex-1 text-lg  text-stone-700 italic">
+                                        <p className="flex-1 text-lg  text-mocha-700 italic">
                                           "{rel.description}"
                                         </p>
                                         <motion.div
                                           whileHover={{ x: 4 }}
-                                          className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 group-hover:bg-mocha-500 group-hover:text-white transition-all"
+                                          className="w-10 h-10 rounded-full bg-cloud-100 flex items-center justify-center text-mocha-400 group-hover:bg-mocha-500 group-hover:text-white transition-all"
                                         >
                                           <ArrowRight className="w-5 h-5" />
                                         </motion.div>
@@ -682,10 +666,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
                                     <Activity className="w-3 h-3 text-amber-600" />
                                   </div>
-                                  <h3 className=" text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-espresso-800 font-semibold">
                                     관계 변화
                                   </h3>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
+                                  <div className="h-px flex-1 bg-gradient-to-r from-cloud-200 to-transparent" />
                                 </div>
 
                                 <div className="space-y-4">
@@ -706,7 +690,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                         {update.changes.map((change, i) => (
                                           <li
                                             key={i}
-                                            className="flex items-start gap-3 text-sm text-stone-600"
+                                            className="flex items-start gap-3 text-sm text-mocha-600"
                                           >
                                             <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                                             <span>{change}</span>
@@ -726,10 +710,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
                                     <Trash2 className="w-3 h-3 text-rose-500" />
                                   </div>
-                                  <h3 className=" text-xl text-stone-800 font-semibold">
+                                  <h3 className=" text-xl text-espresso-800 font-semibold">
                                     종료된 관계
                                   </h3>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-stone-200 to-transparent" />
+                                  <div className="h-px flex-1 bg-gradient-to-r from-cloud-200 to-transparent" />
                                 </div>
 
                                 <div className="space-y-3">
@@ -737,10 +721,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                     <motion.div
                                       variants={itemVariants}
                                       key={id}
-                                      className="p-4 rounded-xl border border-dashed border-stone-200 bg-muted/50 flex items-center gap-4"
+                                      className="p-4 rounded-xl border border-dashed border-cloud-200 bg-muted/50 flex items-center gap-4"
                                     >
-                                      <Trash2 className="w-4 h-4 text-stone-300" />
-                                      <span className="text-sm text-stone-400 ">
+                                      <Trash2 className="w-4 h-4 text-mocha-300" />
+                                      <span className="text-sm text-mocha-400 ">
                                         Relation #{id.slice(-8)}
                                       </span>
                                     </motion.div>
@@ -755,9 +739,9 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                               removedRelCount === 0 && (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                   <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                                    <Link2 className="w-8 h-8 text-stone-300" />
+                                    <Link2 className="w-8 h-8 text-mocha-300" />
                                   </div>
-                                  <p className="text-stone-400 font-medium">
+                                  <p className="text-mocha-400 font-medium">
                                     관계 변경사항이 없습니다
                                   </p>
                                 </div>
@@ -779,7 +763,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                       borderTop: "1px solid rgba(0, 0, 0, 0.03)",
                     }}
                   >
-                    <div className="flex items-center gap-3 text-stone-400">
+                    <div className="flex items-center gap-3 text-mocha-400">
                       <Feather className="w-4 h-4" />
                       <span className="text-[10px] font-medium uppercase tracking-wider">
                         StoLink Analysis Engine v1.0

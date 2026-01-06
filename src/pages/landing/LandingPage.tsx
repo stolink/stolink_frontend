@@ -14,7 +14,6 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Button } from "@stolink/ui";
-
 import { Footer } from "@/components/common/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { PaperTexture } from "@/components/effects/PaperTexture";

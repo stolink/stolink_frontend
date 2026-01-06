@@ -18,7 +18,13 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: var(--font-sans);
+    /* Default to Pretendard for all UI */
+    font-family:
+      "Pretendard",
+      -apple-system,
+      BlinkMacSystemFont,
+      system-ui,
+      sans-serif;
 
     /* 전역 텍스트 렌더링 최적화 - 고해상도 모니터 대응 */
     -webkit-font-smoothing: antialiased;
