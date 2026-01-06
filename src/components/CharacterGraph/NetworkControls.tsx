@@ -19,24 +19,31 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RelationType } from "@/types";
-import { RELATION_LABELS, RELATION_COLORS_HEX } from "./constants";
+import {
+  RELATION_LABELS,
+  RELATION_COLORS_HEX,
+  type UIRelationType,
+} from "./constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <Users className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
 };
 
 interface NetworkControlsProps {
-  relationTypeFilter: RelationType | "all";
-  onFilterChange: (value: RelationType | "all") => void;
+  relationTypeFilter: UIRelationType | "all";
+  onFilterChange: (value: UIRelationType | "all") => void;
   enableGrouping?: boolean;
   onGroupingChange?: (enabled: boolean) => void;
-  hoveredType?: RelationType | null;
-  onHoverType?: (type: RelationType | null) => void;
+  hoveredType?: UIRelationType | null;
+  onHoverType?: (type: UIRelationType | null) => void;
+  onSimulateCollapse?: () => void;
+  /** 주요 캐릭터만 보기 필터 */
+  showMainOnly?: boolean;
+  onShowMainOnlyChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -52,6 +59,9 @@ export function NetworkControls({
   onGroupingChange,
   hoveredType,
   onHoverType,
+  onSimulateCollapse,
+  showMainOnly = false,
+  onShowMainOnlyChange,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -60,7 +70,7 @@ export function NetworkControls({
       ? "모든 관계"
       : RELATION_LABELS[relationTypeFilter];
 
-  const relationTypes = Object.keys(RELATION_LABELS) as RelationType[];
+  const relationTypes = Object.keys(RELATION_LABELS) as UIRelationType[];
 
   return (
     <>
@@ -137,7 +147,7 @@ export function NetworkControls({
                       <DropdownMenuRadioGroup
                         value={relationTypeFilter}
                         onValueChange={(v) =>
-                          onFilterChange(v as RelationType | "all")
+                          onFilterChange(v as UIRelationType | "all")
                         }
                       >
                         <DropdownMenuRadioItem
@@ -190,6 +200,24 @@ export function NetworkControls({
                   )}
                 </div>
 
+                {/* 주요 캐릭터만 필터 */}
+                {onShowMainOnlyChange && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                        주요 캐릭터만
+                      </Label>
+                      <Switch
+                        checked={showMainOnly}
+                        onChange={onShowMainOnlyChange}
+                      />
+                    </div>
+                    <p className="text-[9px] text-stone-400 leading-tight">
+                      주인공, 적대자 및 관계가 많은 캐릭터만 표시
+                    </p>
+                  </div>
+                )}
+
                 {/* 그룹 토글 */}
                 {onGroupingChange && (
                   <div className="space-y-1.5">
@@ -205,6 +233,23 @@ export function NetworkControls({
                     <p className="text-[9px] text-stone-400 leading-tight">
                       진영별로 노드를 그룹화합니다
                     </p>
+                  </div>
+                )}
+
+                {/* Simulation Debug (Temp) */}
+                {onSimulateCollapse && (
+                  <div className="pt-2 border-t border-stone-100 space-y-1.5">
+                    <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                      Simulation
+                    </Label>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={onSimulateCollapse}
+                      className="w-full h-7 text-[10px] font-medium"
+                    >
+                      Trigger Collapse 💥
+                    </Button>
                   </div>
                 )}
               </div>

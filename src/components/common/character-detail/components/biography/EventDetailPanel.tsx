@@ -37,14 +37,14 @@ const panelVariants = {
 export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
   if (!event) return null;
 
-  const config = getEventTypeConfig(event.event_type);
-  const icon = getEventTypeIcon(event.event_type);
+  const config = getEventTypeConfig(event.eventType);
+  const icon = getEventTypeIcon(event.eventType);
   const isMajor = getImportanceLevel(event.importance) === "major";
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={event.event_id}
+        key={event.eventId}
         variants={panelVariants}
         initial="hidden"
         animate="visible"
@@ -107,7 +107,7 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
           <div className="p-4 space-y-3">
             {/* 타이틀 */}
             <h4 className="font-semibold text-espresso-900 text-base leading-snug">
-              {event.narrative_summary}
+              {event.narrativeSummary}
             </h4>
 
             {/* 설명 */}
@@ -126,19 +126,19 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
               )}
 
               {/* 장소 */}
-              {event.location_ref && (
+              {event.locationRef && (
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" />
-                  <span>{event.location_ref}</span>
+                  <span>{event.locationRef}</span>
                 </div>
               )}
             </div>
 
             {/* 시각적 장면 설명 (있는 경우) */}
-            {event.visual_scene && (
+            {event.visualScene && (
               <div className="mt-3 p-3 bg-stone-50 rounded-lg">
                 <p className="text-xs text-stone-500 italic">
-                  &ldquo;{event.visual_scene}&rdquo;
+                  &ldquo;{event.visualScene}&rdquo;
                 </p>
               </div>
             )}

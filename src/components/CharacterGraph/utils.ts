@@ -1,5 +1,8 @@
-import type { Character, RelationshipLink, RelationType } from "@/types";
-import { RELATION_PALETTE } from "./constants";
+import type { Character, RelationshipLink } from "@/types";
+import { RELATION_PALETTE, type UIRelationType } from "./constants";
+
+// Re-export UIRelationType for convenience
+export type { UIRelationType };
 
 /**
  * @deprecated Use extractRelationshipLinks from @/utils/relationshipMapper
@@ -16,7 +19,7 @@ export function generateLinksFromCharacters(
   const linkSet = new Set<string>();
 
   // 관계 타입 문자열에서 RelationType 추출 (새 스키마의 relationType 값 매핑)
-  const getRelationType = (relType: string): RelationType => {
+  const getRelationType = (relType: string): UIRelationType => {
     const normalized = relType?.toLowerCase() || "";
     // 적대 관계
     if (
@@ -98,7 +101,7 @@ export function calculateRelationCounts(
  * @param strength 관계 강도 (1-10)
  */
 export function getRelationshipColor(
-  type: RelationType,
+  type: UIRelationType,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _strength: number,
 ): string {

@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/stores";
 import { useLogout } from "@/hooks/useAuth";
 import mainLogo from "@/assets/main_logo.png";
+import { PerformanceImage } from "@/components/common/PerformanceImage";
 
 interface AppSidebarProps {
   projectId: string;
@@ -53,10 +54,11 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
       {/* 상단: 로고 + 프로젝트 제목 */}
       <div className="p-6 border-b border-border">
         <NavLink to="/library" className="block">
-          <img
+          <PerformanceImage
             src={mainLogo}
             alt="Sto-Link"
             className="h-8 mb-3 hover:opacity-80 transition-opacity"
+            priority={true}
           />
         </NavLink>
         <h2 className="text-sm font-medium text-foreground truncate">
@@ -75,7 +77,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-white text-mocha-600 shadow-sm border border-cloud-100"
-                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600"
+                  : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600",
               )
             }
           >

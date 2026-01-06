@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback, type ElementType } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -12,11 +18,11 @@ import {
   Heart, // Personality
   Users, // Relationships
   BookOpen, // Biography
-  Wand2,
-  Briefcase,
-  Flag,
-  Users2,
-  MapPin,
+  Wand2, // Image generation loading
+  Briefcase, // Profile - occupation
+  Flag, // Profile - origin
+  MapPin, // Profile - location
+  Users2, // Profile - affiliations
 } from "lucide-react";
 
 import { isEqual } from "lodash-es";
@@ -328,6 +334,16 @@ export default function CharacterDetailDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Custom Dialog Content with Modern Glassmorphism */}
       <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none ring-0 sm:rounded-3xl duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
+        {/* Accessibility: Hidden title and description for screen readers */}
+        <VisuallyHidden>
+          <DialogTitle>
+            {displayCharacter?.profile?.name || "캐릭터"} 상세 정보
+          </DialogTitle>
+          <DialogDescription>
+            캐릭터의 프로필, 외모, 성격, 관계, 전기 정보를 확인하고 편집할 수
+            있습니다.
+          </DialogDescription>
+        </VisuallyHidden>
         {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
         <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-[#FDFCFB]/95 via-[#F7F5F3]/90 to-[#F2EFE9]/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-stone-200/60 ring-1 ring-stone-900/5 isolate">
           {/* 🌊 Living Background (Warm Aurora Blobs) */}

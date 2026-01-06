@@ -45,14 +45,20 @@ export const aiService = {
   // Job Status Polling
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
-      `/ai/jobs/${jobId}`
+      `/ai/jobs/${jobId}`,
     );
     return response.data.data;
   },
 
-  // SSE Stream URL for job status
+  // SSE Stream URL for project-wide status (e.g., analysis, import)
+  getProjectStatusStreamUrl: (projectId: string): string => {
+    const baseUrl = import.meta.env.VITE_API_URL || "/api";
+    return `${baseUrl}/project/${projectId}/status/stream`;
+  },
+
+  // Job SSE Stream URL (for specific long-running jobs)
   getJobStreamUrl: (jobId: string): string => {
-    const baseUrl = import.meta.env.VITE_API_URL || "";
+    const baseUrl = import.meta.env.VITE_API_URL || "/api";
     return `${baseUrl}/ai/jobs/${jobId}/stream`;
   },
 
@@ -90,6 +96,16 @@ export const aiService = {
         });
       }, 1000);
     });
+  },
+
+  calculateContentHash: (content: string): string => {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0;
+    }
+    return hash.toString(36);
   },
 };
 

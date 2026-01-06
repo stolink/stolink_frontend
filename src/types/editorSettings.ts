@@ -71,6 +71,7 @@ export const behaviorSettingsSchema = z.object({
   linguisticMode: z
     .enum(["off", "dialogue", "adverb-adjective", "paragraph-length"])
     .default("off"),
+  performanceMode: z.boolean().default(true),
 });
 
 // System Settings
@@ -125,6 +126,7 @@ export const getDefaultEditorSettings = (): EditorSettings => ({
     smartDashes: true,
     smartEllipsis: true,
     linguisticMode: "off",
+    performanceMode: true,
   },
   system: {
     autoSaveInterval: "5s",

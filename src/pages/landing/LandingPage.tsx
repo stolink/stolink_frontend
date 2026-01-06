@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Footer } from "@/components/common/Footer";
-import { AuthModal } from "@/components/auth/AuthModal";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   PenLine,
   GitBranch,
@@ -13,9 +11,15 @@ import {
   ArrowRight,
   BookOpen,
 } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { PaperTexture, BrushStrokeDivider } from "@/components/effects";
+
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/common/Footer";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { PaperTexture } from "@/components/effects/PaperTexture";
+import { BrushStrokeDivider } from "@/components/effects/BrushStrokeDivider";
+
+console.log("LandingPage module loaded");
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },

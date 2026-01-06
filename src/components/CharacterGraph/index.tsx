@@ -10,17 +10,12 @@ import {
 import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import { cn } from "@/lib/utils";
-import type {
-  Character,
-  CharacterNode,
-  RelationshipLink,
-  RelationType,
-} from "@/types";
+import type { Character, CharacterNode, RelationshipLink } from "@/types";
 import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS } from "./constants";
+import { GROUP_COLORS, type UIRelationType } from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
@@ -36,8 +31,8 @@ interface CharacterGraphProps {
   onNodeClick?: (character: Character | null) => void;
   onLinkClick?: (link: RelationshipLink | null) => void;
   selectedNodeId?: string | null;
-  relationTypeFilter?: RelationType | "all";
-  onFilterChange?: (filter: RelationType | "all") => void;
+  relationTypeFilter?: UIRelationType | "all";
+  onFilterChange?: (filter: UIRelationType | "all") => void;
   highlightedNodeIds?: string[] | null;
   /** 검색 결과 노드 ID 변경 콜백 */
   onSearchChange?: (matchingIds: string[] | null) => void;
@@ -71,7 +66,7 @@ export const CharacterGraph = forwardRef<
       showSearch = true,
       onNodeDragEnd,
     },
-    ref
+    ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -82,10 +77,11 @@ export const CharacterGraph = forwardRef<
     const [isDragging, setIsDragging] = useState(false);
     const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
     const [hoveredRelationType, setHoveredRelationType] =
-      useState<RelationType | null>(null);
-    const [internalFilter, setInternalFilter] = useState<RelationType | "all">(
-      relationTypeFilter
-    );
+      useState<UIRelationType | null>(null);
+    const [internalFilter, setInternalFilter] = useState<
+      UIRelationType | "all"
+    >(relationTypeFilter);
+    const [showMainOnly, setShowMainOnly] = useState(false);
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -93,11 +89,11 @@ export const CharacterGraph = forwardRef<
     }, [relationTypeFilter]);
 
     const handleFilterChange = useCallback(
-      (filter: RelationType | "all") => {
+      (filter: UIRelationType | "all") => {
         setInternalFilter(filter);
         onFilterChange?.(filter);
       },
-      [onFilterChange]
+      [onFilterChange],
     );
 
     // 검색 결과 처리
@@ -105,7 +101,7 @@ export const CharacterGraph = forwardRef<
       (matchingIds: string[] | null) => {
         onSearchChange?.(matchingIds);
       },
-      [onSearchChange]
+      [onSearchChange],
     );
 
     // Handle ESC key to clear selection
@@ -174,7 +170,7 @@ export const CharacterGraph = forwardRef<
         // Since initialNodes are derived from characters, we can match by ID
         const originalChar = characters.find(
           (c) =>
-            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id)
+            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id),
         );
         if (originalChar) {
           nodeCharacterMapRef.current.set(node.id, originalChar);
@@ -330,7 +326,7 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping }
+      { width, height, enableGrouping },
     );
 
     /**
@@ -346,12 +342,12 @@ export const CharacterGraph = forwardRef<
           if (g) acc[g] = (acc[g] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       // 2. 멤버가 1명 이상인 그룹만 추출합니다.
       const activeGroups = Object.keys(groupCounts).filter(
-        (groupName) => groupCounts[groupName] > 0
+        (groupName) => groupCounts[groupName] > 0,
       );
 
       return activeGroups.map((group, index) => ({
@@ -360,6 +356,24 @@ export const CharacterGraph = forwardRef<
         id: `group-gradient-${index}`,
       }));
     }, [initialNodes]);
+
+    // 주요 캐릭터만 보기 필터 적용
+    const filteredNodeIds = useMemo(() => {
+      if (!showMainOnly) return null; // null = 필터 비활성화 (모든 노드 표시)
+
+      const mainNodeIds = new Set<string>();
+      nodes.forEach((node) => {
+        // 주인공, 적대자는 무조건 포함
+        if (node.role === "protagonist" || node.role === "antagonist") {
+          mainNodeIds.add(node.id);
+        }
+        // 관계가 3개 이상인 캐릭터도 포함
+        else if ((node.relationCount ?? 0) >= 3) {
+          mainNodeIds.add(node.id);
+        }
+      });
+      return mainNodeIds;
+    }, [nodes, showMainOnly]);
 
     // Cache for D3 selections to avoid DOM querying in every tick
     const groupSelectionCache = useRef<
@@ -408,7 +422,7 @@ export const CharacterGraph = forwardRef<
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
-          ".link-group"
+          ".link-group",
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
@@ -461,7 +475,7 @@ export const CharacterGraph = forwardRef<
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
         nodeSel.attr("transform", (d) =>
-          d ? `translate(${d.x}, ${d.y})` : ""
+          d ? `translate(${d.x}, ${d.y})` : "",
         );
 
         // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
@@ -619,7 +633,7 @@ export const CharacterGraph = forwardRef<
           centerAt(targetNode.x, targetNode.y, 1.35);
         }
       },
-      [onNodeClick, nodes, centerAt]
+      [onNodeClick, nodes, centerAt],
     );
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
@@ -633,7 +647,7 @@ export const CharacterGraph = forwardRef<
         setDraggedNodeId(null);
         onNodeDragEnd?.(node);
       },
-      [onNodeDragEnd]
+      [onNodeDragEnd],
     );
 
     const { dragBehavior } = useDrag({
@@ -653,7 +667,7 @@ export const CharacterGraph = forwardRef<
           return Promise.resolve();
         },
       }),
-      [nodes, centerAt]
+      [nodes, centerAt],
     );
 
     const connectedNodeIds = useMemo(() => {
@@ -698,7 +712,7 @@ export const CharacterGraph = forwardRef<
           }, 150);
         }
       },
-      []
+      [],
     );
 
     // Search Highlighting Logic
@@ -717,15 +731,15 @@ export const CharacterGraph = forwardRef<
         } else {
           console.warn(
             "[CharacterGraph] Character not found for node.id:",
-            node.id
+            node.id,
           );
           console.warn(
             "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys())
+            Array.from(nodeCharacterMapRef.current.keys()),
           );
         }
       },
-      [onNodeClick]
+      [onNodeClick],
     );
 
     const handleNodeHover = useCallback(
@@ -733,7 +747,7 @@ export const CharacterGraph = forwardRef<
         if (isDragging) return;
         setHoveredNodeId(id);
       },
-      [isDragging]
+      [isDragging],
     );
 
     // Voronoi 인터랙션: 마우스가 가장 가까운 노드 자동 하이라이트
@@ -751,7 +765,7 @@ export const CharacterGraph = forwardRef<
           delaunayRef.current = Delaunay.from(
             validNodes,
             (d) => d.x!,
-            (d) => d.y!
+            (d) => d.y!,
           );
         }
       };
@@ -785,7 +799,7 @@ export const CharacterGraph = forwardRef<
         const transformed = point.matrixTransform(ctm.inverse());
         const nearestIndex = delaunayRef.current.find(
           transformed.x,
-          transformed.y
+          transformed.y,
         );
 
         if (nearestIndex !== -1 && simulation) {
@@ -811,7 +825,7 @@ export const CharacterGraph = forwardRef<
           }
         }
       },
-      [isDragging, simulation]
+      [isDragging, simulation],
     );
 
     const handleSvgMouseLeave = useCallback(() => {
@@ -958,83 +972,114 @@ export const CharacterGraph = forwardRef<
               </g>
             )}
 
-            {links.map((link, linkIndex) => {
-              const focusId = hoveredNodeId || draggedNodeId || selectedNodeId;
-              const sId =
-                typeof link.source === "object"
-                  ? (link.source as CharacterNode).id
-                  : link.source;
-              const tId =
-                typeof link.target === "object"
-                  ? (link.target as CharacterNode).id
-                  : link.target;
-              const isConnected = focusId
-                ? sId === focusId || tId === focusId
-                : false;
+            {links
+              .filter((link) => {
+                // 주요 캐릭터만 필터가 활성화된 경우, 양쪽 노드 모두 필터에 포함되어야 함
+                if (filteredNodeIds) {
+                  const sId =
+                    typeof link.source === "object"
+                      ? (link.source as CharacterNode).id
+                      : link.source;
+                  const tId =
+                    typeof link.target === "object"
+                      ? (link.target as CharacterNode).id
+                      : link.target;
+                  return filteredNodeIds.has(sId) && filteredNodeIds.has(tId);
+                }
+                return true;
+              })
+              .map((link, linkIndex) => {
+                const focusId =
+                  hoveredNodeId || draggedNodeId || selectedNodeId;
+                const sId =
+                  typeof link.source === "object"
+                    ? (link.source as CharacterNode).id
+                    : link.source;
+                const tId =
+                  typeof link.target === "object"
+                    ? (link.target as CharacterNode).id
+                    : link.target;
+                const isConnected = focusId
+                  ? sId === focusId || tId === focusId
+                  : false;
 
-              // Hide unconnected EDGES if a node is selected OR dragged (Strict 1:1 rule)
-              // [Modified] Remove strictly hiding edges. Allow them to be rendered as "dimmed" for global BFS animation.
-              // if ((selectedNodeId || draggedNodeId) && !isConnected) return null;
+                // Hide unconnected EDGES if a node is selected OR dragged (Strict 1:1 rule)
+                // [Modified] Remove strictly hiding edges. Allow them to be rendered as "dimmed" for global BFS animation.
+                // if ((selectedNodeId || draggedNodeId) && !isConnected) return null;
 
-              return (
-                <LinkRenderer
-                  key={`${link.id}-${linkIndex}`}
-                  link={link}
-                  isHighlighted={isConnected}
-                  isDimmed={!!focusId && !isConnected}
-                  isFiltered={
-                    (relationTypeFilter !== "all" &&
-                      link.type !== relationTypeFilter) ||
-                    (isSearchActive &&
-                      (!highlightedNodeIds?.includes(sId) ||
-                        !highlightedNodeIds?.includes(tId)))
-                  }
-                  onClick={onLinkClick}
-                  onHover={handleLinkHover}
-                />
-              );
-            })}
+                return (
+                  <LinkRenderer
+                    key={`${link.id}-${linkIndex}`}
+                    link={link}
+                    isHighlighted={isConnected}
+                    isDimmed={!!focusId && !isConnected}
+                    isFiltered={
+                      (relationTypeFilter !== "all" &&
+                        link.type !== relationTypeFilter) ||
+                      (isSearchActive &&
+                        (!highlightedNodeIds?.includes(sId) ||
+                          !highlightedNodeIds?.includes(tId)))
+                    }
+                    onClick={onLinkClick}
+                    onHover={handleLinkHover}
+                  />
+                );
+              })}
 
-            {nodes.map((node, index) => {
-              // Determine visual state based on Search vs Selection
-              let isDimmed = false;
-              let isHighlighted = false;
+            {nodes
+              .filter(
+                (node) => !filteredNodeIds || filteredNodeIds.has(node.id),
+              )
+              .map((node, index) => {
+                // Determine visual state based on Search vs Selection
+                let isDimmed = false;
+                let isHighlighted = false;
 
-              if (isSearchActive) {
-                // Search Mode: Highlight matches, dim others
-                isDimmed = !highlightedNodeIds?.includes(node.id);
-                isHighlighted = highlightedNodeIds?.includes(node.id) ?? false;
-              } else {
-                // Selection/Hover Mode
-                isDimmed =
-                  connectedNodeIds !== null && !connectedNodeIds.has(node.id);
-                isHighlighted = connectedNodeIds?.has(node.id) ?? false;
-              }
+                if (isSearchActive) {
+                  // Search Mode: Highlight matches, dim others
+                  isDimmed = !highlightedNodeIds?.includes(node.id);
+                  isHighlighted =
+                    highlightedNodeIds?.includes(node.id) ?? false;
+                } else {
+                  // Selection/Hover Mode
+                  isDimmed =
+                    connectedNodeIds !== null && !connectedNodeIds.has(node.id);
+                  isHighlighted = connectedNodeIds?.has(node.id) ?? false;
+                }
 
-              return (
-                <NodeRenderer
-                  key={node.id || `node-${index}`}
-                  node={node}
-                  isSelected={selectedNodeId === node.id}
-                  isHighlighted={isHighlighted}
-                  isDimmed={isDimmed}
-                  onClick={handleNodeClick}
-                  onHover={handleNodeHover}
-                  dragBehavior={dragBehavior}
-                  zoomScale={zoomState.scale}
-                />
-              );
-            })}
+                return (
+                  <NodeRenderer
+                    key={node.id || `node-${index}`}
+                    node={node}
+                    isSelected={selectedNodeId === node.id}
+                    isHighlighted={isHighlighted}
+                    isDimmed={isDimmed}
+                    onClick={handleNodeClick}
+                    onHover={handleNodeHover}
+                    dragBehavior={dragBehavior}
+                    zoomScale={zoomState.scale}
+                  />
+                );
+              })}
           </g>
         </svg>
 
         {/* Relationship Event Tooltip on Hover */}
         {hoveredLinkData && (
           <RelationshipEventTooltip
-            type={hoveredLinkData.link.type}
+            type={hoveredLinkData.link.type as UIRelationType}
             strength={hoveredLinkData.link.strength}
             description={hoveredLinkData.link.description}
-            events={hoveredLinkData.link.history || []}
+            events={
+              (hoveredLinkData.link.history || []) as {
+                eventId: string;
+                title: string;
+                chapter?: string;
+                type: UIRelationType;
+                reason?: string;
+                date?: string;
+              }[]
+            }
             sourceName={
               typeof hoveredLinkData.link.source === "object"
                 ? (hoveredLinkData.link.source as CharacterNode).name
@@ -1074,6 +1119,8 @@ export const CharacterGraph = forwardRef<
           onGroupingChange={setEnableGrouping}
           hoveredType={hoveredRelationType}
           onHoverType={setHoveredRelationType}
+          showMainOnly={showMainOnly}
+          onShowMainOnlyChange={setShowMainOnly}
         />
 
         {/* 캐릭터 검색 오버레이 */}
@@ -1086,5 +1133,8 @@ export const CharacterGraph = forwardRef<
         )}
       </div>
     );
-  }
+  },
 );
+
+export { AnalysisSummaryModal } from "./AnalysisSummaryModal";
+export default CharacterGraph;

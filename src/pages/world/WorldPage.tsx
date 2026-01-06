@@ -1,9 +1,10 @@
-// Development comment to force Vite re-bundle
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// CardContent removed if truly unused. Lint said Card and CardContent were unused.
+// I'll check if I should remove it entirely.
 import {
   Users,
   MapPin,
@@ -11,27 +12,34 @@ import {
   Sparkles,
   Network,
   UserRound,
+  X,
 } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
   Character,
-  RelationType,
   RelationshipLink,
   DetailedRelationship,
   CharacterNode,
 } from "@/types";
+import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import { roleLabels } from "./constants";
 
 // D3 CharacterGraph (내장 컨트롤 사용)
 import {
   CharacterGraph,
   type CharacterGraphRef,
+  AnalysisSummaryModal,
 } from "@/components/CharacterGraph";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import type { AnalysisResultData } from "@/types/analysisResult";
+import type { AnalysisDiff } from "@/types/analysisTypes";
 
 // Hooks
 import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
-import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
+import { useAnalyzeStory } from "@/hooks/useAI";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Components
@@ -143,7 +151,9 @@ function enrichCharacterWithMockData(character: Character): Character {
 }
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
+
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // projectId is guaranteed to be string here
   const { data: characters = [] } = useCharacters(projectId || "", {
@@ -152,19 +162,37 @@ export default function WorldPage() {
 
   const updateCharacterMutation = useUpdateCharacter();
 
-  const queryClient = useQueryClient();
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const { setJobId, setAnalyzing } = useAnalysisBufferStore();
 
-  // Polling for analysis status
-  const { progress, isPolling } = useAIJobPolling(currentJobId, {
-    onComplete: () => {
-      // 분석 완료 시 데이터 리프레시
-      queryClient.invalidateQueries({
-        queryKey: ["characters", "list", projectId],
-      });
-      setCurrentJobId(null);
-    },
-  });
+  const [, setAnalysisResult] = useState<AnalysisResultData | null>(null);
+  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+
+  // Polling for analysis status (Global)
+  const { isAnalyzing: isPollingRaw, analysisProgress: progress } =
+    useProjectAnalysis(projectId ?? null, {
+      onAnalysisComplete: (result) => {
+        // 1. 분석 결과 저장 및 Diff 계산
+        if (result) {
+          console.log("Analysis completed, result:", result);
+          const diff = calculateAnalysisDiff(characters, links, result);
+          setAnalysisResult(result);
+          setAnalysisDiff(diff);
+          setIsAnalysisModalOpen(true);
+        }
+
+        // 2. 데이터 리프레시 (백엔드에 이미 반영되었을 수 있으므로)
+        queryClient.invalidateQueries({
+          queryKey: ["characters", "list", projectId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["characters", projectId],
+        });
+      },
+    });
+
+  // 캐릭터 데이터가 있어도 분석 중이면 로딩 표시 (취소 버튼이 있으므로 안전)
+  const isPolling = isPollingRaw;
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -176,7 +204,8 @@ export default function WorldPage() {
         documentIds: [], // Empty means analyze all for now
       });
       if (result.data?.jobId) {
-        setCurrentJobId(result.data.jobId);
+        setJobId(result.data.jobId);
+        setAnalyzing(true);
       }
     } catch (err) {
       console.error("Analysis failed:", err);
@@ -193,7 +222,7 @@ export default function WorldPage() {
     useState<DetailedRelationship | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
-    RelationType | "all"
+    UIRelationType | "all"
   >("all");
 
   const graphRef = useRef<CharacterGraphRef>(null);
@@ -215,20 +244,11 @@ export default function WorldPage() {
   }, []);
 
   // Sync selectedCharacter with latest data from characters array
-  // This ensures the sidebar updates when character data changes (e.g., image generation)
-  useEffect(() => {
-    if (selectedCharacter && characters.length > 0) {
-      const updatedCharacter = characters.find(
-        (c) => c._id === selectedCharacter._id,
-      );
-      if (updatedCharacter) {
-        // Only update if imageUrl or other relevant data changed
-        if (updatedCharacter.imageUrl !== selectedCharacter.imageUrl) {
-          // eslint-disable-next-line
-          setSelectedCharacter(enrichCharacterWithMockData(updatedCharacter));
-        }
-      }
-    }
+  // We use useMemo to derive the active character data to avoid cascading renders
+  const activeCharacter = useMemo(() => {
+    if (!selectedCharacter || characters.length === 0) return selectedCharacter;
+    const updated = characters.find((c) => c._id === selectedCharacter._id);
+    return updated ? enrichCharacterWithMockData(updated) : selectedCharacter;
   }, [characters, selectedCharacter]);
 
   // Character.relationships에서 관계 데이터 추출 (using hook)
@@ -357,7 +377,94 @@ export default function WorldPage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-stone-50">
+    <div className="h-full w-full flex flex-col bg-stone-50 overflow-hidden relative">
+      {/* ─────────────────────────────────────────────────────────────
+          GLOBAL LOADING OVERLAY (Shutter Animation)
+      ───────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {isPolling && (
+          <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-auto overflow-hidden">
+            {/* Top Shutter */}
+            <motion.div
+              initial={{ y: "-100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-0 left-0 w-full h-1/2 bg-[#FDFCFB] border-b border-stone-100" // Premium paper color
+            />
+
+            {/* Bottom Shutter */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute bottom-0 left-0 w-full h-1/2 bg-[#FDFCFB] border-t border-stone-100"
+            />
+
+            {/* Center Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="relative z-10 flex flex-col items-center gap-8 max-w-md w-full px-6"
+            >
+              {/* Logo / Spinner */}
+              <div className="relative">
+                <div className="w-20 h-20 rounded-3xl bg-white shadow-2xl flex items-center justify-center relative z-10">
+                  <Sparkles className="w-10 h-10 text-mocha-500 animate-pulse" />
+                </div>
+                {/* Decorative glow */}
+                <div className="absolute inset-0 bg-mocha-400 blur-2xl opacity-20 animate-pulse" />
+              </div>
+
+              <div className="text-center space-y-3">
+                <h3 className="font-display text-3xl font-bold text-stone-800 tracking-tight">
+                  세계관 분석 중...
+                </h3>
+                <p className="text-stone-500 font-sans text-base leading-relaxed">
+                  AI가 본문을 읽고 캐릭터와 관계를 추출하고 있습니다.
+                  <br />
+                  <span className="text-mocha-600 font-bold text-lg mt-2 block">
+                    {progress}%
+                  </span>
+                </p>
+                <Progress
+                  value={progress}
+                  className="h-1.5 w-64 bg-stone-100 mx-auto rounded-full"
+                />
+              </div>
+
+              {/* Cancel Button */}
+              <Button
+                variant="ghost"
+                className="mt-4 text-stone-400 hover:text-red-500 hover:bg-white/50 transition-colors"
+                onClick={() => {
+                  if (
+                    confirm(
+                      "분석 상태가 멈췄거나 너무 오래 걸리나요?\n\n'확인'을 누르면 분석 상태를 초기화하고 결과를 새로고침합니다.",
+                    )
+                  ) {
+                    setJobId(null);
+                    setAnalyzing(false);
+                    queryClient.invalidateQueries({
+                      queryKey: ["characters", projectId],
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: ["relationships", projectId],
+                    });
+                  }
+                }}
+              >
+                <X className="w-4 h-4 mr-2" />
+                분석 취소
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
         <div className="fixed top-1 left-1/2 -translate-x-1/2 z-[60] px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0 scale-[0.8] origin-top">
@@ -426,29 +533,11 @@ export default function WorldPage() {
             </div>
           ) : (
             <div className="h-full w-full relative">
-              {/* Polling Indicator for Graph */}
-              {isPolling && (
-                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                  <Card className="w-[320px] shadow-xl border-mocha-100">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-mocha-600">
-                        <div className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
-                        세계관 인공지능 분석 중...
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Progress value={progress} className="h-2" />
-                      <p className="text-xs text-center text-muted-foreground animate-pulse">
-                        본문에서 캐릭터와 관계를 추출하고 있습니다 ({progress}%)
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              {/* Polling Indicator Removed (Moved to Global) */}
 
               {/* Detail Sidebar */}
               <NetworkDetailPanelD3
-                selectedCharacter={selectedCharacter}
+                selectedCharacter={activeCharacter}
                 characters={characters}
                 links={links}
                 onClose={() => setSelectedCharacter(null)}
@@ -475,7 +564,7 @@ export default function WorldPage() {
                 }}
                 onNodeClick={handleNodeClick}
                 onLinkClick={handleLinkClick}
-                selectedNodeId={graphFocusId || selectedCharacter?._id || null}
+                selectedNodeId={graphFocusId || activeCharacter?._id || null}
                 relationTypeFilter={relationTypeFilter}
                 onFilterChange={setRelationTypeFilter}
                 highlightedNodeIds={searchHighlightedIds}
@@ -510,22 +599,7 @@ export default function WorldPage() {
           ) : (
             <div className="relative min-h-full">
               {/* Polling Indicator for List */}
-              {isPolling && (
-                <div className="sticky top-0 z-50 px-6 py-4 bg-mocha-50/80 backdrop-blur-sm border-b border-mocha-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1 max-w-xl">
-                    <span className="text-xs font-bold text-mocha-600 whitespace-nowrap shrink-0">
-                      분석 진행도 ({progress}%)
-                    </span>
-                    <Progress
-                      value={progress}
-                      className="h-1.5 flex-1 bg-white/50"
-                    />
-                  </div>
-                  <span className="text-[10px] text-mocha-400 animate-pulse ml-4">
-                    데이터가 곧 업데이트됩니다...
-                  </span>
-                </div>
-              )}
+              {/* Polling Indicator Removed (Moved to Global) */}
 
               <div className="pt-20 px-8 pb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {characters.map((character, index) => (
@@ -726,7 +800,7 @@ export default function WorldPage() {
 
       {/* Character Detail Dialog */}
       <CharacterDetailDialog
-        character={selectedCharacter}
+        character={activeCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={async (updatedChar) => {
@@ -763,7 +837,6 @@ export default function WorldPage() {
         }}
       />
 
-      {/* Relationship Detail Sidebar */}
       <RelationshipDetailSheet
         relationship={selectedRelationship}
         isOpen={!!selectedRelationship}
@@ -799,6 +872,19 @@ export default function WorldPage() {
           selectedRelationship?.target
         }
       />
+
+      {/* Analysis Result Summary Modal */}
+      {analysisDiff && (
+        <AnalysisSummaryModal
+          isOpen={isAnalysisModalOpen}
+          onClose={() => {
+            setIsAnalysisModalOpen(false);
+            setAnalysisResult(null);
+            setAnalysisDiff(null);
+          }}
+          diff={analysisDiff}
+        />
+      )}
     </div>
   );
 }

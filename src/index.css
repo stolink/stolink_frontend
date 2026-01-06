@@ -205,6 +205,14 @@
       BlinkMacSystemFont,
       system-ui,
       sans-serif;
+
+    /* 전역 텍스트 렌더링 최적화 - 고해상도 모니터 대응 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
   }
 
   /* Use DM Serif Display for Headings */
@@ -985,4 +993,73 @@ mark {
   font-size: 0.875rem;
   color: hsl(var(--muted-foreground));
   max-width: 280px;
+}
+
+/* ============================================
+   High-Resolution & Glassmorphism Text Clarity
+   ============================================ */
+
+/* 글래스모피즘 요소에서 텍스트 선명도 확보 */
+.glass-text-sharp {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* GPU 가속으로 서브픽셀 렌더링 안정화 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* backdrop-filter 적용 시 텍스트 번짐 방지 */
+[style*="backdrop-filter"],
+[style*="backdropFilter"] {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 컨테이너를 새 스태킹 컨텍스트로 분리 */
+  isolation: isolate;
+}
+
+/* motion 요소 transform 시 선명도 유지 */
+[style*="transform"] {
+  -webkit-font-smoothing: antialiased;
+  will-change: transform;
+}
+
+/* Frosted Glass 텍스트 선명도 강화 */
+.frosted-glass {
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  /* 텍스트 선명도 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 분석 모달/미니카드 전용 텍스트 최적화 */
+.analysis-modal-text,
+.mini-card-text {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  font-feature-settings: "kern" 1;
+}
+
+/* SVG 텍스트 선명도 (노드 라벨 등) */
+svg text {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  /* SVG 내 텍스트 안티앨리어싱 */
+  shape-rendering: geometricPrecision;
+}
+
+/* Retina/고해상도 디스플레이 대응 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+
+  /* 고해상도에서 border 선명도 */
+  * {
+    -webkit-backface-visibility: hidden;
+  }
 }

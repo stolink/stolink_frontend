@@ -12,6 +12,7 @@ import {
   DEMO_CHAPTERS,
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
+import { debounce } from "lodash-es";
 import { useEditorStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { type ChapterNode } from "@/components/editor/sidebar";
@@ -55,8 +56,16 @@ import {
 import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
 import { useCharacters } from "@/hooks/useCharacters";
-import { useProjectSSE } from "@/hooks/useProjectSSE";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
+import type { AnalysisDiff } from "@/types/analysisTypes";
+import type {
+  AnalysisResultData,
+  ConsistencyReport,
+} from "@/types/analysisResult";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -150,6 +159,21 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // EditorContent ref (통합 뷰 저장 강제 호출용)
   const editorContentRef = useRef<EditorContentHandle>(null);
+
+  // Character Count Debouncer
+  // UI 업데이트 빈도를 줄여 렌더링 최적화 (1초)
+  const debouncedSetCharacterCount = useMemo(
+    () => debounce((count: number) => setCharacterCount(count), 1000),
+    [],
+  );
+
+  // Cleanup debounce
+  useEffect(() => {
+    return () => {
+      debouncedSetCharacterCount.cancel();
+    };
+  }, [debouncedSetCharacterCount]);
+
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
     isDemo ? "chapter-1" : null,
@@ -163,9 +187,11 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // 복선 생성 후 사이드바 포커스 이동용 상태
   const [newForeshadowingId] = useState<string | null>(null);
 
-  // Editor Store
-  const { splitView, toggleSplitView, viewMode, setViewMode } =
-    useEditorStore();
+  // Editor Store - Optimized with selective selectors
+  const viewMode = useEditorStore((state) => state.viewMode);
+  const setViewMode = useEditorStore((state) => state.setViewMode);
+  const splitView = useEditorStore((state) => state.splitView);
+  const toggleSplitView = useEditorStore((state) => state.toggleSplitView);
 
   // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
@@ -182,6 +208,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   );
   const toggleFocusMode = useEditorSettingStore(
     (state) => state.toggleFocusMode,
+  );
+  const performanceMode = useEditorSettingStore(
+    (state) => state.behavior.performanceMode,
   );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
@@ -201,44 +230,8 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   }, [location.search]);
 
   // ============================================================
-  // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
+  // 1. Core Data Hooks (Must be first)
   // ============================================================
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
-    isDemo ? null : projectId,
-    { enabled: !isDemo },
-  );
-  // TODO: 저장 흐름에 addToBuffer 연결 (useEditorHandlers 확장 필요)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
-
-  // 페이지 이탈/브라우저 종료 시 버퍼 flush
-  useEffect(() => {
-    if (isDemo) return;
-
-    const handleBeforeUnload = () => {
-      flushAndAnalyze();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      // 컴포넌트 언마운트 시에도 flush
-      flushAndAnalyze();
-    };
-  }, [isDemo, flushAndAnalyze]);
-
-  // ============================================================
-  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
-  // ============================================================
-  const [showReader, setShowReader] = useState(false);
-  const [showSnapshot, setShowSnapshot] = useState(false);
-  // Export & Publish State
-  const [showExport, setShowExport] = useState(false);
-  const [exportInitialTab, setExportInitialTab] = useState<
-    "export" | "publish"
-  >("export");
-
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore((state) => state.documents);
   const localDocuments = useMemo(
@@ -285,6 +278,19 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isFetchingNextPage,
   } = useDocumentContent(isDemo ? null : selectedSectionId);
 
+  const {
+    createDocument,
+    updateDocument: updateDocumentMutation,
+    deleteDocument,
+    reorderDocuments,
+    moveDocument,
+  } = useDocumentMutations(projectId);
+  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
+
+  // ============================================================
+  // 2. Data for Analysis (Must be before Analysis Hook)
+  // ============================================================
+
   // Fetch Characters for Export/Publish Snapshot
   const { data: characters = [] } = useCharacters(projectId, {
     enabled: !isDemo,
@@ -325,14 +331,132 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return links;
   }, [characters, isDemo]);
 
-  const {
-    createDocument,
-    updateDocument: updateDocumentMutation,
-    deleteDocument,
-    reorderDocuments,
-    moveDocument,
-  } = useDocumentMutations(projectId);
-  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
+  // ============================================================
+  // Analysis Integration (Polling & Buffer)
+  // ============================================================
+  const queryClient = useQueryClient();
+  const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
+  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  const [consistencyReport, setConsistencyReport] =
+    useState<ConsistencyReport | null>(null);
+  const addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
+
+  const handleAnalysisComplete = useCallback(
+    (result: AnalysisResultData) => {
+      // 1. Calculate Diff
+      // Note: graphLinks items are converted to RelationshipLink structure in calculateAnalysisDiff if needed
+      // or we pass compatible structure. graphLinks here is from EditorPage computed.
+      // We might need to map graphLinks to strict RelationshipLink type if they differ.
+      // Computed graphLinks in EditorPage has { source, target, id, type, strength }.
+      // RelationshipLink has these plus curvature etc. Minimal fields overlap is fine for Utils.
+
+      const diff = calculateAnalysisDiff(
+        characters,
+        // @ts-expect-error - graphLinks structure is compatible enough for diffing
+        graphLinks,
+        result,
+      );
+
+      setAnalysisDiff(diff);
+      setShowAnalysisSummary(true);
+
+      // 2. Store Consistency Report (if available)
+      if (result.consistencyReport) {
+        setConsistencyReport(result.consistencyReport);
+      }
+
+      // 3. Refresh Data
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
+    [characters, graphLinks, projectId, queryClient],
+  );
+
+  const { flushAndAnalyze } = useProjectAnalysis(isDemo ? null : projectId, {
+    enabled: !isDemo,
+    onAnalysisComplete: handleAnalysisComplete,
+    // Optional: Handle error toast here
+  });
+
+  const saveWithAnalysis = useCallback(
+    async (content: string) => {
+      if (!selectedSectionId) return;
+
+      // 1. Save to DB
+      await saveContent(content);
+
+      // 2. Add to Analysis Buffer & Flush if needed
+      if (!isDemo) {
+        addToBuffer(selectedSectionId, content);
+        // Trigger analysis immediately on save as requested
+        flushAndAnalyze();
+      }
+    },
+    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
+  );
+
+  // Manual Trigger Handler
+  const handleManualAnalysis = useCallback(() => {
+    if (!selectedSectionId || isDemo) return;
+
+    // Force add current content to buffer (even if unchanged)
+    // Note: We need current content. We can get it from documentContent or ref.
+    // Ideally use saveWithAnalysis to ensure everything is synced.
+    // But if no change, saveWithAnalysis might be redundant?
+    // Let's just use addToBuffer + flushAndAnalyze.
+
+    // We need the latest content.
+    // If we are in Editor mode, we can try to get it from ref if needed,
+    // but documentContent should be up to date if we are just viewing.
+    // However, if user is typing, documentContent might track it.
+
+    // Simplest: just flush what we have. But if buffer empty, we want to force current doc.
+    const content =
+      editorContentRef.current?.getContent() || documentContent || "";
+
+    if (content) {
+      console.log(
+        "[EditorPage] Manual analysis triggered for",
+        selectedSectionId,
+      );
+
+      // Before triggering, we can check if it would be skipped (optional UX improvement)
+      // For now, let's just trigger and let the hook handle skipping with a message.
+      addToBuffer(selectedSectionId, content);
+      flushAndAnalyze();
+    }
+  }, [
+    selectedSectionId,
+    isDemo,
+    addToBuffer,
+    flushAndAnalyze,
+    documentContent,
+  ]);
+
+  // 페이지 이탈/브라우저 종료 시 버퍼 flush (useProjectAnalysis handles auto-flush internally too)
+  useEffect(() => {
+    if (isDemo) return;
+
+    const handleBeforeUnload = () => {
+      flushAndAnalyze();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDemo, flushAndAnalyze]);
+
+  // ============================================================
+  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
+  // ============================================================
+  const [showReader, setShowReader] = useState(false);
+  const [showSnapshot, setShowSnapshot] = useState(false);
+  // Export & Publish State
+  const [showExport, setShowExport] = useState(false);
+  const [exportInitialTab, setExportInitialTab] = useState<
+    "export" | "publish"
+  >("export");
 
   // ============================================================
   // Analysis Status Logic (UI Feedback)
@@ -372,7 +496,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveTimeoutRef,
     handleSelectFolder,
     handleContentChange,
-    handleCharacterCountChange,
     handleAddChapter,
     handleAddSection,
     handleRenameChapter,
@@ -389,7 +512,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent,
+    saveContent: saveWithAnalysis, // Use the wrapper instead of raw saveContent
     updateDocument,
     updateDocumentMutation,
     createDocument,
@@ -528,9 +651,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       }
       prevCountRef.current = count;
 
-      handleCharacterCountChange(count, setCharacterCount);
+      // UI State 업데이트 (Performance Mode일 때만 Debounce)
+      if (performanceMode) {
+        debouncedSetCharacterCount(count);
+      } else {
+        setCharacterCount(count);
+      }
     },
-    [handleCharacterCountChange],
+    [debouncedSetCharacterCount, performanceMode],
   );
 
   // ============================================================
@@ -546,6 +674,13 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveContentRef,
     lastContentRef,
     saveTimeoutRef,
+    getLatestContent: useCallback(() => {
+      // Editor 모드일 때만 EditorContent에서 최신 내용 조회
+      if (viewMode === "editor" && editorContentRef.current) {
+        return editorContentRef.current.getContent();
+      }
+      return "";
+    }, [viewMode]),
   });
 
   // Split & Create Section Logic
@@ -751,11 +886,16 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleRightSidebar={toggleRightSidebar}
               onShowReader={isDemo ? undefined : () => setShowReader(true)}
               onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={() => {
-                setExportInitialTab("export");
-                setShowExport(true);
-              }}
+              onExport={
+                isDemo
+                  ? undefined
+                  : () => {
+                      setExportInitialTab("export");
+                      setShowExport(true);
+                    }
+              }
               analysisStatus={analysisDisplayStatus}
+              onTriggerAnalysis={isDemo ? undefined : handleManualAnalysis}
             />
           )}
 
@@ -829,6 +969,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 }
               }
             }}
+            consistencyReport={consistencyReport}
+            isAnalyzing={isAnalyzing}
+            onRefreshAnalysis={flushAndAnalyze}
           />
         )}
 
@@ -929,6 +1072,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         onCreate={handleConfirmCreateSection}
         defaultTitle={splitState?.title}
       />
+      {/* Analysis Summary Modal */}
+      {analysisDiff && (
+        <AnalysisSummaryModal
+          isOpen={showAnalysisSummary}
+          onClose={() => setShowAnalysisSummary(false)}
+          diff={analysisDiff}
+        />
+      )}
     </div>
   );
 }

@@ -132,8 +132,8 @@ function BranchWithFruit({
 }) {
   const { node, path } = branch;
   const { event, x, y, angle } = node;
-  const config = getEventTypeConfig(event.event_type);
-  const icon = getEventTypeIcon(event.event_type);
+  const config = getEventTypeConfig(event.eventType);
+  const icon = getEventTypeIcon(event.eventType);
   const isMajor = getImportanceLevel(event.importance) === "major";
 
   const nodeDelay = 1.0 + index * 0.1;
@@ -250,9 +250,9 @@ function BranchWithFruit({
               fill: "#3D302A",
             }}
           >
-            {event.narrative_summary.length > 8
-              ? `${event.narrative_summary.slice(0, 8)}...`
-              : event.narrative_summary}
+            {event.narrativeSummary.length > 8
+              ? `${event.narrativeSummary.slice(0, 8)}...`
+              : event.narrativeSummary}
           </text>
         </motion.g>
       </motion.g>

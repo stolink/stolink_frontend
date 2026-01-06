@@ -18,6 +18,8 @@ interface NodeRendererProps {
   >;
   /** 현재 줌 레벨 (0.2 ~ 4) - 라벨 가시성 조절용 */
   zoomScale?: number;
+  /** 분석 워크플로우: 변경 유형 */
+  changeType?: "new" | "updated" | null;
 }
 
 /**
@@ -34,6 +36,7 @@ export const NodeRenderer = memo(function NodeRenderer({
   onHover,
   dragBehavior,
   zoomScale = 1,
+  changeType,
 }: NodeRendererProps) {
   // Ref for D3 Drag Attachment
   const elementRef = useRef<SVGGElement>(null);
@@ -208,11 +211,155 @@ export const NodeRenderer = memo(function NodeRenderer({
       )}
 
       {/* 상태 배지 (Status Badge) */}
-      {node.status &&
-        node.status !== "active" &&
-        node.status !== "alive" &&
-        node.status !== "생존" &&
-        (() => {
+      {/* 우선순위: ChangeType > Status */}
+      {/* 상태 배지 OR 변경 배지 */}
+      {(() => {
+        // 1. Change Indicator (Priority over status) - Premium Badge
+        if (changeType) {
+          const isNew = changeType === "new";
+          const badgeRadius = Math.max(16, radius * 0.42);
+          const badgeX = radius * 0.72;
+          const badgeY = -radius * 0.72;
+
+          // Premium gradient colors
+          const gradientColors = isNew
+            ? {
+                from: "#10B981",
+                to: "#059669",
+                glow: "rgba(16, 185, 129, 0.4)",
+              }
+            : {
+                from: "#3B82F6",
+                to: "#2563EB",
+                glow: "rgba(59, 130, 246, 0.4)",
+              };
+
+          return (
+            <g transform={`translate(${badgeX}, ${badgeY})`}>
+              {/* Glow/Pulse Ring Animation */}
+              <circle
+                r={badgeRadius + 6}
+                fill="none"
+                stroke={gradientColors.from}
+                strokeWidth={2}
+                opacity={0.4}
+                style={{
+                  animation: "badge-pulse 1.5s ease-in-out infinite",
+                }}
+              />
+              <circle
+                r={badgeRadius + 10}
+                fill="none"
+                stroke={gradientColors.from}
+                strokeWidth={1}
+                opacity={0.2}
+                style={{
+                  animation: "badge-pulse 1.5s ease-in-out infinite 0.2s",
+                }}
+              />
+
+              {/* Badge background with gradient */}
+              <defs>
+                <linearGradient
+                  id={`change-badge-gradient-${node.id}`}
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor={gradientColors.from} />
+                  <stop offset="100%" stopColor={gradientColors.to} />
+                </linearGradient>
+                <filter
+                  id={`badge-glow-${node.id}`}
+                  x="-50%"
+                  y="-50%"
+                  width="200%"
+                  height="200%"
+                >
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feFlood floodColor={gradientColors.glow} result="color" />
+                  <feComposite
+                    in="color"
+                    in2="blur"
+                    operator="in"
+                    result="shadow"
+                  />
+                  <feMerge>
+                    <feMergeNode in="shadow" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* White border ring */}
+              <circle
+                r={badgeRadius + 3}
+                fill="white"
+                style={{
+                  filter: `url(#badge-glow-${node.id})`,
+                }}
+              />
+
+              {/* Main badge with gradient */}
+              <circle
+                r={badgeRadius}
+                fill={`url(#change-badge-gradient-${node.id})`}
+              />
+
+              {/* Icon - Plus for New, Check for Updated */}
+              {isNew ? (
+                // Plus icon for NEW (더 명확한 아이콘)
+                <g>
+                  <rect
+                    x={-badgeRadius * 0.5}
+                    y={-badgeRadius * 0.12}
+                    width={badgeRadius}
+                    height={badgeRadius * 0.24}
+                    rx={badgeRadius * 0.08}
+                    fill="white"
+                  />
+                  <rect
+                    x={-badgeRadius * 0.12}
+                    y={-badgeRadius * 0.5}
+                    width={badgeRadius * 0.24}
+                    height={badgeRadius}
+                    rx={badgeRadius * 0.08}
+                    fill="white"
+                  />
+                </g>
+              ) : (
+                // Check icon for UPDATED
+                <path
+                  d={`M${-badgeRadius * 0.4} ${badgeRadius * 0.05} L${-badgeRadius * 0.1} ${badgeRadius * 0.35} L${badgeRadius * 0.45} ${-badgeRadius * 0.3}`}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth={badgeRadius * 0.22}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* CSS Animation Keyframes - injected via style tag in defs */}
+              <style>
+                {`
+                  @keyframes badge-pulse {
+                    0%, 100% { transform: scale(1); opacity: 0.4; }
+                    50% { transform: scale(1.3); opacity: 0; }
+                  }
+                `}
+              </style>
+            </g>
+          );
+        }
+
+        // 2. Existing Status Badge
+        if (
+          node.status &&
+          node.status !== "active" &&
+          node.status !== "alive" &&
+          node.status !== "생존"
+        ) {
           const statusConfig =
             STATUS_CONFIG[node.status] || STATUS_CONFIG.unknown;
           const badgeRadius = Math.max(13, radius * 0.35);
@@ -246,7 +393,9 @@ export const NodeRenderer = memo(function NodeRenderer({
               </text>
             </g>
           );
-        })()}
+        }
+        return null;
+      })()}
 
       {/* 이름 라벨 - Minimalist Serif style */}
       {showLabel && (
