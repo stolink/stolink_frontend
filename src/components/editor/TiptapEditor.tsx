@@ -245,7 +245,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const editor = useEditor({
       editable: !readOnly,
       extensions,
-      content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
+      content: sanitizeEditorContent(initialContent ?? DEFAULT_CONTENT),
       editorProps: {
         attributes: {
           class: cn(
