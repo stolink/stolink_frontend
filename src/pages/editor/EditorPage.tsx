@@ -90,7 +90,7 @@ function buildDemoChapterTree(
       },
       characterIds: [],
       foreshadowingIds: [],
-    } as DemoChapterTreeNode);
+    } as unknown as DemoChapterTreeNode);
   });
 
   chapters.forEach((chapter) => {
@@ -207,8 +207,8 @@ export default function EditorPage({ isDemo = false }) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
-          ),
+          (doc) => doc.projectId === projectId,
+        ),
     [allDocuments, projectId, isDemo],
   );
 
@@ -289,7 +289,11 @@ export default function EditorPage({ isDemo = false }) {
 
   const handleAnalysisComplete = useCallback(
     (result: AnalysisResultData) => {
-      const diff = calculateAnalysisDiff(characters, graphLinks, result);
+      const diff = calculateAnalysisDiff(
+        characters,
+        graphLinks as any,
+        result,
+      );
 
       setAnalysisDiff(diff);
       setShowAnalysisSummary(true);
@@ -424,6 +428,7 @@ export default function EditorPage({ isDemo = false }) {
     handleReorderChapter,
     handleMoveToFolder,
     handleViewModeChange,
+    handleSelectSection,
   } = useEditorHandlers({
     isDemo,
     documents,
@@ -439,28 +444,19 @@ export default function EditorPage({ isDemo = false }) {
       useDocumentStore.getState()._update(selectedSectionId, updates);
     },
     updateDocumentMutation: async (id, updates) => {
-      await updateDocumentMutation.mutateAsync({
-        id,
-        payload: updates,
-      });
+      await updateDocumentMutation(id, updates);
     },
     createDocument: async (data) => {
-      return createDocumentMutation.mutateAsync(data);
+      return createDocumentMutation(data);
     },
     deleteDocument: async (id) => {
-      await deleteDocumentMutation.mutateAsync(id);
+      await deleteDocumentMutation(id);
     },
     reorderDocuments: async (parentId, orderedIds) => {
-      await reorderDocumentsMutation.mutateAsync({
-        parentId,
-        orderedIds,
-      });
+      await reorderDocumentsMutation(parentId, orderedIds);
     },
     moveDocument: async (itemId, targetFolderId) => {
-      await moveDocumentMutation.mutateAsync({
-        itemId,
-        targetFolderId,
-      });
+      await moveDocumentMutation(itemId, targetFolderId);
     },
   });
 
@@ -562,22 +558,22 @@ export default function EditorPage({ isDemo = false }) {
             sectionPath={[]} // Need to calculate or add to hook
             isEditingTitle={false} // State needed
             editedTitle={""} // State needed
-            onEditedTitleChange={() => {}}
-            onStartEditTitle={() => {}}
-            onSaveTitle={() => {}}
-            onCancelEditTitle={() => {}}
+            onEditedTitleChange={() => { }}
+            onStartEditTitle={() => { }}
+            onSaveTitle={() => { }}
+            onCancelEditTitle={() => { }}
             isDemo={isDemo}
             selectedSectionId={selectedSectionId}
             characterCount={characterCount}
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => {}}
-            onToggleFocusMode={() => {}}
+            onToggleSplitView={() => { }}
+            onToggleFocusMode={() => { }}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => {}}
+            onToggleTypewriterMode={() => { }}
             rightSidebarOpen={false}
-            onToggleRightSidebar={() => {}}
+            onToggleRightSidebar={() => { }}
             onExport={() => setShowExport(true)}
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
@@ -609,9 +605,9 @@ export default function EditorPage({ isDemo = false }) {
 
         <EditorRightSidebar
           isOpen={true} // Simplified, always open on larger screens
-          onClose={() => {}} // Placeholder
+          onClose={() => { }} // Placeholder
           activeTab="ai" // Default tab
-          onTabChange={() => {}} // Placeholder
+          onTabChange={() => { }} // Placeholder
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={
