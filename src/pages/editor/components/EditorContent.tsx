@@ -189,10 +189,10 @@ export const EditorContent = forwardRef<
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-hidden bg-stone-50/50 border-l border-stone-100 flex flex-col">
-                <div className="h-10 border-b flex items-center px-4 bg-stone-50 text-xs text-muted-foreground shrink-0">
+              <div className="h-full overflow-hidden bg-cloud-50/50 border-l border-cloud-100 flex flex-col">
+                <div className="h-10 border-b flex items-center px-4 bg-cloud-50 text-xs text-muted-foreground shrink-0">
                   <span className="font-medium mr-2">참조 화면</span>
-                  <span className="text-stone-400">|</span>
+                  <span className="text-mocha-400">|</span>
                   <span className="ml-2 truncate">{currentSectionTitle}</span>
                 </div>
                 <TiptapEditor

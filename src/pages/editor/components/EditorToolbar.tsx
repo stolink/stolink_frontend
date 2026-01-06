@@ -79,7 +79,6 @@ interface EditorToolbarProps {
   // Analysis Status
   analysisStatus: "idle" | "analyzing" | "completed" | "error";
   onTriggerAnalysis?: () => void;
-
   // Pagination removed for infinite scroll
 }
 

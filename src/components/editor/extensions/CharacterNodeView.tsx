@@ -35,11 +35,11 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
     <div className="p-3 bg-white rounded-lg shadow-lg border min-w-[150px]">
       <div className="flex items-center gap-2 mb-1">
         <Package className="w-4 h-4 text-amber-600" />
-        <span className="font-semibold text-stone-800">{item.name}</span>
+        <span className="font-semibold text-espresso-800">{item.name}</span>
       </div>
       <span className="text-xs text-amber-600 capitalize">{item.type}</span>
       {itemDescription && (
-        <p className="text-xs text-stone-500 mt-1">{itemDescription}</p>
+        <p className="text-xs text-mocha-500 mt-1">{itemDescription}</p>
       )}
     </div>
   ) : (

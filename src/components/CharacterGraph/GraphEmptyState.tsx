@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Sparkles, Network, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 interface GraphEmptyStateProps {
   onStartAnalysis?: () => void;

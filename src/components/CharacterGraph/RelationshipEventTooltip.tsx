@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@stolink/ui";
+import { Badge } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { Activity, Clock } from "lucide-react";
 import { getRelationshipColor, type UIRelationType } from "./utils";
@@ -131,7 +131,7 @@ export function RelationshipEventTooltip({
                     </span>
                   </div>
                   <Badge
-                    variant="outline"
+                    intent="outline"
                     className={cn(
                       "text-[10px] px-1.5 py-0 h-5 text-white border-0",
                     )}

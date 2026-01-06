@@ -9,7 +9,7 @@ import {
   Image,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,13 +111,14 @@ export function BookCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col h-full bg-white rounded-xl overflow-hidden cursor-pointer transition-all duration-300",
-        // 기본 상태: 보더 없이 쉐도우로 깊이감 표현
-        !isEditMode && "shadow-sm hover:shadow-xl hover:-translate-y-1",
+        "group relative flex flex-col h-full bg-paper rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border border-cloud-200",
+        // 기본 상태: 클린한 쉐도우와 부드러운 보더
+        !isEditMode &&
+          "shadow-paper hover:shadow-paper-floating hover:-translate-y-1 hover:border-mocha-300",
         // 편집 모드 스타일
-        isEditMode && "ring-1 ring-border scale-[0.98]",
+        isEditMode && "ring-2 ring-cloud-200 scale-[0.98] bg-cloud-50",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-primary",
+        isSelected && "ring-2 ring-mocha-500 bg-mocha-50",
       )}
       onClick={handleCardClick}
     >
@@ -132,11 +133,11 @@ export function BookCard({
         >
           <div
             className={cn(
-              "w-6 h-6 rounded-md flex items-center justify-center",
-              "border-2 shadow-sm transition-all duration-200",
+              "w-6 h-6 rounded-sm flex items-center justify-center",
+              "border shadow-sm transition-all duration-200",
               isSelected
-                ? "border-status-success bg-status-success"
-                : "bg-white border-muted-foreground hover:border-status-success",
+                ? "bg-mocha-500 border-mocha-500"
+                : "bg-paper border-cloud-200",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -145,10 +146,10 @@ export function BookCard({
       )}
 
       {/* Cover Image Area - Vertical Aspect Ratio [3/4] */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted-foreground/5">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-cloud-50 border-b border-cloud-100">
         {/* 원고 처리 중 프로그레스 오버레이 */}
         {isProcessing && job && (
-          <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4">
+          <div className="absolute inset-0 z-40 bg-espresso-900/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4">
             <Loader2 className="h-8 w-8 text-white animate-spin" />
             <Progress
               value={job.progress}
@@ -186,9 +187,9 @@ export function BookCard({
             </div>
           </>
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center text-muted-foreground gap-2 bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="p-4 bg-white rounded-full shadow-sm">
-              <BookOpen className="h-8 w-8 opacity-30" />
+          <div className="flex h-full w-full flex-col items-center justify-center text-mocha-300 gap-2 bg-gradient-to-br from-paper to-cloud-100">
+            <div className="p-4 bg-white/50 rounded-full shadow-inner border border-white/40">
+              <BookOpen className="h-8 w-8 opacity-50" />
             </div>
           </div>
         )}
@@ -202,9 +203,9 @@ export function BookCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+                  intent="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-black/20 backdrop-blur-md hover:bg-black/30 text-white rounded-full shadow-sm"
+                  className="h-8 w-8 bg-black/60 backdrop-blur-md hover:bg-mocha-900/80 text-white rounded-sm shadow-sm"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -236,15 +237,15 @@ export function BookCard({
       <div className="flex flex-col flex-1 p-5 gap-4">
         {/* Title & Author */}
         <div>
-          <h3 className="font-heading text-lg font-bold text-foreground leading-snug line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+          <h3 className=" font-bold text-lg text-stone-900 leading-snug line-clamp-2 mb-1 group-hover:text-mocha-500 transition-colors">
             {title}
           </h3>
-          <p className="text-sm text-muted-foreground">{author}</p>
+          <p className="text-xs text-stone-500">{author}</p>
         </div>
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-2 mt-auto text-xs text-muted-foreground/80">
-          <div className="flex items-center gap-1.5">
+        <div className="grid grid-cols-2 gap-2 mt-auto text-[10px] text-mocha-600 ">
+          <div className="flex items-center gap-1.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
             <Clock className="w-3.5 h-3.5" />
             <span>{lastEdited}</span>
           </div>
@@ -252,15 +253,15 @@ export function BookCard({
         </div>
 
         {/* Footer: Tags & Status */}
-        <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+        <div className="pt-3 border-t border-cloud-200/60 flex items-center justify-between gap-2">
           {/* Genre Badge */}
           <div className="flex-1 min-w-0">
             {genre ? (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-secondary text-secondary-foreground truncate max-w-full">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-mocha-100 text-mocha-700 truncate max-w-full border border-mocha-200 uppercase tracking-wider">
                 {genre}
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-muted text-muted-foreground">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-cloud-100 text-stone-500 border border-cloud-200 uppercase tracking-wider">
                 No Genre
               </span>
             )}
@@ -275,13 +276,13 @@ export function BookCard({
                 disabled={isEditMode}
               />
             ) : (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-cloud-100">
                 <div
                   className={cn(
                     "w-1.5 h-1.5 rounded-full",
                     normalizedStatus === "Complete"
-                      ? "bg-green-500"
-                      : "bg-blue-500",
+                      ? "bg-sage-500"
+                      : "bg-mocha-500",
                   )}
                 />
               </div>

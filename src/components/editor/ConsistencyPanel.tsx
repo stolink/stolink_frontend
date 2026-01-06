@@ -6,7 +6,7 @@ import {
   X,
   FileText,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -56,7 +56,7 @@ export default function ConsistencyPanel() {
   const errorCount = mockIssues.filter((i) => i.type === "error").length;
 
   return (
-    <div className="flex flex-col h-full bg-stone-50/30">
+    <div className="flex flex-col h-full bg-cloud-50/30">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -64,7 +64,9 @@ export default function ConsistencyPanel() {
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-stone-900">설정 오류 검사</h3>
+            <h3 className="text-sm font-bold text-espresso-900">
+              설정 오류 검사
+            </h3>
           </div>
         </div>
         <Button
@@ -78,14 +80,14 @@ export default function ConsistencyPanel() {
       </div>
 
       {/* Stats Banner */}
-      <div className="px-4 py-3 bg-white border-b border-stone-100">
-        <div className="flex items-center gap-2 p-1 bg-stone-50 rounded-xl border border-stone-200/60 shadow-inner">
+      <div className="px-4 py-3 bg-white border-b border-cloud-100">
+        <div className="flex items-center gap-2 p-1 bg-cloud-50 rounded-xl border border-cloud-200/60 shadow-inner">
           <div
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
               errorCount > 0
                 ? "bg-rose-100 text-rose-700 shadow-sm"
-                : "text-stone-400",
+                : "text-mocha-400",
             )}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
@@ -97,7 +99,7 @@ export default function ConsistencyPanel() {
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
               warningCount > 0
                 ? "bg-amber-100 text-amber-700 shadow-sm"
-                : "text-stone-400",
+                : "text-mocha-400",
             )}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
@@ -109,14 +111,14 @@ export default function ConsistencyPanel() {
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
               errorCount === 0 && warningCount === 0
                 ? "bg-sage-100 text-sage-700 shadow-sm"
-                : "text-stone-400",
+                : "text-mocha-400",
             )}
           >
             <CheckCircle className="w-3.5 h-3.5" />
             정상
           </div>
         </div>
-        <div className="mt-2 text-[10px] text-right text-stone-400">
+        <div className="mt-2 text-[10px] text-right text-mocha-400">
           마지막 검사: 5분 전
         </div>
       </div>
@@ -164,21 +166,21 @@ export default function ConsistencyPanel() {
                     {issue.category}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1 rounded-md border border-stone-100">
-                  <FileText className="w-3 h-3 text-stone-400" />
-                  <span className="text-[10px] font-medium text-stone-500">
+                <div className="flex items-center gap-1.5 bg-cloud-50 px-2 py-1 rounded-md border border-cloud-100">
+                  <FileText className="w-3 h-3 text-mocha-400" />
+                  <span className="text-[10px] font-medium text-mocha-500">
                     {issue.chapter} · {issue.line}줄
                   </span>
                 </div>
               </div>
 
               <div className="text-sm space-y-2 mb-4">
-                <p className="text-stone-800 leading-relaxed font-medium">
+                <p className="text-espresso-800 leading-relaxed font-medium">
                   "{issue.description}"
                 </p>
-                <div className="flex items-start gap-2 bg-stone-50/80 p-2.5 rounded-lg text-xs border border-stone-100">
+                <div className="flex items-start gap-2 bg-cloud-50/80 p-2.5 rounded-lg text-xs border border-cloud-100">
                   <ArrowRight className="w-3.5 h-3.5 text-mocha-400 shrink-0 mt-0.5" />
-                  <p className="text-stone-600 leading-relaxed">
+                  <p className="text-mocha-700 leading-relaxed">
                     {issue.detail}
                   </p>
                 </div>
@@ -187,15 +189,15 @@ export default function ConsistencyPanel() {
               <div className="flex items-center gap-2 mt-auto">
                 <Button
                   size="sm"
-                  className="flex-1 h-8 text-xs font-semibold bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900 hover:border-stone-300 shadow-sm transition-all"
+                  className="flex-1 h-8 text-xs font-semibold bg-white border border-cloud-200 text-mocha-700 hover:bg-cloud-50 hover:text-espresso-900 hover:border-cloud-300 shadow-sm transition-all"
                 >
-                  <ArrowRight className="h-3 w-3 mr-1.5 text-stone-400" />
+                  <ArrowRight className="h-3 w-3 mr-1.5 text-mocha-400" />
                   위치로 이동
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 px-0 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                  className="h-8 w-8 px-0 text-mocha-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                   title="무시하기"
                 >
                   <X className="h-4 w-4" />
@@ -208,8 +210,8 @@ export default function ConsistencyPanel() {
 
       {/* Footer Area */}
       <div className="p-4 pt-2">
-        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-stone-300 text-xs font-medium text-stone-500 hover:border-sage-400 hover:text-sage-600 hover:bg-sage-50/50 transition-all group">
-          <CheckCircle className="w-4 h-4 text-stone-300 group-hover:text-sage-500 transition-colors" />
+        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-cloud-300 text-xs font-medium text-mocha-500 hover:border-sage-400 hover:text-sage-600 hover:bg-sage-50/50 transition-all group">
+          <CheckCircle className="w-4 h-4 text-mocha-300 group-hover:text-sage-500 transition-colors" />
           <span>통과된 항목 보기 (15개)</span>
         </button>
       </div>

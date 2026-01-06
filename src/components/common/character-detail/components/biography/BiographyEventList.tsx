@@ -77,7 +77,7 @@ export function BiographyEventList({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold text-stone-400 font-mono">
+                          <span className="text-xs font-bold text-stone-400 ">
                             #{String(idx + 1).padStart(2, "0")}
                           </span>
                           {isMajor && (
@@ -91,7 +91,7 @@ export function BiographyEventList({
                         </div>
                         <h5
                           className={cn(
-                            "text-lg font-serif font-bold transition-colors pr-4 leading-tight break-words whitespace-normal",
+                            "text-lg  font-bold transition-colors pr-4 leading-tight break-words whitespace-normal",
                             isSelected
                               ? "text-mocha-900"
                               : "text-espresso-900 group-hover:text-mocha-700",
@@ -99,7 +99,7 @@ export function BiographyEventList({
                         >
                           {event.narrativeSummary}
                         </h5>
-                        <p className="text-sm text-stone-600 mt-1 font-serif leading-relaxed opacity-80 break-words whitespace-pre-wrap">
+                        <p className="text-sm text-stone-600 mt-1  leading-relaxed opacity-80 break-words whitespace-pre-wrap">
                           {event.description || "상세 설명 없음"}
                         </p>
                       </div>

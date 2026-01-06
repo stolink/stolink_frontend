@@ -38,7 +38,7 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
         return {
           title: "Reading Context...",
           sub: "이야기의 흐름을 읽고 있습니다",
-          icon: <BookOpen className="w-5 h-5 animate-pulse text-stone-400" />,
+          icon: <BookOpen className="w-5 h-5 animate-pulse text-mocha-400" />,
         };
       case "DETECTED":
         return {
@@ -93,7 +93,7 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
               {/* Grain Texture */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
               {/* Soft Gradient Shadow to give depth to the split */}
-              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-stone-900/5 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-espresso-900/5 to-transparent" />
             </motion.div>
 
             {/* Bottom Panel */}
@@ -106,12 +106,12 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
                 ease: [0.16, 1, 0.3, 1],
               }}
               style={{ backgroundColor: "#F1F0EC" }} // Cloud 50
-              className="flex-1 w-full relative border-t border-stone-200/50"
+              className="flex-1 w-full relative border-t border-cloud-200/50"
             >
               {/* Grain Texture */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
               {/* Soft Gradient Shadow */}
-              <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-stone-900/5 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-espresso-900/5 to-transparent" />
             </motion.div>
           </motion.div>
 
@@ -197,7 +197,7 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
                             stiffness: 280,
                             damping: 16,
                           }}
-                          className="w-20 h-20 rounded-full flex items-center justify-center shadow-xl border border-stone-200/60"
+                          className="w-20 h-20 rounded-full flex items-center justify-center shadow-xl border border-cloud-200/60"
                           style={{
                             background:
                               "linear-gradient(135deg, #f5f5f0 0%, #e8e8e0 50%, #d5ddd5 100%)",
@@ -244,10 +244,10 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
                         }}
                         className="mt-6 text-center space-y-2"
                       >
-                        <h2 className="text-2xl font-serif font-bold text-stone-800 tracking-tight">
+                        <h2 className="text-2xl  font-bold text-espresso-800 tracking-tight">
                           분석 완료!
                         </h2>
-                        <p className="text-xs text-stone-500 font-sans font-medium uppercase tracking-[0.15em]">
+                        <p className="text-xs text-mocha-500 font-sans font-medium uppercase tracking-[0.15em]">
                           이야기의 새로운 실마리를 찾았습니다
                         </p>
                       </motion.div>
@@ -267,15 +267,15 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
                       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                       className="flex flex-col items-center gap-6 text-center"
                     >
-                      <div className="p-4 bg-white/50 rounded-full ring-1 ring-stone-900/5 backdrop-blur-sm shadow-sm">
+                      <div className="p-4 bg-white/50 rounded-full ring-1 ring-espresso-900/5 backdrop-blur-sm shadow-sm">
                         {textContent.icon}
                       </div>
 
                       <div className="space-y-3">
-                        <h2 className="text-4xl font-serif font-bold text-stone-800 tracking-tight font-display">
+                        <h2 className="text-4xl  font-bold text-espresso-800 tracking-tight ">
                           {textContent.title}
                         </h2>
-                        <p className="text-sm text-stone-500 font-sans font-bold uppercase tracking-[0.2em]">
+                        <p className="text-sm text-mocha-500 font-sans font-bold uppercase tracking-[0.2em]">
                           {textContent.sub}
                         </p>
                       </div>
@@ -285,7 +285,7 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
                         initial={{ width: 0, opacity: 0 }}
                         animate={{ width: 120, opacity: 1 }}
                         transition={{ delay: 0.3, duration: 1 }}
-                        className="h-[1px] bg-stone-200 relative overflow-hidden"
+                        className="h-[1px] bg-cloud-200 relative overflow-hidden"
                       >
                         {state === "PROCESSING" && (
                           <motion.div

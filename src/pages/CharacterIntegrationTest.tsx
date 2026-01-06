@@ -74,7 +74,7 @@ const CharacterIntegrationTest = () => {
         ))}
       </div>
 
-      <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-800 font-mono text-xs overflow-auto">
+      <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-800  text-xs overflow-auto">
         <h3 className="mb-2 text-gray-500">Raw Data Response:</h3>
         <pre className="text-green-400">
           {JSON.stringify(characters, null, 2)}

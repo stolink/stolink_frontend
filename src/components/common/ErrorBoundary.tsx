@@ -1,6 +1,6 @@
 import React, { Component, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 interface Props {
   children: ReactNode;
@@ -65,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-2">
               <Button
                 onClick={this.handleReset}
-                variant="outline"
+                intent="outline"
                 className="flex-1"
               >
                 다시 시도

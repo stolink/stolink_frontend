@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   Compass,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import type { Character } from "@/types";
 
 interface CharacterAdditionalDetailsProps {

@@ -101,12 +101,12 @@ export function BiographyTree({
     >
       {/* 타임라인 방향 표시 */}
       <div className="absolute left-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
-        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+        <span className="text-xs  font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
           ← 과거
         </span>
       </div>
       <div className="absolute right-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
-        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+        <span className="text-xs  font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
           현재 →
         </span>
       </div>

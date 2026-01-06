@@ -1,194 +1,14 @@
-@import "./styles/editor-variables.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================
-   StoLink Global Styles
+   StoLink Global Styles (Terminal Pivot)
    ============================================ */
 
 /* CSS Variables for Design System */
 @layer base {
-  :root,
-  .theme-light {
-    /* Cloud 50: #F1F0EC (hsl(48 15% 94%)) */
-    /* Espresso 900: #3D302A (hsl(19 18% 20%)) */
-    --background: 48 15% 94%;
-    --foreground: 19 18% 20%;
-
-    --card: 48 15% 94%;
-    --card-foreground: 19 18% 20%;
-
-    --popover: 48 15% 94%;
-    --popover-foreground: 19 18% 20%;
-
-    /* Mocha 500: #A47764 (hsl(26 25% 55%)) replaced with calculated 18 26 52 approx, using slightly adjusted values for better match if needed, but sticking to logic:
-       #A47764 -> H:18 S:26 L:52 */
-    --primary: 18 26% 52%;
-    --primary-foreground: 48 15% 94%;
-
-    /* Mocha 100/Cloud 200 equivalent for secondary */
-    --secondary: 48 15% 90%;
-    --secondary-foreground: 19 18% 20%;
-
-    --muted: 48 15% 90%;
-    --muted-foreground: 19 18% 40%;
-
-    --accent: 48 15% 90%;
-    --accent-foreground: 19 18% 20%;
-
-    /* Error #A33A3A */
-    --destructive: 0 47% 43%;
-    --destructive-foreground: 48 15% 94%;
-
-    /* Mocha 200? Or just darker Cloud: #BD9B8D is Mocha 400.
-       Let's use a soft border. #D6D3D1 (Stone 300) was used.
-       Let's use Neutral #8D8B88 -> H:40 S:2 L:55 */
-    /* Relationship Colors (Final Unified) */
-    /* Friendly: #15803D (Darker Green) */
-    --rel-friendly-weak: #15803d;
-    --rel-friendly-std: #15803d;
-    --rel-friendly-deep: #15803d;
-
-    /* Hostile: #F44336 (Red - Unchanged) */
-    --rel-hostile-weak: #f44336;
-    --rel-hostile-std: #f44336;
-    --rel-hostile-deep: #f44336;
-
-    /* Romantic: #FF4081 (Vivid Cherry Blossom Pink) */
-    --rel-romantic-weak: #ff4081;
-    --rel-romantic-std: #ff4081;
-    --rel-romantic-deep: #ff4081;
-
-    --border: 40 2% 85%;
-    --input: 40 2% 85%;
-    --ring: 18 26% 52%;
-    --radius: 0.5rem;
-  }
-
-  /* Theme: Dark (#2D2D2D bg, #E5E5E5 text) */
-  /* Theme: Dark (Mocha 700 base)
-     Mocha 700: #7D5A4B -> H:18 S:25 L:39
-     Background should be dark. Let's use Espresso 900 as background?
-     Or just a standard Dark Mode adaptation.
-     Instruction said: Mocha 700 is Dark/Active state.
-     Let's map Dark Theme to use Espresso 900 as bg.
-     #3D302A -> 19 18% 20%
-  */
-  .theme-dark {
-    --background: 19 18% 15%;
-    --foreground: 48 15% 90%;
-    --card: 19 18% 18%;
-    --card-foreground: 48 15% 90%;
-    --popover: 19 18% 18%;
-    --popover-foreground: 48 15% 90%;
-    --primary: 18 26% 52%;
-    --primary-foreground: 48 15% 94%;
-    --secondary: 19 18% 25%;
-    --secondary-foreground: 48 15% 90%;
-    --muted: 19 18% 25%;
-    --muted-foreground: 48 15% 70%;
-    --accent: 19 18% 25%;
-    --accent-foreground: 48 15% 90%;
-    --destructive: 0 47% 43%;
-    --destructive-foreground: 48 15% 90%;
-    --border: 19 18% 30%;
-    --input: 19 18% 30%;
-    --ring: 18 26% 52%;
-  }
-
-  /* Theme: Sepia (#F4ECD8 bg, #5C4033 text) */
-  .theme-sepia {
-    --background: 40 47% 90%;
-    --foreground: 20 27% 28%;
-    --card: 40 47% 92%;
-    --card-foreground: 20 27% 28%;
-    --popover: 40 47% 92%;
-    --popover-foreground: 20 27% 28%;
-    --primary: 30 25% 45%;
-    --primary-foreground: 40 47% 95%;
-    --secondary: 40 30% 85%;
-    --secondary-foreground: 20 27% 28%;
-    --muted: 40 30% 85%;
-    --muted-foreground: 20 20% 45%;
-    --accent: 40 30% 85%;
-    --accent-foreground: 20 27% 28%;
-    --destructive: 0 62% 51%;
-    --destructive-foreground: 40 47% 95%;
-    --border: 30 20% 80%;
-    --input: 30 20% 80%;
-    --ring: 30 25% 45%;
-  }
-
-  /* Theme: Eye-care (#FAF9F6 bg, #3D3D3D text) */
-  .theme-eye-care {
-    --background: 40 20% 98%;
-    --foreground: 0 0% 24%;
-    --card: 40 20% 99%;
-    --card-foreground: 0 0% 24%;
-    --popover: 40 20% 99%;
-    --popover-foreground: 0 0% 24%;
-    --primary: 120 14% 43%;
-    --primary-foreground: 40 20% 98%;
-    --secondary: 40 10% 95%;
-    --secondary-foreground: 0 0% 24%;
-    --muted: 40 10% 95%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 40 10% 95%;
-    --accent-foreground: 0 0% 24%;
-    --destructive: 0 62% 51%;
-    --destructive-foreground: 40 20% 98%;
-    --border: 40 10% 90%;
-    --input: 40 10% 90%;
-    --ring: 120 14% 43%;
-  }
-
-  /* Theme: True Black / OLED (#000000 bg, #CCCCCC text) */
-  .theme-true-black {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 80%;
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 80%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 80%;
-    --primary: 115 16% 49%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 80%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 75%;
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 90%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 80%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 115 16% 49%;
-  }
-
-  /* Legacy .dark class for compatibility */
-  .dark {
-    --background: 0 0% 18%;
-    --foreground: 0 0% 90%;
-    --card: 0 0% 20%;
-    --card-foreground: 0 0% 90%;
-    --popover: 0 0% 20%;
-    --popover-foreground: 0 0% 90%;
-    --primary: 115 16% 49%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 22%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 0 0% 22%;
-    --muted-foreground: 0 0% 80%;
-    --accent: 0 0% 28%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 90%;
-    --border: 0 0% 32%;
-    --input: 0 0% 28%;
-    --ring: 115 16% 49%;
-  }
+  /* Variables are now handled by <ThemeSync /> from @stolink/ui */
 }
 
 @layer base {
@@ -213,16 +33,18 @@
     font-feature-settings:
       "kern" 1,
       "liga" 1;
+
+    line-height: 1.6; /* Balanced readability */
   }
 
-  /* Use DM Serif Display for Headings */
+  /* All typography uses Pretendard through tailwind settings */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    font-family: "Pretendard", serif;
+    font-weight: 700;
   }
 }
 /* Focus Mode Sidebar - Hide drag handles and action buttons for cleaner look */
@@ -606,13 +428,11 @@ mark {
 
 /* Editorial Typography */
 .editorial-name {
-  font-family: "Pretendard", serif;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .magazine-caption {
-  font-family: "Pretendard", serif;
   font-style: italic;
   font-size: 0.875rem;
   color: hsl(var(--muted-foreground));
@@ -631,7 +451,6 @@ mark {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-family: "Pretendard", serif;
   font-size: 1.125rem;
   font-weight: 400;
   color: hsl(var(--foreground));
@@ -739,7 +558,6 @@ mark {
 .pull-quote {
   position: relative;
   padding: 1.5rem 1.5rem 1.5rem 2rem;
-  font-family: "Pretendard", serif;
   font-style: italic;
   font-size: 1.05rem;
   line-height: 1.7;

@@ -18,7 +18,7 @@ import {
 } from "react";
 import { debounce } from "lodash-es";
 import { Bold, Italic, ZoomIn, ZoomOut, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
@@ -234,6 +234,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         SmartPunctuation,
         AutoFormatter.configure({
           maxEmptyLines: 1, // 최대 연속 빈 줄 1개 까지만 허용 (가독성 최적화)
+          enableAdvancedFormatting: true,
+          smartParagraphBreaks: true,
         }),
       ];
 
@@ -343,25 +345,21 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Apply typewriter mode setting when it changes
     useEffect(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (editor && (editor.commands as any).setTypewriterPosition) {
-        // 에디터 뷰가 마운트될 때까지 대기 후 실행
-        const timer = setTimeout(() => {
-          try {
-            if (
-              editor &&
-              !editor.isDestroyed &&
-              editor.view &&
-              editor.view.dom
-            ) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (editor.commands as any).setTypewriterPosition(typewriterMode);
-            }
-          } catch {
-            // 에디터가 아직 마운트되지 않은 경우 무시
-          }
-        }, 100);
-        return () => clearTimeout(timer);
+      // editor.view.dom checking prevents "editor view is not available" error
+      if (
+        editor &&
+        !editor.isDestroyed &&
+        editor.view &&
+        editor.view.dom &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor.commands as any).setTypewriterPosition
+      ) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.commands as any).setTypewriterPosition(typewriterMode);
+        } catch (e) {
+          console.warn("Failed to set typewriter position:", e);
+        }
       }
     }, [editor, typewriterMode]);
 
@@ -626,7 +624,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         {editor && !readOnly && (
           <BubbleMenu
             editor={editor}
-            className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50"
+            className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50 px-1"
           >
             <Button
               variant="ghost"
@@ -639,6 +637,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               복선 저장
             </Button>
             <div className="w-px h-8 bg-mocha-200/50" />
+
             {/* 하이라이트 색상 */}
             <div className="flex items-center gap-0.5 px-1.5">
               {[
@@ -668,7 +667,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 ✕
               </button>
             </div>
+
             <div className="w-px h-8 bg-mocha-200/50" />
+
             <Button
               variant="ghost"
               size="sm"

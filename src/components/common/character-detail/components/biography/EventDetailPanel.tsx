@@ -4,7 +4,7 @@
 import { createElement } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Users, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import type { BiographyEvent } from "@/types/biography";
 import { getImportanceLevel } from "@/types/biography";
 import { getEventTypeIcon, getEventTypeConfig } from "./constants";
@@ -94,7 +94,7 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
 
             {/* 닫기 버튼 */}
             <Button
-              variant="ghost"
+              intent="ghost"
               size="icon"
               className="h-7 w-7 rounded-full hover:bg-stone-100"
               onClick={onClose}

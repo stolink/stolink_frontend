@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart, Plus, X, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@stolink/ui";
+import { Button } from "@stolink/ui";
 
 interface CharacterTraitsProps {
   traits: string[];
@@ -39,7 +39,7 @@ export function CharacterTraits({
   return (
     <div className="space-y-4">
       <h3 className="editorial-section-heading">
-        <Heart className="h-5 w-5 text-primary/70" />
+        <Heart className="h-5 w-5 text-mocha-500" />
         성격 특성
       </h3>
 
@@ -51,13 +51,13 @@ export function CharacterTraits({
               className="editorial-tag group"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <Sparkles className="h-3 w-3 text-primary/50" />
+              <Sparkles className="h-3 w-3 text-mocha-500/50" />
               {trait}
               {isEditMode && (
                 <button
                   type="button"
                   onClick={() => handleRemoveTrait(idx)}
-                  className="ml-1 opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition-all"
+                  className="ml-1 opacity-0 group-hover:opacity-100 text-mocha-400 hover:text-red-500 transition-all"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -88,11 +88,11 @@ export function CharacterTraits({
           />
           <Button
             type="button"
-            variant="outline"
+            intent="outline"
             size="sm"
             onClick={handleAddTrait}
             disabled={!newTrait.trim()}
-            className="h-9 px-3 gap-1.5 hover:bg-primary hover:text-white hover:border-primary transition-all"
+            className="h-9 px-3 gap-1.5 hover:bg-mocha-50 hover:text-mocha-900 hover:border-mocha-500 transition-all"
           >
             <Plus className="h-4 w-4" />
             추가

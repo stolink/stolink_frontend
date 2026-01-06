@@ -1,5 +1,5 @@
 import { BookOpen, ChevronRight, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 interface CharacterAppearancesProps {
   appearances: string[];
@@ -11,7 +11,7 @@ export function CharacterAppearances({
   return (
     <div className="space-y-4">
       <h3 className="editorial-section-heading">
-        <BookOpen className="h-5 w-5 text-primary/70" />
+        <BookOpen className="h-5 w-5 text-mocha-500" />
         등장 정보
       </h3>
 
@@ -26,11 +26,11 @@ export function CharacterAppearances({
               <a href="#" className="block editorial-card p-4 hover-lift group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-stone-900 group-hover:text-primary transition-colors">
+                    <span className="text-sm font-semibold text-espresso-900 group-hover:text-mocha-500 transition-colors">
                       {chapter}
                     </span>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                  <ChevronRight className="h-4 w-4 text-cloud-300 group-hover:text-mocha-500 group-hover:translate-x-1 transition-all" />
                 </div>
               </a>
             </div>
@@ -39,9 +39,9 @@ export function CharacterAppearances({
           {appearances.length > 5 && (
             <div className="flex items-center justify-center pt-4">
               <Button
-                variant="ghost"
+                intent="ghost"
                 size="sm"
-                className="gap-2 text-primary hover:text-primary hover:bg-primary/5"
+                className="gap-2 text-mocha-500 hover:text-mocha-700 hover:bg-mocha-500/5"
               >
                 <MoreHorizontal className="h-4 w-4" />
                 모두 보기 ({appearances.length}개)
