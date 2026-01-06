@@ -26,7 +26,7 @@ export function useZenMode(
   const { debounceDelay = 3000 } = options;
 
   const [isTyping, setIsTyping] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Call this function whenever user types in the editor

@@ -5,7 +5,7 @@ import type {
   EditorWidth,
   TypewriterMode,
   BehaviorSettings,
-} from "@/stores/types/editorSettings";
+} from "@/types/editorSettings";
 import { Label } from "@/components/ui/label";
 import {
   Select,

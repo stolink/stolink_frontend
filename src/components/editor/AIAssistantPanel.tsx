@@ -372,7 +372,7 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
           >
             {sources.map((source, idx) => (
               <div
-                key={source.chunk_uuid}
+                key={source.chunkUuid}
                 className="relative pl-6 group/source"
               >
                 {/* Vertical Line */}
@@ -387,7 +387,7 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
                     Source {idx + 1}
                   </span>
                   <span className="text-xs font-bold text-espresso-800 leading-tight">
-                    {source.metadata?.document_title || "Untitled Fragment"}
+                    {source.metadata?.documentTitle || "Untitled Fragment"}
                   </span>
                   <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic">
                     "{source.content}"

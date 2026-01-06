@@ -4,7 +4,7 @@ interface UIState {
   // Sidebar states
   leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
-  rightSidebarTab: "memo" | "foreshadowing" | "ai" | "consistency";
+  rightSidebarTab: "inspector" | "foreshadowing" | "ai" | "consistency";
 
   // Modal states
 
@@ -17,7 +17,7 @@ interface UIState {
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
   setRightSidebarTab: (
-    tab: "memo" | "foreshadowing" | "ai" | "consistency",
+    tab: "inspector" | "foreshadowing" | "ai" | "consistency",
   ) => void;
 
   setCreateChapterModalOpen: (open: boolean) => void;
@@ -27,7 +27,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   leftSidebarOpen: true,
   rightSidebarOpen: true,
-  rightSidebarTab: "memo",
+  rightSidebarTab: "inspector",
 
   createChapterModalOpen: false,
   theme: "light",
