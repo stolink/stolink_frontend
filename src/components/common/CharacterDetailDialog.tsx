@@ -8,7 +8,7 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design-system/components/Button";
 import {
   Save,
   X,
@@ -345,7 +345,7 @@ export default function CharacterDetailDialog({
           </DialogDescription>
         </VisuallyHidden>
         {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
-        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-[#FDFCFB]/95 via-[#F7F5F3]/90 to-[#F2EFE9]/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-stone-200/60 ring-1 ring-stone-900/5 isolate">
+        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-cloud-50/95 via-cloud-100/90 to-cloud-200/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-cloud-200/60 ring-1 ring-espresso-900/5 isolate">
           {/* 🌊 Living Background (Warm Aurora Blobs) */}
           <div className="absolute inset-0 -z-10 bg-stone-50/40 opacity-50">
             {/* Primary Tone (Mocha/Warm) */}
@@ -360,7 +360,7 @@ export default function CharacterDetailDialog({
           <div className="absolute inset-0 -z-0 opacity-[0.4] pointer-events-none mix-blend-soft-light bg-[url('https://grainy-gradients.vercel.app/noise.svg')] contrast-125" />
 
           {/* Left Sidebar (Character Identity) - Warm Frosted Panel */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-white/80 to-[#FAF9F6]/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-stone-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">
+          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-white/80 to-cloud-50/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-cloud-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">
             <CharacterHeader
               character={displayCharacter}
               optimisticImageUrl={tempImageUrl}
@@ -382,8 +382,8 @@ export default function CharacterDetailDialog({
               className="flex-1 flex flex-col rounded-none h-full"
             >
               {/* ✨ Warm Stone Floating Tab Bar */}
-              <div className="border-b border-stone-200/40 px-6 py-3 bg-gradient-to-r from-[#FAF9F6]/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
-                <TabsList className="h-10 w-full justify-start gap-2 bg-[#F5F5F0]/50 p-1 rounded-full border border-stone-200/50 shadow-inner">
+              <div className="border-b border-cloud-200/40 px-6 py-3 bg-gradient-to-r from-cloud-50/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
+                <TabsList className="h-10 w-full justify-start gap-2 bg-cloud-100/50 p-1 rounded-full border border-cloud-200/50 shadow-inner">
                   <TabItem value="overview" icon={Compass} label="개요" />
                   <TabItem value="profile" icon={UserRound} label="프로필" />
                   <TabItem value="appearance" icon={Palette} label="외모" />
@@ -397,17 +397,18 @@ export default function CharacterDetailDialog({
                   {isEditMode && activeTab !== "biography" ? (
                     <>
                       <Button
-                        variant="ghost"
+                        intent="ghost"
                         size="sm"
                         onClick={handleCancel}
-                        className="text-stone-500 hover:text-stone-800 hover:bg-white/20"
+                        className="text-mocha-900 hover:text-espresso-900 hover:bg-white/20"
                       >
                         취소
                       </Button>
                       <Button
                         size="sm"
+                        intent="primary"
                         onClick={handleSave}
-                        className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-5 shadow-lg shadow-stone-900/10"
+                        className="rounded-full px-5 shadow-lg shadow-mocha-900/10"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         저장하기
@@ -417,10 +418,10 @@ export default function CharacterDetailDialog({
                     /* View Mode Close Button (Custom Placement for aesthetics) */
                     !isEditMode && (
                       <Button
-                        variant="ghost"
+                        intent="ghost"
                         size="icon"
                         onClick={onClose}
-                        className="text-stone-400 hover:text-stone-800 hover:bg-stone-100/50 rounded-full w-8 h-8 ml-2 mr-2"
+                        className="text-mocha-400 hover:text-espresso-900 hover:bg-cloud-200/50 rounded-full w-8 h-8 ml-2 mr-2"
                       >
                         <X className="w-5 h-5" />
                       </Button>

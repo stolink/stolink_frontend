@@ -366,7 +366,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       }
 
       // 3. Refresh Data
-      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({
+        queryKey: ["characters", "list", projectId],
+      });
       queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
     },
     [characters, graphLinks, projectId, queryClient],

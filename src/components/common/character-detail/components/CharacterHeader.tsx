@@ -9,7 +9,7 @@ import {
   Crown,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
@@ -37,7 +37,8 @@ export function CharacterHeader({
   imageGenerationProgress = 0,
   onFieldChange,
 }: CharacterHeaderProps) {
-  const roleInfo = roleLabels[character.role || "other"];
+  const roleInfo =
+    roleLabels[character.role as keyof typeof roleLabels] || roleLabels.other;
 
   const profile = character.profile;
   const name = profile?.name || "이름 없음";
@@ -76,7 +77,7 @@ export function CharacterHeader({
             <div className="magazine-image-overlay" />
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-white">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cloud-100 via-cloud-50 to-white">
             <span
               className="text-8xl filter drop-shadow-lg select-none opacity-60"
               role="img"
@@ -94,7 +95,7 @@ export function CharacterHeader({
 
         {/* Image generation overlay */}
         {isGeneratingImage && (
-          <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-20 transition-all duration-300">
+          <div className="absolute inset-0 bg-espresso-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-20 transition-all duration-300">
             <div className="relative">
               <Feather className="h-14 w-14 text-white ink-splash-loading filter drop-shadow-xl" />
             </div>
@@ -115,7 +116,7 @@ export function CharacterHeader({
         {/* Floating Action Button for Generation */}
         {onGenerateImage && !isEditMode && !isGeneratingImage && (
           <Button
-            variant="secondary"
+            intent="secondary"
             size="icon"
             onClick={() => onGenerateImage()}
             disabled={isGeneratingImage}
@@ -137,11 +138,11 @@ export function CharacterHeader({
                 onChange={(e) =>
                   onFieldChange?.("profile.name", e.target.value)
                 }
-                className="text-2xl font-bold h-12 border-stone-300 focus:ring-primary"
+                className="text-2xl font-bold h-12 border-cloud-300 focus:ring-mocha-500"
                 placeholder="캐릭터 이름"
               />
             ) : (
-              <h1 className="editorial-name text-3xl font-normal text-stone-900 break-keep">
+              <h1 className="editorial-name text-3xl font-normal text-espresso-900 break-keep">
                 {name}
               </h1>
             )}
@@ -152,25 +153,25 @@ export function CharacterHeader({
 
           {onEdit && !isEditMode && (
             <Button
-              variant="ghost"
+              intent="ghost"
               size="icon"
               onClick={onEdit}
-              className="h-9 w-9 shrink-0 rounded-full border border-stone-200 hover:bg-white hover:shadow-md hover:border-primary/30 transition-all"
+              className="h-9 w-9 shrink-0 rounded-full border border-cloud-200 hover:bg-white hover:shadow-md hover:border-mocha-500/30 transition-all"
             >
-              <Edit className="h-4 w-4 text-stone-500" />
+              <Edit className="h-4 w-4 text-mocha-500" />
             </Button>
           )}
         </div>
 
         {/* Profile Attributes - 2 Column Grid */}
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-stone-100">
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-cloud-100">
           {profile?.occupation && (
             <div className="editorial-card p-3 hover-lift">
               <div className="flex items-center gap-2 mb-1.5">
-                <Briefcase className="h-3.5 w-3.5 text-primary/70" />
+                <Briefcase className="h-3.5 w-3.5 text-mocha-500" />
                 <span className="editorial-label">직업</span>
               </div>
-              <p className="text-sm font-semibold text-stone-800 leading-snug">
+              <p className="text-sm font-semibold text-espresso-900 leading-snug">
                 {profile.occupation}
               </p>
             </div>
@@ -179,10 +180,10 @@ export function CharacterHeader({
           {profile?.birthplace && (
             <div className="editorial-card p-3 hover-lift">
               <div className="flex items-center gap-2 mb-1.5">
-                <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                <MapPin className="h-3.5 w-3.5 text-mocha-500" />
                 <span className="editorial-label">출신</span>
               </div>
-              <p className="text-sm font-semibold text-stone-800 leading-snug">
+              <p className="text-sm font-semibold text-espresso-900 leading-snug">
                 {profile.birthplace}
               </p>
             </div>
@@ -191,10 +192,10 @@ export function CharacterHeader({
           {profile?.family && (
             <div className="editorial-card p-3 hover-lift">
               <div className="flex items-center gap-2 mb-1.5">
-                <Users2 className="h-3.5 w-3.5 text-primary/70" />
+                <Users2 className="h-3.5 w-3.5 text-mocha-500" />
                 <span className="editorial-label">가족</span>
               </div>
-              <p className="text-sm font-semibold text-stone-800 leading-snug">
+              <p className="text-sm font-semibold text-espresso-900 leading-snug">
                 {profile.family}
               </p>
             </div>
@@ -203,10 +204,10 @@ export function CharacterHeader({
           {character.firstAppearance && (
             <div className="editorial-card p-3 hover-lift">
               <div className="flex items-center gap-2 mb-1.5">
-                <BookMarked className="h-3.5 w-3.5 text-primary/70" />
+                <BookMarked className="h-3.5 w-3.5 text-mocha-500" />
                 <span className="editorial-label">첫 등장</span>
               </div>
-              <p className="text-sm font-semibold text-stone-800 leading-snug">
+              <p className="text-sm font-semibold text-espresso-900 leading-snug">
                 {character.firstAppearance}
               </p>
             </div>
@@ -215,10 +216,10 @@ export function CharacterHeader({
           {faction && (
             <div className="editorial-card p-3 hover-lift col-span-2">
               <div className="flex items-center gap-2 mb-1.5">
-                <Crown className="h-3.5 w-3.5 text-primary/70" />
+                <Crown className="h-3.5 w-3.5 text-mocha-500" />
                 <span className="editorial-label">소속 세력</span>
               </div>
-              <p className="text-sm font-semibold text-stone-800 leading-snug">
+              <p className="text-sm font-semibold text-espresso-900 leading-snug">
                 {faction}
               </p>
             </div>
@@ -241,7 +242,7 @@ export function CharacterHeader({
       </div>
 
       {/* Meta Footer */}
-      <div className="mt-auto pt-6 border-t border-stone-100">
+      <div className="mt-auto pt-6 border-t border-cloud-100">
         <p className="magazine-caption text-xs">
           마지막 수정:{" "}
           {character.meta?.updatedAt
