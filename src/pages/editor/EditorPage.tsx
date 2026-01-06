@@ -354,16 +354,15 @@ export default function EditorPage({ isDemo = false }) {
     [isDemo, selectedSectionId],
   );
 
-  const saveWithAnalysis = useCallback(
+  const saveAndBuffer = useCallback(
     async (content: string) => {
       if (!selectedSectionId) return;
       await saveContent(content);
       if (!isDemo) {
         addToBuffer(selectedSectionId, content);
-        flushAndAnalyze();
       }
     },
-    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
+    [saveContent, selectedSectionId, isDemo, addToBuffer],
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -416,6 +415,7 @@ export default function EditorPage({ isDemo = false }) {
     lastContentRef,
     saveContentRef,
     saveTimeoutRef,
+    handleSelectSection,
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
@@ -433,34 +433,25 @@ export default function EditorPage({ isDemo = false }) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent: saveWithAnalysis,
+    saveContent: saveAndBuffer,
     updateDocument: (updates) => {
       if (!selectedSectionId) return;
       useDocumentStore.getState()._update(selectedSectionId, updates);
     },
     updateDocumentMutation: async (id, updates) => {
-      await updateDocumentMutation.mutateAsync({
-        id,
-        payload: updates,
-      });
+      await updateDocumentMutation(id, updates);
     },
     createDocument: async (data) => {
-      return createDocumentMutation.mutateAsync(data);
+      return createDocumentMutation(data);
     },
     deleteDocument: async (id) => {
-      await deleteDocumentMutation.mutateAsync(id);
+      await deleteDocumentMutation(id);
     },
     reorderDocuments: async (parentId, orderedIds) => {
-      await reorderDocumentsMutation.mutateAsync({
-        parentId,
-        orderedIds,
-      });
+      await reorderDocumentsMutation(parentId, orderedIds);
     },
     moveDocument: async (itemId, targetFolderId) => {
-      await moveDocumentMutation.mutateAsync({
-        itemId,
-        targetFolderId,
-      });
+      await moveDocumentMutation(itemId, targetFolderId);
     },
   });
 
