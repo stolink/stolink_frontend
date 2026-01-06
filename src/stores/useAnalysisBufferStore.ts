@@ -50,6 +50,7 @@ interface AnalysisBufferStore {
   // 액션
   setProjectId: (projectId: string | null) => void;
   addToBuffer: (documentId: string, content: string) => void;
+  removeFromBuffer: (documentId: string) => void;
   flush: () => BufferChunk[];
   clearBuffer: () => void;
   shouldAutoFlush: () => boolean;
@@ -130,6 +131,18 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           }
 
           state.bufferCharCount += charCount;
+        });
+      },
+
+      removeFromBuffer: (documentId) => {
+        set((state) => {
+          const index = state.buffer.findIndex(
+            (chunk) => chunk.documentId === documentId,
+          );
+          if (index >= 0) {
+            state.bufferCharCount -= state.buffer[index].charCount;
+            state.buffer.splice(index, 1);
+          }
         });
       },
 

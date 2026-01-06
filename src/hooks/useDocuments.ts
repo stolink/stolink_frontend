@@ -11,6 +11,7 @@ import {
 } from "@/repositories/LocalDocumentRepository";
 import { useEditorStore } from "@/stores/useEditorStore";
 import { useForeshadowingStore } from "@/stores/useForeshadowingStore";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import type {
   Document,
   DocumentTreeNode,
@@ -488,6 +489,23 @@ export function useDocumentMutations(projectId: string) {
 
         // 6. 섹션 삭제 시 해당 섹션에 연결된 복선도 삭제 (고아 데이터 방지)
         useForeshadowingStore.getState().deleteByDocumentId(id);
+
+        // 7. 분석 버퍼에서 삭제된 문서 및 하위 문서 제거 (Ghost Chunk 방지)
+        const { removeFromBuffer } = useAnalysisBufferStore.getState();
+        const idsToRemove = [id];
+
+        // 현재 상태에서 하위 문서 찾기 (Optimistic Update 전 상태인 documents 참조)
+        const findDescendants = (parentId: string) => {
+          Object.values(documents).forEach((d) => {
+            if (d.parentId === parentId) {
+              idsToRemove.push(d.id);
+              findDescendants(d.id);
+            }
+          });
+        };
+        findDescendants(id);
+
+        idsToRemove.forEach((docId) => removeFromBuffer(docId));
       }
     },
     [projectId, queryClient],
