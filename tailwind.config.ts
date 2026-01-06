@@ -79,12 +79,14 @@ export default {
       fontSize: {
         body: "16px",
         small: "14px",
+        xs: "12px",
         h1: "32px",
         h2: "24px",
         h3: "20px",
       },
       spacing: {
         unit: "4px",
+        "icon-sm": "32px",
         component: "16px",
         gap: "24px",
         section: "48px",

@@ -27,6 +27,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/design-system/components/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,20 +51,20 @@ function ToolbarButton({
   children,
 }: ToolbarButtonProps) {
   return (
-    <button
-      type="button"
+    <Button
+      intent="ghost"
+      size="icon-sm"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "h-8 w-8 p-0 rounded-lg flex items-center justify-center transition-colors duration-200",
+        "rounded-lg",
         "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
         isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
-        disabled && "opacity-40 cursor-not-allowed",
       )}
       title={tooltip}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -136,10 +137,11 @@ export function EditorToolbar({
       {/* Headings Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
+          <Button
+            intent="ghost"
+            size="sm"
             className={cn(
-              "h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors",
+              "px-3 text-small font-bold",
               currentHeadingLevel > 0
                 ? "bg-mocha-400/30 text-mocha-900"
                 : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
@@ -149,7 +151,7 @@ export function EditorToolbar({
             <span>
               {currentHeadingLevel > 0 ? `H${currentHeadingLevel}` : "본문"}
             </span>
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -206,11 +208,12 @@ export function EditorToolbar({
       </ToolbarButton>
 
       {/* Highlight Button */}
-      <button
-        type="button"
+      <Button
+        intent="ghost"
+        size="icon-sm"
         onClick={() => editor.chain().focus().toggleHighlight().run()}
         className={cn(
-          "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
+          "rounded-lg",
           editor.isActive("highlight")
             ? "bg-mocha-400/30 text-mocha-900"
             : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
@@ -218,7 +221,7 @@ export function EditorToolbar({
         title="하이라이트"
       >
         <Highlighter className="h-4 w-4" />
-      </button>
+      </Button>
 
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
@@ -287,7 +290,7 @@ export function EditorToolbar({
           title="AI가 변경사항을 분석 중입니다..."
         >
           <Loader2 className="h-3 w-3 animate-spin" />
-          <span className="text-[10px] font-bold">분석 중</span>
+          <span className="text-xs font-bold">분석 중</span>
         </motion.div>
       )}
       {analysisStatus === "completed" && (
@@ -299,7 +302,7 @@ export function EditorToolbar({
           className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-full bg-green-50 text-green-600 border border-green-100"
         >
           <CheckCircle2 className="h-3 w-3" />
-          <span className="text-[10px] font-bold">분석 완료</span>
+          <span className="text-xs font-bold">분석 완료</span>
         </motion.div>
       )}
 
@@ -309,7 +312,7 @@ export function EditorToolbar({
           animate={{ scale: [1, 1.02, 1] }}
           transition={{ duration: 0.3, repeat: 0 }}
           key={characterCount}
-          className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
+          className="text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
         >
           {characterCount.toLocaleString()}자
         </motion.div>
