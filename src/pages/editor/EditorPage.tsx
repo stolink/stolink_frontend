@@ -35,7 +35,7 @@ import { SAMPLE_PROJECT_ID } from "@/data/sampleDocuments";
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import SnapshotPanel from "@/components/editor/SnapshotPanel";
-import ExportModal from "@/components/editor/ExportModal";
+import ExportGatewayModal from "@/components/editor/ExportGatewayModal";
 import DemoHeader from "@/components/editor/DemoHeader";
 // SectionStrip removed - minimizing distractions for writer focus
 // ScriveningsEditor & OutlineView removed (moved to EditorContent)
@@ -235,9 +235,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showSnapshot, setShowSnapshot] = useState(false);
   // Export & Publish State
   const [showExport, setShowExport] = useState(false);
-  const [exportInitialTab, setExportInitialTab] = useState<
-    "export" | "publish"
-  >("export");
 
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore((state) => state.documents);
@@ -751,10 +748,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleRightSidebar={toggleRightSidebar}
               onShowReader={isDemo ? undefined : () => setShowReader(true)}
               onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={() => {
-                setExportInitialTab("export");
-                setShowExport(true);
-              }}
+              onExport={() => setShowExport(true)}
               analysisStatus={analysisDisplayStatus}
             />
           )}
@@ -844,18 +838,15 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           onClose={() => setShowSnapshot(false)}
         />
 
-        {/* Export Modal */}
-        <ExportModal
+        {/* Export Gateway Modal - 파일 다운로드 / 커뮤니티 배포 선택 */}
+        <ExportGatewayModal
           isOpen={showExport}
           onClose={() => setShowExport(false)}
-          content={currentContent} // Default content (current)
-          title={currentSectionTitle} // Default title
           currentId={selectedSectionId || undefined}
-          initialTab={exportInitialTab}
           characters={characters}
           links={graphLinks}
-          documents={documents} // Pass all documents for selection
-          projectId={projectId} // 프로젝트 ID 전달
+          documents={documents}
+          projectId={projectId}
           projectTitle={project?.title}
           projectDescription={project?.description}
           projectGenre={project?.genre}
