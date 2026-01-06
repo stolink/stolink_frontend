@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import { Switch } from "@/components/ui/switch";
 import { SettingRow } from "@/components/ui/setting-row";
 
@@ -29,21 +29,17 @@ export function NotificationSettingsCard() {
     >
       <Card className="transition-all duration-300 hover:shadow-paper border-mocha-100 bg-white/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display text-xl text-espresso-900">
+          <CardTitle className="flex items-center gap-2  text-xl text-espresso-900">
             <Bell className="h-5 w-5 text-mocha-500" />
             알림
           </CardTitle>
-          <CardDescription className="text-muted-foreground font-serif">
+          <CardDescription className="text-muted-foreground ">
             알림 설정을 관리합니다
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <SettingRow title="집필 목표 알림" description="일일 목표 달성 알림">
-            <Switch
-              checked={goalNotification}
-              onChange={setGoalNotification}
-              className="data-[state=checked]:bg-mocha-500"
-            />
+            <Switch checked={goalNotification} onChange={setGoalNotification} />
           </SettingRow>
 
           <SettingRow
@@ -53,7 +49,6 @@ export function NotificationSettingsCard() {
             <Switch
               checked={foreshadowingNotification}
               onChange={setForeshadowingNotification}
-              className="data-[state=checked]:bg-mocha-500"
             />
           </SettingRow>
 
@@ -61,7 +56,6 @@ export function NotificationSettingsCard() {
             <Switch
               checked={aiSuggestionNotification}
               onChange={setAiSuggestionNotification}
-              className="data-[state=checked]:bg-mocha-500"
             />
           </SettingRow>
         </CardContent>

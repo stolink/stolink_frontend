@@ -7,7 +7,7 @@
 
 import { AlertCircle, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
 import { useChapterBalance } from "@/hooks/useChapterBalance";
 
 interface ChapterBalanceCardProps {
@@ -79,14 +79,14 @@ export function ChapterBalanceCard({ projectId }: ChapterBalanceCardProps) {
   const maxWordCount = Math.max(...analysis.chapters.map((c) => c.wordCount));
 
   return (
-    <Card className="border-none shadow-sm bg-white relative overflow-hidden group hover:shadow-paper-hover transition-all duration-300">
+    <Card className="border-none shadow-paper bg-white relative overflow-hidden group hover:shadow-paper-floating transition-all duration-300 rounded-xl">
       {/* Subtle accent border */}
-      <div className="absolute left-0 top-0 w-1.5 h-full bg-[#A47764]" />
+      <div className="absolute left-0 top-0 w-1 h-full bg-mocha-500" />
 
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-[#A47764]" />
-          챕터 밸런스
+        <CardTitle className="text-lg font-bold text-espresso-900 flex items-center gap-2 tracking-tight">
+          <BarChart3 className="w-5 h-5 text-mocha-500/60" />
+          챕터별 분량 밸런스
         </CardTitle>
         {analysis.unbalancedCount > 0 && (
           <motion.div
@@ -103,10 +103,10 @@ export function ChapterBalanceCard({ projectId }: ChapterBalanceCardProps) {
 
       <CardContent className="space-y-3">
         {/* Average indicator */}
-        <div className="flex justify-between items-center text-xs text-[#8D8B88]">
-          <span>평균 분량</span>
-          <span className="font-medium text-[#7D5A4B]">
-            {Math.round(analysis.average).toLocaleString()}자
+        <div className="flex justify-between items-center text-xs font-bold text-mocha-400 uppercase tracking-widest">
+          <span>평균 글자 수</span>
+          <span className="text-espresso-900">
+            {Math.round(analysis.average).toLocaleString()} 자
           </span>
         </div>
 
@@ -130,17 +130,17 @@ export function ChapterBalanceCard({ projectId }: ChapterBalanceCardProps) {
                 className="space-y-1"
                 variants={itemVariants}
               >
-                <div className="flex justify-between text-xs">
-                  <span className="truncate max-w-[60%] text-[#3D302A]">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="truncate max-w-[60%] text-espresso-900">
                     {chapter.title}
                   </span>
-                  <span className="font-medium text-[#A47764]">
-                    {chapter.wordCount.toLocaleString()}자
+                  <span className="text-mocha-500">
+                    {chapter.wordCount.toLocaleString()} 자
                   </span>
                 </div>
 
                 {/* Progress bar with natural shadow */}
-                <div className="relative h-3 bg-[#F1F0EC] rounded-full overflow-hidden">
+                <div className="relative h-2 bg-cloud-100 rounded-full overflow-hidden">
                   <motion.div
                     className={`h-full rounded-full ${
                       chapter.isUnbalanced
@@ -178,24 +178,27 @@ export function ChapterBalanceCard({ projectId }: ChapterBalanceCardProps) {
           })}
         </motion.div>
 
-        {/* Summary cards with subtle glassmorphism */}
-        <div className="pt-3 border-t border-[#F1F0EC] grid grid-cols-2 gap-2 text-xs">
-          <div className="p-2 bg-gradient-to-br from-[#F1F0EC] to-white rounded-lg backdrop-blur-sm">
-            <span className="text-[#8D8B88] block mb-1">최장</span>
-            <span className="font-medium text-[#3D302A] block truncate text-sm">
+        <div className="pt-4 border-t border-cloud-100 grid grid-cols-2 gap-3 text-xs font-bold">
+          <div className="p-3 bg-cloud-50 rounded-xl border border-cloud-100 group-hover:border-mocha-200 transition-colors">
+            <span className="text-mocha-400 block mb-1 uppercase tracking-widest text-[10px]">
+              최대 분량
+            </span>
+            <span className="text-espresso-900 block truncate font-bold">
               {analysis.longest.title}
             </span>
-            <span className="text-[10px] text-[#A47764]">
-              {analysis.longest.wordCount.toLocaleString()}자
+            <span className="text-mocha-500">
+              {analysis.longest.wordCount.toLocaleString()} 자
             </span>
           </div>
-          <div className="p-2 bg-gradient-to-br from-[#F1F0EC] to-white rounded-lg backdrop-blur-sm">
-            <span className="text-[#8D8B88] block mb-1">최단</span>
-            <span className="font-medium text-[#3D302A] block truncate text-sm">
+          <div className="p-3 bg-cloud-50 rounded-xl border border-cloud-100 group-hover:border-mocha-200 transition-colors">
+            <span className="text-mocha-400 block mb-1 uppercase tracking-widest text-[10px]">
+              최소 분량
+            </span>
+            <span className="text-espresso-900 block truncate font-bold">
               {analysis.shortest.title}
             </span>
-            <span className="text-[10px] text-[#A47764]">
-              {analysis.shortest.wordCount.toLocaleString()}자
+            <span className="text-mocha-500">
+              {analysis.shortest.wordCount.toLocaleString()} 자
             </span>
           </div>
         </div>

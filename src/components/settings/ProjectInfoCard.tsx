@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Loader2, Check } from "lucide-react";
+import { BookOpen, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,7 +13,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import {
   Select,
   SelectContent,
@@ -128,11 +128,11 @@ function ProjectInfoForm({
     >
       <Card className="transition-all duration-300 hover:shadow-paper border-mocha-100 bg-white/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display text-xl text-espresso-900">
+          <CardTitle className="flex items-center gap-2  text-xl text-espresso-900">
             <BookOpen className="h-5 w-5 text-mocha-500" />
             작품 정보
           </CardTitle>
-          <CardDescription className="text-muted-foreground font-serif">
+          <CardDescription className="text-muted-foreground ">
             작품의 기본 정보를 수정합니다
           </CardDescription>
         </CardHeader>
@@ -205,14 +205,11 @@ function ProjectInfoForm({
             )}
             <Button
               onClick={handleSave}
-              disabled={!isDirty || updateProject.isPending}
-              className="bg-mocha-500 hover:bg-mocha-600 text-white shadow-sm hover:shadow-md transition-all active:scale-95"
+              disabled={!isDirty}
+              isLoading={updateProject.isPending}
+              intent="primary"
             >
-              {updateProject.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "저장"
-              )}
+              저장
             </Button>
           </div>
         </CardContent>

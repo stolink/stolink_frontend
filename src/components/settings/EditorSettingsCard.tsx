@@ -8,10 +8,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import { Switch } from "@/components/ui/switch";
 import { SettingRow } from "@/components/ui/setting-row";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Select,
   SelectContent,
@@ -53,11 +53,11 @@ export function EditorSettingsCard() {
       >
         <Card className="transition-all duration-300 hover:shadow-paper border-mocha-100 bg-white/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-xl text-espresso-900">
+            <CardTitle className="flex items-center gap-2  text-xl text-espresso-900">
               <Settings2 className="h-5 w-5 text-mocha-500" />
               에디터 설정
             </CardTitle>
-            <CardDescription className="text-muted-foreground font-serif">
+            <CardDescription className="text-muted-foreground ">
               에디터 환경을 설정합니다
             </CardDescription>
           </CardHeader>
@@ -94,13 +94,12 @@ export function EditorSettingsCard() {
               <Switch
                 checked={behavior.performanceMode}
                 onChange={setPerformanceMode}
-                className="data-[state=checked]:bg-mocha-500"
               />
             </SettingRow>
 
             <div className="pt-2 border-t border-mocha-100">
               <Button
-                variant="ghost"
+                intent="ghost"
                 className="w-full justify-between text-muted-foreground hover:text-mocha-600 hover:bg-mocha-50"
                 onClick={() => setShowFullSettings(true)}
               >

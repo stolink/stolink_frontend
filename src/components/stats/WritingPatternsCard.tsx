@@ -8,7 +8,7 @@
 import { Clock, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
 import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 
 export function WritingPatternsCard() {
@@ -60,14 +60,14 @@ export function WritingPatternsCard() {
   const maxDayCount = Math.max(...Object.values(patterns.byDayOfWeek));
 
   return (
-    <Card className="border-none shadow-sm bg-white relative overflow-hidden group hover:shadow-paper-hover transition-all duration-300">
+    <Card className="border-none shadow-paper bg-white relative overflow-hidden group hover:shadow-paper-floating transition-all duration-300 rounded-xl">
       {/* Subtle accent border matching StatsPage style */}
-      <div className="absolute left-0 top-0 w-1.5 h-full bg-[#7A8C6F]" />
+      <div className="absolute left-0 top-0 w-1 h-full bg-mocha-500" />
 
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold text-[#3D302A] flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[#7A8C6F]" />
-          집필 패턴
+        <CardTitle className="text-sm font-bold text-mocha-200 flex items-center gap-2 uppercase tracking-tight">
+          <TrendingUp className="w-4 h-4 text-mocha-500/60" />
+          analysis.writing_patterns
         </CardTitle>
       </CardHeader>
 
@@ -82,25 +82,25 @@ export function WritingPatternsCard() {
             stiffness: 300,
             damping: 24,
           }}
-          className="flex items-center justify-between p-3 bg-[#f8f7f5] rounded-lg"
+          className="flex items-center justify-between p-4 bg-cloud-50 border border-cloud-100 rounded-xl group-hover:border-mocha-200 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-full shadow-sm">
-              <Clock className="w-4 h-4 text-[#7A8C6F]" />
+            <div className="p-2 bg-white rounded-xl border border-cloud-200 shadow-sm">
+              <Clock className="w-4 h-4 text-mocha-500" />
             </div>
-            <span className="text-sm font-medium text-[#3D302A]">
+            <span className="text-xs font-bold text-mocha-400 uppercase tracking-widest">
               가장 활발한 요일
             </span>
           </div>
-          <span className="font-bold text-[#7A8C6F]">
+          <span className="font-bold text-espresso-900 text-sm">
             {patterns.mostProductiveDay}
           </span>
         </motion.div>
 
         {/* Day distribution bars */}
         <div className="space-y-2">
-          <div className="text-xs text-[#8D8B88] uppercase tracking-wider mb-2">
-            요일별 총 집필량
+          <div className="text-[10px] text-mocha-400 uppercase tracking-widest mb-3 font-bold">
+            요일별 데이터 분포
           </div>
           {Object.entries(patterns.byDayOfWeek).map(([day, count], index) => {
             const dayLabels: Record<string, string> = {
@@ -128,15 +128,12 @@ export function WritingPatternsCard() {
                   damping: 24,
                 }}
               >
-                <span className="text-xs w-6 text-[#3D302A] font-medium">
+                <span className="text-xs w-6 text-mocha-400 font-bold">
                   {dayLabels[day]}
                 </span>
-                <div className="flex-1 h-3 bg-[#F1F0EC] rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-cloud-100 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-[#7A8C6F] to-[#A47764] rounded-full"
-                    style={{
-                      boxShadow: "0 1px 2px rgba(122, 140, 111, 0.15)",
-                    }}
+                    className="h-full bg-mocha-500 rounded-sm"
                     initial={{ width: 0 }}
                     animate={{ width: `${widthPercent}%` }}
                     transition={{
@@ -146,8 +143,8 @@ export function WritingPatternsCard() {
                     }}
                   />
                 </div>
-                <span className="text-xs w-16 text-right text-[#A47764] font-medium">
-                  {count.toLocaleString()}자
+                <span className="text-xs w-20 text-right text-mocha-500 font-medium">
+                  {count.toLocaleString()} 자
                 </span>
               </motion.div>
             );
@@ -159,13 +156,9 @@ export function WritingPatternsCard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="pt-3 text-center text-xs text-[#8D8B88] border-t border-[#F1F0EC]"
+          className="pt-4 text-center text-xs text-mocha-400 border-t border-cloud-100 font-medium"
         >
-          최근 1년간{" "}
-          <span className="font-bold text-[#3D302A]">
-            {patterns.totalDays}일
-          </span>{" "}
-          동안 집필했습니다
+          지난 1년 동안 총 {patterns.totalDays}일의 집필 기록이 있습니다.
         </motion.div>
       </CardContent>
     </Card>

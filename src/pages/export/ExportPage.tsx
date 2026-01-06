@@ -11,14 +11,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import { useParams } from "react-router-dom";
 import {
   exportToTxt,
@@ -426,7 +426,7 @@ export default function ExportPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f8f7f5] p-6 lg:p-8 font-sans text-[#3D302A]">
+    <div className="h-full overflow-y-auto bg-cloud-50 p-6 lg:p-8 selection:bg-mocha-100">
       <motion.div
         className="max-w-4xl mx-auto space-y-8"
         variants={containerVariants}
@@ -435,48 +435,48 @@ export default function ExportPage() {
       >
         {/* Header with animation */}
         <motion.div className="flex flex-col gap-2" variants={fadeInVariants}>
-          <h1 className="text-3xl font-serif font-bold text-[#3D302A] flex items-center gap-3">
+          <h1 className="text-4xl  font-bold text-espresso-900 flex items-center gap-3 tracking-tight">
             <motion.div
               whileHover={{ rotate: 10, scale: 1.1 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <Download className="w-8 h-8 text-[#A47764]" />
+              <Download className="w-8 h-8 text-mocha-500" />
             </motion.div>
-            내보내기 / 가져오기
+            가져오기 및 내보내기
           </h1>
-          <p className="text-[#8D8B88] font-medium">
-            작품을 다양한 형식으로 내보내거나 백업 파일을 가져오세요
+          <p className="text-mocha-500 font-medium">
+            작품 데이터를 원고 파일로 내보내거나 외부 문서를 가져옵니다.
           </p>
           {projectDocuments.length > 0 && (
             <motion.p
-              className="text-sm text-[#A47764] font-medium"
+              className="text-xs text-mocha-400 font-bold uppercase tracking-widest"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              📄 {projectDocuments.filter((d) => d.type === "text").length}개
-              문서 준비됨
+              [ {projectDocuments.filter((d) => d.type === "text").length} 개의
+              문서가 준비되었습니다 ]
             </motion.p>
           )}
         </motion.div>
 
         {/* Export Section */}
         <motion.div variants={cardVariants}>
-          <Card className="border-none shadow-sm bg-white relative overflow-hidden hover:shadow-paper-hover transition-all duration-300">
-            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#A47764]" />
+          <Card className="border-none shadow-paper bg-white relative overflow-hidden group hover:shadow-paper-floating transition-all duration-300 rounded-xl">
+            <div className="absolute left-0 top-0 w-1 h-full bg-mocha-500" />
 
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-serif font-bold text-[#3D302A] flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-espresso-900 flex items-center gap-2 tracking-tight">
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 400 }}
                 >
-                  <Download className="w-5 h-5 text-[#A47764]" />
+                  <Download className="w-5 h-5 text-mocha-500/60" />
                 </motion.div>
                 내보내기
               </CardTitle>
-              <CardDescription className="text-[#8D8B88]">
-                원하는 형식을 선택하여 작품을 내보내세요
+              <CardDescription className="text-mocha-500 font-medium">
+                원하는 원고 형식을 선택하여 저장하세요.
               </CardDescription>
             </CardHeader>
 
@@ -497,12 +497,12 @@ export default function ExportPage() {
                     }
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative p-4 rounded-xl border border-[#E6E4E0] text-left group
-                      transition-all duration-300 overflow-hidden
-                      hover:border-[#BD9B8D] hover:shadow-md
+                    className={`relative p-5 rounded-xl border border-cloud-100 text-left group
+                      transition-all duration-300 overflow-hidden bg-cloud-50
+                      hover:border-mocha-200 hover:shadow-paper-floating hover:bg-white
                       ${format.disabled ? "opacity-50 cursor-not-allowed" : ""}
-                      ${exportStatus[format.id] === "success" ? "border-[#5B7B4B]/50 bg-[#5B7B4B]/5" : ""}
-                      ${exportStatus[format.id] === "error" ? "border-[#A33A3A]/50 bg-[#A33A3A]/5" : ""}`}
+                      ${exportStatus[format.id] === "success" ? "border-emerald-200 bg-emerald-50" : ""}
+                      ${exportStatus[format.id] === "error" ? "border-rose-200 bg-rose-50" : ""}`}
                   >
                     {/* Accent bar */}
                     <div
@@ -511,15 +511,15 @@ export default function ExportPage() {
                     />
 
                     <div
-                      className={`w-12 h-12 ${format.bgColor} rounded-xl flex items-center justify-center mb-3
-                        group-hover:scale-110 transition-transform duration-300`}
+                      className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-4
+                        group-hover:scale-110 transition-transform duration-300 border border-cloud-200 shadow-sm`}
                     >
                       {getButtonIcon(format, exportStatus[format.id] || "idle")}
                     </div>
-                    <h3 className="font-semibold text-[#3D302A]">
+                    <h3 className="font-bold text-espresso-900 text-sm">
                       {format.title}
                     </h3>
-                    <p className="text-xs text-[#8D8B88] mt-1">
+                    <p className="text-xs text-mocha-400 mt-1 font-medium">
                       {format.description}
                     </p>
                   </motion.button>
@@ -535,7 +535,7 @@ export default function ExportPage() {
             <div className="absolute left-0 top-0 w-1.5 h-full bg-[#7A8C6F]" />
 
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-serif font-bold text-[#3D302A] flex items-center gap-2">
+              <CardTitle className="text-lg  font-bold text-[#3D302A] flex items-center gap-2">
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 400 }}
@@ -622,7 +622,7 @@ export default function ExportPage() {
                       지원 형식: TXT, MD, JSON
                     </p>
                     <Button
-                      variant="outline"
+                      intent="outline"
                       className="mt-4 border-[#BD9B8D] text-[#A47764] hover:bg-[#A47764]/10"
                       disabled={importStatus === "loading"}
                     >

@@ -4,15 +4,15 @@ import {
   type PaymentWidgetInstance,
 } from "@tosspayments/payment-widget-sdk";
 import { nanoid } from "nanoid";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+} from "@stolink/ui";
+import { Badge } from "@stolink/ui";
 import { CreditCard, Sparkles, Check } from "lucide-react";
 
 // 토스페이먼츠 테스트 클라이언트 키 (개발용)

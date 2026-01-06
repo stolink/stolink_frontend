@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDeleteProject, useProject } from "@/hooks/useProjects";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -58,26 +58,24 @@ export function DangerZoneCard({ projectId }: DangerZoneCardProps) {
       >
         <Card className="border-red-200 transition-all duration-300 hover:shadow-md hover:border-red-300 bg-white/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600 font-display text-xl">
+            <CardTitle className="flex items-center gap-2 text-red-600  text-xl">
               <AlertTriangle className="h-5 w-5" />
               위험 구역
             </CardTitle>
-            <CardDescription className="text-muted-foreground font-serif">
+            <CardDescription className="text-muted-foreground ">
               작품 삭제 등 되돌릴 수 없는 작업을 수행합니다
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-4 border border-red-100 rounded-lg bg-red-50/50 hover:bg-red-50 transition-colors">
               <div className="space-y-1">
-                <h4 className="font-medium text-red-900 font-display">
-                  작품 삭제
-                </h4>
-                <p className="text-sm text-red-700 font-serif">
+                <h4 className="font-medium text-red-900 ">작품 삭제</h4>
+                <p className="text-sm text-red-700 ">
                   모든 데이터가 영구적으로 삭제됩니다. 복구할 수 없습니다.
                 </p>
               </div>
               <Button
-                variant="destructive"
+                intent="destructive"
                 onClick={() => setShowDeleteConfirm(true)}
                 className="shadow-sm hover:shadow-md transition-all active:scale-95"
               >
@@ -105,7 +103,7 @@ export function DangerZoneCard({ projectId }: DangerZoneCardProps) {
                 <Label className="text-foreground">
                   확인을 위해 프로젝트 이름을 입력해주세요:
                 </Label>
-                <div className="p-2 bg-secondary rounded font-mono text-sm select-all">
+                <div className="p-2 bg-secondary rounded  text-sm select-all">
                   {project?.title}
                 </div>
                 <Input
@@ -120,7 +118,7 @@ export function DangerZoneCard({ projectId }: DangerZoneCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
             <Button
-              variant="destructive"
+              intent="destructive"
               disabled={confirmName !== project?.title || isDeleting}
               onClick={handleDelete}
             >

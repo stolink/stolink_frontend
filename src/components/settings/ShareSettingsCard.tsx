@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Share2, Copy, Loader2, ExternalLink, Trash2 } from "lucide-react";
+import { Share2, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useShareSettings,
   useCreateShareLink,
   useDeleteShareLink,
 } from "@/hooks/useShare";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -17,7 +17,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import {
   Select,
   SelectContent,
@@ -113,11 +113,11 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
       >
         <Card className="transition-all duration-300 hover:shadow-paper border-mocha-100 bg-white/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-xl text-espresso-900">
+            <CardTitle className="flex items-center gap-2  text-xl text-espresso-900">
               <Share2 className="h-5 w-5 text-mocha-500" />
               공유
             </CardTitle>
-            <CardDescription className="text-muted-foreground font-serif">
+            <CardDescription className="text-muted-foreground ">
               프로젝트를 읽기 전용으로 공유할 수 있는 링크를 생성합니다
             </CardDescription>
           </CardHeader>
@@ -128,10 +128,10 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
                   <Input
                     value={shareUrl}
                     readOnly
-                    className="bg-secondary/50 border-mocha-200 focus-visible:ring-mocha-400 font-mono text-sm"
+                    className="bg-secondary/50 border-mocha-200 focus-visible:ring-mocha-400  text-sm"
                   />
                   <Button
-                    variant="outline"
+                    intent="outline"
                     size="icon"
                     onClick={copyToClipboard}
                     title="링크 복사"
@@ -140,7 +140,7 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
                     <Copy className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    intent="outline"
                     size="icon"
                     onClick={() => window.open(shareUrl, "_blank")}
                     title="새 탭에서 열기"
@@ -168,7 +168,7 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
                 </div>
 
                 <Button
-                  variant="outline"
+                  intent="outline"
                   className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 hover:border-red-200 transition-colors"
                   onClick={() => setShowDeleteConfirm(true)}
                 >
@@ -185,7 +185,6 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
                   <Switch
                     checked={passwordEnabled}
                     onChange={setPasswordEnabled}
-                    className="data-[state=checked]:bg-mocha-500"
                   />
                 </SettingRow>
 
@@ -228,14 +227,12 @@ export function ShareSettingsCard({ projectId }: ShareSettingsCardProps) {
 
                 <Button
                   onClick={handleCreateShare}
-                  className="w-full bg-mocha-500 hover:bg-mocha-600 text-white shadow-sm hover:shadow-md transition-all active:scale-95"
-                  disabled={
-                    createShare.isPending || (passwordEnabled && !password)
-                  }
+                  intent="primary"
+                  className="w-full"
+                  isLoading={createShare.isPending}
+                  disabled={passwordEnabled && !password}
                 >
-                  {createShare.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
+                  {!createShare.isPending && (
                     <Share2 className="h-4 w-4 mr-2" />
                   )}
                   링크 생성하기

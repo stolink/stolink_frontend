@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Target, Trophy, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
@@ -39,11 +39,11 @@ export function WritingGoalCard() {
     >
       <Card className="transition-all duration-300 hover:shadow-paper border-mocha-100 bg-white/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display text-xl text-espresso-900">
+          <CardTitle className="flex items-center gap-2  text-xl text-espresso-900">
             <Target className="h-5 w-5 text-mocha-500" />
             집필 목표
           </CardTitle>
-          <CardDescription className="text-muted-foreground font-serif">
+          <CardDescription className="text-muted-foreground ">
             목표를 설정하고 꾸준한 집필 습관을 만드세요
           </CardDescription>
         </CardHeader>
@@ -69,7 +69,7 @@ export function WritingGoalCard() {
                 <span className="text-sm text-muted-foreground font-medium">
                   오늘의 진행률
                 </span>
-                <span className="font-bold text-mocha-700 text-lg font-display">
+                <span className="font-bold text-mocha-700 text-lg ">
                   {Math.round(progress)}%
                 </span>
               </div>
@@ -78,7 +78,7 @@ export function WritingGoalCard() {
                 className="h-2.5 bg-mocha-100 [&>div]:bg-mocha-500"
               />
               <div className="flex justify-between text-sm pt-1">
-                <span className="font-mono text-espresso-900">
+                <span className=" text-espresso-900">
                   {MOCK_GOAL.dailyCurrent.toLocaleString()}자
                 </span>
                 <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export function WritingGoalCard() {
                       <Button
                         size="sm"
                         onClick={() => setIsEditing(false)}
-                        variant="ghost"
+                        intent="ghost"
                         className="h-8 px-2 hover:bg-mocha-50 text-mocha-600"
                       >
                         저장
@@ -102,7 +102,7 @@ export function WritingGoalCard() {
                     </div>
                   ) : (
                     <span
-                      className="cursor-pointer hover:underline text-muted-foreground hover:text-mocha-600 transition-colors font-mono"
+                      className="cursor-pointer hover:underline text-muted-foreground hover:text-mocha-600 transition-colors "
                       onClick={() => setIsEditing(true)}
                     >
                       / {Number(target).toLocaleString()}자
@@ -128,7 +128,7 @@ export function WritingGoalCard() {
                 <span className="text-sm text-muted-foreground font-medium">
                   이번 주 진행률
                 </span>
-                <span className="font-bold text-mocha-700 text-lg font-display">
+                <span className="font-bold text-mocha-700 text-lg ">
                   {Math.round(
                     (MOCK_GOAL.weeklyCurrent / MOCK_GOAL.weeklyTarget) * 100,
                   )}
@@ -140,10 +140,10 @@ export function WritingGoalCard() {
                 className="h-2.5 bg-mocha-100 [&>div]:bg-mocha-500"
               />
               <div className="flex justify-between text-sm pt-1">
-                <span className="font-mono text-espresso-900">
+                <span className=" text-espresso-900">
                   {MOCK_GOAL.weeklyCurrent.toLocaleString()}자
                 </span>
-                <span className="text-muted-foreground font-mono">
+                <span className="text-muted-foreground ">
                   / {MOCK_GOAL.weeklyTarget.toLocaleString()}자
                 </span>
               </div>

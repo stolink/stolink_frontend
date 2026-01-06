@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@stolink/ui";
 
 type StatColor = "sage" | "amber" | "blue" | "purple" | "red" | "green";
 
