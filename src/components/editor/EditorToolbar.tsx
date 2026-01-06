@@ -1,9 +1,6 @@
-import React from "react";
 import { type Editor } from "@tiptap/react";
 import {
   Bold,
-  PanelLeft,
-  PanelRight,
   Italic,
   Underline,
   Strikethrough,
@@ -22,10 +19,6 @@ import {
   Pilcrow,
   Highlighter,
   Type,
-  Minimize2,
-  Share2,
-  Loader2,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -40,35 +33,6 @@ import { motion } from "framer-motion";
 interface EditorToolbarProps {
   editor: Editor | null;
   className?: string;
-  isSidebarVisible?: boolean;
-  onToggleSidebar?: () => void;
-  rightSidebarOpen?: boolean;
-  onToggleRightSidebar?: () => void;
-  // Others passed but not previously typed? We should type them all to avoid TS errors.
-  // Based on usage in EditorPage.tsx line 636+:
-  currentFolderTitle?: string;
-  currentSectionTitle?: string;
-  sectionPath?: Array<{ id: string; title: string }>;
-  isEditingTitle?: boolean;
-  editedTitle?: string;
-  onEditedTitleChange?: (val: string) => void;
-  onStartEditTitle?: () => void;
-  onSaveTitle?: () => void;
-  onCancelEditTitle?: () => void;
-  isDemo?: boolean;
-  selectedSectionId?: string | null;
-  characterCount?: number;
-  viewMode?: "editor" | "board"; // simplified
-  onViewModeChange?: (mode: "editor" | "board") => void;
-  splitViewEnabled?: boolean;
-  onToggleSplitView?: () => void;
-  onToggleFocusMode?: () => void;
-  isTypewriterMode?: boolean;
-  onToggleTypewriterMode?: () => void;
-  onShowReader?: () => void;
-  onToggleSnapshot?: () => void;
-  onExport?: () => void;
-  analysisStatus?: "idle" | "analyzing" | "completed" | "error";
 }
 
 interface ToolbarButtonProps {
@@ -105,18 +69,7 @@ function ToolbarButton({
   );
 }
 
-export function EditorToolbar({
-  editor,
-  className,
-  isSidebarVisible,
-  onToggleSidebar,
-  rightSidebarOpen,
-  onToggleRightSidebar,
-  onToggleFocusMode,
-  onExport,
-  analysisStatus,
-  characterCount,
-}: EditorToolbarProps) {
+export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   if (!editor) {
     return null;
   }
@@ -138,17 +91,7 @@ export function EditorToolbar({
     >
       {/* Decorative accent line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-mocha-300 via-mocha-500 to-mocha-300 opacity-60" />
-      {/* Left Sidebar Toggle */}
-      {onToggleSidebar && (
-        <ToolbarButton
-          onClick={onToggleSidebar}
-          isActive={isSidebarVisible}
-          tooltip="목차 (Cmd/Ctrl+\)"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </ToolbarButton>
-      )}
-      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* History */}
       <div className="flex items-center gap-0.5 mr-2">
         <ToolbarButton
@@ -166,7 +109,9 @@ export function EditorToolbar({
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
+
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* Heading Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -225,7 +170,9 @@ export function EditorToolbar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* Basic Formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -255,7 +202,9 @@ export function EditorToolbar({
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
+
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* Highlight Colors */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -328,7 +277,9 @@ export function EditorToolbar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* Alignment */}
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
@@ -351,7 +302,9 @@ export function EditorToolbar({
       >
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
+
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
+
       {/* Lists & Blocks */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -380,66 +333,19 @@ export function EditorToolbar({
       >
         <Minus className="h-4 w-4" />
       </ToolbarButton>
-      <div className="flex items-center gap-1 ml-2">
-        {onToggleFocusMode && (
-          <ToolbarButton onClick={onToggleFocusMode} tooltip="집중 모드 (F11)">
-            <Minimize2 className="h-4 w-4" />
-          </ToolbarButton>
-        )}
-        {onExport && (
-          <ToolbarButton onClick={onExport} tooltip="내보내기">
-            <Share2 className="h-4 w-4" />
-          </ToolbarButton>
-        )}
-      </div>
+
+      {/* Character Count - Premium Badge */}
       <div className="flex-1" />
-      {/* Analysis Status Indicator */}
-      {analysisStatus === "analyzing" && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100"
-          title="AI가 변경사항을 분석 중입니다..."
-        >
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span className="text-[10px] font-bold">분석 중</span>
-        </motion.div>
-      )}
-      {analysisStatus === "completed" && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 2 }} // 2초 후 사라짐 (부모에서 제어하거나 여기서 exit 처리)
-          className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-full bg-green-50 text-green-600 border border-green-100"
-        >
-          <CheckCircle2 className="h-3 w-3" />
-          <span className="text-[10px] font-bold">분석 완료</span>
-        </motion.div>
-      )}
-      {characterCount !== undefined && (
-        <motion.div
-          initial={false}
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 0.3, repeat: 0 }}
-          key={characterCount}
-          className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
-        >
-          {characterCount.toLocaleString()}자
-        </motion.div>
-      )}
-      <div className="w-px h-6 bg-mocha-400/30 mx-1" />
-      {/* Right Sidebar Toggle */}
-      {onToggleRightSidebar && (
-        <ToolbarButton
-          onClick={onToggleRightSidebar}
-          isActive={rightSidebarOpen}
-          tooltip="도구 패널 (Cmd/Ctrl+])"
-        >
-          <PanelRight className="h-4 w-4" />
-        </ToolbarButton>
-      )}
+      <motion.div
+        initial={false}
+        animate={{ scale: [1, 1.02, 1] }}
+        transition={{ duration: 0.3, repeat: 0 }}
+        key={editor.storage.characterCount.characters()}
+        className="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-cloud-50 to-white text-mocha-700 border border-mocha-400/50 shadow-sm shrink-0"
+      >
+        {editor.storage.characterCount.characters().toLocaleString()}자 ·{" "}
+        {editor.storage.characterCount.words().toLocaleString()}단어
+      </motion.div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ConsistencyReport, Conflict } from "@/types/analysisResult";
@@ -60,11 +60,11 @@ function ScoreGauge({ score }: { score: number }) {
           <span className={cn("text-2xl font-bold", getScoreTextColor(score))}>
             {score}
           </span>
-          <span className="text-sm text-stone-500">/100</span>
+          <span className="text-sm text-mocha-500">/100</span>
         </div>
       </div>
 
-      <div className="relative h-3 bg-white/80 rounded-full overflow-hidden border border-stone-200/50">
+      <div className="relative h-3 bg-white/80 rounded-full overflow-hidden border border-cloud-200/50">
         <motion.div
           className={cn("h-full rounded-full", getScoreColor(score))}
           initial={{ width: 0 }}
@@ -83,7 +83,7 @@ function ScoreGauge({ score }: { score: number }) {
         >
           {getScoreLabel(score)}
         </span>
-        <span className="text-[10px] text-stone-400">
+        <span className="text-[10px] text-mocha-400">
           {score >= 71
             ? "설정 오류가 거의 없습니다"
             : score >= 41
@@ -146,9 +146,9 @@ function ConflictCard({
           </span>
         </div>
         {conflict.location && (
-          <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1 rounded-md border border-stone-100">
-            <FileText className="w-3 h-3 text-stone-400" />
-            <span className="text-[10px] font-medium text-stone-500">
+          <div className="flex items-center gap-1.5 bg-cloud-50 px-2 py-1 rounded-md border border-cloud-100">
+            <FileText className="w-3 h-3 text-mocha-400" />
+            <span className="text-[10px] font-medium text-mocha-500">
               {conflict.location.chapter}
               {conflict.location.line && ` · ${conflict.location.line}줄`}
             </span>
@@ -165,9 +165,9 @@ function ConflictCard({
           <Button
             size="sm"
             onClick={() => onNavigate?.(conflict.location)}
-            className="flex-1 h-8 text-xs font-semibold bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900 hover:border-stone-300 shadow-sm transition-all"
+            className="flex-1 h-8 text-xs font-semibold bg-white border border-cloud-200 text-stone-600 hover:bg-cloud-50 hover:text-espresso-900 hover:border-stone-300 shadow-sm transition-all"
           >
-            <ArrowRight className="h-3 w-3 mr-1.5 text-stone-400" />
+            <ArrowRight className="h-3 w-3 mr-1.5 text-mocha-400" />
             위치로 이동
           </Button>
         </div>
@@ -189,7 +189,7 @@ function EmptyState() {
       <h4 className="text-sm font-semibold text-stone-700 mb-1">
         분석 결과가 없습니다
       </h4>
-      <p className="text-xs text-stone-500 text-center max-w-[200px]">
+      <p className="text-xs text-mocha-500 text-center max-w-[200px]">
         문서를 작성하고 분석을 실행하면 일관성 검사 결과가 여기에 표시됩니다.
       </p>
     </motion.div>
@@ -203,7 +203,7 @@ function LoadingState() {
         <Loader2 className="w-8 h-8 text-mocha-500 animate-spin" />
       </div>
       <h4 className="text-sm font-semibold text-stone-700 mb-1">분석 중...</h4>
-      <p className="text-xs text-stone-500 text-center">
+      <p className="text-xs text-mocha-500 text-center">
         AI가 문서의 일관성을 검사하고 있습니다
       </p>
     </div>
@@ -228,7 +228,7 @@ export default function InsightsPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-stone-50/30">
+    <div className="flex flex-col h-full bg-cloud-50/30">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -236,11 +236,11 @@ export default function InsightsPanel({
             <Lightbulb className="w-3.5 h-3.5 text-mocha-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-stone-900">인사이트</h3>
+            <h3 className="text-sm font-bold text-espresso-900">인사이트</h3>
           </div>
         </div>
         <Button
-          variant="outline"
+          intent="outline"
           size="sm"
           onClick={onRefresh}
           disabled={isAnalyzing}
@@ -256,7 +256,7 @@ export default function InsightsPanel({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cloud-200">
         {isAnalyzing ? (
           <LoadingState />
         ) : !consistencyReport ? (
@@ -267,13 +267,13 @@ export default function InsightsPanel({
             <ScoreGauge score={consistencyReport.score} />
 
             {/* Stats Banner */}
-            <div className="flex items-center gap-2 p-1 bg-stone-50 rounded-xl border border-stone-200/60 shadow-inner">
+            <div className="flex items-center gap-2 p-1 bg-cloud-50 rounded-xl border border-cloud-200/60 shadow-inner">
               <div
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount > 0
                     ? "bg-rose-100 text-rose-700 shadow-sm"
-                    : "text-stone-400",
+                    : "text-mocha-400",
                 )}
               >
                 <X className="w-3.5 h-3.5" />
@@ -285,7 +285,7 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   warningCount > 0
                     ? "bg-amber-100 text-amber-700 shadow-sm"
-                    : "text-stone-400",
+                    : "text-mocha-400",
                 )}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -297,7 +297,7 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount === 0 && warningCount === 0
                     ? "bg-sage-100 text-sage-700 shadow-sm"
-                    : "text-stone-400",
+                    : "text-mocha-400",
                 )}
               >
                 <CheckCircle className="w-3.5 h-3.5" />
@@ -308,7 +308,7 @@ export default function InsightsPanel({
             {/* Conflicts List */}
             {consistencyReport.conflicts.length > 0 ? (
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-mocha-500 uppercase tracking-wide">
                   발견된 이슈 ({consistencyReport.conflicts.length})
                 </h4>
                 <AnimatePresence>

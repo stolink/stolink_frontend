@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Minimize2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { useUIStore } from "@/stores";
 import { useDemoStore } from "@/stores/useDemoStore";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,6 @@ import {
   DEMO_CHAPTERS,
   DEMO_CHAPTER_CONTENTS,
 } from "@/data/demoData";
-import { debounce } from "lodash-es";
 import { useEditorStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { type ChapterNode } from "@/components/editor/sidebar";
@@ -56,16 +55,6 @@ import {
 import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
 import { useCharacters } from "@/hooks/useCharacters";
-import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
-import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
-import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
-import type { AnalysisDiff } from "@/types/analysisTypes";
-import type {
-  AnalysisResultData,
-  ConsistencyReport,
-} from "@/types/analysisResult";
-import { useQueryClient } from "@tanstack/react-query";
 
 // ============================================================
 // Demo Data Utilities (for demo mode only)
@@ -159,21 +148,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   // EditorContent ref (통합 뷰 저장 강제 호출용)
   const editorContentRef = useRef<EditorContentHandle>(null);
-
-  // Character Count Debouncer
-  // UI 업데이트 빈도를 줄여 렌더링 최적화 (1초)
-  const debouncedSetCharacterCount = useMemo(
-    () => debounce((count: number) => setCharacterCount(count), 1000),
-    [],
-  );
-
-  // Cleanup debounce
-  useEffect(() => {
-    return () => {
-      debouncedSetCharacterCount.cancel();
-    };
-  }, [debouncedSetCharacterCount]);
-
   // selectedFolderId = currently selected folder (chapter) in sidebar
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
     isDemo ? "chapter-1" : null,
@@ -187,11 +161,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   // 복선 생성 후 사이드바 포커스 이동용 상태
   const [newForeshadowingId] = useState<string | null>(null);
 
-  // Editor Store - Optimized with selective selectors
-  const viewMode = useEditorStore((state) => state.viewMode);
-  const setViewMode = useEditorStore((state) => state.setViewMode);
-  const splitView = useEditorStore((state) => state.splitView);
-  const toggleSplitView = useEditorStore((state) => state.toggleSplitView);
+  // Editor Store
+  const { splitView, toggleSplitView, viewMode, setViewMode } =
+    useEditorStore();
 
   // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
@@ -209,9 +181,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const toggleFocusMode = useEditorSettingStore(
     (state) => state.toggleFocusMode,
   );
-  const performanceMode = useEditorSettingStore(
-    (state) => state.behavior.performanceMode,
-  );
 
   // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
   const { id: urlProjectId } = useParams<{ id: string }>();
@@ -223,15 +192,17 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
 
-  // 쿼리 파라미터에서 documentId 추출 (storead에서 수정 버튼 클릭 시)
-  const queryDocumentId = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get("documentId");
-  }, [location.search]);
+  // ============================================================
+  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
+  // ============================================================
+  const [showReader, setShowReader] = useState(false);
+  const [showSnapshot, setShowSnapshot] = useState(false);
+  // Export & Publish State
+  const [showExport, setShowExport] = useState(false);
+  const [exportInitialTab, setExportInitialTab] = useState<
+    "export" | "publish"
+  >("export");
 
-  // ============================================================
-  // 1. Core Data Hooks (Must be first)
-  // ============================================================
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore((state) => state.documents);
   const localDocuments = useMemo(
@@ -278,19 +249,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     isFetchingNextPage,
   } = useDocumentContent(isDemo ? null : selectedSectionId);
 
-  const {
-    createDocument,
-    updateDocument: updateDocumentMutation,
-    deleteDocument,
-    reorderDocuments,
-    moveDocument,
-  } = useDocumentMutations(projectId);
-  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
-
-  // ============================================================
-  // 2. Data for Analysis (Must be before Analysis Hook)
-  // ============================================================
-
   // Fetch Characters for Export/Publish Snapshot
   const { data: characters = [] } = useCharacters(projectId, {
     enabled: !isDemo,
@@ -331,162 +289,14 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     return links;
   }, [characters, isDemo]);
 
-  // ============================================================
-  // Analysis Integration (Polling & Buffer)
-  // ============================================================
-  const queryClient = useQueryClient();
-  const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
-  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
-  const [consistencyReport, setConsistencyReport] =
-    useState<ConsistencyReport | null>(null);
-  const addToBuffer = useAnalysisBufferStore((state) => state.addToBuffer);
-
-  const handleAnalysisComplete = useCallback(
-    (result: AnalysisResultData) => {
-      // 1. Calculate Diff
-      // Note: graphLinks items are converted to RelationshipLink structure in calculateAnalysisDiff if needed
-      // or we pass compatible structure. graphLinks here is from EditorPage computed.
-      // We might need to map graphLinks to strict RelationshipLink type if they differ.
-      // Computed graphLinks in EditorPage has { source, target, id, type, strength }.
-      // RelationshipLink has these plus curvature etc. Minimal fields overlap is fine for Utils.
-
-      const diff = calculateAnalysisDiff(
-        characters,
-        // @ts-expect-error - graphLinks structure is compatible enough for diffing
-        graphLinks,
-        result,
-      );
-
-      setAnalysisDiff(diff);
-      setShowAnalysisSummary(true);
-
-      // 2. Store Consistency Report (if available)
-      if (result.consistencyReport) {
-        setConsistencyReport(result.consistencyReport);
-      }
-
-      // 3. Refresh Data
-      queryClient.invalidateQueries({
-        queryKey: ["characters", "list", projectId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
-    },
-    [characters, graphLinks, projectId, queryClient],
-  );
-
-  const { flushAndAnalyze } = useProjectAnalysis(isDemo ? null : projectId, {
-    enabled: !isDemo,
-    onAnalysisComplete: handleAnalysisComplete,
-    // Optional: Handle error toast here
-  });
-
-  const saveWithAnalysis = useCallback(
-    async (content: string) => {
-      if (!selectedSectionId) return;
-
-      // 1. Save to DB
-      await saveContent(content);
-
-      // 2. Add to Analysis Buffer & Flush if needed
-      if (!isDemo) {
-        addToBuffer(selectedSectionId, content);
-        // Trigger analysis immediately on save as requested
-        flushAndAnalyze();
-      }
-    },
-    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
-  );
-
-  // Manual Trigger Handler
-  const handleManualAnalysis = useCallback(() => {
-    if (!selectedSectionId || isDemo) return;
-
-    // Force add current content to buffer (even if unchanged)
-    // Note: We need current content. We can get it from documentContent or ref.
-    // Ideally use saveWithAnalysis to ensure everything is synced.
-    // But if no change, saveWithAnalysis might be redundant?
-    // Let's just use addToBuffer + flushAndAnalyze.
-
-    // We need the latest content.
-    // If we are in Editor mode, we can try to get it from ref if needed,
-    // but documentContent should be up to date if we are just viewing.
-    // However, if user is typing, documentContent might track it.
-
-    // Simplest: just flush what we have. But if buffer empty, we want to force current doc.
-    const content =
-      editorContentRef.current?.getContent() || documentContent || "";
-
-    if (content) {
-      console.log(
-        "[EditorPage] Manual analysis triggered for",
-        selectedSectionId,
-      );
-
-      // Before triggering, we can check if it would be skipped (optional UX improvement)
-      // For now, let's just trigger and let the hook handle skipping with a message.
-      addToBuffer(selectedSectionId, content);
-      flushAndAnalyze();
-    }
-  }, [
-    selectedSectionId,
-    isDemo,
-    addToBuffer,
-    flushAndAnalyze,
-    documentContent,
-  ]);
-
-  // 페이지 이탈/브라우저 종료 시 버퍼 flush (useProjectAnalysis handles auto-flush internally too)
-  useEffect(() => {
-    if (isDemo) return;
-
-    const handleBeforeUnload = () => {
-      flushAndAnalyze();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isDemo, flushAndAnalyze]);
-
-  // ============================================================
-  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
-  // ============================================================
-  const [showReader, setShowReader] = useState(false);
-  const [showSnapshot, setShowSnapshot] = useState(false);
-  // Export & Publish State
-  const [showExport, setShowExport] = useState(false);
-  const [exportInitialTab, setExportInitialTab] = useState<
-    "export" | "publish"
-  >("export");
-
-  // ============================================================
-  // Analysis Status Logic (UI Feedback)
-  // ============================================================
-
-  const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
-  const [analysisDisplayStatus, setAnalysisDisplayStatus] = useState<
-    "idle" | "analyzing" | "completed" | "error"
-  >("idle");
-  const prevAnalyzingRef = useRef(isAnalyzing);
-
-  useEffect(() => {
-    // 분석 시작
-    if (isAnalyzing && !prevAnalyzingRef.current) {
-      setAnalysisDisplayStatus("analyzing");
-    }
-    // 분석 완료 (false로 변경됨)
-    else if (!isAnalyzing && prevAnalyzingRef.current) {
-      setAnalysisDisplayStatus("completed");
-      // 3초 후 idle로 복귀
-      const timer = setTimeout(() => {
-        setAnalysisDisplayStatus("idle");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-
-    prevAnalyzingRef.current = isAnalyzing;
-  }, [isAnalyzing]);
+  const {
+    createDocument,
+    updateDocument: updateDocumentMutation,
+    deleteDocument,
+    reorderDocuments,
+    moveDocument,
+  } = useDocumentMutations(projectId);
+  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
 
   // ============================================================
   // Editor Handlers Hook
@@ -498,6 +308,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveTimeoutRef,
     handleSelectFolder,
     handleContentChange,
+    handleCharacterCountChange,
     handleAddChapter,
     handleAddSection,
     handleRenameChapter,
@@ -514,7 +325,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent: saveWithAnalysis, // Use the wrapper instead of raw saveContent
+    saveContent,
     updateDocument,
     updateDocumentMutation,
     createDocument,
@@ -561,21 +372,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       window.history.replaceState({}, document.title);
     }
   }, [navigationSectionId, isDemo, viewMode, setViewMode]);
-
-  // 쿼리 파라미터의 documentId로 해당 문서로 이동 (storead에서 수정 버튼 클릭 시)
-  useEffect(() => {
-    if (queryDocumentId && !isDemo) {
-      console.log("[EditorPage] queryDocumentId로 문서 선택:", queryDocumentId);
-      setSelectedSectionId(queryDocumentId);
-      // 에디터 뷰 모드로 전환
-      if (viewMode !== "editor") {
-        setViewMode("editor");
-      }
-      // URL에서 쿼리 파라미터 제거 (뒤로가기 시 재적용 방지)
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-  }, [queryDocumentId, isDemo, viewMode, setViewMode]);
 
   // ============================================================
   // Computed Data
@@ -653,14 +449,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
       }
       prevCountRef.current = count;
 
-      // UI State 업데이트 (Performance Mode일 때만 Debounce)
-      if (performanceMode) {
-        debouncedSetCharacterCount(count);
-      } else {
-        setCharacterCount(count);
-      }
+      handleCharacterCountChange(count, setCharacterCount);
     },
-    [debouncedSetCharacterCount, performanceMode],
+    [handleCharacterCountChange],
   );
 
   // ============================================================
@@ -676,13 +467,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     saveContentRef,
     lastContentRef,
     saveTimeoutRef,
-    getLatestContent: useCallback(() => {
-      // Editor 모드일 때만 EditorContent에서 최신 내용 조회
-      if (viewMode === "editor" && editorContentRef.current) {
-        return editorContentRef.current.getContent();
-      }
-      return "";
-    }, [viewMode]),
   });
 
   // Split & Create Section Logic
@@ -840,6 +624,7 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
             onReorderChapter={handleReorderChapter}
             onMoveToFolder={handleMoveToFolder}
             isOpen={isSidebarVisible}
+            onToggle={toggleSidebar}
           />
         )}
 
@@ -888,16 +673,10 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               onToggleRightSidebar={toggleRightSidebar}
               onShowReader={isDemo ? undefined : () => setShowReader(true)}
               onToggleSnapshot={() => setShowSnapshot(true)}
-              onExport={
-                isDemo
-                  ? undefined
-                  : () => {
-                      setExportInitialTab("export");
-                      setShowExport(true);
-                    }
-              }
-              analysisStatus={analysisDisplayStatus}
-              onTriggerAnalysis={isDemo ? undefined : handleManualAnalysis}
+              onExport={() => {
+                setExportInitialTab("export");
+                setShowExport(true);
+              }}
             />
           )}
 
@@ -971,9 +750,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
                 }
               }
             }}
-            consistencyReport={consistencyReport}
-            isAnalyzing={isAnalyzing}
-            onRefreshAnalysis={flushAndAnalyze}
           />
         )}
 
@@ -1074,14 +850,6 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         onCreate={handleConfirmCreateSection}
         defaultTitle={splitState?.title}
       />
-      {/* Analysis Summary Modal */}
-      {analysisDiff && (
-        <AnalysisSummaryModal
-          isOpen={showAnalysisSummary}
-          onClose={() => setShowAnalysisSummary(false)}
-          diff={analysisDiff}
-        />
-      )}
     </div>
   );
 }

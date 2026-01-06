@@ -1,20 +1,29 @@
-import { StickyNote, Bot, Sparkles, Lightbulb } from "lucide-react";
+import {
+  PanelRightClose,
+  Bot,
+  Info,
+  Sparkles,
+  AlertTriangle,
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import AIAssistantPanel from "@/components/editor/AIAssistantPanel";
-import InsightsPanel from "@/components/editor/InsightsPanel";
+import ConsistencyPanel from "@/components/editor/ConsistencyPanel";
 import InspectorPanel from "@/components/editor/InspectorPanel";
 import ForeshadowingPanel from "@/components/editor/ForeshadowingPanel";
-import type { ConsistencyReport } from "@/types/analysisResult";
 
-export type RightSidebarTab = "memo" | "foreshadowing" | "ai" | "consistency";
+export type RightSidebarTab =
+  | "inspector"
+  | "foreshadowing"
+  | "ai"
+  | "consistency";
 
 interface EditorRightSidebarProps {
   isOpen: boolean;
-  onClose?: () => void;
+  onClose: () => void;
   activeTab: RightSidebarTab;
   onTabChange: (tab: RightSidebarTab) => void;
-  documentId: string | null;
+  documentId?: string | null;
   /** AI 챗봇에서 사용할 프로젝트 ID */
   projectId?: string | null;
   sectionTitle?: string;
@@ -22,16 +31,11 @@ interface EditorRightSidebarProps {
   newForeshadowingId?: string | null;
   /** 위치 클릭 시 에디터 이동 콜백 */
   onNavigateToPosition?: (documentId: string) => void;
-  /** 분석 결과: 일관성 리포트 */
-  consistencyReport?: ConsistencyReport | null;
-  /** 분석 진행 중 여부 */
-  isAnalyzing?: boolean;
-  /** 분석 새로고침 콜백 */
-  onRefreshAnalysis?: () => void;
 }
 
 export default function EditorRightSidebar({
   isOpen,
+  onClose,
   activeTab,
   onTabChange,
   documentId = null,
@@ -39,14 +43,20 @@ export default function EditorRightSidebar({
   sectionTitle = "",
   newForeshadowingId,
   onNavigateToPosition,
-  consistencyReport,
-  isAnalyzing,
-  onRefreshAnalysis,
 }: EditorRightSidebarProps) {
   if (!isOpen) return null;
 
   return (
     <aside className="w-72 border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-hidden animate-in slide-in-from-right duration-300">
+      {/* Toggle Button - Left Edge Strip */}
+      <button
+        onClick={onClose}
+        className="w-5 h-full border-r border-mocha-100/50 bg-mocha-50/30 hover:bg-mocha-100/50 flex items-center justify-center text-mocha-400 hover:text-mocha-600 transition-colors shrink-0"
+        title="사이드바 닫기"
+      >
+        <PanelRightClose className="h-3.5 w-3.5" />
+      </button>
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">
         {/* Header with Tabs - Grid Layout to prevent overflow */}
@@ -57,14 +67,6 @@ export default function EditorRightSidebar({
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-4 h-10 bg-mocha-50/40 p-1 rounded-xl border border-mocha-100/30 backdrop-blur-md">
-              <TabsTrigger
-                value="memo"
-                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
-                title="메모 및 레퍼런스"
-              >
-                <StickyNote className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">메모</span>
-              </TabsTrigger>
               <TabsTrigger
                 value="foreshadowing"
                 className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
@@ -86,10 +88,18 @@ export default function EditorRightSidebar({
               <TabsTrigger
                 value="consistency"
                 className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
-                title="인사이트 (일관성 체크)"
+                title="일관성 체크"
               >
-                <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">인사이트</span>
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">체크</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="inspector"
+                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                title="문서 정보"
+              >
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">정보</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -102,7 +112,9 @@ export default function EditorRightSidebar({
             activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto",
           )}
         >
-          {activeTab === "memo" && <InspectorPanel documentId={documentId} />}
+          {activeTab === "inspector" && (
+            <InspectorPanel documentId={documentId} />
+          )}
           {activeTab === "foreshadowing" && (
             <ForeshadowingPanel
               newForeshadowingId={newForeshadowingId}
@@ -112,14 +124,7 @@ export default function EditorRightSidebar({
             />
           )}
           {activeTab === "ai" && <AIAssistantPanel projectId={projectId} />}
-          {activeTab === "consistency" && (
-            <InsightsPanel
-              projectId={projectId}
-              consistencyReport={consistencyReport}
-              isAnalyzing={isAnalyzing}
-              onRefresh={onRefreshAnalysis}
-            />
-          )}
+          {activeTab === "consistency" && <ConsistencyPanel />}
         </div>
       </div>
     </aside>

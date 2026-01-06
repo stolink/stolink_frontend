@@ -44,7 +44,6 @@ export interface EditorContentHandle {
     targetDocId?: string;
   } | null;
   saveAll: () => Promise<void>; // 통합 뷰 저장 강제 호출용
-  getContent: () => string;
 }
 
 /**
@@ -103,21 +102,6 @@ export const EditorContent = forwardRef<
           if (viewMode === "scrivenings" && scriveningsRef.current) {
             await scriveningsRef.current.saveAll();
           }
-        },
-        getContent: () => {
-          if (viewMode === "editor" && editorRef.current) {
-            return editorRef.current.getContent();
-          }
-          // Scrivenings mode doesn't support single content retrieval easily
-          // It manages multiple documents.
-          // For now, return empty string or handle if needed.
-          // Typically forceSave is called with content from onContentChange,
-          // but if we need immediate content, we might be out of luck for Scrivenings without
-          // implementing it there too.
-          // However, the issue is about TiptapEditor performance.
-          // Let's assume Scrivenings is fine or we fallback to existing behavior.
-          // Actually, ScriveningsEditor might not have a single buffer.
-          return "";
         },
       }),
       [viewMode],
@@ -189,10 +173,10 @@ export const EditorContent = forwardRef<
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-hidden bg-stone-50/50 border-l border-stone-100 flex flex-col">
-                <div className="h-10 border-b flex items-center px-4 bg-stone-50 text-xs text-muted-foreground shrink-0">
+              <div className="h-full overflow-hidden bg-cloud-50/50 border-l border-cloud-100 flex flex-col">
+                <div className="h-10 border-b flex items-center px-4 bg-cloud-50 text-xs text-muted-foreground shrink-0">
                   <span className="font-medium mr-2">참조 화면</span>
-                  <span className="text-stone-400">|</span>
+                  <span className="text-mocha-400">|</span>
                   <span className="ml-2 truncate">{currentSectionTitle}</span>
                 </div>
                 <TiptapEditor

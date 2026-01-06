@@ -14,7 +14,7 @@ import {
   FileDown,
   Send,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -242,7 +242,6 @@ export default function ExportModal({
     setIsPublishing(true);
 
     try {
-      // 1. 스냅샷 데이터 생성
       const graphSnapshot = {
         nodes: characters.map((c) => ({
           id: c._id,
@@ -250,12 +249,6 @@ export default function ExportModal({
           role: c.role,
           group: c.profile?.faction?.name || undefined,
           imageUrl: c.imageUrl || undefined,
-          // DB에 저장된 시각적 좌표가 있으면 포함 (Storead 보존용)
-          x: c.graphPosition?.x,
-          y: c.graphPosition?.y,
-          // 고정 여부 (일단 좌표가 있으면 고정된 것으로 간주할 수도 있음)
-          fx: c.graphPosition?.x,
-          fy: c.graphPosition?.y,
         })),
         links: links.map((l) => {
           const relation = characters
@@ -273,39 +266,16 @@ export default function ExportModal({
             c._id,
             {
               id: c._id,
-              // Basic profile
               name: c.profile?.name,
               age: c.profile?.age || undefined,
               gender: c.profile?.gender,
-              role: c.role,
+              personality: c.personality?.coreTraits,
+              backstory: c.profile?.backstory,
               imageUrl: c.imageUrl || undefined,
-              // Extended profile
-              occupation: c.profile?.occupation || undefined,
-              birthplace: c.profile?.birthplace || undefined,
-              family: c.profile?.family || undefined,
-              backstory: c.profile?.backstory || undefined,
-              faction: c.profile?.faction?.name || undefined,
-              aliases: c.aliases || undefined,
-              firstAppearance: c.firstAppearance || undefined,
-              // Personality
-              personality: c.personality || undefined,
-              // Appearance
-              appearance: c.appearance || undefined,
-              // Motivation & Mood
-              motivation: c.motivation || undefined,
-              currentMood: c.currentMood || undefined,
-              // Relations (already have graph, but include full data for context)
-              relations: c.relations || undefined,
-              // Meta
-              meta: c.meta || undefined,
             },
           ]),
         ),
       };
-
-      console.log("graphSnapshot:", graphSnapshot);
-      console.log("graphSnapshot.nodes.length:", graphSnapshot.nodes.length);
-      console.log("graphSnapshot.links.length:", graphSnapshot.links.length);
 
       const { data: draft } = await draftService.create({
         documentId: selectedDocId,
@@ -313,24 +283,13 @@ export default function ExportModal({
         title: targetTitle,
         content: targetContent,
         graphSnapshot,
-        workTitle: projectTitle || targetTitle || "제목 없음",
+        workTitle: projectTitle,
         workSynopsis: projectDescription,
         workGenre: projectGenre,
         workCoverUrl: projectCoverImage,
       });
 
-      // 3. 커뮤니티로 리다이렉트 (/write?draftId={UUID})
-      // window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
-      window.open(`${COMMUNITY_URL}/write?draftId=${draft.id}`, "_blank");
-
-      // 성공 메시지
-      toast({
-        title: "배포 준비 완료!",
-        description: "새 탭에서 커뮤니티 페이지가 열렸습니다.",
-      });
-
-      setIsPublishing(false);
-      onClose();
+      window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;
     } catch (error: unknown) {
       console.error("Draft 저장 실패:", error);
 

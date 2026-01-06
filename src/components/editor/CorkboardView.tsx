@@ -148,19 +148,19 @@ export default function CorkboardView({
   if (cards.length === 0) {
     return (
       <div
-        className="flex-1 flex flex-col items-center justify-center text-stone-400 p-8 bg-[#E6DCCF] h-full"
+        className="flex-1 flex flex-col items-center justify-center text-mocha-400 p-8 bg-[#E6DCCF] h-full"
         style={{
           backgroundImage: `radial-gradient(#D6CCC0 2px, transparent 0)`,
           backgroundSize: "24px 24px",
         }}
       >
         <div className="bg-white/50 p-8 rounded-full mb-4 shadow-inner">
-          <LayoutGrid className="w-12 h-12 opacity-50 text-stone-500" />
+          <LayoutGrid className="w-12 h-12 opacity-50 text-mocha-500" />
         </div>
-        <p className="text-sm font-medium text-stone-600">
+        <p className="text-sm font-medium text-mocha-700">
           이 폴더는 비어있습니다
         </p>
-        <p className="text-xs mt-1 text-stone-500">
+        <p className="text-xs mt-1 text-mocha-500">
           새 카드를 추가해 이야기를 정리해보세요
         </p>
       </div>
@@ -186,11 +186,11 @@ export default function CorkboardView({
       />
 
       {/* 헤더 */}
-      <div className="relative sticky top-0 z-10 flex items-center gap-2 mb-6 px-4 py-3 bg-white/80 backdrop-blur-md rounded-xl border border-stone-200/50 shadow-sm max-w-fit mx-auto">
-        <LayoutGrid className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-bold text-stone-800">코르크보드</h2>
+      <div className="relative sticky top-0 z-10 flex items-center gap-2 mb-6 px-4 py-3 bg-white/80 backdrop-blur-md rounded-xl border border-cloud-200/50 shadow-sm max-w-fit mx-auto">
+        <LayoutGrid className="w-4 h-4 text-mocha-500" />
+        <h2 className="text-sm font-bold text-espresso-800">코르크보드</h2>
         <div className="w-px h-3 bg-stone-300 mx-1" />
-        <span className="text-xs font-medium text-stone-500">
+        <span className="text-xs font-medium text-mocha-500">
           {cards.length} Cards
         </span>
       </div>
@@ -242,22 +242,22 @@ export default function CorkboardView({
               </div>
 
               {/* 드래그 핸들 */}
-              <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-stone-300 hover:text-stone-500">
+              <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-cloud-300 hover:text-mocha-500">
                 <GripVertical className="w-4 h-4" />
               </div>
 
               {/* 카드 헤더 */}
-              <div className="px-4 pt-5 pb-3 border-b border-stone-100 flex flex-col gap-1 items-center text-center">
-                <h3 className="text-sm font-bold text-stone-800 line-clamp-2 px-2 leading-tight">
+              <div className="px-4 pt-5 pb-3 border-b border-cloud-100 flex flex-col gap-1 items-center text-center">
+                <h3 className="text-sm font-bold text-espresso-800 line-clamp-2 px-2 leading-tight">
                   {card.title}
                 </h3>
                 <div className="flex items-center gap-1.5">
                   {card.type === "folder" ? (
                     <FolderOpen className="w-3 h-3 text-amber-500" />
                   ) : (
-                    <FileText className="w-3 h-3 text-stone-400" />
+                    <FileText className="w-3 h-3 text-mocha-400" />
                   )}
-                  <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">
+                  <span className="text-[10px] text-mocha-400 font-medium uppercase tracking-wider">
                     {card.type === "folder" ? "Chapter" : "Scene"}
                   </span>
                 </div>
@@ -282,7 +282,7 @@ export default function CorkboardView({
                       value={editingSynopsis}
                       onChange={(e) => setEditingSynopsis(e.target.value)}
                       placeholder="시놉시스를 입력하세요..."
-                      className="flex-1 w-full resize-none bg-transparent border-none p-0 text-xs text-stone-700 focus:outline-none leading-[24px]"
+                      className="flex-1 w-full resize-none bg-transparent border-none p-0 text-xs text-mocha-700 focus:outline-none leading-[24px]"
                       style={{ lineHeight: "24px" }}
                       autoFocus
                     />
@@ -303,9 +303,9 @@ export default function CorkboardView({
                   </div>
                 ) : (
                   <>
-                    <p className="text-xs text-stone-600 line-clamp-5 leading-[24px]">
+                    <p className="text-xs text-mocha-700 line-clamp-5 leading-[24px]">
                       {card.synopsis || (
-                        <span className="text-stone-300 italic text-[11px]">
+                        <span className="text-cloud-300 italic text-[11px]">
                           (시놉시스 미작성)
                         </span>
                       )}
@@ -315,7 +315,7 @@ export default function CorkboardView({
                         e.stopPropagation();
                         handleStartEdit(card);
                       }}
-                      className="absolute bottom-2 right-2 p-1.5 rounded-full bg-white border border-stone-200 shadow-sm opacity-0 group-hover:opacity-100 hover:bg-stone-50 transition-all text-stone-500"
+                      className="absolute bottom-2 right-2 p-1.5 rounded-full bg-white border border-cloud-200 shadow-sm opacity-0 group-hover:opacity-100 hover:bg-cloud-50 transition-all text-mocha-500"
                       title="시놉시스 편집"
                     >
                       <Edit3 className="w-3 h-3" />
@@ -325,8 +325,8 @@ export default function CorkboardView({
               </div>
 
               {/* 카드 풋터 */}
-              <div className="px-3 py-2 border-t border-stone-100 flex items-center justify-between bg-stone-50/50 rounded-b-sm">
-                <span className="text-[10px] font-medium text-stone-400">
+              <div className="px-3 py-2 border-t border-cloud-100 flex items-center justify-between bg-cloud-50/50 rounded-b-sm">
+                <span className="text-[10px] font-medium text-mocha-400">
                   {card.wordCount > 0
                     ? `${card.wordCount.toLocaleString()} words`
                     : "Empty"}
@@ -336,7 +336,7 @@ export default function CorkboardView({
                     "w-1.5 h-1.5 rounded-full",
                     card.synopsis
                       ? "bg-green-400 shadow-[0_0_4px_rgba(74,222,128,0.5)]"
-                      : "bg-stone-200",
+                      : "bg-cloud-200",
                   )}
                   title={card.synopsis ? "Completed" : "Draft"}
                 />
