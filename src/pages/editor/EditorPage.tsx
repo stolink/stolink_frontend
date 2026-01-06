@@ -223,7 +223,7 @@ export default function EditorPage({ isDemo = false }) {
     if (isDemo) return DEMO_PROJECT_TITLE;
     if (project?.title) return project.title;
     return "내 작품";
-  }, [project?.title, isDemo]);
+  }, [project, isDemo]);
 
   const documents = useMemo(() => {
     return isDemo
@@ -237,9 +237,8 @@ export default function EditorPage({ isDemo = false }) {
     return mapToChapterNodes(buildDocumentTree(documents));
   }, [documents, isDemo, previewChapters]);
 
-  const { content: documentContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
-  );
+  const { content: documentContent, saveContent: saveDocumentContent } =
+    useDocumentContent(isDemo ? null : selectedSectionId);
 
   const { document } = useDocument(isDemo ? null : selectedSectionId);
 
@@ -342,16 +341,20 @@ export default function EditorPage({ isDemo = false }) {
 
   const saveContent = useCallback(
     async (content: string) => {
-      if (!selectedSectionId || isDemo) return;
+      if (!selectedSectionId) return;
+
       try {
-        useDocumentStore.getState()._setContent(selectedSectionId, content);
+        if (isDemo) {
+          useDocumentStore.getState()._setContent(selectedSectionId, content);
+        } else {
+          // Use the hook's saveContent which handles backend sync
+          await saveDocumentContent(content);
+        }
       } catch (error) {
         console.error("Failed to save content:", error);
-      } finally {
-        // setIsSaving removed
       }
     },
-    [isDemo, selectedSectionId],
+    [isDemo, selectedSectionId, saveDocumentContent],
   );
 
   const saveAndBuffer = useCallback(
@@ -505,7 +508,7 @@ export default function EditorPage({ isDemo = false }) {
     if (docId) {
       handleSelectSection(docId);
     }
-  }, [queryDocumentId, initialStateFromRedirect]);
+  }, [queryDocumentId, initialStateFromRedirect, handleSelectSection]);
 
   return (
     <div
