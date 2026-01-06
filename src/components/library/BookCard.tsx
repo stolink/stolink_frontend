@@ -9,7 +9,7 @@ import {
   Image,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/design-system/components/Button";
+import { Button } from "@stolink/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,14 +111,14 @@ export function BookCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col h-full bg-white rounded-xl overflow-hidden cursor-pointer transition-all duration-300",
-        // 기본 상태: 보더 없이 쉐도우로 깊이감 표현
+        "group relative flex flex-col h-full bg-paper rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border border-cloud-200",
+        // 기본 상태: 클린한 쉐도우와 부드러운 보더
         !isEditMode &&
-          "shadow-paper hover:shadow-paper-hover hover:-translate-y-1 bg-white",
+          "shadow-paper hover:shadow-paper-floating hover:-translate-y-1 hover:border-mocha-300",
         // 편집 모드 스타일
-        isEditMode && "ring-1 ring-cloud-200 scale-[0.98] bg-cloud-50/50",
+        isEditMode && "ring-2 ring-cloud-200 scale-[0.98] bg-cloud-50",
         // 선택됨 스타일
-        isSelected && "ring-2 ring-mocha-500 bg-mocha-50/10",
+        isSelected && "ring-2 ring-mocha-500 bg-mocha-50",
       )}
       onClick={handleCardClick}
     >
@@ -133,11 +133,11 @@ export function BookCard({
         >
           <div
             className={cn(
-              "w-6 h-6 rounded-md flex items-center justify-center",
-              "border-2 shadow-sm transition-all duration-200",
+              "w-6 h-6 rounded-sm flex items-center justify-center",
+              "border shadow-sm transition-all duration-200",
               isSelected
-                ? "border-mocha-500 bg-mocha-500"
-                : "bg-white border-cloud-300 hover:border-mocha-400",
+                ? "bg-mocha-500 border-mocha-500"
+                : "bg-paper border-cloud-200",
             )}
           >
             {isSelected && <Check className="h-4 w-4 text-white" />}
@@ -146,7 +146,7 @@ export function BookCard({
       )}
 
       {/* Cover Image Area - Vertical Aspect Ratio [3/4] */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-cloud-100/50">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-cloud-50 border-b border-cloud-100">
         {/* 원고 처리 중 프로그레스 오버레이 */}
         {isProcessing && job && (
           <div className="absolute inset-0 z-40 bg-espresso-900/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-4">
@@ -187,7 +187,7 @@ export function BookCard({
             </div>
           </>
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center text-mocha-300 gap-2 bg-gradient-to-br from-cloud-50 to-cloud-100">
+          <div className="flex h-full w-full flex-col items-center justify-center text-mocha-300 gap-2 bg-gradient-to-br from-paper to-cloud-100">
             <div className="p-4 bg-white/50 rounded-full shadow-inner border border-white/40">
               <BookOpen className="h-8 w-8 opacity-50" />
             </div>
@@ -203,9 +203,9 @@ export function BookCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+                  intent="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-espresso-900/20 backdrop-blur-md hover:bg-espresso-900/40 text-white rounded-full shadow-sm"
+                  className="h-8 w-8 bg-black/60 backdrop-blur-md hover:bg-mocha-900/80 text-white rounded-sm shadow-sm"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -237,15 +237,15 @@ export function BookCard({
       <div className="flex flex-col flex-1 p-5 gap-4">
         {/* Title & Author */}
         <div>
-          <h3 className="font-heading text-lg font-bold text-espresso-900 leading-snug line-clamp-2 mb-1 group-hover:text-mocha-600 transition-colors">
+          <h3 className=" font-bold text-lg text-stone-900 leading-snug line-clamp-2 mb-1 group-hover:text-mocha-500 transition-colors">
             {title}
           </h3>
-          <p className="text-sm text-espresso-900/60 font-serif">{author}</p>
+          <p className="text-xs text-stone-500">{author}</p>
         </div>
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-2 mt-auto text-xs text-espresso-900/50">
-          <div className="flex items-center gap-1.5">
+        <div className="grid grid-cols-2 gap-2 mt-auto text-[10px] text-mocha-600 ">
+          <div className="flex items-center gap-1.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
             <Clock className="w-3.5 h-3.5" />
             <span>{lastEdited}</span>
           </div>
@@ -257,11 +257,11 @@ export function BookCard({
           {/* Genre Badge */}
           <div className="flex-1 min-w-0">
             {genre ? (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-cloud-100 text-espresso-900/70 truncate max-w-full border border-cloud-200">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-mocha-100 text-mocha-700 truncate max-w-full border border-mocha-200 uppercase tracking-wider">
                 {genre}
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-cloud-50 text-espresso-900/40 border border-cloud-100">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-cloud-100 text-stone-500 border border-cloud-200 uppercase tracking-wider">
                 No Genre
               </span>
             )}

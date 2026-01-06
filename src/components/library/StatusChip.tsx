@@ -49,23 +49,22 @@ export function StatusChip({
           onClick={(e) => e.stopPropagation()}
           className={cn(
             // 기본 스타일
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200",
+            "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-bold transition-all duration-200 border  uppercase tracking-wider",
             // 호버 효과
-            "hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1",
+            "hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-mocha-500/50",
             // 상태별 스타일
-            isCompleted,
             isCompleted
-              ? "bg-status-success/10 text-status-success hover:bg-status-success/20 focus:ring-status-success/30"
-              : "bg-mocha-400/10 text-mocha-700 hover:bg-mocha-400/20 focus:ring-mocha-400/30",
+              ? "bg-status-success/10 text-status-success border-status-success/20"
+              : "bg-mocha-500/10 text-mocha-600 border-mocha-500/20",
             // 비활성화 스타일
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
           )}
         >
           {/* 상태 인디케이터 도트 */}
           <span
             className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              isCompleted ? "bg-status-success" : "bg-mocha-500"
+              "h-1.5 w-1.5 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.2)]",
+              isCompleted ? "bg-[#4ADE80]" : "bg-mocha-500",
             )}
           />
           {/* 상태 라벨 */}
@@ -73,8 +72,8 @@ export function StatusChip({
           {/* 드롭다운 화살표 */}
           <ChevronDown
             className={cn(
-              "h-3 w-3 transition-transform duration-200",
-              isOpen && "rotate-180"
+              "h-3 w-3 transition-transform duration-200 opacity-60",
+              isOpen && "rotate-180",
             )}
           />
         </button>
