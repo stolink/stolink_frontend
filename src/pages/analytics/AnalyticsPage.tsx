@@ -7,24 +7,24 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "export">("stats");
 
   return (
-    <div className="h-full w-full flex flex-col bg-paper">
+    <div className="h-full w-full flex flex-col bg-paper selection:bg-mocha-100">
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "stats" | "export")}
         className="h-full flex flex-col relative"
       >
         {/* Floating Glass Header (Centered) */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-1.5 py-1.5 bg-paper/70 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
           <TabsList className="bg-transparent p-0 h-auto gap-1">
             <TabsTrigger
               value="stats"
-              className="px-6 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all font-bold"
+              className="px-6 py-2 rounded-xl text-xs font-bold transition-all data-[state=active]:bg-mocha-500 data-[state=active]:text-white text-mocha-500 hover:text-mocha-500"
             >
               통계
             </TabsTrigger>
             <TabsTrigger
               value="export"
-              className="px-6 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all font-bold"
+              className="px-6 py-2 rounded-xl text-xs font-bold transition-all data-[state=active]:bg-mocha-500 data-[state=active]:text-white text-mocha-500 hover:text-mocha-500"
             >
               파일
             </TabsTrigger>

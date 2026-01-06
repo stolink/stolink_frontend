@@ -58,15 +58,15 @@ export function BiographyTree({
 
   const sortedEvents = sortEventsByPrevId(events);
   const selectedEvent =
-    sortedEvents.find((e) => e.event_id === selectedEventId) ?? null;
+    sortedEvents.find((e) => e.eventId === selectedEventId) ?? null;
   const selectedIndex = selectedEvent
-    ? sortedEvents.findIndex((e) => e.event_id === selectedEventId)
+    ? sortedEvents.findIndex((e) => e.eventId === selectedEventId)
     : -1;
 
   // 컨텐츠 전체 너비
   const contentWidth = Math.max(
     sortedEvents.length * SPACING + CONTAINER_PADDING * 2,
-    800
+    800,
   );
 
   const handleNodeClick = useCallback(
@@ -74,7 +74,7 @@ export function BiographyTree({
       onEventClick(eventId);
       setDetailOpen(true);
     },
-    [onEventClick]
+    [onEventClick],
   );
 
   const closeDetail = useCallback(() => {
@@ -96,17 +96,17 @@ export function BiographyTree({
     <div
       className={cn(
         "relative w-full h-[500px] rounded-2xl overflow-hidden border border-stone-200/60 shadow-paper bg-cloud-50",
-        className
+        className,
       )}
     >
       {/* 타임라인 방향 표시 */}
       <div className="absolute left-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
-        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+        <span className="text-xs  font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
           ← 과거
         </span>
       </div>
       <div className="absolute right-3 top-3 z-30 bg-white/40 backdrop-blur-md rounded-lg px-3 py-1.5 shadow-sm border border-white/40 group transition-all hover:bg-white/60">
-        <span className="text-xs font-serif font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
+        <span className="text-xs  font-medium text-espresso-900/80 group-hover:text-espresso-900 transition-colors">
           현재 →
         </span>
       </div>
@@ -138,11 +138,11 @@ export function BiographyTree({
             const y = getPathY(x); // x좌표 기반 높이 계산
             return (
               <SignpostNode
-                key={event.event_id}
+                key={event.eventId}
                 event={event}
                 index={index}
-                isSelected={selectedEventId === event.event_id}
-                onClick={() => handleNodeClick(event.event_id)}
+                isSelected={selectedEventId === event.eventId}
+                onClick={() => handleNodeClick(event.eventId)}
                 x={x}
                 y={y}
               />
@@ -174,7 +174,7 @@ export function BiographyTree({
                 className="flex items-center justify-between p-4 border-b border-stone-100"
                 style={{
                   backgroundColor:
-                    getEventTypeConfig(selectedEvent.event_type).accentColor +
+                    getEventTypeConfig(selectedEvent.eventType).accentColor +
                     "20",
                 }}
               >
@@ -183,18 +183,18 @@ export function BiographyTree({
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{
                       backgroundColor: getEventTypeConfig(
-                        selectedEvent.event_type
+                        selectedEvent.eventType,
                       ).accentColor,
                     }}
                   >
-                    {createElement(getEventTypeIcon(selectedEvent.event_type), {
+                    {createElement(getEventTypeIcon(selectedEvent.eventType), {
                       className: "w-5 h-5 text-white",
                     })}
                   </div>
                   <div>
                     <span className="text-xs font-medium text-stone-500">
                       #{selectedIndex + 1} ·{" "}
-                      {getEventTypeConfig(selectedEvent.event_type).label}
+                      {getEventTypeConfig(selectedEvent.eventType).label}
                     </span>
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export function BiographyTree({
               {/* 내용 */}
               <div className="p-5 space-y-4 overflow-y-auto max-h-[350px]">
                 <h3 className="text-xl font-bold text-stone-800">
-                  {selectedEvent.narrative_summary}
+                  {selectedEvent.narrativeSummary}
                   {getImportanceLevel(selectedEvent.importance) === "major" && (
                     <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
                       ⭐ 주요
@@ -224,10 +224,10 @@ export function BiographyTree({
                       <span>{selectedEvent.timestamp}</span>
                     </div>
                   )}
-                  {selectedEvent.location_ref && (
+                  {selectedEvent.locationRef && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-4 h-4" />
-                      <span>{selectedEvent.location_ref}</span>
+                      <span>{selectedEvent.locationRef}</span>
                     </div>
                   )}
                 </div>
@@ -257,13 +257,13 @@ export function BiographyTree({
                   {selectedEvent.description || "상세 설명이 없습니다."}
                 </p>
 
-                {selectedEvent.visual_scene && (
+                {selectedEvent.visualScene && (
                   <div className="bg-mocha-50 rounded-xl p-4 border border-mocha-100">
                     <h4 className="text-sm font-semibold text-mocha-700 mb-1">
                       🎬 장면 묘사
                     </h4>
                     <p className="text-sm text-mocha-600 italic">
-                      "{selectedEvent.visual_scene}"
+                      "{selectedEvent.visualScene}"
                     </p>
                   </div>
                 )}
@@ -274,7 +274,7 @@ export function BiographyTree({
                 <button
                   onClick={() => {
                     if (selectedIndex > 0) {
-                      onEventClick(sortedEvents[selectedIndex - 1].event_id);
+                      onEventClick(sortedEvents[selectedIndex - 1].eventId);
                     }
                   }}
                   disabled={selectedIndex === 0}
@@ -288,7 +288,7 @@ export function BiographyTree({
                 <button
                   onClick={() => {
                     if (selectedIndex < sortedEvents.length - 1) {
-                      onEventClick(sortedEvents[selectedIndex + 1].event_id);
+                      onEventClick(sortedEvents[selectedIndex + 1].eventId);
                     }
                   }}
                   disabled={selectedIndex === sortedEvents.length - 1}
@@ -324,7 +324,7 @@ function SignpostNode({
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, margin: "-50px" });
 
-  const config = getEventTypeConfig(event.event_type);
+  const config = getEventTypeConfig(event.eventType);
   const isMajor = getImportanceLevel(event.importance) === "major";
   const nodeNumber = index + 1;
 
@@ -398,7 +398,7 @@ function SignpostNode({
         whileTap={{ scale: 0.95 }}
         className={cn(
           "relative flex items-center justify-center rounded-lg shadow-lg transition-all",
-          isSelected && "ring-2 ring-white ring-offset-2"
+          isSelected && "ring-2 ring-white ring-offset-2",
         )}
         style={{
           width: isMajor ? 44 : 36,
@@ -414,7 +414,7 @@ function SignpostNode({
         }}
       >
         {/* 아이콘 */}
-        {createElement(getEventTypeIcon(event.event_type), {
+        {createElement(getEventTypeIcon(event.eventType), {
           className: cn("text-white", isMajor ? "w-5 h-5" : "w-4 h-4"),
         })}
 
@@ -426,7 +426,7 @@ function SignpostNode({
 
       {/* 호버 라벨 */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-12 px-3 py-1.5 bg-stone-900/90 backdrop-blur-sm rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
-        {event.narrative_summary.slice(0, 20)}...
+        {event.narrativeSummary.slice(0, 20)}...
         <div className="absolute left-1/2 -translate-x-1/2 -top-1 border-4 border-transparent border-b-stone-900/90" />
       </div>
     </motion.div>

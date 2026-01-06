@@ -30,13 +30,13 @@ export function BiographyEventList({
       {events.length > 0 ? (
         <div className="space-y-4">
           {events.map((event, idx) => {
-            const config = getEventTypeConfig(event.event_type);
+            const config = getEventTypeConfig(event.eventType);
             const isMajor = getImportanceLevel(event.importance) === "major";
-            const isSelected = selectedEventId === event.event_id;
+            const isSelected = selectedEventId === event.eventId;
 
             return (
               <div
-                key={event.event_id}
+                key={event.eventId}
                 className="timeline-item editorial-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
@@ -46,9 +46,9 @@ export function BiographyEventList({
                     "bg-white shadow-sm hover:shadow-paper-hover hover:-translate-y-0.5",
                     isSelected
                       ? "ring-2 ring-mocha-500 ring-offset-2 border-mocha-500/50 bg-mocha-50/10"
-                      : "border-stone-200/60 hover:border-mocha-300/60"
+                      : "border-stone-200/60 hover:border-mocha-300/60",
                   )}
-                  onClick={() => onEventClick(event.event_id)}
+                  onClick={() => onEventClick(event.eventId)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-5">
@@ -58,7 +58,7 @@ export function BiographyEventList({
                           "flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-105",
                           isMajor
                             ? "bg-gradient-to-br from-mocha-400 to-mocha-600"
-                            : "bg-stone-100"
+                            : "bg-stone-100",
                         )}
                         style={
                           !isMajor
@@ -66,10 +66,10 @@ export function BiographyEventList({
                             : {}
                         }
                       >
-                        {createElement(getEventTypeIcon(event.event_type), {
+                        {createElement(getEventTypeIcon(event.eventType), {
                           className: cn(
                             "w-6 h-6",
-                            isMajor ? "text-white" : "text-stone-600"
+                            isMajor ? "text-white" : "text-stone-600",
                           ),
                           style: !isMajor ? { color: config.color } : {},
                         })}
@@ -77,7 +77,7 @@ export function BiographyEventList({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold text-stone-400 font-mono">
+                          <span className="text-xs font-bold text-stone-400 ">
                             #{String(idx + 1).padStart(2, "0")}
                           </span>
                           {isMajor && (
@@ -91,15 +91,15 @@ export function BiographyEventList({
                         </div>
                         <h5
                           className={cn(
-                            "text-lg font-serif font-bold transition-colors pr-4 leading-tight break-words whitespace-normal",
+                            "text-lg  font-bold transition-colors pr-4 leading-tight break-words whitespace-normal",
                             isSelected
                               ? "text-mocha-900"
-                              : "text-espresso-900 group-hover:text-mocha-700"
+                              : "text-espresso-900 group-hover:text-mocha-700",
                           )}
                         >
-                          {event.narrative_summary}
+                          {event.narrativeSummary}
                         </h5>
-                        <p className="text-sm text-stone-600 mt-1 font-serif leading-relaxed opacity-80 break-words whitespace-pre-wrap">
+                        <p className="text-sm text-stone-600 mt-1  leading-relaxed opacity-80 break-words whitespace-pre-wrap">
                           {event.description || "상세 설명 없음"}
                         </p>
                       </div>
@@ -110,7 +110,7 @@ export function BiographyEventList({
                         "h-5 w-5 transition-all duration-300 ease-out text-stone-300",
                         isSelected
                           ? "text-mocha-500 translate-x-1"
-                          : "group-hover:text-mocha-400 group-hover:translate-x-1"
+                          : "group-hover:text-mocha-400 group-hover:translate-x-1",
                       )}
                     />
                   </div>

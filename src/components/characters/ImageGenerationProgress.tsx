@@ -42,9 +42,7 @@ export function ImageGenerationProgress({
       {/* Progress bar */}
       <div className="w-full space-y-1">
         <Progress value={progress} className="h-2" />
-        <p className="text-xs text-purple-600 text-right font-mono">
-          {progress}%
-        </p>
+        <p className="text-xs text-purple-600 text-right ">{progress}%</p>
       </div>
     </div>
   );
@@ -63,9 +61,7 @@ export function ImageGenerationOverlay({
   return (
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-full flex flex-col items-center justify-center">
       <Loader2 className="h-6 w-6 animate-spin text-white mb-1" />
-      <span className="text-xs font-mono text-white font-bold">
-        {progress}%
-      </span>
+      <span className="text-xs  text-white font-bold">{progress}%</span>
     </div>
   );
 }

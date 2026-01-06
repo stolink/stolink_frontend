@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useSharedProject } from "@/hooks/useShare";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { AlertCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import { BookReaderModal } from "@/components/reader/BookReaderModal";
 import type { Chapter } from "@/components/reader/hooks/useBookReader";
 

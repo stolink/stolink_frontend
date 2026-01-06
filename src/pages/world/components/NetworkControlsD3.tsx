@@ -1,5 +1,5 @@
 import { Layers, ChevronDown, Heart, Users, Skull } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,23 +7,23 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RelationType } from "@/types";
 import {
   RELATION_LABELS,
   RELATION_COLORS,
+  type UIRelationType,
 } from "@/components/CharacterGraph/constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <Users className="w-2.5 h-2.5" />,
   hostile: <Skull className="w-2.5 h-2.5" />,
   romantic: <Heart className="w-2.5 h-2.5" />,
 };
 
 interface NetworkControlsD3Props {
-  relationTypeFilter: RelationType | "all";
-  onFilterChange: (value: RelationType | "all") => void;
+  relationTypeFilter: UIRelationType | "all";
+  onFilterChange: (value: UIRelationType | "all") => void;
 }
 
 export function NetworkControlsD3({
@@ -49,7 +49,7 @@ export function NetworkControlsD3({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="outline"
+              intent="outline"
               size="sm"
               className={cn(
                 "w-full justify-between gap-1 h-7 text-xs bg-white/80 hover:bg-white border-stone-200",
@@ -68,7 +68,7 @@ export function NetworkControlsD3({
           <DropdownMenuContent align="start" className="w-40">
             <DropdownMenuRadioGroup
               value={relationTypeFilter}
-              onValueChange={(v) => onFilterChange(v as RelationType | "all")}
+              onValueChange={(v) => onFilterChange(v as UIRelationType | "all")}
             >
               <DropdownMenuRadioItem
                 value="all"
@@ -81,26 +81,30 @@ export function NetworkControlsD3({
                   모든 관계
                 </span>
               </DropdownMenuRadioItem>
-              {(Object.keys(RELATION_LABELS) as RelationType[]).map((type) => (
-                <DropdownMenuRadioItem
-                  key={type}
-                  value={type}
-                  className="cursor-pointer text-xs"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className="w-3 h-3 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: `${RELATION_COLORS[type]}20` }}
-                    >
+              {(Object.keys(RELATION_LABELS) as UIRelationType[]).map(
+                (type) => (
+                  <DropdownMenuRadioItem
+                    key={type}
+                    value={type}
+                    className="cursor-pointer text-xs"
+                  >
+                    <span className="flex items-center gap-1.5">
                       <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: RELATION_COLORS[type] }}
-                      />
+                        className="w-3 h-3 rounded-full flex items-center justify-center"
+                        style={{
+                          backgroundColor: `${RELATION_COLORS[type]}20`,
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: RELATION_COLORS[type] }}
+                        />
+                      </span>
+                      {RELATION_LABELS[type]}
                     </span>
-                    {RELATION_LABELS[type]}
-                  </span>
-                </DropdownMenuRadioItem>
-              ))}
+                  </DropdownMenuRadioItem>
+                ),
+              )}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -128,7 +132,7 @@ export function NetworkControlsD3({
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          {(Object.keys(RELATION_LABELS) as RelationType[]).map((type) => (
+          {(Object.keys(RELATION_LABELS) as UIRelationType[]).map((type) => (
             <div
               key={type}
               className={cn(

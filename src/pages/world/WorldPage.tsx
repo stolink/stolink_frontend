@@ -1,9 +1,9 @@
-// Development comment to force Vite re-bundle
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   Users,
   MapPin,
@@ -11,27 +11,33 @@ import {
   Sparkles,
   Network,
   UserRound,
+  X,
+  CheckCircle2,
 } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
   Character,
-  RelationType,
   RelationshipLink,
   DetailedRelationship,
   CharacterNode,
 } from "@/types";
+import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import { roleLabels } from "./constants";
 
-// D3 CharacterGraph (내장 컨트롤 사용)
 import {
   CharacterGraph,
   type CharacterGraphRef,
+  AnalysisSummaryModal,
 } from "@/components/CharacterGraph";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import type { AnalysisDiff } from "@/types/analysisTypes";
 
 // Hooks
 import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
-import { useAnalyzeStory, useAIJobPolling } from "@/hooks/useAI";
+import { useAnalyzeStory } from "@/hooks/useAI";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Components
@@ -39,7 +45,7 @@ import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 // Mock Places
 const places = [
@@ -56,115 +62,44 @@ const items = [
 ];
 
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
+import { MOCK_CHARACTERS } from "@/data/mockWorldData";
 
-// Mock extras data for 장발장 and 자베르
-const MOCK_EXTRAS: Record<
-  string,
-  Record<string, string | number | string[]>
-> = {
-  "lm-001": {
-    // 장발장 - 기본 정보
-    나이: "약 45세",
-    성별: "남성",
-    직업: "전 죄수 → 공장주 → 시장",
-    출생지: "프랑스 파베롤",
-    // 외모 정보
-    신장: "180cm",
-    체격: "매우 건장함",
-    머리카락: "백발 (은빛)",
-    눈: "깊고 온화한 눈빛",
-    특징: "굳은 손, 잔잔한 미소",
-    // 성격 및 내면
-    성격: ["자비로움", "희생적", "고독함", "속죄의식"],
-    약점: "과거에 대한 죄책감",
-    목표: "코제트의 행복",
-    특기: "초인적 완력, 정원 가꾸기",
-    명대사: "사랑하는 것, 그것이 전부다",
-    // 등장 정보
-    등장: [
-      "1권 2장 - 디뉴 마을",
-      "1권 5장 - 몽트뢰유",
-      "3권 8장 - 파리",
-      "4권 12장 - 바리케이드",
-      "5권 9장 - 코제트의 결혼",
-    ],
-    // 관계 정보
-    관계: [
-      "코제트 (양녀)",
-      "자베르 (숙적)",
-      "미리엘 주교 (은인)",
-      "판틴 (약속)",
-      "마리우스 (사위)",
-    ],
-  },
-  "lm-002": {
-    // 자베르 - 기본 정보
-    나이: "약 50세",
-    성별: "남성",
-    직업: "경감",
-    출생지: "감옥 (부모 모두 죄수)",
-    // 외모 정보
-    신장: "175cm",
-    체격: "야위고 단단함",
-    머리카락: "검은색, 짧게 정돈",
-    눈: "날카롭고 차가운 시선",
-    특징: "구레나룻, 경직된 표정",
-    // 성격 및 내면
-    성격: ["냉혹함", "정의감", "완고함", "흑백논리"],
-    약점: "융통성 없음",
-    목표: "법의 완벽한 집행",
-    특기: "추적, 법률 지식, 변장",
-    명대사: "법 앞에 예외는 없다",
-    // 등장 정보
-    등장: [
-      "1권 2장 - 툴롱 감옥",
-      "1권 7장 - 법정",
-      "3권 5장 - 파리 추격",
-      "4권 12장 - 바리케이드",
-      "5권 4장 - 하수도",
-    ],
-    // 관계 정보
-    관계: [
-      "장발장 (숙적/추적 대상)",
-      "테나르디에 (정보원)",
-      "마리우스 (구출 대상)",
-    ],
-  },
-};
+// UI Refactoring Flag: Set to true to use dummy data
+const USE_DUMMY_DATA = false;
 
-function enrichCharacterWithMockData(character: Character): Character {
-  const mockExtras = MOCK_EXTRAS[character._id];
-  if (!mockExtras) return character;
-
-  return {
-    ...character,
-    // Note: extras doesn't exist in new schema, keep as-is for demo compatibility
-  };
-}
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
+
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // projectId is guaranteed to be string here
-  const { data: characters = [] } = useCharacters(projectId || "", {
-    enabled: !!projectId,
+  const { data: realCharacters = [] } = useCharacters(projectId || "", {
+    enabled: !!projectId && !USE_DUMMY_DATA,
   });
+
+  // Switch between real and dummy data
+  const characters = USE_DUMMY_DATA ? MOCK_CHARACTERS : realCharacters;
 
   const updateCharacterMutation = useUpdateCharacter();
 
-  const queryClient = useQueryClient();
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const { setJobId, setAnalyzing } = useAnalysisBufferStore();
 
-  // Polling for analysis status
-  const { progress, isPolling } = useAIJobPolling(currentJobId, {
-    onComplete: () => {
-      // 분석 완료 시 데이터 리프레시
-      queryClient.invalidateQueries({
-        queryKey: ["characters", "list", projectId],
-      });
-      setCurrentJobId(null);
-    },
-  });
+  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+
+  // Polling for analysis status (Global)
+  const { isAnalyzing: isPolling, analysisProgress: progress } =
+    useProjectAnalysis(projectId ?? null, {
+      enabled: !USE_DUMMY_DATA,
+      onAnalysisComplete: (result) => {
+        if (result) {
+          const diff = calculateAnalysisDiff(characters, links, result);
+          setAnalysisDiff(diff);
+          setIsAnalysisModalOpen(true);
+        }
+      },
+    });
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -176,7 +111,8 @@ export default function WorldPage() {
         documentIds: [], // Empty means analyze all for now
       });
       if (result.data?.jobId) {
-        setCurrentJobId(result.data.jobId);
+        setJobId(result.data.jobId);
+        setAnalyzing(true);
       }
     } catch (err) {
       console.error("Analysis failed:", err);
@@ -193,7 +129,7 @@ export default function WorldPage() {
     useState<DetailedRelationship | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
-    RelationType | "all"
+    UIRelationType | "all"
   >("all");
 
   const graphRef = useRef<CharacterGraphRef>(null);
@@ -215,20 +151,11 @@ export default function WorldPage() {
   }, []);
 
   // Sync selectedCharacter with latest data from characters array
-  // This ensures the sidebar updates when character data changes (e.g., image generation)
-  useEffect(() => {
-    if (selectedCharacter && characters.length > 0) {
-      const updatedCharacter = characters.find(
-        (c) => c._id === selectedCharacter._id,
-      );
-      if (updatedCharacter) {
-        // Only update if imageUrl or other relevant data changed
-        if (updatedCharacter.imageUrl !== selectedCharacter.imageUrl) {
-          // eslint-disable-next-line
-          setSelectedCharacter(enrichCharacterWithMockData(updatedCharacter));
-        }
-      }
-    }
+  // We use useMemo to derive the active character data to avoid cascading renders
+  const activeCharacter = useMemo(() => {
+    if (!selectedCharacter || characters.length === 0) return selectedCharacter;
+    const updated = characters.find((c) => c._id === selectedCharacter._id);
+    return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
 
   // Character.relationships에서 관계 데이터 추출 (using hook)
@@ -249,9 +176,8 @@ export default function WorldPage() {
       setGraphFocusId(null);
       return;
     }
-    const enrichedChar = enrichCharacterWithMockData(character);
     const nextChar =
-      selectedCharacter?._id === enrichedChar._id ? null : enrichedChar;
+      selectedCharacter?._id === character._id ? null : character;
     setSelectedCharacter(nextChar);
     setGraphFocusId(nextChar?._id || null);
 
@@ -260,9 +186,8 @@ export default function WorldPage() {
   };
 
   const handleCardClick = (character: Character) => {
-    const enrichedChar = enrichCharacterWithMockData(character);
-    setSelectedCharacter(enrichedChar);
-    setGraphFocusId(enrichedChar._id);
+    setSelectedCharacter(character);
+    setGraphFocusId(character._id);
     setIsModalOpen(true);
   };
 
@@ -281,62 +206,6 @@ export default function WorldPage() {
         ? (link.target as CharacterNode).id
         : link.target;
 
-    // Mock history data for 장발장-자베르 relationship
-    const isJavertValjean =
-      (sourceId === "lm-001" && targetId === "lm-002") ||
-      (sourceId === "lm-002" && targetId === "lm-001");
-
-    const mockHistory = isJavertValjean
-      ? [
-          {
-            eventId: "1",
-            title: "툴롱 감옥에서의 첫 만남",
-            chapter: "1권 2장",
-            type: "hostile" as const,
-            reason:
-              "교도관 자베르와 죄수 24601호의 관계. 자베르는 장발장을 근본적 악으로 규정하고 감시함.",
-            date: "1815년",
-          },
-          {
-            eventId: "2",
-            title: "몽트뢰유 시장 시절",
-            chapter: "1권 5장",
-            type: "hostile" as const,
-            reason:
-              "마들렌 시장의 정체를 의심하며 집요하게 추적. 시장직 뒤에 숨은 과거를 파헤치려 함.",
-            date: "1823년",
-          },
-          {
-            eventId: "3",
-            title: "법정에서의 자백",
-            chapter: "1권 7장",
-            type: "hostile" as const,
-            reason:
-              "장발장이 스스로 정체를 밝히고 자베르는 그를 다시 체포하려 함. 법 앞에 굴복하지 않는 장발장에 분노.",
-            date: "1823년",
-          },
-          {
-            eventId: "4",
-            title: "바리케이드의 자비",
-            chapter: "4권 12장",
-            type: "friendly" as const,
-            reason:
-              "장발장이 스파이로 잡힌 자베르를 처형하지 않고 풀어줌. 자베르의 세계관에 균열이 시작됨.",
-            date: "1832년 6월 5일",
-          },
-          {
-            eventId: "5",
-            title: "하수도에서의 해방",
-            chapter: "5권 3장",
-            type: "friendly" as const,
-            reason:
-              "자베르가 장발장을 체포하지 않고 석방함. 법과 자비 사이에서 갈등하다 결국 센 강에 투신.",
-            date: "1832년 6월 6일",
-          },
-        ]
-      : undefined;
-
-    // Mock data enrichment based on user request example
     const detailedRel: DetailedRelationship = {
       ...link, // id, strength, type, description, history, since, evolved_from, bidirectional
       id: link.id,
@@ -349,51 +218,192 @@ export default function WorldPage() {
       // Use mapped data from link (originally from DB)
       description: link.description,
       bidirectional: link.bidirectional,
-      evolvedFrom: isJavertValjean ? "hostile" : link.evolvedFrom,
-      since: isJavertValjean ? "1815년 툴롱 감옥" : link.since,
-      history: mockHistory || link.history,
+      evolvedFrom: link.evolvedFrom,
+      since: link.since,
+      history: link.history,
     };
     setSelectedRelationship(detailedRel);
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-stone-50">
+    <div className="h-full w-full flex flex-col bg-paper overflow-hidden relative selection:bg-mocha-100 selection:text-mocha-900">
+      {/* ─────────────────────────────────────────────────────────────
+          GLOBAL LOADING OVERLAY (Shutter Animation)
+      ───────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {isPolling && (
+          <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-auto overflow-hidden">
+            {/* Top Shutter - Removed harsh border for seamless feel */}
+            <motion.div
+              initial={{ y: "-100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_1px_10px_rgba(164,119,100,0.05)]"
+            />
+
+            {/* Bottom Shutter - Removed harsh border */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute bottom-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_-1px_10px_rgba(164,119,100,0.05)]"
+            />
+
+            {/* Center Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="relative z-10 flex flex-col items-center gap-8 max-w-md w-full px-6"
+            >
+              {/* Logo / Spinner / Complete Icon */}
+              <div className="relative">
+                <AnimatePresence mode="wait">
+                  {progress < 100 ? (
+                    <motion.div
+                      key="analyzing"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="w-20 h-20 rounded-2xl bg-paper border border-cloud-200 shadow-paper-floating flex items-center justify-center relative z-10"
+                    >
+                      <Sparkles className="w-10 h-10 text-mocha-500 animate-pulse" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0, rotate: -20 }}
+                      animate={{
+                        scale: [0, 1.2, 1],
+                        rotate: [0, -10, 0],
+                      }}
+                      className="relative"
+                    >
+                      <motion.div
+                        animate={{
+                          rotate: [0, -2, 2, -2, 0],
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 0.5,
+                          repeat: Infinity,
+                          repeatDelay: 2,
+                        }}
+                        className="w-24 h-24 rounded-3xl bg-emerald-500 shadow-[0_20px_40px_rgba(16,185,129,0.3)] flex items-center justify-center border-2 border-emerald-400/50"
+                      >
+                        <CheckCircle2 className="w-12 h-12 text-white" />
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {/* Decorative glow */}
+                <div
+                  className={cn(
+                    "absolute inset-0 blur-2xl opacity-10 animate-pulse transition-colors duration-500",
+                    progress < 100 ? "bg-mocha-400" : "bg-green-400",
+                  )}
+                />
+              </div>
+
+              <div className="text-center space-y-4">
+                <motion.h3
+                  key={progress === 100 ? "done" : "doing"}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl font-bold text-espresso-900 tracking-tight"
+                >
+                  {progress < 100 ? "세계관 분석 중..." : "분석 완료!"}
+                </motion.h3>
+                <p className="text-mocha-500 font-sans text-sm leading-relaxed max-w-xs mx-auto">
+                  {progress < 100
+                    ? "AI가 본문을 데이터화하여 세계관과 인물 관계를 추출하고 있습니다."
+                    : "성공적으로 데이터를 추출했습니다. 잠시 후 결과가 표시됩니다."}
+                  <br />
+                  <span
+                    className={cn(
+                      "font-bold text-xl mt-4 block tabular-nums transition-colors duration-500",
+                      progress < 100 ? "text-mocha-500" : "text-green-600",
+                    )}
+                  >
+                    {progress}%
+                  </span>
+                </p>
+                <Progress
+                  value={progress}
+                  className={cn(
+                    "h-1.5 w-64 mx-auto rounded-full overflow-hidden transition-colors duration-500",
+                    progress < 100 ? "bg-cloud-200" : "bg-green-100",
+                  )}
+                />
+              </div>
+
+              {/* Cancel Button */}
+              <Button
+                intent="ghost"
+                className="mt-4 text-mocha-400 hover:text-red-500 hover:bg-white/50 transition-colors"
+                onClick={() => {
+                  if (
+                    confirm(
+                      "분석 상태가 멈췄거나 너무 오래 걸리나요?\n\n'확인'을 누르면 분석 상태를 초기화하고 결과를 새로고침합니다.",
+                    )
+                  ) {
+                    setJobId(null);
+                    setAnalyzing(false);
+                    queryClient.invalidateQueries({
+                      queryKey: ["characters", projectId],
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: ["relationships", projectId],
+                    });
+                  }
+                }}
+              >
+                <X className="w-4 h-4 mr-2" />
+                분석 취소
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
-        <div className="fixed top-1 left-1/2 -translate-x-1/2 z-[60] px-2 py-1.5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-white/50 shrink-0 scale-[0.8] origin-top">
-          {/* Tab Navigation - Pill Style with borders */}
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
+          {/* Tab Navigation - Pill Style */}
           <TabsList className="bg-transparent p-0 h-auto gap-1">
             <TabsTrigger
               value="graph"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-mocha-500 data-[state=active]:text-white data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-muted transition-all font-medium"
             >
               <Network className="h-3.5 w-3.5" />
               관계도
             </TabsTrigger>
             <TabsTrigger
               value="characters"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <UserRound className="h-3.5 w-3.5" />
               캐릭터
             </TabsTrigger>
             <TabsTrigger
               value="places"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <MapPin className="h-3.5 w-3.5" />
               장소
             </TabsTrigger>
             <TabsTrigger
               value="items"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <Sword className="h-3.5 w-3.5" />
               아이템
             </TabsTrigger>
             <TabsTrigger
               value="foreshadowing"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-white data-[state=active]:border-stone-200 data-[state=active]:shadow-sm data-[state=active]:text-stone-900 data-[state=inactive]:text-stone-500 data-[state=inactive]:hover:text-stone-700 data-[state=inactive]:hover:bg-white/50 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
             >
               <Sparkles className="h-3.5 w-3.5" />
               복선
@@ -404,7 +414,7 @@ export default function WorldPage() {
         {/* Character Graph - D3.js (Full Bleed) */}
         <TabsContent
           value="graph"
-          className="flex-1 m-0 overflow-hidden relative bg-stone-50"
+          className="flex-1 m-0 overflow-hidden relative bg-paper"
         >
           {characters.length === 0 && !isPolling ? (
             <div className="h-full flex items-center justify-center p-6">
@@ -426,29 +436,11 @@ export default function WorldPage() {
             </div>
           ) : (
             <div className="h-full w-full relative">
-              {/* Polling Indicator for Graph */}
-              {isPolling && (
-                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                  <Card className="w-[320px] shadow-xl border-mocha-100">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-bold flex items-center gap-2 text-mocha-600">
-                        <div className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
-                        세계관 인공지능 분석 중...
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Progress value={progress} className="h-2" />
-                      <p className="text-xs text-center text-muted-foreground animate-pulse">
-                        본문에서 캐릭터와 관계를 추출하고 있습니다 ({progress}%)
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              {/* Polling Indicator Removed (Moved to Global) */}
 
               {/* Detail Sidebar */}
               <NetworkDetailPanelD3
-                selectedCharacter={selectedCharacter}
+                selectedCharacter={activeCharacter}
                 characters={characters}
                 links={links}
                 onClose={() => setSelectedCharacter(null)}
@@ -475,7 +467,7 @@ export default function WorldPage() {
                 }}
                 onNodeClick={handleNodeClick}
                 onLinkClick={handleLinkClick}
-                selectedNodeId={graphFocusId || selectedCharacter?._id || null}
+                selectedNodeId={graphFocusId || activeCharacter?._id || null}
                 relationTypeFilter={relationTypeFilter}
                 onFilterChange={setRelationTypeFilter}
                 highlightedNodeIds={searchHighlightedIds}
@@ -510,22 +502,7 @@ export default function WorldPage() {
           ) : (
             <div className="relative min-h-full">
               {/* Polling Indicator for List */}
-              {isPolling && (
-                <div className="sticky top-0 z-50 px-6 py-4 bg-mocha-50/80 backdrop-blur-sm border-b border-mocha-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1 max-w-xl">
-                    <span className="text-xs font-bold text-mocha-600 whitespace-nowrap shrink-0">
-                      분석 진행도 ({progress}%)
-                    </span>
-                    <Progress
-                      value={progress}
-                      className="h-1.5 flex-1 bg-white/50"
-                    />
-                  </div>
-                  <span className="text-[10px] text-mocha-400 animate-pulse ml-4">
-                    데이터가 곧 업데이트됩니다...
-                  </span>
-                </div>
-              )}
+              {/* Polling Indicator Removed (Moved to Global) */}
 
               <div className="pt-20 px-8 pb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {characters.map((character, index) => (
@@ -540,7 +517,7 @@ export default function WorldPage() {
                     onClick={() => handleCardClick(character)}
                   >
                     {/* Image Section - 70% height */}
-                    <div className="relative flex-[7] overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50">
+                    <div className="relative flex-[7] overflow-hidden bg-muted">
                       {character.imageUrl ? (
                         <>
                           <img
@@ -570,15 +547,15 @@ export default function WorldPage() {
                     </div>
 
                     {/* Info Section - 30% height */}
-                    <div className="flex-[3] p-4 bg-white flex flex-col justify-center border-t border-stone-100">
-                      <h3 className="editorial-name text-base line-clamp-1 group-hover:text-primary transition-colors">
+                    <div className="flex-[3] p-4 bg-paper flex flex-col justify-center border-t border-cloud-100">
+                      <h3 className="text-base font-bold text-espresso-900 line-clamp-1 group-hover:text-mocha-500 transition-colors">
                         {character.profile?.name ||
                           (character as { name?: string }).name ||
                           "이름 없음"}
                       </h3>
                       {(character.profile?.backstory ||
                         (character as { backstory?: string }).backstory) && (
-                        <p className="text-xs text-stone-400 line-clamp-2 mt-1 leading-relaxed">
+                        <p className="text-xs text-mocha-400 line-clamp-2 mt-1 leading-relaxed">
                           {character.profile?.backstory ||
                             (character as { backstory?: string }).backstory}
                         </p>
@@ -608,7 +585,7 @@ export default function WorldPage() {
             ) : (
               <div className="space-y-4">
                 <h2 className="editorial-section-heading mb-6">
-                  <MapPin className="h-5 w-5 text-primary/70" />
+                  <MapPin className="h-5 w-5 text-mocha-500" />
                   주요 장소
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -619,25 +596,25 @@ export default function WorldPage() {
                       style={{ animationDelay: `${idx * 60}ms` }}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0 group-hover:from-primary/20 group-hover:to-primary/10 transition-all">
-                          <MapPin className="h-5 w-5 text-primary" />
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-mocha-100 to-mocha-50 flex items-center justify-center shrink-0 group-hover:from-mocha-200 group-hover:to-mocha-100 transition-all">
+                          <MapPin className="h-5 w-5 text-mocha-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="editorial-name text-base group-hover:text-primary transition-colors">
+                          <h3 className="editorial-name text-base group-hover:text-mocha-500 transition-colors">
                             {place.name}
                           </h3>
-                          <p className="text-xs text-stone-400 mt-1">
+                          <p className="text-xs text-mocha-400 mt-1">
                             {place.type}
                           </p>
                           <div className="flex items-center gap-1 mt-3">
-                            <span className="text-[10px] text-stone-400 uppercase tracking-wider">
+                            <span className="text-[10px] text-mocha-400 uppercase tracking-wider">
                               등장
                             </span>
                             <div className="flex gap-1">
                               {place.chapters.map((ch) => (
                                 <span
                                   key={ch}
-                                  className="text-xs px-1.5 py-0.5 rounded bg-stone-100 text-stone-600"
+                                  className="text-xs px-1.5 py-0.5 rounded bg-cloud-100 text-mocha-600"
                                 >
                                   {ch}장
                                 </span>
@@ -671,7 +648,7 @@ export default function WorldPage() {
             ) : (
               <div className="space-y-4">
                 <h2 className="editorial-section-heading mb-6">
-                  <Sword className="h-5 w-5 text-primary/70" />
+                  <Sword className="h-5 w-5 text-mocha-500" />
                   주요 아이템
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -689,14 +666,14 @@ export default function WorldPage() {
                           <h3 className="editorial-name text-base group-hover:text-amber-600 transition-colors">
                             {item.name}
                           </h3>
-                          <p className="text-xs text-stone-400 mt-1">
+                          <p className="text-xs text-mocha-400 mt-1">
                             {item.type}
                           </p>
                           <div className="flex items-center gap-2 mt-3">
-                            <span className="text-[10px] text-stone-400 uppercase tracking-wider">
+                            <span className="text-[10px] text-mocha-400 uppercase tracking-wider">
                               소유자
                             </span>
-                            <span className="text-xs font-medium text-stone-600">
+                            <span className="text-xs font-medium text-mocha-600">
                               {item.owner}
                             </span>
                           </div>
@@ -726,7 +703,7 @@ export default function WorldPage() {
 
       {/* Character Detail Dialog */}
       <CharacterDetailDialog
-        character={selectedCharacter}
+        character={activeCharacter}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={async (updatedChar) => {
@@ -763,7 +740,6 @@ export default function WorldPage() {
         }}
       />
 
-      {/* Relationship Detail Sidebar */}
       <RelationshipDetailSheet
         relationship={selectedRelationship}
         isOpen={!!selectedRelationship}
@@ -799,6 +775,18 @@ export default function WorldPage() {
           selectedRelationship?.target
         }
       />
+
+      {/* Analysis Result Summary Modal */}
+      {analysisDiff && (
+        <AnalysisSummaryModal
+          isOpen={isAnalysisModalOpen}
+          onClose={() => {
+            setIsAnalysisModalOpen(false);
+            setAnalysisDiff(null);
+          }}
+          diff={analysisDiff}
+        />
+      )}
     </div>
   );
 }

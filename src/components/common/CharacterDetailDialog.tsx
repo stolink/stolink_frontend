@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback, type ElementType } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Save,
   X,
@@ -12,11 +18,11 @@ import {
   Heart, // Personality
   Users, // Relationships
   BookOpen, // Biography
-  Wand2,
-  Briefcase,
-  Flag,
-  Users2,
-  MapPin,
+  Wand2, // Image generation loading
+  Briefcase, // Profile - occupation
+  Flag, // Profile - origin
+  MapPin, // Profile - location
+  Users2, // Profile - affiliations
 } from "lucide-react";
 
 import { isEqual } from "lodash-es";
@@ -27,7 +33,7 @@ import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import {
   Select,
   SelectContent,
@@ -328,10 +334,20 @@ export default function CharacterDetailDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Custom Dialog Content with Modern Glassmorphism */}
       <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none ring-0 sm:rounded-3xl duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
+        {/* Accessibility: Hidden title and description for screen readers */}
+        <VisuallyHidden>
+          <DialogTitle>
+            {displayCharacter?.profile?.name || "캐릭터"} 상세 정보
+          </DialogTitle>
+          <DialogDescription>
+            캐릭터의 프로필, 외모, 성격, 관계, 전기 정보를 확인하고 편집할 수
+            있습니다.
+          </DialogDescription>
+        </VisuallyHidden>
         {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
-        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-[#FDFCFB]/95 via-[#F7F5F3]/90 to-[#F2EFE9]/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-stone-200/60 ring-1 ring-stone-900/5 isolate">
+        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-paper/95 via-card/90 to-card/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-cloud-200/60 ring-1 ring-espresso-900/5 isolate">
           {/* 🌊 Living Background (Warm Aurora Blobs) */}
-          <div className="absolute inset-0 -z-10 bg-stone-50/40 opacity-50">
+          <div className="absolute inset-0 -z-10 bg-paper/40 opacity-50">
             {/* Primary Tone (Mocha/Warm) */}
             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-b from-primary/10 to-orange-100/20 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
             {/* Neutral Warm Stone */}
@@ -344,7 +360,7 @@ export default function CharacterDetailDialog({
           <div className="absolute inset-0 -z-0 opacity-[0.4] pointer-events-none mix-blend-soft-light bg-[url('https://grainy-gradients.vercel.app/noise.svg')] contrast-125" />
 
           {/* Left Sidebar (Character Identity) - Warm Frosted Panel */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-white/80 to-[#FAF9F6]/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-stone-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">
+          <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-paper/80 to-paper/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-cloud-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">
             <CharacterHeader
               character={displayCharacter}
               optimisticImageUrl={tempImageUrl}
@@ -366,8 +382,8 @@ export default function CharacterDetailDialog({
               className="flex-1 flex flex-col rounded-none h-full"
             >
               {/* ✨ Warm Stone Floating Tab Bar */}
-              <div className="border-b border-stone-200/40 px-6 py-3 bg-gradient-to-r from-[#FAF9F6]/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
-                <TabsList className="h-10 w-full justify-start gap-2 bg-[#F5F5F0]/50 p-1 rounded-full border border-stone-200/50 shadow-inner">
+              <div className="border-b border-cloud-200/40 px-6 py-3 bg-gradient-to-r from-cloud-50/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
+                <TabsList className="h-10 w-full justify-start gap-2 bg-muted/50 p-1 rounded-full border border-cloud-200/50 shadow-inner">
                   <TabItem value="overview" icon={Compass} label="개요" />
                   <TabItem value="profile" icon={UserRound} label="프로필" />
                   <TabItem value="appearance" icon={Palette} label="외모" />
@@ -381,17 +397,18 @@ export default function CharacterDetailDialog({
                   {isEditMode && activeTab !== "biography" ? (
                     <>
                       <Button
-                        variant="ghost"
+                        intent="ghost"
                         size="sm"
                         onClick={handleCancel}
-                        className="text-stone-500 hover:text-stone-800 hover:bg-white/20"
+                        className="text-mocha-900 hover:text-espresso-900 hover:bg-paper/20"
                       >
                         취소
                       </Button>
                       <Button
                         size="sm"
+                        intent="primary"
                         onClick={handleSave}
-                        className="bg-stone-800 hover:bg-stone-900 text-white rounded-full px-5 shadow-lg shadow-stone-900/10"
+                        className="rounded-full px-5 shadow-lg shadow-mocha-900/10"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         저장하기
@@ -401,10 +418,10 @@ export default function CharacterDetailDialog({
                     /* View Mode Close Button (Custom Placement for aesthetics) */
                     !isEditMode && (
                       <Button
-                        variant="ghost"
+                        intent="ghost"
                         size="icon"
                         onClick={onClose}
-                        className="text-stone-400 hover:text-stone-800 hover:bg-stone-100/50 rounded-full w-8 h-8 ml-2 mr-2"
+                        className="text-mocha-400 hover:text-espresso-900 hover:bg-muted/50 rounded-full w-8 h-8 ml-2 mr-2"
                       >
                         <X className="w-5 h-5" />
                       </Button>
@@ -428,7 +445,7 @@ export default function CharacterDetailDialog({
                   >
                     {/* Image Gen Settings Block */}
                     {/* Image Gen Settings Block - Glass Card */}
-                    <div className="relative group overflow-hidden rounded-3xl p-6 transition-all hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.01] duration-300 border border-white/60 bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md shadow-lg">
+                    <div className="relative group overflow-hidden rounded-3xl p-6 transition-all hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.01] duration-300 border border-white/60 bg-gradient-to-br from-paper/80 to-paper/40 backdrop-blur-md shadow-lg">
                       {/* Glossy Reflection */}
                       <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
@@ -453,7 +470,7 @@ export default function CharacterDetailDialog({
                             value={selectedSettingId}
                             onValueChange={setSelectedSettingId}
                           >
-                            <SelectTrigger className="bg-white border-stone-200 hover:border-primary/40 transition-colors">
+                            <SelectTrigger className="bg-paper border-stone-200 hover:border-primary/40 transition-colors">
                               <SelectValue placeholder="배경 선택 (기본)" />
                             </SelectTrigger>
                             <SelectContent
@@ -475,7 +492,7 @@ export default function CharacterDetailDialog({
                           <Label className="editorial-label">추가 묘사</Label>
                           <Input
                             placeholder="예: 비를 맞고 있는, 활짝 웃는..."
-                            className="bg-white border-stone-200 hover:border-primary/40 transition-colors"
+                            className="bg-paper border-stone-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
                               e: React.ChangeEvent<HTMLInputElement>,
@@ -497,7 +514,7 @@ export default function CharacterDetailDialog({
                             </h3>
                           </div>
 
-                          <div className="editorial-card p-6 space-y-5 bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all rounded-3xl group">
+                          <div className="editorial-card p-6 space-y-5 bg-gradient-to-br from-paper/70 to-paper/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all rounded-3xl group">
                             <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm relative z-10">
                               <ProfileItem
                                 label="직업"
@@ -544,7 +561,7 @@ export default function CharacterDetailDialog({
                                 (trait, i) => (
                                   <span
                                     key={i}
-                                    className="px-4 py-1.5 rounded-full bg-white/60 text-stone-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
+                                    className="px-4 py-1.5 rounded-full bg-paper/60 text-stone-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
                                   >
                                     #{trait}
                                   </span>
@@ -563,7 +580,7 @@ export default function CharacterDetailDialog({
                             외모 특징
                           </h3>
                         </div>
-                        <div className="editorial-card p-6 space-y-4 h-full bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl relative overflow-hidden group">
+                        <div className="editorial-card p-6 space-y-4 h-full bg-gradient-to-br from-paper/70 to-paper/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl relative overflow-hidden group">
                           {/* Decorative Icon Watermark */}
                           <Palette className="absolute -top-6 -right-6 w-32 h-32 text-stone-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
                           <div className="relative z-10">

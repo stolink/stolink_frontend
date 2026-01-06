@@ -16,13 +16,14 @@ const WorldPage = lazy(() => import("@/pages/world/WorldPage"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics/AnalyticsPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 const CharacterIntegrationTest = lazy(
-  () => import("@/pages/CharacterIntegrationTest")
+  () => import("@/pages/CharacterIntegrationTest"),
 );
 
 const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
 
 import { TextureOverlay } from "@/components/ui/TextureOverlay";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeSync } from "@stolink/ui";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Create a client
@@ -56,7 +57,7 @@ function App() {
       "theme-dark",
       "theme-sepia",
       "theme-eye-care",
-      "theme-true-black"
+      "theme-true-black",
     );
     // Add current theme class
     root.classList.add(`theme-${theme}`);
@@ -64,8 +65,8 @@ function App() {
 
   if (isInitializing) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
-        <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
+        <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
         <p>Initializing...</p>
       </div>
     );
@@ -74,13 +75,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <ThemeSync />
         <TextureOverlay />
         <Toaster />
         <BrowserRouter>
           <Suspense
             fallback={
-              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
-                <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
+              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
+                <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
                 <p>Loading...</p>
               </div>
             }

@@ -1,16 +1,15 @@
 import { createPortal } from "react-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@stolink/ui";
+import { Badge } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { Activity, Clock } from "lucide-react";
-import type { RelationType } from "@/types/character";
-import { getRelationshipColor } from "./utils";
+import { getRelationshipColor, type UIRelationType } from "./utils";
 
 interface HistoryEvent {
   eventId: string;
   title: string;
   chapter?: string;
-  type: RelationType;
+  type: UIRelationType;
   reason?: string;
   date?: string;
 }
@@ -25,7 +24,7 @@ interface RelationshipEventTooltipProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   // Added props for DB data
-  type: RelationType;
+  type: UIRelationType;
   strength: number;
   description?: string;
 }
@@ -132,7 +131,7 @@ export function RelationshipEventTooltip({
                     </span>
                   </div>
                   <Badge
-                    variant="outline"
+                    intent="outline"
                     className={cn(
                       "text-[10px] px-1.5 py-0 h-5 text-white border-0",
                     )}

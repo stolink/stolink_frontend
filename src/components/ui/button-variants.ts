@@ -20,11 +20,12 @@ export const buttonVariants = cva(
         sm: "h-8 px-4 text-xs",
         lg: "h-11 px-8",
         icon: "h-9 w-9",
+        "icon-sm": "h-icon-sm w-icon-sm p-0",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  }
+  },
 );

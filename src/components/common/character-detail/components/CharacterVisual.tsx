@@ -1,5 +1,5 @@
 import { Palette } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import type { CharacterAppearance } from "@/types/character";
 
 interface CharacterVisualProps {
@@ -89,7 +89,7 @@ export function CharacterVisual({
               <span className="text-lg drop-shadow-sm grayscale-[0.3] group-hover:grayscale-0 transition-all">
                 {icon}
               </span>
-              <span className="text-sm font-medium text-stone-500 group-hover:text-primary/80 transition-colors">
+              <span className="text-sm font-medium text-mocha-400 group-hover:text-mocha-700 transition-colors">
                 {label}
               </span>
             </div>
@@ -98,12 +98,12 @@ export function CharacterVisual({
               <Input
                 value={value}
                 onChange={(e) => onAppearanceChange?.(key, e.target.value)}
-                className="h-8 text-sm bg-white/50 border-stone-200 text-right w-[140px] focus:bg-white"
+                className="h-8 text-sm bg-white/50 border-cloud-200 text-right w-[140px] focus:bg-white"
                 placeholder="입력"
               />
             ) : (
-              <p className="text-sm font-bold text-stone-800 whitespace-nowrap overflow-hidden text-ellipsis max-w-[50%] text-right group-hover:text-stone-900">
-                {value || <span className="text-stone-300 font-normal">-</span>}
+              <p className="text-sm font-bold text-espresso-900 whitespace-nowrap overflow-hidden text-ellipsis max-w-[50%] text-right group-hover:text-black">
+                {value || <span className="text-cloud-300 font-normal">-</span>}
               </p>
             )}
           </div>

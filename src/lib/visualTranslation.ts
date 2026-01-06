@@ -66,7 +66,7 @@ export const VISUAL_TRANSLATION_MAP: Record<string, string> = {
   Pessimistic: "비관적",
   Romantic: "낭만적",
   Realistic: "현실적",
-
+  Cold: "냉철함", // Colors/Eyes와 중복될 수 있으나 문맥상...
   Impulsive: "충동적",
   Compassionate: "동정심 많음",
 
@@ -130,7 +130,6 @@ export const VISUAL_TRANSLATION_MAP: Record<string, string> = {
   Almond: "아몬드형",
   Gentle: "온화함",
   Fierce: "사나움",
-  Cold: "차가움",
   Warm: "따뜻함",
 
   // Clothing / Style

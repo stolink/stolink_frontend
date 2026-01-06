@@ -14,6 +14,7 @@ import {
   Type,
   History,
   Download,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -41,9 +42,7 @@ interface EditorToolbarProps {
   onSaveTitle: () => void;
   onCancelEditTitle: () => void;
   isDemo: boolean;
-  selectedSectionId: string | null;
-
-  // Character count
+  selectedSectionId: string | null; // Character count
   characterCount: number;
 
   // View mode
@@ -79,7 +78,7 @@ interface EditorToolbarProps {
 
   // Analysis Status
   analysisStatus: "idle" | "analyzing" | "completed" | "error";
-
+  onTriggerAnalysis?: () => void;
   // Pagination removed for infinite scroll
 }
 
@@ -115,6 +114,7 @@ export function EditorToolbar({
   onToggleSnapshot,
   onExport,
   analysisStatus,
+  onTriggerAnalysis,
   // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
@@ -155,6 +155,25 @@ export function EditorToolbar({
           </span>
         )}
 
+        {/* Manual Analysis Trigger */}
+        {onTriggerAnalysis && (
+          <button
+            onClick={onTriggerAnalysis}
+            disabled={analysisStatus === "analyzing"}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+              analysisStatus === "analyzing"
+                ? "bg-primary/10 text-primary cursor-not-allowed"
+                : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105",
+            )}
+            title="AI 분석 실행"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>분석</span>
+          </button>
+        )}
+
+        {/* Status Indicators (Reduced visibility as button shows status) */}
         {analysisStatus === "analyzing" && (
           <span className="text-xs text-primary animate-pulse font-medium">
             분석중...

@@ -17,7 +17,7 @@ import {
 import { Toggle } from "@/components/ui/toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Type,
   Palette,
@@ -144,6 +144,7 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
     setSmartDashes,
     setSmartEllipsis,
     setLinguisticMode,
+    setPerformanceMode,
     resetToDefaults,
   } = useEditorSettingStore();
 
@@ -415,6 +416,27 @@ export function EditorSettingsPanel({ className }: EditorSettingsPanelProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium text-foreground">
+                퍼포먼스 모드
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                타이핑 시 UI 업데이트 최적화 (렉 감소)
+              </p>
+            </div>
+            <Toggle
+              pressed={behavior.performanceMode}
+              onPressedChange={setPerformanceMode}
+              size="sm"
+              className="data-[state=on]:bg-mocha-100 data-[state=on]:text-mocha-700"
+            >
+              {behavior.performanceMode ? "켜짐" : "꺼짐"}
+            </Toggle>
           </div>
         </TabsContent>
       </Tabs>

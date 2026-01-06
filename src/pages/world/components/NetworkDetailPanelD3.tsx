@@ -8,25 +8,26 @@ import {
   Network,
   TrendingUp,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@stolink/ui";
+import { Badge } from "@stolink/ui";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Character, RelationshipLink, RelationType } from "@/types";
+import type { Character, RelationshipLink } from "@/types";
 import {
   RELATION_LABELS,
   ROLE_LABELS,
+  type UIRelationType,
 } from "@/components/CharacterGraph/constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 색상 클래스
-const RELATION_BADGE_COLORS: Record<RelationType, string> = {
+const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   friendly: "bg-emerald-500 text-white border-emerald-500",
   hostile: "bg-rose-500 text-white border-rose-500",
   romantic: "bg-pink-400 text-white border-pink-400",
 };
 
 // 관계 타입별 아이콘
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <User className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
@@ -74,20 +75,20 @@ export function NetworkDetailPanelD3({
   const roleColor = ROLE_COLORS[selectedCharacter.role || "other"];
 
   return (
-    <div className="absolute right-4 top-4 bottom-4 w-80 z-10 frosted-glass rounded-2xl overflow-hidden flex flex-col editorial-fade-in shadow-xl">
+    <div className="absolute right-4 top-4 bottom-4 w-80 z-20 bg-white border border-cloud-200 rounded-2xl overflow-hidden flex flex-col editorial-fade-in shadow-paper-floating">
       {/* Editorial Header */}
-      <div className="p-6 bg-gradient-to-br from-white/90 to-cloud-50/90 border-b border-stone-100/50">
+      <div className="p-6 bg-white border-b border-cloud-100">
         <div className="flex items-start justify-between mb-5">
           <Badge
-            variant="outline"
+            intent="outline"
             className={cn("text-xs font-medium", roleColor)}
           >
             {roleLabel}
           </Badge>
           <Button
-            variant="ghost"
+            intent="ghost"
             size="icon"
-            className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-white/50 -mr-2 -mt-2 rounded-full"
+            className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-stone-50 -mr-2 -mt-2 rounded-full"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -96,7 +97,7 @@ export function NetworkDetailPanelD3({
 
         <div className="flex items-center gap-4">
           {/* Profile Image - Larger */}
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center text-3xl border-2 border-white shadow-lg overflow-hidden">
+          <div className="w-20 h-20 rounded-2xl bg-cloud-50 border border-cloud-200 flex items-center justify-center text-3xl shadow-sm overflow-hidden">
             {selectedCharacter.imageUrl ? (
               <img
                 src={selectedCharacter.imageUrl}
@@ -114,7 +115,7 @@ export function NetworkDetailPanelD3({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="editorial-name text-xl truncate">
+            <h3 className="text-xl font-bold text-stone-900 truncate tracking-tight">
               {selectedCharacter.profile?.name || "이름 없음"}
             </h3>
             {selectedCharacter.profile?.faction?.name && (
@@ -127,25 +128,27 @@ export function NetworkDetailPanelD3({
       </div>
 
       {/* Stats with Icons & Gradient */}
-      <div className="px-5 py-4 border-b border-stone-100/50">
+      <div className="px-5 py-4 border-b border-cloud-50">
         <div className="grid grid-cols-2 gap-3">
-          <div className="editorial-card p-4 bg-gradient-to-br from-white to-primary/5 group hover-lift">
+          <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
             <div className="flex items-center gap-2 mb-2">
-              <Network className="h-4 w-4 text-primary/60" />
-              <span className="editorial-label">관계</span>
+              <Network className="h-4 w-4 text-mocha-500" />
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                관계 인물
+              </span>
             </div>
-            <div className="text-2xl font-bold text-stone-800 editorial-name">
+            <div className="text-2xl font-bold text-stone-900">
               {connectedLinks.length}
             </div>
           </div>
-          <div className="editorial-card p-4 bg-gradient-to-br from-white to-amber-50 group hover-lift">
+          <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-amber-500/60" />
-              <span className="editorial-label">등장</span>
+              <TrendingUp className="h-4 w-4 text-mocha-500" />
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                등장 횟수
+              </span>
             </div>
-            <div className="text-2xl font-bold text-stone-800 editorial-name">
-              -
-            </div>
+            <div className="text-2xl font-bold text-stone-900">-</div>
           </div>
         </div>
       </div>
@@ -200,14 +203,15 @@ export function NetworkDetailPanelD3({
                         {otherChar?.profile?.name || "이름 없음"}
                       </div>
                       <Badge
-                        variant="outline"
+                        intent="outline"
                         className={cn(
                           "mt-1.5 text-[10px] px-2 py-0.5 h-5 gap-1 rounded-full",
-                          RELATION_BADGE_COLORS[relType],
+                          RELATION_BADGE_COLORS[relType as UIRelationType] ||
+                            "bg-stone-200 text-stone-600",
                         )}
                       >
-                        {RELATION_ICONS[relType]}
-                        {RELATION_LABELS[relType]}
+                        {RELATION_ICONS[relType as UIRelationType]}
+                        {RELATION_LABELS[relType as UIRelationType] || relType}
                       </Badge>
                     </div>
                   </li>
@@ -229,10 +233,10 @@ export function NetworkDetailPanelD3({
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 bg-gradient-to-t from-white/90 to-transparent border-t border-stone-100/50">
+      <div className="p-4 bg-white border-t border-cloud-100">
         <Button
-          variant="default"
-          className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all h-11 rounded-xl"
+          intent="primary"
+          className="w-full h-11 rounded-xl shadow-paper hover:shadow-paper-floating transition-all font-bold"
           onClick={onViewProfile}
         >
           <BookOpen className="h-4 w-4 mr-2" />

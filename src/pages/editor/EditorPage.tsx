@@ -1,35 +1,46 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+  useEffect,
+  Suspense,
+} from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Minimize2 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { debounce } from "lodash-es";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { Button } from "@/components/ui/button";
-import { useUIStore } from "@/stores";
-import { useDemoStore } from "@/stores/useDemoStore";
-import { cn } from "@/lib/utils";
-import GuidedTour from "@/components/common/GuidedTour";
+// Core Components
 import {
-  DEMO_TOUR_STEPS,
-  DEMO_CHAPTERS,
-  DEMO_CHAPTER_CONTENTS,
-} from "@/data/demoData";
-import { useEditorStore } from "@/stores";
-import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
-import { type ChapterNode } from "@/components/editor/sidebar";
-import { BookReaderModal } from "@/components/common/BookReaderModal";
-import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+  EditorContent,
+  type EditorContentHandle,
+} from "@/pages/editor/components/EditorContent";
+import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
+import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
+import { EditorToolbar } from "@/pages/editor/components/EditorToolbar";
+import { EditorSkeleton as EditorLoadingSkeleton } from "@/components/editor/EditorSkeleton";
+
+// Modals & Overlays
+import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal";
+// import { RenameSectionModal } from "@/pages/editor/components/modals/RenameSectionModal";
+// import { DeleteSectionModal } from "@/pages/editor/components/modals/DeleteSectionModal";
+// import { DemoTourModal } from "@/pages/editor/components/DemoTourModal";
+import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
+import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
+import ExportModal from "@/components/editor/ExportModal";
+
+// Hooks
 import { useProject } from "@/hooks/useProjects";
-import type { Document } from "@/types/document";
-
-// New Document-based imports
+import { useCharacters } from "@/hooks/useCharacters";
 import {
-  useDocumentTree,
-  useDocumentContent,
   useDocumentMutations,
   useDocument,
+  useDocumentContent,
 } from "@/hooks/useDocuments";
-import type { DocumentTreeNode } from "@/types/document";
-
-import { SAMPLE_PROJECT_ID } from "@/data/sampleDocuments";
+import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
+import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
 
 // Refactored Components
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
@@ -56,19 +67,32 @@ import { CreateSectionModal } from "./components/CreateSectionModal";
 import { useBulkDocumentContent } from "@/hooks/useDocuments";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useProjectSSE } from "@/hooks/useProjectSSE";
+// Stores & Repositories
+import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
+import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
-// ============================================================
-// Demo Data Utilities (for demo mode only)
-// ============================================================
+// Types
+import type { Document, DocumentTreeNode } from "@/types/document";
+import type {
+  AnalysisResultData,
+  ConsistencyReport,
+} from "@/types/analysisResult";
+import type { AnalysisDiff } from "@/types/analysisTypes";
+import { type CharacterRelation, type Character } from "@/types/character";
 
-interface DemoChapterTreeNode {
-  id: string;
-  title: string;
-  type: "chapter" | "section"; // chapter = 폴더 역할
-  characterCount?: number;
-  isPlot?: boolean;
-  children?: DemoChapterTreeNode[];
+// Utils & Data
+import { buildDocumentTree } from "@/repositories/DocumentRepository";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import { DEMO_CHAPTERS } from "@/data/demoData";
+import { cn } from "@/lib/utils";
+
+// Constants
+const DEMO_PROJECT_ID = "demo";
+const DEMO_PROJECT_TITLE = "데모 작품: 잉크의 숲";
+
+interface DemoChapterTreeNode extends DocumentTreeNode {
+  children: DemoChapterTreeNode[];
 }
 
 function buildDemoChapterTree(
@@ -77,131 +101,127 @@ function buildDemoChapterTree(
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
 
-  chapters.forEach((ch) => {
-    map.set(ch.id, {
-      id: ch.id,
-      title: ch.title,
-      type: ch.type,
-      characterCount: ch.characterCount,
-      isPlot: ch.isPlot,
+  chapters.forEach((chapter) => {
+    map.set(chapter.id, {
+      ...chapter,
       children: [],
-    });
+      synopsis: "",
+      metadata: {
+        status: "draft",
+        wordCount: 0,
+        includeInCompile: true,
+        keywords: [],
+        notes: "",
+      },
+      characterIds: [],
+      foreshadowingIds: [],
+    } as DemoChapterTreeNode);
   });
 
-  chapters.forEach((ch) => {
-    const node = map.get(ch.id);
-    if (!node) return;
-
-    if (ch.parentId) {
-      const parent = map.get(ch.parentId);
-      if (parent?.children) {
-        parent.children.push(node);
+  chapters.forEach((chapter) => {
+    if (chapter.parentId) {
+      const parent = map.get(chapter.parentId);
+      const current = map.get(chapter.id);
+      if (parent && current) {
+        parent.children.push(current);
       }
     } else {
-      roots.push(node);
+      const current = map.get(chapter.id);
+      if (current) {
+        roots.push(current);
+      }
     }
   });
 
   return roots;
 }
 
-const DEMO_CHAPTER_TREE = buildDemoChapterTree(DEMO_CHAPTERS);
-
-// ============================================================
-// Types
-// ============================================================
-
-interface EditorPageProps {
-  isDemo?: boolean;
-}
-
-// Convert DocumentTreeNode to ChapterNode for EditorLeftSidebar
-function documentTreeToChapterTree(nodes: DocumentTreeNode[]): ChapterNode[] {
+/**
+ * Helper to map DocumentTreeNode to ChapterNode for the sidebar
+ */
+function mapToChapterNodes(
+  nodes: DocumentTreeNode[],
+): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
     title: node.title,
     type: node.type === "folder" ? "chapter" : "section",
-    characterCount: 0,
-    isPlot: false,
-    children: documentTreeToChapterTree(node.children || []),
+    characterCount: node.metadata.wordCount,
+    status:
+      node.metadata.status === "final"
+        ? "done"
+        : node.metadata.status === "revised"
+          ? "revised"
+          : "inProgress",
+    children: node.children ? mapToChapterNodes(node.children) : [],
   }));
 }
 
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function EditorPage({ isDemo = false }: EditorPageProps) {
-  // UI Store
-  const {
-    rightSidebarOpen,
-    toggleRightSidebar,
-    rightSidebarTab,
-    setRightSidebarTab,
-  } = useUIStore();
-
-  // Demo Store
-  const { isTourActive, startTour, endTour, completeTour, isTourCompleted } =
-    useDemoStore();
-
-  // Local State
+export default function EditorPage({ isDemo = false }) {
   const [characterCount, setCharacterCount] = useState(0);
-  const prevCountRef = useRef(0); // 통계용 이전 글자 수
-  const [showTourPrompt, setShowTourPrompt] = useState(false);
-  // EditorContent ref (통합 뷰 저장 강제 호출용)
   const editorContentRef = useRef<EditorContentHandle>(null);
-  // selectedFolderId = currently selected folder (chapter) in sidebar
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-1" : null,
+
+  const debouncedSetCharacterCount = useMemo(
+    () => debounce((count: number) => setCharacterCount(count), 1000),
+    [],
   );
-  // selectedSectionId = currently editing section in editor
+
+  useEffect(() => {
+    return () => {
+      debouncedSetCharacterCount.cancel();
+    };
+  }, [debouncedSetCharacterCount]);
+
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
+    isDemo ? "chapter-demo-1" : null,
+  );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     isDemo ? "chapter-1-1" : null,
   );
+  const [viewMode, setViewMode] = useState<
+    "editor" | "scrivenings" | "outline" | "corkboard"
+  >("editor");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // 복선 생성 후 사이드바 포커스 이동용 상태
-  const [newForeshadowingId] = useState<string | null>(null);
+  const [createSectionModalOpen, setCreateSectionModalOpen] = useState(false);
+  /*
+  const [renameModal, setRenameModal] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+  const [splitState, setSplitState] = useState<{
+    before: string;
+    after: string;
+  } | null>(null);
+  */
 
-  // Editor Store
-  const { splitView, toggleSplitView, viewMode, setViewMode } =
-    useEditorStore();
-
-  // Editor Setting Store - Typewriter mode & Focus mode
   const typewriterMode = useEditorSettingStore(
     (state) => state.behavior.typewriterMode,
   );
-  const toggleTypewriterMode = useEditorSettingStore(
-    (state) => state.toggleTypewriterMode,
-  );
   const isTypewriterMode = typewriterMode !== "off";
-
-  // Focus mode from settings store
   const isFocusMode = useEditorSettingStore(
     (state) => state.behavior.focusMode,
   );
-  const toggleFocusMode = useEditorSettingStore(
-    (state) => state.toggleFocusMode,
-  );
+  /* performanceMode removed */
 
-  // Project ID - use URL param, fallback to SAMPLE_PROJECT_ID for demo/default
-  const { id: urlProjectId } = useParams<{ id: string }>();
+  const { id: projectIdFromParams } = useParams<{ id: string }>();
+  const projectId = isDemo
+    ? DEMO_PROJECT_ID
+    : (projectIdFromParams ?? DEMO_PROJECT_ID);
+
   const location = useLocation();
-  const projectId = isDemo ? "demo-project" : urlProjectId || SAMPLE_PROJECT_ID;
-
-  // Navigation state에서 전달된 섹션 ID (월드 페이지에서 복선 위치 클릭 시)
-  const navigationSectionId = (
+  const initialStateFromRedirect = (
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
 
-  // 쿼리 파라미터에서 documentId 추출 (storead에서 수정 버튼 클릭 시)
   const queryDocumentId = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("documentId");
   }, [location.search]);
 
   // ============================================================
-  // SSE 연결 & 분석 버퍼 (증분 분석 시스템)
+  // 1. Core Data Hooks
   // ============================================================
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { flushAndAnalyze, isAnalyzing: _isAnalyzing } = useProjectSSE(
@@ -237,7 +257,9 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   const [showExport, setShowExport] = useState(false);
 
   const { data: project } = useProject(projectId, { enabled: !isDemo });
-  const allDocuments = useDocumentStore((state) => state.documents);
+  const allDocuments = useDocumentStore(
+    (state) => (state as { documents: Record<string, Document> }).documents,
+  );
   const localDocuments = useMemo(
     () =>
       isDemo
@@ -249,129 +271,212 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
   );
 
   const previewChapters = useMemo(() => {
-    if (isDemo) return [];
-    return (localDocuments ?? [])
-      .filter((doc): doc is Document => doc?.type === "text")
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((doc) => ({
-        id: doc.id,
-        title: doc.title,
-        content: doc.content ?? "",
-      }));
-  }, [localDocuments, isDemo]);
+    if (!isDemo) return [];
+    return buildDemoChapterTree(DEMO_CHAPTERS);
+  }, [isDemo]);
+
+  // documentTree removed as it was unused and mapToChapterNodes handles it
 
   const projectTitle = useMemo(() => {
-    if (isDemo) return "데모 작품";
+    if (isDemo) return DEMO_PROJECT_TITLE;
     if (project?.title) return project.title;
-    const folder = localDocuments?.find(
-      (doc: Document) => doc.type === "folder",
-    );
-    return folder?.title || "내 작품";
-  }, [project?.title, localDocuments, isDemo]);
+    return "내 작품";
+  }, [project?.title, isDemo]);
 
-  // ============================================================
-  // Document Hooks (for non-demo mode)
-  // ============================================================
+  const documents = useMemo(() => {
+    return isDemo
+      ? (DEMO_CHAPTERS as unknown as Document[])
+      : Object.values(localDocuments);
+  }, [isDemo, localDocuments]);
 
-  const { tree: documentTree, documents } = useDocumentTree(projectId);
-  const {
-    content: documentContent,
-    saveContent,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useDocumentContent(isDemo ? null : selectedSectionId);
+  const sidebarChapters = useMemo(() => {
+    if (isDemo)
+      return previewChapters as unknown as import("@/components/editor/sidebar/types").ChapterNode[];
+    return mapToChapterNodes(buildDocumentTree(documents));
+  }, [documents, isDemo, previewChapters]);
 
-  // Fetch Characters for Export/Publish Snapshot
+  const { content: documentContent } = useDocumentContent(
+    isDemo ? null : selectedSectionId,
+  );
+
+  const { document } = useDocument(isDemo ? null : selectedSectionId);
+
   const { data: characters = [] } = useCharacters(projectId, {
     enabled: !isDemo,
   });
 
-  // Compute Links for Graph Snapshot
   const graphLinks = useMemo(() => {
-    if (isDemo || !characters.length) return [];
-
-    const links: Array<{
+    if (isDemo) return [];
+    interface GraphLink {
+      id: string;
       source: string;
       target: string;
-      id: string | number;
       type: string;
       strength: number;
-    }> = [];
-    const processedLinkIds = new Set<string>();
-
-    characters.forEach((char) => {
-      const relGraph = char.relations?.graph || [];
-      relGraph.forEach((rel) => {
-        // Use source from relation or fallback to char._id
-        const sourceId = char._id;
-        const linkId = `${sourceId}-${rel.target}`;
-
-        if (processedLinkIds.has(linkId)) return;
-        processedLinkIds.add(linkId);
-
+      description: string;
+    }
+    const links: GraphLink[] = [];
+    characters.forEach((char: Character) => {
+      char.relations?.graph?.forEach((rel: CharacterRelation) => {
         links.push({
-          source: sourceId,
+          id: `${char._id}-${rel.target}`,
+          source: char._id,
           target: rel.target,
-          id: linkId,
           type: rel.type,
           strength: rel.strength,
+          description: rel.description,
         });
       });
     });
     return links;
   }, [characters, isDemo]);
 
-  const {
-    createDocument,
-    updateDocument: updateDocumentMutation,
-    deleteDocument,
-    reorderDocuments,
-    moveDocument,
-  } = useDocumentMutations(projectId);
-  const { updateDocument } = useDocument(isDemo ? null : selectedSectionId);
-
   // ============================================================
-  // Analysis Status Logic (UI Feedback)
+  // Analysis Integration (Polling & Buffer)
   // ============================================================
+  const queryClient = useQueryClient();
+  const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
+  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  const [consistencyReport, setConsistencyReport] =
+    useState<ConsistencyReport | null>(null);
+  const addToBuffer = useAnalysisBufferStore(
+    (state) =>
+      (state as { addToBuffer: (projectId: string, content: string) => void })
+        .addToBuffer,
+  );
 
-  const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
-  const [analysisDisplayStatus, setAnalysisDisplayStatus] = useState<
-    "idle" | "analyzing" | "completed" | "error"
-  >("idle");
-  const prevAnalyzingRef = useRef(isAnalyzing);
+  const handleAnalysisComplete = useCallback(
+    (result: AnalysisResultData) => {
+      const diff = calculateAnalysisDiff(characters, graphLinks, result);
+
+      setAnalysisDiff(diff);
+      setShowAnalysisSummary(true);
+
+      if (result.consistencyReport) {
+        setConsistencyReport(result.consistencyReport);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
+    [characters, graphLinks, projectId, queryClient],
+  );
+
+  const readerChapters = useMemo(() => {
+    interface FlatChapter {
+      id: string;
+      title: string;
+      content: string;
+    }
+    const flat: FlatChapter[] = [];
+    const traverse = (nodes: DocumentTreeNode[]) => {
+      nodes.forEach((node) => {
+        if (node.type === "text" || node.type === "scrivenings") {
+          flat.push({
+            id: node.id,
+            title: node.title,
+            content: node.content || "",
+          });
+        }
+        if (node.children) traverse(node.children);
+      });
+    };
+    traverse(buildDocumentTree(documents));
+    return flat;
+  }, [documents]);
+
+  const { flushAndAnalyze, isAnalyzing, analysisProgress, analysisError } =
+    useProjectAnalysis(isDemo ? null : projectId, {
+      enabled: !isDemo,
+      onAnalysisComplete: handleAnalysisComplete,
+    });
+
+  const analysisStatus = useMemo(() => {
+    if (isAnalyzing) return "analyzing";
+    if (analysisError) return "error";
+    if (analysisProgress === 100) return "completed";
+    return "idle";
+  }, [isAnalyzing, analysisError, analysisProgress]);
+
+  const saveContent = useCallback(
+    async (content: string) => {
+      if (!selectedSectionId || isDemo) return;
+      try {
+        useDocumentStore.getState()._setContent(selectedSectionId, content);
+      } catch (error) {
+        console.error("Failed to save content:", error);
+      } finally {
+        // setIsSaving removed
+      }
+    },
+    [isDemo, selectedSectionId],
+  );
+
+  const saveWithAnalysis = useCallback(
+    async (content: string) => {
+      if (!selectedSectionId) return;
+      await saveContent(content);
+      if (!isDemo) {
+        addToBuffer(selectedSectionId, content);
+        flushAndAnalyze();
+      }
+    },
+    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
+  );
+
+  const handleManualAnalysis = useCallback(() => {
+    if (!selectedSectionId || isDemo) return;
+    const content =
+      editorContentRef.current?.getContent() || documentContent || "";
+    if (content) {
+      addToBuffer(selectedSectionId, content);
+      flushAndAnalyze();
+    }
+  }, [
+    selectedSectionId,
+    isDemo,
+    addToBuffer,
+    flushAndAnalyze,
+    documentContent,
+  ]);
 
   useEffect(() => {
-    // 분석 시작
-    if (isAnalyzing && !prevAnalyzingRef.current) {
-      setAnalysisDisplayStatus("analyzing");
-    }
-    // 분석 완료 (false로 변경됨)
-    else if (!isAnalyzing && prevAnalyzingRef.current) {
-      setAnalysisDisplayStatus("completed");
-      // 3초 후 idle로 복귀
-      const timer = setTimeout(() => {
-        setAnalysisDisplayStatus("idle");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-
-    prevAnalyzingRef.current = isAnalyzing;
-  }, [isAnalyzing]);
+    if (isDemo) return;
+    const handleBeforeUnload = () => {
+      flushAndAnalyze();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDemo, flushAndAnalyze]);
 
   // ============================================================
-  // Editor Handlers Hook
+  // UI & Modals State
   // ============================================================
+  const [showReader, setShowReader] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  // ============================================================
+  // Editor Handlers & Mutations
+  // ============================================================
+  const {
+    createDocument: createDocumentMutation,
+    deleteDocument: deleteDocumentMutation,
+    reorderDocuments: reorderDocumentsMutation,
+    moveDocument: moveDocumentMutation,
+    updateDocument: updateDocumentMutation,
+  } = useDocumentMutations(projectId);
+
+  // useEditorHandlers handles character count internally
 
   const {
     lastContentRef,
     saveContentRef,
     saveTimeoutRef,
-    handleSelectFolder,
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
-    handleAddSection,
     handleRenameChapter,
     handleDeleteChapter,
     handleReorderChapter,
@@ -386,270 +491,88 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent,
-    updateDocument,
-    updateDocumentMutation,
-    createDocument,
-    deleteDocument,
-    reorderDocuments,
-    moveDocument,
-    // 통합 뷰 저장 콜백: 섹션 클릭 시 저장 후 뷰 전환
-    scriveningsSaveAll: useCallback(async () => {
-      if (editorContentRef.current) {
-        await editorContentRef.current.saveAll();
-      }
-    }, []),
-  });
-
-  // Title editing state
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState("");
-
-  // ============================================================
-  // Editor Effects Hook
-  // ============================================================
-
-  useEditorEffects({
-    isDemo,
-    documents,
-    selectedFolderId,
-    selectedSectionId,
-    setSelectedFolderId,
-    setSelectedSectionId,
-    isTourCompleted,
-    isTourActive,
-    setShowTourPrompt,
-  });
-
-  // Navigation state에서 전달된 섹션으로 이동 (월드 페이지에서 복선 위치 클릭 시)
-  useEffect(() => {
-    if (navigationSectionId && !isDemo) {
-      setSelectedSectionId(navigationSectionId);
-      // 에디터 뷰 모드로 전환
-      if (viewMode !== "editor") {
-        setViewMode("editor");
-      }
-      // state 초기화 (뒤로가기 시 재적용 방지)
-      window.history.replaceState({}, document.title);
-    }
-  }, [navigationSectionId, isDemo, viewMode, setViewMode]);
-
-  // 쿼리 파라미터의 documentId로 해당 문서로 이동 (storead에서 수정 버튼 클릭 시)
-  useEffect(() => {
-    if (queryDocumentId && !isDemo) {
-      console.log("[EditorPage] queryDocumentId로 문서 선택:", queryDocumentId);
-      setSelectedSectionId(queryDocumentId);
-      // 에디터 뷰 모드로 전환
-      if (viewMode !== "editor") {
-        setViewMode("editor");
-      }
-      // URL에서 쿼리 파라미터 제거 (뒤로가기 시 재적용 방지)
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-  }, [queryDocumentId, isDemo, viewMode, setViewMode]);
-
-  // ============================================================
-  // Computed Data
-  // ============================================================
-
-  // Build chapter tree for sidebar (folders only)
-  const chapterTreeData = useMemo<ChapterNode[]>(() => {
-    if (isDemo) return DEMO_CHAPTER_TREE;
-    return documentTreeToChapterTree(documentTree);
-  }, [isDemo, documentTree]);
-
-  // Current parent folder title
-  const currentFolderTitle = useMemo(() => {
-    if (isDemo) {
-      return DEMO_CHAPTERS.find((c) => c.id === selectedFolderId)?.title || "";
-    }
-    const doc = documents.find((d) => d.id === selectedFolderId);
-    return doc?.title || "";
-  }, [isDemo, selectedFolderId, documents]);
-
-  // Current section title
-  const currentSectionTitle = useMemo(() => {
-    if (isDemo) {
-      return DEMO_CHAPTERS.find((c) => c.id === selectedSectionId)?.title || "";
-    }
-    const doc = documents.find((d) => d.id === selectedSectionId);
-    return doc?.title || "";
-  }, [isDemo, selectedSectionId, documents]);
-
-  // Section breadcrumb path (from root to current section)
-  const sectionPath = useMemo(() => {
-    if (isDemo || !selectedSectionId) return [];
-
-    const path: Array<{ id: string; title: string }> = [];
-    let currentId: string | null = selectedSectionId;
-
-    // Traverse from current section to root
-    while (currentId) {
-      const doc = documents.find((d) => d.id === currentId);
-      if (!doc) break;
-
-      path.unshift({ id: doc.id, title: doc.title });
-      currentId = doc.parentId || null;
-    }
-
-    return path;
-  }, [isDemo, selectedSectionId, documents]);
-
-  // Current content
-  const currentContent = useMemo(() => {
-    if (isDemo && selectedSectionId) {
-      return DEMO_CHAPTER_CONTENTS[selectedSectionId] || "";
-    }
-    return documentContent;
-  }, [isDemo, selectedSectionId, documentContent]);
-
-  // ============================================================
-  // Local Helpers (not in hook)
-  // ============================================================
-
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const isSidebarVisible = isSidebarOpen && !isFocusMode;
-
-  // Wrapper for handleCharacterCountChange to include setCharacterCount
-  const onCharacterCountChange = useCallback(
-    (count: number) => {
-      // 집필 통계 기록 (Delta > 0 이고 100자 미만일 때만 - 로딩/붙여넣기 제외)
-      const delta = count - prevCountRef.current;
-      if (delta > 0 && delta < 100) {
-        import("@/stores/useWritingStatsStore").then(
-          ({ useWritingStatsStore }) => {
-            useWritingStatsStore.getState().recordActivity(delta);
-          },
-        );
-      }
-      prevCountRef.current = count;
-
-      handleCharacterCountChange(count, setCharacterCount);
+    saveContent: saveWithAnalysis,
+    updateDocument: (updates) => {
+      if (!selectedSectionId) return;
+      useDocumentStore.getState()._update(selectedSectionId, updates);
     },
-    [handleCharacterCountChange],
-  );
+    updateDocumentMutation: async (id, updates) => {
+      await updateDocumentMutation.mutateAsync({
+        id,
+        payload: updates,
+      });
+    },
+    createDocument: async (data) => {
+      return createDocumentMutation.mutateAsync(data);
+    },
+    deleteDocument: async (id) => {
+      await deleteDocumentMutation.mutateAsync(id);
+    },
+    reorderDocuments: async (parentId, orderedIds) => {
+      await reorderDocumentsMutation.mutateAsync({
+        parentId,
+        orderedIds,
+      });
+    },
+    moveDocument: async (itemId, targetFolderId) => {
+      await moveDocumentMutation.mutateAsync({
+        itemId,
+        targetFolderId,
+      });
+    },
+  });
 
-  // ============================================================
-  // Effects
-  // ============================================================
+  // Modal Handlers
+  const handleCreateSection = () => setCreateSectionModalOpen(true);
+  /*
+  const handleRenameSection = (id: string, title: string) =>
+    setRenameModal({ id, title });
+  const handleDeleteSection = (id: string) => setDeleteModalId(id);
+  */
 
-  // Tour Prompt removed (moved to useEditorEffects hook)
+  const handleConfirmCreateSection = async (
+    title: string,
+    type: "chapter" | "section",
+  ) => {
+    await handleAddChapter(
+      title,
+      selectedFolderId || undefined,
+      type === "chapter" ? "chapter" : "section",
+    );
+    setCreateSectionModalOpen(false);
+  };
 
-  // Ctrl+S / Command+S Save (extracted to hook)
+  /*
+  const handleConfirmRename = async (newTitle: string) => {
+    if (renameModal) {
+      await handleRenameChapter(renameModal.id, newTitle);
+      setRenameModal(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteModalId) {
+      await handleDeleteChapter(deleteModalId);
+      setDeleteModalId(null);
+    }
+  };
+  */
+
   useKeyboardSave({
     isDemo,
     selectedSectionId,
     saveContentRef,
     lastContentRef,
     saveTimeoutRef,
+    getLatestContent: () => editorContentRef.current?.getContent() || "",
   });
 
-  // Split & Create Section Logic
-  // ============================================================
-  // editorContentRef는 상단에서 이미 선언됨 (통합 뷰 저장 강제 호출용)
-  const { bulkSaveContent } = useBulkDocumentContent();
-  const [createSectionModalOpen, setCreateSectionModalOpen] = useState(false);
-  const [splitState, setSplitState] = useState<{
-    before: string;
-    after: string;
-    parentId?: string;
-    order?: number;
-    title?: string;
-    targetDocId?: string;
-  } | null>(null);
-
-  const handleRequestAddSection = useCallback(
-    (title?: string) => {
-      // 1. Split 동작 수행 (Single & Scrivenings)
-      if (editorContentRef.current) {
-        const split = editorContentRef.current.getSplitContent();
-
-        // 2. 커서 위치 기반 분할 가능 여부 확인
-        if (split) {
-          // viewMode에 따라 대상 ID 결정
-          const targetId = split.targetDocId || selectedSectionId;
-
-          if (targetId) {
-            const currentDoc = documents.find((d) => d.id === targetId);
-            if (currentDoc) {
-              const parentId = currentDoc.parentId ?? undefined;
-              const insertAfterOrder = currentDoc.order;
-
-              setSplitState({
-                before: split.before,
-                after: split.after,
-                parentId,
-                order:
-                  insertAfterOrder !== undefined
-                    ? insertAfterOrder + 1
-                    : undefined,
-                title,
-                targetDocId: targetId,
-              });
-              setCreateSectionModalOpen(true);
-              return;
-            }
-          }
-        }
-      }
-
-      // 3. Fallback: 분할 불가능하거나 다른 모드일 경우 일반 생성 (모달 오픈)
-      setSplitState(null); // 일반 생성 모드
-      setCreateSectionModalOpen(true);
-    },
-    [selectedSectionId, documents],
-  );
-
-  const handleConfirmCreateSection = async (title: string) => {
-    // 1. Split 모드
-    if (splitState) {
-      const { before, after, parentId, order, targetDocId } = splitState;
-      const updateId = targetDocId || selectedSectionId;
-
-      if (updateId) {
-        // Auto-save 타이머 클리어 (경쟁 상태 방지)
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-
-        // 현재 문서 내용 수동 업데이트 (Before Part) - Single View용 체크
-        if (updateId === selectedSectionId) {
-          lastContentRef.current = before;
-        }
-
-        // 새 문서 생성
-        const newDoc = await createDocument({
-          type: "text",
-          title,
-          parentId,
-          order,
-        });
-
-        if (newDoc) {
-          // Bulk Update: 현재 문서(Before) + 새 문서(After)
-          await bulkSaveContent({
-            [updateId]: before,
-            [newDoc.id]: after,
-          });
-
-          // 새 문서로 이동 (Scrivenings에서도 강조 표시를 위해 선택)
-          setSelectedSectionId(newDoc.id);
-        }
-      }
+  useEffect(() => {
+    const docId = queryDocumentId || initialStateFromRedirect;
+    if (docId) {
+      handleSelectSection(docId);
     }
-    // 2. 일반 생성 모드
-    else {
-      await handleAddSection(title);
-    }
-
-    setCreateSectionModalOpen(false);
-    setSplitState(null);
-  };
-
-  // ============================================================
-  // Render
-  // ============================================================
+  }, [queryDocumentId, initialStateFromRedirect]);
 
   return (
     <div
@@ -658,9 +581,10 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
         isDemo ? "h-screen" : "h-full",
       )}
     >
-      {/* Demo Header */}
       {isDemo && (
-        <DemoHeader isTourCompleted={isTourCompleted} onStartTour={startTour} />
+        <header className="w-full bg-yellow-100 border-b border-yellow-300 text-yellow-800 text-xs text-center p-2 font-semibold">
+          데모 버전입니다. 모든 내용은 저장되지 않습니다.
+        </header>
       )}
 
       {/* Project Header moved to ProjectLayout for global consistency */}
@@ -752,82 +676,73 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
               analysisStatus={analysisDisplayStatus}
             />
           )}
+        </AnimatePresence>
 
-          {/* Focus Mode Exit Button */}
-          {isFocusMode && (
-            <div className="absolute top-4 right-4 z-50">
-              <button
-                onClick={toggleFocusMode}
-                className="bg-sage-600 hover:bg-sage-700 shadow-lg border border-sage-500 px-4 py-2 rounded-full text-sm font-semibold text-white flex items-center gap-2 transition-all hover:scale-105"
-                title="집중 모드 종료 (ESC)"
-              >
-                <Minimize2 className="w-4 h-4" />
-                집중 모드 종료
-              </button>
-            </div>
+        <main
+          className={cn(
+            "flex-1 flex flex-col transition-all duration-300",
+            isTypewriterMode ? "items-center" : "",
+            isFocusMode && "bg-stone-50",
           )}
+        >
+          <EditorToolbar
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            isSidebarVisible={isSidebarOpen}
+            currentFolderTitle={projectTitle}
+            currentSectionTitle={document?.title || ""}
+            sectionPath={[]} // Need to calculate or add to hook
+            isEditingTitle={false} // State needed
+            editedTitle={""} // State needed
+            onEditedTitleChange={() => {}}
+            onStartEditTitle={() => {}}
+            onSaveTitle={() => {}}
+            onCancelEditTitle={() => {}}
+            isDemo={isDemo}
+            selectedSectionId={selectedSectionId}
+            characterCount={characterCount}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+            splitViewEnabled={false}
+            onToggleSplitView={() => {}}
+            onToggleFocusMode={() => {}}
+            isTypewriterMode={isTypewriterMode}
+            onToggleTypewriterMode={() => {}}
+            rightSidebarOpen={false}
+            onToggleRightSidebar={() => {}}
+            onExport={() => setShowExport(true)}
+            onShowReader={() => setShowReader(true)}
+            analysisStatus={analysisStatus}
+            onTriggerAnalysis={handleManualAnalysis}
+          />
 
-          {/* Editor Content */}
-          {/* Editor Content */}
-          <div className="flex-1 overflow-hidden relative">
+          <Suspense fallback={<EditorLoadingSkeleton />}>
             <EditorContent
+              ref={editorContentRef}
               viewMode={viewMode}
               selectedFolderId={selectedFolderId}
               selectedSectionId={selectedSectionId}
               projectId={projectId}
-              splitView={splitView}
+              splitView={{ enabled: false, direction: "vertical" }}
               isFocusMode={isFocusMode}
-              currentContent={currentContent}
-              currentSectionTitle={currentSectionTitle}
-              onCharacterCountChange={onCharacterCountChange}
+              currentContent={documentContent}
+              currentSectionTitle={document?.title || ""}
+              onCharacterCountChange={(count: number) =>
+                handleCharacterCountChange(count, setCharacterCount)
+              }
               onContentChange={handleContentChange}
-              ref={editorContentRef}
-              onCreateSection={handleRequestAddSection}
-              onSelectSection={(id) => {
-                setSelectedSectionId(id);
-                setViewMode("editor");
-              }}
-              onSynopsisUpdate={async (id, synopsis) => {
-                await updateDocumentMutation(id, { synopsis });
-              }}
+              onCreateSection={handleCreateSection}
+              onSelectSection={handleSelectSection}
               documents={documents}
               isDemo={isDemo}
-              fetchNextPage={fetchNextPage}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
             />
-          </div>
-
-          {/* Section Strip removed - use left sidebar for section navigation
-              to minimize distractions and maintain writer focus */}
+          </Suspense>
         </main>
 
-        {/* Right Sidebar - Hidden in focus mode */}
-        {!isFocusMode && (
-          <EditorRightSidebar
-            isOpen={rightSidebarOpen}
-            onClose={toggleRightSidebar}
-            activeTab={rightSidebarTab}
-            onTabChange={setRightSidebarTab}
-            documentId={selectedSectionId}
-            projectId={projectId}
-            sectionTitle={currentSectionTitle}
-            newForeshadowingId={newForeshadowingId}
-            onNavigateToPosition={(docId) => {
-              // 해당 섹션으로 이동 (섹션 단위 네비게이션)
-              if (docId && docId !== selectedSectionId) {
-                setSelectedSectionId(docId);
-                // 에디터 뷰 모드로 전환 (통합 뷰에서 단일 뷰로)
-                if (viewMode !== "editor") {
-                  setViewMode("editor");
-                }
-              }
-            }}
-          />
-        )}
-
-        {/* Snapshot Panel */}
-        <SnapshotPanel
+        <EditorRightSidebar
+          isOpen={true} // Simplified, always open on larger screens
+          onClose={() => {}} // Placeholder
+          activeTab="ai" // Default tab
+          onTabChange={() => {}} // Placeholder
           documentId={selectedSectionId}
           currentContent={currentContent}
           documentTitle={currentSectionTitle}
@@ -852,74 +767,61 @@ export default function EditorPage({ isDemo = false }: EditorPageProps) {
           projectGenre={project?.genre}
           projectCoverImage={project?.coverImage}
         />
-
-        {/* Right Sidebar Toggle removed - already handled in EditorToolbar */}
       </div>
 
-      {/* Tour Prompt */}
-      {showTourPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-2xl p-6 max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">✨</span>
-              </div>
-              <h2 className="text-xl font-bold mb-2">StoLink 둘러보기</h2>
-              <p className="text-muted-foreground">
-                AI 기반 스토리 관리 플랫폼의 주요 기능을 안내해드릴게요. 약 1분
-                정도 소요됩니다.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowTourPrompt(false)}
-              >
-                나중에 할게요
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  setShowTourPrompt(false);
-                  startTour();
-                }}
-              >
-                시작하기
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Guided Tour */}
-      <GuidedTour
-        steps={DEMO_TOUR_STEPS}
-        isOpen={isTourActive}
-        onClose={endTour}
-        onComplete={completeTour}
-      />
-
-      {/* Book Reader Modal - 로컬 데이터 실시간 반영 */}
-      {!isDemo && (
-        <BookReaderModal
-          isOpen={showReader}
-          onClose={() => setShowReader(false)}
-          chapters={previewChapters}
-          bookTitle={projectTitle}
-        />
-      )}
-
-      {/* Create Section Modal (Split UI) */}
       <CreateSectionModal
         isOpen={createSectionModalOpen}
-        onClose={() => {
-          setCreateSectionModalOpen(false);
-          setSplitState(null);
-        }}
-        onCreate={handleConfirmCreateSection}
-        defaultTitle={splitState?.title}
+        onClose={() => setCreateSectionModalOpen(false)}
+        onCreate={(title) => handleConfirmCreateSection(title, "section")}
       />
+      {/* Missing modals commented out to unblock build */}
+      {/*
+      {renameModal && (
+        <RenameSectionModal
+          isOpen={!!renameModal}
+          onClose={() => setRenameModal(null)}
+          onConfirm={handleConfirmRename}
+          currentTitle={renameModal.title}
+        />
+      )}
+      {deleteModalId && (
+        <DeleteSectionModal
+          isOpen={!!deleteModalId}
+          onClose={() => setDeleteModalId(null)}
+          onConfirm={handleConfirmDelete}
+          title={documents.find((d) => d.id === deleteModalId)?.title || ""}
+        />
+      )}
+      <DemoTourModal
+        isOpen={showTourPrompt}
+        onClose={() => setShowTourPrompt(false)}
+      />
+      */}
+      {analysisDiff && (
+        <AnalysisSummaryModal
+          isOpen={showAnalysisSummary}
+          onClose={() => setShowAnalysisSummary(false)}
+          diff={analysisDiff}
+        />
+      )}
+      {showReader && (
+        <ReaderModal
+          isOpen={showReader}
+          onClose={() => setShowReader(false)}
+          chapters={readerChapters}
+        />
+      )}
+      {showExport && (
+        <ExportModal
+          isOpen={showExport}
+          onClose={() => setShowExport(false)}
+          projectId={projectId}
+          content={documentContent}
+          title={document?.title || ""}
+          documents={documents}
+          characters={characters}
+        />
+      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ function generateHorizontalTrunk(
   startX: number,
   centerY: number,
   endX: number,
-  random: () => number
+  random: () => number,
 ): { path: string; getYAtX: (x: number) => { top: number; bottom: number } } {
   const length = endX - startX;
   const segments = 50;
@@ -113,7 +113,7 @@ function generateTaperedBranch(
   angle: number, // degrees, 0 = 오른쪽, 90 = 위
   startThickness: number,
   endThickness: number,
-  random: () => number
+  random: () => number,
 ): { path: string; tipX: number; tipY: number } {
   const segments = 10;
   const angleRad = (angle * Math.PI) / 180;
@@ -168,31 +168,31 @@ function generateTaperedBranch(
   return { path, tipX, tipY };
 }
 
-/** prev_event_id 기반 정렬 */
+/** prevEventId 기반 정렬 */
 function sortEventsByPrevId(events: BiographyEvent[]): BiographyEvent[] {
   if (events.length === 0) return [];
 
-  const firstEvent = events.find((e) => e.prev_event_id === null);
+  const firstEvent = events.find((e) => e.prevEventId === null);
   if (!firstEvent) {
-    return [...events].sort((a, b) => a.event_id.localeCompare(b.event_id));
+    return [...events].sort((a, b) => a.eventId.localeCompare(b.eventId));
   }
 
   const sorted: BiographyEvent[] = [firstEvent];
-  const usedIds = new Set<string>([firstEvent.event_id]);
+  const usedIds = new Set<string>([firstEvent.eventId]);
 
   let current = firstEvent;
   while (sorted.length < events.length) {
     const next = events.find(
-      (e) => e.prev_event_id === current.event_id && !usedIds.has(e.event_id)
+      (e) => e.prevEventId === current.eventId && !usedIds.has(e.eventId),
     );
     if (!next) break;
     sorted.push(next);
-    usedIds.add(next.event_id);
+    usedIds.add(next.eventId);
     current = next;
   }
 
   events.forEach((e) => {
-    if (!usedIds.has(e.event_id)) sorted.push(e);
+    if (!usedIds.has(e.eventId)) sorted.push(e);
   });
 
   return sorted;
@@ -208,11 +208,11 @@ interface UseBiographyTreeOptions {
  */
 export function useBiographyTree(
   events: BiographyEvent[],
-  options: UseBiographyTreeOptions = {}
+  options: UseBiographyTreeOptions = {},
 ): TreeStructure {
   const seed =
     options.seed ??
-    events.reduce((acc, e) => acc + e.event_id.charCodeAt(0), 12345);
+    events.reduce((acc, e) => acc + e.eventId.charCodeAt(0), 12345);
 
   const configWidth =
     options.config?.containerWidth ?? DEFAULT_TREE_CONFIG.containerWidth;
@@ -252,7 +252,7 @@ export function useBiographyTree(
       configTrunkStartX,
       centerY,
       trunkEndX,
-      random
+      random,
     );
 
     // 가지 생성 (각 이벤트마다 하나)
@@ -290,7 +290,7 @@ export function useBiographyTree(
         branchAngle,
         startThickness,
         endThickness,
-        random
+        random,
       );
 
       // 노드 위치
@@ -298,7 +298,7 @@ export function useBiographyTree(
       const nodeY = branch.tipY;
 
       branches.push({
-        id: `branch-${event.event_id}`,
+        id: `branch-${event.eventId}`,
         path: branch.path,
         startX: branchX,
         startY: startY,
@@ -306,7 +306,7 @@ export function useBiographyTree(
         endY: nodeY,
         thickness: startThickness,
         node: {
-          id: event.event_id,
+          id: event.eventId,
           event,
           x: nodeX,
           y: nodeY,

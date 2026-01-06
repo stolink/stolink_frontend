@@ -48,7 +48,7 @@ export function useEditorEffects({
         setSelectedFolderId(firstFolder.id);
       }
     }
-  }, [isDemo, documents, selectedFolderId, setSelectedFolderId]); // Only run when documents first load or no folder selected
+  }, [isDemo, documents, selectedFolderId, setSelectedFolderId]);
 
   // 3. Auto-select section logic
 
@@ -80,8 +80,8 @@ export function useEditorEffects({
     documents,
     selectedFolderId,
     selectedSectionId,
-    setSelectedFolderId,
     setSelectedSectionId,
+    setSelectedFolderId,
   ]);
 
   // 4. Tour Prompt

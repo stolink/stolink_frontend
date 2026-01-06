@@ -10,18 +10,16 @@ import type {
  * Font family CSS value mapping
  */
 const FONT_FAMILY_MAP: Record<FontFamily, string> = {
-  system:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
-  pretendard:
-    "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  "noto-sans-kr": "'Noto Sans KR', sans-serif",
-  "spoqa-han-sans": "'Spoqa Han Sans Neo', sans-serif",
-  "ridi-batang": "'RIDIBatang', serif",
-  "nanum-myeongjo": "'Nanum Myeongjo', serif",
-  "kopub-batang": "'KoPub Batang', serif",
-  "source-han-serif": "'Source Han Serif K', serif",
-  d2coding: "'D2Coding', monospace",
-  "jetbrains-mono": "'JetBrains Mono', monospace",
+  system: "'Pretendard', sans-serif",
+  pretendard: "'Pretendard', sans-serif",
+  "noto-sans-kr": "'Pretendard', sans-serif",
+  "spoqa-han-sans": "'Pretendard', sans-serif",
+  "ridi-batang": "'Pretendard', sans-serif",
+  "nanum-myeongjo": "'Pretendard', sans-serif",
+  "kopub-batang": "'Pretendard', sans-serif",
+  "source-han-serif": "'Pretendard', sans-serif",
+  d2coding: "'Pretendard', sans-serif",
+  "jetbrains-mono": "'Pretendard', sans-serif",
 };
 
 /**
@@ -53,29 +51,29 @@ const THEME_COLORS: Record<
   { bg: string; text: string; selection: string }
 > = {
   light: {
-    bg: "#F8F8F7",
-    text: "#2D2A28",
-    selection: "rgba(95, 125, 95, 0.2)",
+    bg: "#FDFCFB",
+    text: "#3D302A", // Espresso 900
+    selection: "rgba(166, 140, 114, 0.2)",
   },
   dark: {
-    bg: "#2D2D2D",
-    text: "#E5E5E5",
-    selection: "rgba(130, 161, 130, 0.3)",
+    bg: "#3D302A", // Espresso 900 for dark mode background
+    text: "#F1F0EC", // Cloud 50 for text
+    selection: "rgba(164, 119, 100, 0.3)",
   },
   sepia: {
-    bg: "#F4ECD8",
-    text: "#5C4033",
-    selection: "rgba(139, 115, 85, 0.25)",
+    bg: "#F1F0EC",
+    text: "#3D302A",
+    selection: "rgba(164, 119, 100, 0.2)",
   },
   "eye-care": {
-    bg: "#FAF9F6",
-    text: "#3D3D3D",
-    selection: "rgba(95, 125, 95, 0.2)",
+    bg: "#F1F0EC",
+    text: "#5B7B4B", // Success Green for eye-care
+    selection: "rgba(91, 123, 75, 0.2)",
   },
   "true-black": {
-    bg: "#000000",
-    text: "#CCCCCC",
-    selection: "rgba(130, 161, 130, 0.35)",
+    bg: "#1A1A1A", // Softer than pure black
+    text: "#F1F0EC",
+    selection: "rgba(255, 255, 255, 0.1)",
   },
 };
 
@@ -91,7 +89,7 @@ function getIndentValue(indent: number): string {
  * Use this to apply styles via CSS variables for performance
  */
 export function getEditorCSSVariables(
-  settings: EditorSettings
+  settings: EditorSettings,
 ): Record<string, string> {
   const theme = settings.visual?.theme ?? "light";
   const themeColors = THEME_COLORS[theme] ?? THEME_COLORS.light;

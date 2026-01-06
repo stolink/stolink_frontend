@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { X, Users } from "lucide-react";
 import type { Character, RelationshipLink, CharacterNode } from "@/types";
-import { RELATION_LABELS } from "./constants";
+import { RELATION_LABELS, type UIRelationType } from "./constants";
 import { getRelationshipColor } from "./utils";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +129,10 @@ export function RelationshipSummaryPanel({
         ) : (
           <div className="divide-y divide-stone-100">
             {relatedLinks.map((link) => {
-              const color = getRelationshipColor(link.type, link.strength);
+              const color = getRelationshipColor(
+                link.type as UIRelationType,
+                link.strength,
+              );
               return (
                 <div
                   key={link.id}
@@ -150,7 +153,8 @@ export function RelationshipSummaryPanel({
                           color: color,
                         }}
                       >
-                        {RELATION_LABELS[link.type] || link.type}
+                        {RELATION_LABELS[link.type as UIRelationType] ||
+                          link.type}
                       </span>
                     </div>
                     <span className="text-xs text-stone-400">

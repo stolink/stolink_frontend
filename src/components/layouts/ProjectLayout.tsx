@@ -5,8 +5,8 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { useEditorStore } from "@/stores";
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 
 /**
  * ProjectLayout - Header-First Layout (Dashboard Style)
@@ -78,7 +78,7 @@ export function ProjectLayout() {
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Home / Back to Library Button */}
             <Button
-              variant="ghost"
+              intent="ghost"
               size="sm"
               onClick={() => navigate("/library")}
               className="group gap-1.5 pl-2 pr-3 hover:bg-muted text-muted-foreground hover:text-primary transition-colors"

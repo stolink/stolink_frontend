@@ -20,19 +20,19 @@ export type BiographyEventType =
   | "death" // 사망
   | "other"; // 기타
 
-/** 인물 일대기 사건 데이터 (API 응답 구조) */
+/** 인물 일대기 사건 데이터 (프론트엔드 타입 - camelCase) */
 export interface BiographyEvent {
-  event_id: string;
-  event_type: BiographyEventType | string;
-  narrative_summary: string; // 제목 역할
+  eventId: string;
+  eventType: BiographyEventType | string;
+  narrativeSummary: string; // 제목 역할
   description: string;
   participants: string[]; // 참여 캐릭터들
-  location_ref: string | null; // 장소 참조
-  prev_event_id: string | null; // 이전 이벤트 ID (연결)
-  visual_scene: string | null; // 시각적 장면 설명
+  locationRef: string | null; // 장소 참조
+  prevEventId: string | null; // 이전 이벤트 ID (연결)
+  visualScene: string | null; // 시각적 장면 설명
   timestamp: string | null; // 시간 (null 가능)
   importance: number; // 1-10 숫자
-  changes_made: unknown | null; // 변화 기록
+  changesMade: unknown | null; // 변화 기록
 }
 
 /** 중요도 수준 판별 헬퍼 */
