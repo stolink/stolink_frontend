@@ -3,19 +3,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 truncate max-w-[200px]",
   {
     variants: {
       intent: {
-        primary:
-          "border-transparent bg-mocha-500 text-white hover:bg-mocha-400",
-        secondary:
-          "border-transparent bg-cloud-100 text-espresso-900 hover:bg-cloud-200",
+        primary: "border-transparent bg-primary text-primary-foreground",
+        secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive:
-          "border-transparent bg-status-error text-white hover:bg-status-error/80",
-        outline: "text-espresso-900 border-mocha-200",
-        success: "border-transparent bg-status-success text-white",
-        warning: "border-transparent bg-status-warning text-white",
+          "border-transparent bg-destructive text-destructive-foreground",
+        outline: "text-foreground border-border",
+        success: "border-transparent bg-success text-success-foreground",
+        warning: "border-transparent bg-warning text-warning-foreground",
       },
     },
     defaultVariants: {

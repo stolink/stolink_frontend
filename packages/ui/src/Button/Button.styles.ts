@@ -1,17 +1,19 @@
 import { cva } from "../utils";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95",
+  "inline-flex items-center justify-center truncate rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95",
   {
     variants: {
       intent: {
         primary:
-          "bg-mocha-500 text-white hover:bg-mocha-400 shadow-md hover:shadow-lg",
+          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
         secondary:
-          "bg-cloud-100 text-espresso-900 hover:bg-cloud-200 border border-cloud-200",
-        ghost: "hover:bg-mocha-500/10 text-mocha-900 border-transparent",
-        destructive: "bg-status-error text-white hover:bg-status-error/90",
-        outline: "border border-mocha-500 text-mocha-500 hover:bg-mocha-50",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
       },
       size: {
         sm: "h-8 px-3 text-xs",

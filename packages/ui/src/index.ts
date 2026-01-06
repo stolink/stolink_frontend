@@ -1,5 +1,6 @@
 export * from "./Button/Button";
 export * from "./Input/Input";
+export * from "./theme/ThemeSync";
 export * from "./Dialog/Dialog";
 export * from "./Card/Card";
 export * from "./Badge/Badge";

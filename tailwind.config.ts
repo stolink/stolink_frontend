@@ -13,6 +13,7 @@ export default {
         cloud: Palette.cloud,
         sage: Palette.sage,
         espresso: Palette.espresso,
+        doechii: Palette.doechii,
 
         // Premium/Crafted colors - Mapped to Palette
         paper: Palette.cloud[50],
@@ -58,18 +59,22 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        overlay: "var(--overlay)",
       },
       fontFamily: {
-        heading: ["DM Serif Display", "Pretendard", "sans-serif"],
-        body: ["Spectral", "Pretendard", "serif"],
-        serif: ["Spectral", "serif"],
-        display: ["DM Serif Display", "serif"],
-        sans: [
-          "Pretendard",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "sans-serif",
-        ],
+        mono: ['"Pretendard"', "monospace"],
+        sans: ['"Pretendard"', "system-ui", "sans-serif"],
+        serif: ['"Pretendard"', "serif"],
+        display: ['"Pretendard"', "serif"],
+        body: ['"Pretendard"', "serif"],
       },
       fontSize: {
         body: "16px",
@@ -87,6 +92,7 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        shimmer: "shimmer 2s infinite",
       },
       transitionTimingFunction: {
         organic: "cubic-bezier(0.19, 1, 0.22, 1)", // expo-out like
@@ -106,6 +112,10 @@ export default {
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         },
       },
     },

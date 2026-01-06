@@ -106,8 +106,6 @@ AI 모델이 따라야 할 4단계 프로토콜:
 docs/
 ├── critical/          # 성능, 트러블슈팅
 │   ├── TROUBLESHOOTING.md
-│   ├── performance-optimization-summary.md
-│   └── performance-benchmark.md
 ├── spec/              # 명세서
 │   ├── API_SPEC.md
 │   ├── DATA_MODEL.md
@@ -119,6 +117,82 @@ docs/
 └── workflow/          # Git 전략
     └── GIT_STRATEGY.md
 ```
+
+<!-- Mocha & Cloud Dancer Design System -->
+
+## Target Color Palette
+
+### Primary (Mocha) & Surface (Cloud)
+
+| 이름 (Token) | HEX     | 용도 및 특징               |
+| ------------ | ------- | -------------------------- |
+| Mocha 500    | #A47764 | 핵심 브랜드 색상           |
+| Mocha 400    | #BD9B8D | Hover 상태 (고휘도)        |
+| Mocha 700    | #7D5A4B | Dark/Active 상태           |
+| Cloud 50     | #F1F0EC | 메인 배경색 (Cloud Dancer) |
+| Espresso 900 | #3D302A | 본문 텍스트                |
+
+### DOECHII Official Palette
+
+| 이름      | HEX     | 용도                       |
+| --------- | ------- | -------------------------- |
+| Doechii 1 | #122611 | Deep Forest Green (포인트) |
+| Doechii 2 | #BF8A49 | Golden Tan (강조)          |
+| Doechii 3 | #D9B89C | Light Peach (부제목)       |
+| Doechii 4 | #8C3D20 | Burnt Mocha (아이콘/강조)  |
+| Doechii 5 | #401309 | Deep Chocolate (어두운 글) |
+
+### Status Colors
+
+| 이름    | HEX     | 용도                    |
+| ------- | ------- | ----------------------- |
+| Success | #5B7B4B | 성공/긍정 피드백        |
+| Warning | #B8860B | 경고 (가독성 확보 골드) |
+| Error   | #A33A3A | 오류 (공학용 레드)      |
+
+### Relationship Colors (TW3K/CK3 스타일)
+
+| 관계 유형 | HEX     | 설명                       |
+| --------- | ------- | -------------------------- |
+| Friendly  | #15803D | Dark Green (신뢰, 협력)    |
+| Hostile   | #F44336 | Red (갈등, 적대)           |
+| Romantic  | #FF4081 | Vivid Blossom (애정, 열정) |
+
+**참고**: 관계 강도(Strength)에 따른 색상 구분은 제거되고 통합되었습니다.
+
+## 디자인 원칙
+
+- **Warm & Soft**: Mocha와 Cloud Colors를 사용하여 따뜻하고 부드러운 분위기 연출
+- **Unified Typography**: 모든 텍스트에 **Pretendard** 단일 폰트 적용 (Modern & Professional)
+- **가독성 확보**: Cloud Dancer 배경 위 Espresso 900 텍스트로 12:1 이상 명도 대비 확보
+- **일관성**: 모든 UI 요소는 새로운 색체계를 준수하여 시각적 통일성 유지
+
+## Core Philosophy
+
+- **Literary IDE**: "Beautiful logic for authors." Create a premium, organized drafting environment.
+- **Warm Immersion**: Avoid cold "tech" aesthetics. Focus on a comfortable, long-form writing experience.
+- **Precision Typography**: Strictly use **Pretendard** for all UI and content.
+
+## Design Quality Standards
+
+- **Typography**:
+  - **Unified**: Use **Pretendard** for everything. No Serif or Monospace variations.
+  - Optimize for readability with generous `line-height` and balanced kerning.
+- **Color & Theme**:
+  - Primary: `Mocha` palette for accents and primary actions.
+  - Surface: `Cloud` palette for backgrounds and panels.
+- **Motion & Interaction**:
+  - Use `framer-motion` for complex animations, CSS transitions for simple ones.
+  - Soft, organic transitions (`cubic-bezier(0.19, 1, 0.22, 1)`).
+- **Composition**:
+  - Balanced negative space and deliberate hierarchy.
+  - Soft shadows (`shadow-paper`) and organic borders (`rounded-xl`).
+
+## 🔴 Anti-Patterns (MUST NOT)
+
+- Hardcoded Midnight hex codes (e.g., #0A0A0A). Use semantic tokens.
+- Non-Pretendard fonts (Serif, Monospace).
+- Sharp corners or cold "Terminal" aesthetic.
 
 ---
 

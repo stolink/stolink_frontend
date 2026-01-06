@@ -50,7 +50,7 @@ export const Ghost: Story = {
 
 export const Danger: Story = {
   args: {
-    intent: "danger",
+    intent: "destructive",
     children: "Delete Item",
   },
 };
@@ -60,7 +60,7 @@ export const Glass: Story = {
     backgrounds: { default: "dark" },
   },
   args: {
-    intent: "glass",
+    intent: "ghost",
     children: "Glass Effect",
   },
 };
