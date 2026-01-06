@@ -252,21 +252,26 @@ export function useProjectAnalysis(
     setAnalysisProgress(0);
 
     try {
-      // Transform chunks to match API spec (timestamp as ISO string)
-      const payloadChunks = bufferContent.map((chunk) => ({
-        ...chunk,
-        timestamp: new Date(chunk.timestamp).toISOString(),
-      }));
+      // Backend expects flat object: { projectId, documentId, content }
+      // If multiple chunks, we analyze them one by one.
+      // For now, we take the most recent job ID if multiple.
+      let lastJobId: string | null = null;
 
-      const response = await aiService.analyzeStory(projectId, payloadChunks);
-      const jobId = response.data?.jobId;
+      for (const chunk of bufferContent) {
+        const response = await aiService.analyzeStory({
+          projectId,
+          documentId: chunk.documentId,
+          content: chunk.content,
+        });
 
-      if (jobId) {
-        console.log("[useProjectAnalysis] Job started:", jobId);
-        setJobId(jobId);
-        // Store current hashes to track what we are analyzing
-        // We will finalize this into lastAnalyzedHashes upon completion
-        // For now, just save them in a ref to use when completed
+        if (response.data?.jobId) {
+          lastJobId = response.data.jobId;
+        }
+      }
+
+      if (lastJobId) {
+        console.log("[useProjectAnalysis] Job started:", lastJobId);
+        setJobId(lastJobId);
         pendingHashesRef.current = currentHashes;
       } else {
         throw new Error("No jobId returned from analyze API");

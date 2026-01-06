@@ -35,17 +35,14 @@ export const aiService = {
   },
 
   // 3. Analyze Story (Long-running Job)
-  analyzeStory: async (
-    projectId: string,
-    chunks: {
-      documentId: string;
-      content: string;
-      timestamp: string;
-    }[],
-  ) => {
+  analyzeStory: async (payload: {
+    projectId: string;
+    documentId: string;
+    content: string;
+  }) => {
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
-    >(`${BASE_URL}/analyze`, { projectId, chunks });
+    >(`${BASE_URL}/analyze`, payload);
     return response.data;
   },
 
