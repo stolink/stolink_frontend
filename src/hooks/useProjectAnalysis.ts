@@ -252,7 +252,13 @@ export function useProjectAnalysis(
     setAnalysisProgress(0);
 
     try {
-      const response = await aiService.analyzeStory(projectId, bufferContent);
+      // Transform chunks to match API spec (timestamp as ISO string)
+      const payloadChunks = bufferContent.map((chunk) => ({
+        ...chunk,
+        timestamp: new Date(chunk.timestamp).toISOString(),
+      }));
+
+      const response = await aiService.analyzeStory(projectId, payloadChunks);
       const jobId = response.data?.jobId;
 
       if (jobId) {

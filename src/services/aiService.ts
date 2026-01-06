@@ -40,7 +40,7 @@ export const aiService = {
     chunks: {
       documentId: string;
       content: string;
-      timestamp: number;
+      timestamp: string;
     }[],
   ) => {
     const response = await api.post<
