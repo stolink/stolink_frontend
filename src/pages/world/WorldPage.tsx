@@ -185,9 +185,6 @@ export default function WorldPage() {
         queryClient.invalidateQueries({
           queryKey: ["characters", "list", projectId],
         });
-        queryClient.invalidateQueries({
-          queryKey: ["characters", projectId],
-        });
       },
     });
 
