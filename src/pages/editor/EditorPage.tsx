@@ -237,9 +237,8 @@ export default function EditorPage({ isDemo = false }) {
     return mapToChapterNodes(buildDocumentTree(documents));
   }, [documents, isDemo, previewChapters]);
 
-  const { content: documentContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId
-  );
+  const { content: documentContent, saveContent: saveDocumentContent } =
+    useDocumentContent(isDemo ? null : selectedSectionId);
 
   const { document } = useDocument(isDemo ? null : selectedSectionId);
 
@@ -344,14 +343,13 @@ export default function EditorPage({ isDemo = false }) {
     async (content: string) => {
       if (!selectedSectionId || isDemo) return;
       try {
-        useDocumentStore.getState()._setContent(selectedSectionId, content);
+        // Use the hook's saveContent which handles backend sync
+        await saveDocumentContent(content);
       } catch (error) {
         console.error("Failed to save content:", error);
-      } finally {
-        // setIsSaving removed
       }
     },
-    [isDemo, selectedSectionId]
+    [isDemo, selectedSectionId, saveDocumentContent]
   );
 
   const saveWithAnalysis = useCallback(
