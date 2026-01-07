@@ -78,7 +78,7 @@ function ScoreGauge({ score }: { score: number }) {
           className={cn(
             "text-xs font-medium px-2 py-0.5 rounded-full",
             getScoreBgColor(score),
-            getScoreTextColor(score),
+            getScoreTextColor(score)
           )}
         >
           {getScoreLabel(score)}
@@ -117,7 +117,7 @@ function ConflictCard({
         "before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-r-full before:transition-all",
         isError
           ? "border-rose-100 hover:border-rose-200 before:bg-rose-400 shadow-rose-900/5"
-          : "border-amber-100 hover:border-amber-200 before:bg-amber-400 shadow-amber-900/5",
+          : "border-amber-100 hover:border-amber-200 before:bg-amber-400 shadow-amber-900/5"
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -127,7 +127,7 @@ function ConflictCard({
               "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
               isError
                 ? "bg-rose-100 text-rose-600"
-                : "bg-amber-100 text-amber-600",
+                : "bg-amber-100 text-amber-600"
             )}
           >
             {isError ? (
@@ -139,7 +139,7 @@ function ConflictCard({
           <span
             className={cn(
               "font-bold text-sm",
-              isError ? "text-rose-900" : "text-amber-900",
+              isError ? "text-rose-900" : "text-amber-900"
             )}
           >
             {conflict.category}
@@ -222,9 +222,9 @@ export default function InsightsPanel({
     consistencyReport?.conflicts.filter((c) => c.severity === "warning")
       .length ?? 0;
 
-  const handleNavigate = (location: Conflict["location"]) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleNavigate = (_location: Conflict["location"]) => {
     // TODO: 에디터에서 해당 위치로 이동하는 로직 구현
-    console.log("Navigate to:", location);
   };
 
   return (
@@ -273,7 +273,7 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount > 0
                     ? "bg-rose-100 text-rose-700 shadow-sm"
-                    : "text-mocha-400",
+                    : "text-mocha-400"
                 )}
               >
                 <X className="w-3.5 h-3.5" />
@@ -285,7 +285,7 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   warningCount > 0
                     ? "bg-amber-100 text-amber-700 shadow-sm"
-                    : "text-mocha-400",
+                    : "text-mocha-400"
                 )}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -297,7 +297,7 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount === 0 && warningCount === 0
                     ? "bg-sage-100 text-sage-700 shadow-sm"
-                    : "text-mocha-400",
+                    : "text-mocha-400"
                 )}
               >
                 <CheckCircle className="w-3.5 h-3.5" />

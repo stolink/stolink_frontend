@@ -115,14 +115,12 @@ export function useJobSSE<T = unknown>(
 
     // Connection opened
     eventSource.onopen = () => {
-      console.log("[useJobSSE] Connection opened for job:", jobId);
       setIsConnected(true);
       setJobStatus("processing");
     };
 
     // Heartbeat - connection health check
     eventSource.addEventListener("heartbeat", () => {
-      console.log("[useJobSSE] Heartbeat received for job:", jobId);
       setIsConnected(true);
       // Reset timeout timer on heartbeat
       startTimeRef.current = Date.now();

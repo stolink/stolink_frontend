@@ -20,6 +20,7 @@ export type BiographyEventType =
   | "transformation" // 변화
   | "birth" // 탄생
   | "death" // 사망
+  | "confession" // 고백
   | "other"; // 기타
 
 /** 인물 일대기 사건 데이터 (프론트엔드 타입 - camelCase) */

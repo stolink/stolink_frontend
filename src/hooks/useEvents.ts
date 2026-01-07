@@ -40,20 +40,21 @@ function eventToBiography(event: Event): BiographyEvent {
  */
 export function useCharacterEvents(
   characterId: string | null,
-  options: UseEventsOptions = {},
+  options: UseEventsOptions = {}
 ) {
   const { enabled = true } = options;
 
   return useQuery({
-    queryKey: ["events", "character", characterId],
+    queryKey: ["events", "character", characterId, "debug-force-v1"],
     queryFn: async (): Promise<BiographyEvent[]> => {
       if (!characterId) return [];
       const events = await eventService.getByCharacter(characterId);
       return events.map(eventToBiography);
     },
     enabled: enabled && !!characterId,
-    staleTime: 5 * 60 * 1000, // 5분
-    gcTime: 10 * 60 * 1000, // 10분 (구 cacheTime)
+    // Debugging: Force fetch every time
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 
@@ -70,7 +71,7 @@ export function useCharacterEvents(
  */
 export function useProjectEvents(
   projectId: string | null,
-  options: UseEventsOptions = {},
+  options: UseEventsOptions = {}
 ) {
   const { enabled = true } = options;
 

@@ -89,7 +89,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       hasNextPage,
       isFetchingNextPage,
     },
-    ref,
+    ref
   ) => {
     const { id: projectId } = useParams<{ id: string }>();
     const [zoom, setZoom] = useState(DEFAULT_ZOOM);
@@ -252,7 +252,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             // Remove prose class - use direct styling for full width
             "w-full",
             "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80",
+            readOnly && "pointer-events-none opacity-80"
           ),
           spellcheck: "false",
         },
@@ -333,7 +333,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             onContentChangeRef.current(html);
           }
         }, 500),
-      [],
+      []
     );
 
     // Cancel debounce on unmount
@@ -417,7 +417,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
     const handleZoomOut = useCallback(
       () => adjustZoom(-ZOOM_STEP),
-      [adjustZoom],
+      [adjustZoom]
     );
 
     // Hide zoom controls after inactivity
@@ -474,9 +474,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
         // Only update if content is different AND editor is not focused
         if (isDifferentFromCurrent && isDifferentFromLastSaved && !isFocused) {
-          console.log("[TiptapEditor] Syncing content from server/store", {
-            documentId,
-          });
           editor.commands.setContent(sanitizedContent);
           lastEmittedHTMLRef.current = sanitizedContent;
         }
@@ -512,7 +509,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                     // 하지만 이는 사용자 커서를 움직이므로 트랜잭션으로 직접 마크 제거가 좋음
                     if (!editor.isDestroyed) {
                       editor.view.dispatch(
-                        editor.state.tr.removeMark(from, to, mark.type),
+                        editor.state.tr.removeMark(from, to, mark.type)
                       );
                     }
                   });
@@ -536,7 +533,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       const text = editor.state.doc.textBetween(
         editor.state.selection.from,
         editor.state.selection.to,
-        " ",
+        " "
       );
 
       if (!text?.trim() || !projectId) {
@@ -678,7 +675,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("bold")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("bold") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("bold") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Bold className="w-3.5 h-3.5" />
@@ -691,7 +688,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("italic")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("italic") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("italic") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Italic className="w-3.5 h-3.5" />
@@ -740,7 +737,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 "mx-auto my-4 bg-white shadow-sm border border-mocha-100 rounded-lg", // Paper sheet look for non-full width
               editorSettings.visual.width === "full" && "px-12",
               !readOnly &&
-                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md", // Subtle focus effect
+                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md" // Subtle focus effect
             )}
             style={{
               maxWidth: editorWidth,
@@ -761,7 +758,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               "absolute bottom-3 right-3 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-all duration-200",
               showZoomControls
                 ? "opacity-100 px-2 py-1.5"
-                : "opacity-50 hover:opacity-100 px-2 py-1",
+                : "opacity-50 hover:opacity-100 px-2 py-1"
             )}
             onMouseEnter={() => setShowZoomControls(true)}
             onMouseLeave={() => setShowZoomControls(false)}
@@ -813,7 +810,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 TiptapEditor.displayName = "TiptapEditor";

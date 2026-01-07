@@ -54,11 +54,7 @@ import type {
   ConsistencyReport,
 } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
-import {
-  type CharacterRelation,
-  type Character,
-  type RelationType,
-} from "@/types/character";
+import { type CharacterRelation, type Character } from "@/types/character";
 
 // Utils & Data
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
@@ -83,7 +79,6 @@ function buildDemoChapterTree(
   chapters.forEach((chapter) => {
     map.set(chapter.id, {
       ...chapter,
-      type: chapter.type === "chapter" ? "folder" : "text",
       children: [],
       synopsis: "",
       metadata: {
@@ -228,7 +223,7 @@ export default function EditorPage({ isDemo = false }) {
     if (isDemo) return DEMO_PROJECT_TITLE;
     if (project?.title) return project.title;
     return "내 작품";
-  }, [project, isDemo]);
+  }, [project?.title, isDemo]);
 
   const documents = useMemo(() => {
     return isDemo
@@ -242,8 +237,9 @@ export default function EditorPage({ isDemo = false }) {
     return mapToChapterNodes(buildDocumentTree(documents));
   }, [documents, isDemo, previewChapters]);
 
-  const { content: documentContent, saveContent: saveDocumentContent } =
-    useDocumentContent(isDemo ? null : selectedSectionId);
+  const { content: documentContent } = useDocumentContent(
+    isDemo ? null : selectedSectionId,
+  );
 
   const { document } = useDocument(isDemo ? null : selectedSectionId);
 
@@ -253,31 +249,28 @@ export default function EditorPage({ isDemo = false }) {
 
   const graphLinks = useMemo(() => {
     if (isDemo) return [];
-    // Import RelationshipLink from types/characterGraph instead of defining locally to avoid mismatch
-    interface LocalGraphLink {
+    interface GraphLink {
       id: string;
       source: string;
       target: string;
-      type: RelationType;
+      type: string;
       strength: number;
       description: string;
     }
-    const links: LocalGraphLink[] = [];
+    const links: GraphLink[] = [];
     characters.forEach((char: Character) => {
       char.relations?.graph?.forEach((rel: CharacterRelation) => {
         links.push({
           id: `${char._id}-${rel.target}`,
           source: char._id,
           target: rel.target,
-          type: (rel.type as RelationType) || "friendly",
+          type: rel.type,
           strength: rel.strength,
           description: rel.description,
         });
       });
     });
-    // Cast to unknown first to avoid structural mismatch complaints, though properties align
-    // calculateAnalysisDiff expects RelationshipLink[]
-    return links as unknown as import("@/types/characterGraph").RelationshipLink[];
+    return links;
   }, [characters, isDemo]);
 
   // ============================================================
@@ -349,31 +342,28 @@ export default function EditorPage({ isDemo = false }) {
 
   const saveContent = useCallback(
     async (content: string) => {
-      if (!selectedSectionId) return;
-
+      if (!selectedSectionId || isDemo) return;
       try {
-        if (isDemo) {
-          useDocumentStore.getState()._setContent(selectedSectionId, content);
-        } else {
-          // Use the hook's saveContent which handles backend sync
-          await saveDocumentContent(content);
-        }
+        useDocumentStore.getState()._setContent(selectedSectionId, content);
       } catch (error) {
         console.error("Failed to save content:", error);
+      } finally {
+        // setIsSaving removed
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent],
+    [isDemo, selectedSectionId],
   );
 
-  const saveAndBuffer = useCallback(
+  const saveWithAnalysis = useCallback(
     async (content: string) => {
       if (!selectedSectionId) return;
       await saveContent(content);
       if (!isDemo) {
         addToBuffer(selectedSectionId, content);
+        flushAndAnalyze();
       }
     },
-    [saveContent, selectedSectionId, isDemo, addToBuffer],
+    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -426,7 +416,6 @@ export default function EditorPage({ isDemo = false }) {
     lastContentRef,
     saveContentRef,
     saveTimeoutRef,
-    handleSelectSection,
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
@@ -444,25 +433,34 @@ export default function EditorPage({ isDemo = false }) {
     setSelectedSectionId,
     viewMode,
     setViewMode,
-    saveContent: saveAndBuffer,
+    saveContent: saveWithAnalysis,
     updateDocument: (updates) => {
       if (!selectedSectionId) return;
       useDocumentStore.getState()._update(selectedSectionId, updates);
     },
     updateDocumentMutation: async (id, updates) => {
-      await updateDocumentMutation(id, updates);
+      await updateDocumentMutation.mutateAsync({
+        id,
+        payload: updates,
+      });
     },
     createDocument: async (data) => {
-      return createDocumentMutation(data);
+      return createDocumentMutation.mutateAsync(data);
     },
     deleteDocument: async (id) => {
-      await deleteDocumentMutation(id);
+      await deleteDocumentMutation.mutateAsync(id);
     },
     reorderDocuments: async (parentId, orderedIds) => {
-      await reorderDocumentsMutation(parentId, orderedIds);
+      await reorderDocumentsMutation.mutateAsync({
+        parentId,
+        orderedIds,
+      });
     },
     moveDocument: async (itemId, targetFolderId) => {
-      await moveDocumentMutation(itemId, targetFolderId);
+      await moveDocumentMutation.mutateAsync({
+        itemId,
+        targetFolderId,
+      });
     },
   });
 
@@ -516,7 +514,7 @@ export default function EditorPage({ isDemo = false }) {
     if (docId) {
       handleSelectSection(docId);
     }
-  }, [queryDocumentId, initialStateFromRedirect, handleSelectSection]);
+  }, [queryDocumentId, initialStateFromRedirect]);
 
   return (
     <div

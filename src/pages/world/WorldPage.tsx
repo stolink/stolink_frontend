@@ -97,14 +97,6 @@ export default function WorldPage() {
           const diff = calculateAnalysisDiff(characters, links, result);
           setAnalysisDiff(diff);
           setIsAnalysisModalOpen(true);
-
-          // 분석 완료 후 캐릭터 및 이벤트 데이터 갱신
-          queryClient.invalidateQueries({
-            queryKey: ["characters", projectId],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["events", "project", projectId],
-          });
         }
       },
     });
@@ -115,9 +107,8 @@ export default function WorldPage() {
     if (!projectId) return;
     try {
       const result = await analyzeMutation.mutateAsync({
-        projectId: projectId || "",
-        documentId: "project-wide", // 프로젝트 전체 분석을 위한 예약어 혹은 더미
-        content: "", // 본문 데이터가 필요한 경우 추가 구현 필요
+        projectId,
+        documentIds: [], // Empty means analyze all for now
       });
       if (result.data?.jobId) {
         setJobId(result.data.jobId);

@@ -87,9 +87,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 
             // 프로젝트 변경 시 Job ID 복원
             if (projectId && state.activeJobs[projectId]) {
-              console.log(
-                `[Store] Restoring Job ID for project ${projectId}: ${state.activeJobs[projectId]}`,
-              );
               state.currentJobId = state.activeJobs[projectId];
               // Job이 있다는 건 보통 분석 중/완료 대기 상태임
               state.isAnalyzing = true;
@@ -107,7 +104,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // 같은 문서의 이전 청크가 있으면 교체 (덮어쓰기)
           const existingIndex = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId,
+            (chunk) => chunk.documentId === documentId
           );
 
           if (existingIndex >= 0) {
@@ -137,7 +134,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       removeFromBuffer: (documentId) => {
         set((state) => {
           const index = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId,
+            (chunk) => chunk.documentId === documentId
           );
           if (index >= 0) {
             state.bufferCharCount -= state.buffer[index].charCount;
@@ -232,8 +229,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         activeJobs: state.activeJobs, // 추가
         lastAnalyzedHashes: state.lastAnalyzedHashes,
       }),
-    },
-  ),
+    }
+  )
 );
 
 // 설정 상수 export (테스트 및 UI 표시용)
