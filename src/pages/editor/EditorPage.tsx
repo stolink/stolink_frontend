@@ -37,6 +37,7 @@ import {
   useDocumentMutations,
   useDocument,
   useDocumentContent,
+  useDocumentTree,
 } from "@/hooks/useDocuments";
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
@@ -199,6 +200,11 @@ export default function EditorPage({ isDemo = false }) {
   // 1. Core Data Hooks
   // ============================================================
   const { data: project } = useProject(projectId, { enabled: !isDemo });
+
+  // Fetch document tree from backend and sync to Zustand store
+  // This hook fetches from API and syncs to useDocumentStore automatically
+  useDocumentTree(isDemo ? "" : projectId);
+
   const allDocuments = useDocumentStore(
     (state) => (state as { documents: Record<string, Document> }).documents
   );
