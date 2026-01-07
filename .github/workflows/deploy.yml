@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main # production 환경
+      - release # production 환경
       - dev # develop 환경
 
 concurrency:
@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # 브랜치에 따라 환경 자동 선택
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
+    environment: ${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -62,7 +62,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     # 브랜치에 따라 환경 자동 선택
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
+    environment: ${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -108,7 +108,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'develop' }}
+          ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
           echo "## 🚀 Frontend Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
