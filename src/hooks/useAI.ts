@@ -45,8 +45,9 @@ export function useAnalyzeStory() {
   return useMutation({
     mutationFn: (payload: {
       projectId: string;
-      documentId: string;
-      content: string;
+      documentId?: string;
+      content?: string;
+      documentIds?: string[];
     }) => aiService.analyzeStory(payload),
   });
 }

@@ -433,7 +433,6 @@ export default function EditorPage({ isDemo = false }) {
     handleReorderChapter,
     handleMoveToFolder,
     handleViewModeChange,
-    handleSelectSection,
   } = useEditorHandlers({
     isDemo,
     documents,
