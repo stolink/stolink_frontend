@@ -28,7 +28,7 @@ import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal
 // import { DemoTourModal } from "@/pages/editor/components/DemoTourModal";
 import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
 import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
-import ExportModal from "@/components/editor/ExportModal";
+import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
 
 // Hooks
 import { useProject } from "@/hooks/useProjects";
@@ -207,8 +207,8 @@ export default function EditorPage({ isDemo = false }) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-          (doc) => doc.projectId === projectId,
-        ),
+            (doc) => doc.projectId === projectId,
+          ),
     [allDocuments, projectId, isDemo],
   );
 
@@ -291,7 +291,7 @@ export default function EditorPage({ isDemo = false }) {
     (result: AnalysisResultData) => {
       const diff = calculateAnalysisDiff(
         characters,
-        graphLinks as any,
+        graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
         result,
       );
 
@@ -547,7 +547,7 @@ export default function EditorPage({ isDemo = false }) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-stone-50",
+            isFocusMode && "bg-cloud-50",
           )}
         >
           <EditorToolbar
@@ -558,22 +558,22 @@ export default function EditorPage({ isDemo = false }) {
             sectionPath={[]} // Need to calculate or add to hook
             isEditingTitle={false} // State needed
             editedTitle={""} // State needed
-            onEditedTitleChange={() => { }}
-            onStartEditTitle={() => { }}
-            onSaveTitle={() => { }}
-            onCancelEditTitle={() => { }}
+            onEditedTitleChange={() => {}}
+            onStartEditTitle={() => {}}
+            onSaveTitle={() => {}}
+            onCancelEditTitle={() => {}}
             isDemo={isDemo}
             selectedSectionId={selectedSectionId}
             characterCount={characterCount}
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => { }}
-            onToggleFocusMode={() => { }}
+            onToggleSplitView={() => {}}
+            onToggleFocusMode={() => {}}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => { }}
+            onToggleTypewriterMode={() => {}}
             rightSidebarOpen={false}
-            onToggleRightSidebar={() => { }}
+            onToggleRightSidebar={() => {}}
             onExport={() => setShowExport(true)}
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
@@ -605,9 +605,9 @@ export default function EditorPage({ isDemo = false }) {
 
         <EditorRightSidebar
           isOpen={true} // Simplified, always open on larger screens
-          onClose={() => { }} // Placeholder
+          onClose={() => {}} // Placeholder
           activeTab="ai" // Default tab
-          onTabChange={() => { }} // Placeholder
+          onTabChange={() => {}} // Placeholder
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={
@@ -662,14 +662,18 @@ export default function EditorPage({ isDemo = false }) {
         />
       )}
       {showExport && (
-        <ExportModal
+        <ExportGatewayModal
           isOpen={showExport}
           onClose={() => setShowExport(false)}
-          projectId={projectId}
-          content={documentContent}
-          title={document?.title || ""}
           documents={documents}
+          projectId={projectId}
+          projectTitle={projectTitle}
+          projectDescription={project?.description}
+          projectGenre={project?.genre}
+          projectCoverImage={project?.coverImage}
+          currentId={selectedSectionId ?? undefined}
           characters={characters}
+          links={graphLinks}
         />
       )}
     </div>
