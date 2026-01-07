@@ -519,7 +519,27 @@ export default function EditorPage({ isDemo = false }) {
     if (docId) {
       handleSelectSection(docId);
     }
-  }, [queryDocumentId, initialStateFromRedirect]);
+  }, [queryDocumentId, initialStateFromRedirect, handleSelectSection]);
+
+  // Auto-select first text document when documents load and no section is selected
+  useEffect(() => {
+    if (isDemo) return;
+    if (selectedSectionId) return; // Already have a selection
+    if (queryDocumentId || initialStateFromRedirect) return; // Will be handled above
+
+    // Find first text document (not folder)
+    const firstTextDoc = documents.find((doc) => doc.type === "text");
+    if (firstTextDoc) {
+      setSelectedSectionId(firstTextDoc.id);
+    }
+  }, [
+    documents,
+    isDemo,
+    selectedSectionId,
+    queryDocumentId,
+    initialStateFromRedirect,
+    setSelectedSectionId,
+  ]);
 
   return (
     <div
