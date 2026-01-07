@@ -37,8 +37,9 @@ export const aiService = {
   // 3. Analyze Story (Long-running Job)
   analyzeStory: async (payload: {
     projectId: string;
-    documentId: string;
-    content: string;
+    documentId?: string;
+    content?: string;
+    documentIds?: string[];
   }) => {
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
