@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run build:packages && tsc -b && vite build",
     "preview": "vite preview",
     "prepare": "husky",
     "lint": "eslint . --ext .ts,.tsx",
@@ -25,8 +25,9 @@
     "test:coverage": "vitest --coverage",
     "test:run": "vitest run",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "chromatic": "npx chromatic --exit-zero-on-changes"
+    "build-storybook": "npm run build:packages && storybook build",
+    "chromatic": "npx chromatic --exit-zero-on-changes",
+    "build:packages": "npm run build --workspace=@stolink/tokens && npm run build --workspace=@stolink/ui"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

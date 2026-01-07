@@ -33,7 +33,7 @@ interface UseProjectAnalysisReturn {
 
 export function useProjectAnalysis(
   projectId: string | null,
-  options: UseProjectAnalysisOptions = {},
+  options: UseProjectAnalysisOptions = {}
 ): UseProjectAnalysisReturn {
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
 
@@ -97,16 +97,11 @@ export function useProjectAnalysis(
     cleanup();
 
     const url = aiService.getProjectStatusStreamUrl(projectId);
-    console.log("[useProjectAnalysis] Connecting to project status SSE:", url);
 
     const eventSource = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log(
-        "[useProjectAnalysis] SSE connection opened for project:",
-        projectId,
-      );
       setAnalysisError(null);
     };
 
@@ -120,7 +115,6 @@ export function useProjectAnalysis(
       try {
         const data = JSON.parse(e.data) as SSEProgressEvent;
         setAnalysisProgress(data.percent);
-        console.log(`[useProjectAnalysis] Progress: ${data.percent}%`);
 
         // If progress started, ensure we are in analyzing state
         if (data.percent > 0 && data.percent < 100) {
@@ -135,9 +129,8 @@ export function useProjectAnalysis(
     eventSource.addEventListener("completed", (e) => {
       try {
         const data = JSON.parse(
-          e.data,
+          e.data
         ) as SSECompletedEvent<AnalysisResultData>;
-        console.log("[useProjectAnalysis] Analysis completed");
 
         setAnalysisProgress(100);
         setBufferAnalyzing(false);
@@ -153,7 +146,7 @@ export function useProjectAnalysis(
         console.error(
           "[useProjectAnalysis] Failed to parse completed:",
           e.data,
-          err,
+          err
         );
         setAnalysisError("Failed to parse analysis result");
         setBufferAnalyzing(false);
@@ -200,11 +193,9 @@ export function useProjectAnalysis(
   // 분석 트리거 (버퍼 flush 후 분석 시작)
   const triggerAnalysis = useCallback(async () => {
     if (!projectId) {
-      console.log("[useProjectAnalysis] Trigger skipped: No projectId");
       return;
     }
     if (isAnalyzing) {
-      console.log("[useProjectAnalysis] Trigger skipped: Already analyzing");
       return;
     }
 
@@ -212,7 +203,6 @@ export function useProjectAnalysis(
       useAnalysisBufferStore.getState();
 
     if (currentBuffer.length === 0) {
-      console.log("[useProjectAnalysis] Trigger skipped: Buffer empty");
       return;
     }
 
@@ -229,9 +219,6 @@ export function useProjectAnalysis(
     });
 
     if (!hasChanges) {
-      console.log(
-        "[useProjectAnalysis] Trigger skipped: No content changes detected via hashing",
-      );
       // Flush even if skipped? No, keep it in buffer until analyzed?
       // Actually, if it's already analyzed, we should clear the buffer.
       flush();
@@ -239,28 +226,31 @@ export function useProjectAnalysis(
     }
 
     const bufferContent = flush();
-    const documentIds = bufferContent.map((chunk) => chunk.documentId);
-
-    console.log(
-      "[useProjectAnalysis] Starting analysis for",
-      documentIds.length,
-      "documents",
-    );
 
     setBufferAnalyzing(true);
     setAnalysisError(null);
     setAnalysisProgress(0);
 
     try {
-      const response = await aiService.analyzeStory(projectId, documentIds);
-      const jobId = response.data?.jobId;
+      // Backend expects flat object: { projectId, documentId, content }
+      // If multiple chunks, we analyze them one by one.
+      // For now, we take the most recent job ID if multiple.
+      let lastJobId: string | null = null;
 
-      if (jobId) {
-        console.log("[useProjectAnalysis] Job started:", jobId);
-        setJobId(jobId);
-        // Store current hashes to track what we are analyzing
-        // We will finalize this into lastAnalyzedHashes upon completion
-        // For now, just save them in a ref to use when completed
+      for (const chunk of bufferContent) {
+        const response = await aiService.analyzeStory({
+          projectId,
+          documentId: chunk.documentId,
+          content: chunk.content,
+        });
+
+        if (response.data?.jobId) {
+          lastJobId = response.data.jobId;
+        }
+      }
+
+      if (lastJobId) {
+        setJobId(lastJobId);
         pendingHashesRef.current = currentHashes;
       } else {
         throw new Error("No jobId returned from analyze API");
@@ -278,7 +268,6 @@ export function useProjectAnalysis(
   const flushAndAnalyze = useCallback(async () => {
     const summary = getBufferSummary();
     if (summary.charCount > 0) {
-      console.log("[useProjectAnalysis] Force flush:", summary);
       await triggerAnalysis();
     }
   }, [getBufferSummary, triggerAnalysis]);
@@ -289,7 +278,6 @@ export function useProjectAnalysis(
 
     const checkAutoFlush = () => {
       if (shouldAutoFlush()) {
-        console.log("[useProjectAnalysis] Auto flush triggered");
         triggerAnalysis();
       }
     };
@@ -313,32 +301,20 @@ export function useProjectAnalysis(
       if (!currentJobId) {
         // No job ID - make sure we're not stuck in analyzing state
         if (isAnalyzing) {
-          console.log(
-            "[useProjectAnalysis] No job ID but isAnalyzing is true. Resetting.",
-          );
           setBufferAnalyzing(false);
         }
         return;
       }
 
       try {
-        console.log(
-          "[useProjectAnalysis] Checking status for existing job:",
-          currentJobId,
-        );
         const status =
           await aiService.getJobStatus<AnalysisResultData>(currentJobId);
 
         if (!mounted) return;
 
-        console.log("[useProjectAnalysis] Job status recovered:", status);
-
         const normalizedStatus = status.status.toLowerCase();
 
         if (normalizedStatus === "completed") {
-          console.log(
-            "[useProjectAnalysis] Job completed while disconnected. Finalizing.",
-          );
           setAnalysisProgress(100);
           setBufferAnalyzing(false);
           setJobId(null);
@@ -347,26 +323,17 @@ export function useProjectAnalysis(
             onCompleteRef.current?.(status.result);
           }
         } else if (normalizedStatus === "failed") {
-          console.log("[useProjectAnalysis] Job failed while disconnected.");
           setAnalysisError(status.error || "Analysis job failed");
           setBufferAnalyzing(false);
           setJobId(null);
           onErrorRef.current?.(status.error || "Analysis job failed");
         } else {
           // 'pending' or 'processing'
-          console.log(
-            "[useProjectAnalysis] Job still in progress. Syncing state.",
-          );
 
           // Stuck Detection logic (Logging only)
           const currentProgress = status.progress || 0;
           if (currentProgress === lastProgressRef.current) {
             stuckCountRef.current += 1;
-            if (stuckCountRef.current % 5 === 0) {
-              console.log(
-                `[useProjectAnalysis] Job progressing slowly... (Count: ${stuckCountRef.current})`,
-              );
-            }
           } else {
             stuckCountRef.current = 0;
             lastProgressRef.current = currentProgress;
@@ -384,13 +351,7 @@ export function useProjectAnalysis(
         // If 404 or any error, the job is likely gone. Reset state.
         const axiosError = error as { response?: { status?: number } };
         if (axiosError?.response?.status === 404) {
-          console.log(
-            "[useProjectAnalysis] Job not found (404). Resetting state.",
-          );
-        } else {
-          console.log(
-            "[useProjectAnalysis] Job status check failed. Resetting state to be safe.",
-          );
+          // Job not found
         }
         setBufferAnalyzing(false);
         setJobId(null);

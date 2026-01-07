@@ -43,13 +43,11 @@ export function useConsistencyCheck() {
  */
 export function useAnalyzeStory() {
   return useMutation({
-    mutationFn: ({
-      projectId,
-      documentIds,
-    }: {
+    mutationFn: (payload: {
       projectId: string;
-      documentIds: string[];
-    }) => aiService.analyzeStory(projectId, documentIds),
+      documentId: string;
+      content: string;
+    }) => aiService.analyzeStory(payload),
   });
 }
 
@@ -67,7 +65,7 @@ export function useAIJobPolling<T = unknown>(
     enabled?: boolean;
     onComplete?: (result: T) => void;
     onError?: (error: string) => void;
-  }
+  },
 ) {
   const { isConnected, jobStatus, progress, result, error } = useJobSSE<T>(
     jobId,
@@ -77,7 +75,7 @@ export function useAIJobPolling<T = unknown>(
       maxConnectionTime: 5 * 60 * 1000, // 5분 타임아웃
       onComplete: options?.onComplete,
       onError: options?.onError,
-    }
+    },
   );
 
   // 기존 인터페이스와 호환되도록 isPolling 대신 isConnected 반환
