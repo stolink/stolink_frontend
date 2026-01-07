@@ -66,7 +66,7 @@ export function BiographyTree({
   // 컨텐츠 전체 너비
   const contentWidth = Math.max(
     sortedEvents.length * SPACING + CONTAINER_PADDING * 2,
-    800,
+    800
   );
 
   const handleNodeClick = useCallback(
@@ -74,7 +74,7 @@ export function BiographyTree({
       onEventClick(eventId);
       setDetailOpen(true);
     },
-    [onEventClick],
+    [onEventClick]
   );
 
   const closeDetail = useCallback(() => {
@@ -96,7 +96,7 @@ export function BiographyTree({
     <div
       className={cn(
         "relative w-full h-[500px] rounded-2xl overflow-hidden border border-stone-200/60 shadow-paper bg-cloud-50",
-        className,
+        className
       )}
     >
       {/* 타임라인 방향 표시 */}
@@ -183,7 +183,7 @@ export function BiographyTree({
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{
                       backgroundColor: getEventTypeConfig(
-                        selectedEvent.eventType,
+                        selectedEvent.eventType
                       ).accentColor,
                     }}
                   >
@@ -398,7 +398,7 @@ function SignpostNode({
         whileTap={{ scale: 0.95 }}
         className={cn(
           "relative flex items-center justify-center rounded-lg shadow-lg transition-all",
-          isSelected && "ring-2 ring-white ring-offset-2",
+          isSelected && "ring-2 ring-white ring-offset-2"
         )}
         style={{
           width: isMajor ? 44 : 36,
@@ -426,7 +426,7 @@ function SignpostNode({
 
       {/* 호버 라벨 */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-12 px-3 py-1.5 bg-stone-900/90 backdrop-blur-sm rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
-        {event.narrativeSummary.slice(0, 20)}...
+        {event.narrativeSummary?.slice(0, 20) || "이벤트"}...
         <div className="absolute left-1/2 -translate-x-1/2 -top-1 border-4 border-transparent border-b-stone-900/90" />
       </div>
     </motion.div>

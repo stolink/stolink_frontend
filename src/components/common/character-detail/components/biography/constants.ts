@@ -17,6 +17,7 @@ import {
   MapPin, // arrival
   Sparkles, // transformation
   Circle,
+  Mic, // confession
   type LucideIcon,
 } from "lucide-react";
 import type { EventTypeConfig } from "@/types/biography";
@@ -37,6 +38,7 @@ export const EVENT_TYPE_ICONS: Record<string, LucideIcon> = {
   transformation: Sparkles,
   birth: Baby,
   death: Skull,
+  confession: Mic,
   other: Circle,
 };
 
@@ -111,6 +113,11 @@ export const EVENT_TYPE_CONFIG: Record<string, EventTypeConfig> = {
     label: "사망",
     color: "#3D302A", // Espresso 900
     accentColor: "#7D5A4B",
+  },
+  confession: {
+    label: "고백",
+    color: "#0D9488", // Teal 600
+    accentColor: "#2DD4BF", // Teal 400
   },
   other: {
     label: "기타",

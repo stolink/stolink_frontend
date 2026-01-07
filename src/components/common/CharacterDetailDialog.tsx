@@ -29,7 +29,12 @@ import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
-import { imageService, settingService, type ProjectSetting } from "@/services";
+import {
+  imageService,
+  settingService,
+  eventService,
+  type ProjectSetting,
+} from "@/services";
 import { useToast } from "@/hooks/useToast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -44,6 +49,7 @@ import {
 
 // Hooks & Components & Constants
 import { useCharacterData } from "@/hooks/useCharacterData";
+import { useCharacterEvents } from "@/hooks/useEvents";
 import { CharacterHeader } from "./character-detail/components/CharacterHeader";
 import { CharacterTraits } from "./character-detail/components/CharacterTraits";
 
@@ -68,7 +74,7 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
@@ -112,12 +118,12 @@ export default function CharacterDetailDialog({
       onTimeout: () => {
         setImageJobId(null);
       },
-    },
+    }
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id,
+    character?._id
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -141,8 +147,19 @@ export default function CharacterDetailDialog({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter, // displayCharacter 사용
+    displayCharacter // displayCharacter 사용
   );
+
+  // 캐릭터의 이벤트(일대기) 조회
+  const {
+    data: characterEvents = [],
+    isLoading: isEventsLoading,
+    isError: isEventsError,
+    error: eventsError,
+    fetchStatus: eventsFetchStatus,
+  } = useCharacterEvents(displayCharacter?._id ?? null, {
+    enabled: !!displayCharacter?._id && isOpen,
+  });
 
   const { toast } = useToast();
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
@@ -156,7 +173,12 @@ export default function CharacterDetailDialog({
         .getAll(character.projectId)
         .then((res) => {
           if (Array.isArray(res.data)) {
-            setSettings(res.data);
+            // Deduplicate and filter valid settings to prevent key collisions
+            const validSettings = res.data.filter((s) => s && s.id);
+            const uniqueSettings = Array.from(
+              new Map(validSettings.map((s) => [s.id, s])).values()
+            );
+            setSettings(uniqueSettings);
           }
         })
         .catch(() => {
@@ -169,7 +191,7 @@ export default function CharacterDetailDialog({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>,
+      settingOverride?: Record<string, unknown>
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -186,7 +208,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -234,7 +256,7 @@ export default function CharacterDetailDialog({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>,
+          selectedSetting as unknown as Record<string, unknown>
         );
 
         setImageJobId(jobId);
@@ -257,7 +279,7 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
-    ],
+    ]
   );
 
   const handleEdit = useCallback(() => {
@@ -281,7 +303,7 @@ export default function CharacterDetailDialog({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance,
+      editedCharacter.appearance
     );
 
     if (onSave) {
@@ -303,7 +325,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    [],
+    []
   );
 
   const handleAppearanceChange = useCallback(
@@ -319,7 +341,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    [],
+    []
   );
 
   if (!character) {
@@ -480,8 +502,8 @@ export default function CharacterDetailDialog({
                               <SelectItem value="none">
                                 배경 없음 (캐릭터 중심)
                               </SelectItem>
-                              {settings.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
+                              {settings.map((s, i) => (
+                                <SelectItem key={`${s.id}-${i}`} value={s.id}>
                                   {s.name}
                                 </SelectItem>
                               ))}
@@ -495,7 +517,7 @@ export default function CharacterDetailDialog({
                             className="bg-paper border-stone-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) => setManualPrompt(e.target.value)}
                           />
                         </div>
@@ -565,7 +587,7 @@ export default function CharacterDetailDialog({
                                   >
                                     #{trait}
                                   </span>
-                                ),
+                                )
                               )}
                             </div>
                           </div>
@@ -612,11 +634,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.occupation || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -637,11 +659,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -662,11 +684,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.family || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -776,6 +798,7 @@ export default function CharacterDetailDialog({
                       onBackstoryChange={(value: string) =>
                         handleFieldChange("profile.backstory", value)
                       }
+                      events={characterEvents}
                       onSave={handleSave}
                       onCancel={handleCancel}
                     />

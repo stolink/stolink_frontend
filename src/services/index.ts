@@ -11,4 +11,6 @@ export * from "./shareService";
 export * from "./settingService";
 export * from "./imageService";
 export * from "./aiService";
+export * from "./eventService";
+
 // exportService is kept separate as it has different structure

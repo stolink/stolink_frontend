@@ -64,10 +64,12 @@ export interface BackendEvent {
   narrative_summary: string;
   description: string;
   participants: string[];
-  location_ref: string;
+  location_ref?: string; // Standard field
+  location?: string; // Detailed string from Neo4j
   prev_event_id: string | null;
   timestamp: string | null;
-  importance: number;
+  importance?: number; // Standard field
+  importance_score?: number; // Neo4j field
   changes_made: unknown | null;
   embedding?: number[];
 }
@@ -82,10 +84,10 @@ export function transformBackendEvent(backendEvent: BackendEvent): Event {
     narrativeSummary: backendEvent.narrative_summary,
     description: backendEvent.description,
     participants: backendEvent.participants,
-    locationRef: backendEvent.location_ref,
+    locationRef: backendEvent.location_ref || backendEvent.location || "",
     prevEventId: backendEvent.prev_event_id,
     timestamp: backendEvent.timestamp,
-    importance: backendEvent.importance,
+    importance: backendEvent.importance || backendEvent.importance_score || 5,
     changesMade: backendEvent.changes_made,
     embedding: backendEvent.embedding,
   };

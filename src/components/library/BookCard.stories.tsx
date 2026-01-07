@@ -43,7 +43,7 @@ export const EditMode: Story = {
     ...Writing.args,
     isEditMode: true,
     isSelected: false,
-    onSelect: () => console.log("Selected"),
+    onSelect: () => {},
   },
 };
 
@@ -52,7 +52,7 @@ export const Selected: Story = {
     ...Writing.args,
     isEditMode: true,
     isSelected: true,
-    onSelect: () => console.log("Selected"),
+    onSelect: () => {},
   },
 };
 
