@@ -71,7 +71,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -115,7 +115,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[],
+  nodes: DocumentTreeNode[]
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -138,7 +138,7 @@ export default function EditorPage({ isDemo = false }) {
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -148,10 +148,10 @@ export default function EditorPage({ isDemo = false }) {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null,
+    isDemo ? "chapter-demo-1" : null
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [viewMode, setViewMode] = useState<
     "editor" | "scrivenings" | "outline" | "corkboard"
@@ -172,11 +172,11 @@ export default function EditorPage({ isDemo = false }) {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode,
+    (state) => state.behavior.typewriterMode
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode,
+    (state) => state.behavior.focusMode
   );
   /* performanceMode removed */
 
@@ -200,16 +200,16 @@ export default function EditorPage({ isDemo = false }) {
   // ============================================================
   const { data: project } = useProject(projectId, { enabled: !isDemo });
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents,
+    (state) => (state as { documents: Record<string, Document> }).documents
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
+            (doc) => doc.projectId === projectId
           ),
-    [allDocuments, projectId, isDemo],
+    [allDocuments, projectId, isDemo]
   );
 
   const previewChapters = useMemo(() => {
@@ -238,7 +238,7 @@ export default function EditorPage({ isDemo = false }) {
   }, [documents, isDemo, previewChapters]);
 
   const { content: documentContent } = useDocumentContent(
-    isDemo ? null : selectedSectionId,
+    isDemo ? null : selectedSectionId
   );
 
   const { document } = useDocument(isDemo ? null : selectedSectionId);
@@ -284,7 +284,7 @@ export default function EditorPage({ isDemo = false }) {
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer,
+        .addToBuffer
   );
 
   const handleAnalysisComplete = useCallback(
@@ -301,7 +301,7 @@ export default function EditorPage({ isDemo = false }) {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
     },
-    [characters, graphLinks, projectId, queryClient],
+    [characters, graphLinks, projectId, queryClient]
   );
 
   const readerChapters = useMemo(() => {
@@ -351,7 +351,7 @@ export default function EditorPage({ isDemo = false }) {
         // setIsSaving removed
       }
     },
-    [isDemo, selectedSectionId],
+    [isDemo, selectedSectionId]
   );
 
   const saveWithAnalysis = useCallback(
@@ -363,7 +363,7 @@ export default function EditorPage({ isDemo = false }) {
         flushAndAnalyze();
       }
     },
-    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze],
+    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze]
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -416,6 +416,7 @@ export default function EditorPage({ isDemo = false }) {
     lastContentRef,
     saveContentRef,
     saveTimeoutRef,
+    handleSelectSection,
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
@@ -474,12 +475,12 @@ export default function EditorPage({ isDemo = false }) {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section",
+    type: "chapter" | "section"
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section",
+      type === "chapter" ? "chapter" : "section"
     );
     setCreateSectionModalOpen(false);
   };
@@ -520,7 +521,7 @@ export default function EditorPage({ isDemo = false }) {
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full",
+        isDemo ? "h-screen" : "h-full"
       )}
     >
       {isDemo && (
@@ -551,7 +552,7 @@ export default function EditorPage({ isDemo = false }) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-stone-50",
+            isFocusMode && "bg-stone-50"
           )}
         >
           <EditorToolbar
