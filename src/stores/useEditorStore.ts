@@ -3,7 +3,7 @@ import type { Chapter, ChapterTreeNode } from "@/types";
 
 interface EditorState {
   // Current editing state
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   currentProjectId: string | null;
   currentChapterId: string | null;
   currentSceneId: string | null;
@@ -41,9 +41,7 @@ interface EditorState {
   toggleSplitView: () => void;
   setSplitDirection: (direction: "horizontal" | "vertical") => void;
   setSecondaryDocument: (docId: string | null) => void;
-  setViewMode: (
-    mode: "editor" | "scrivenings" | "outline" | "corkboard"
-  ) => void;
+  setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({

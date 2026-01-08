@@ -36,7 +36,7 @@ export function BiographyEventList({
 
             return (
               <div
-                key={event.eventId}
+                key={`${event.eventId}-${idx}`}
                 className="timeline-item editorial-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >

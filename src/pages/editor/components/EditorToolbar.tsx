@@ -6,7 +6,6 @@ import {
   Layout,
   List,
   TableProperties,
-  LayoutGrid,
   Columns,
   Maximize2,
   Settings,
@@ -49,10 +48,10 @@ interface EditorToolbarProps {
   characterCount: number;
 
   // View mode
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   onViewModeChange: (
-    newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
+    newMode: "editor" | "scrivenings" | "outline",
+    currentMode: "editor" | "scrivenings" | "outline",
   ) => void;
 
   // Split view
@@ -155,7 +154,7 @@ export function EditorToolbar({
         {characterCount > 0 && (
           <span
             className={cn(
-              "text-xs font-medium px-2 py-0.5 rounded-full transition-colors text-muted-foreground bg-secondary"
+              "text-xs font-medium px-2 py-0.5 rounded-full transition-colors text-muted-foreground bg-secondary",
             )}
           >
             {characterCount.toLocaleString()}자
@@ -171,7 +170,7 @@ export function EditorToolbar({
               "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
               analysisStatus === "analyzing"
                 ? "bg-primary/10 text-primary cursor-not-allowed"
-                : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105"
+                : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105",
             )}
             title="AI 분석 실행"
           >
@@ -240,7 +239,7 @@ export function EditorToolbar({
               "p-1 rounded-lg transition-colors",
               splitViewEnabled
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground"
+                : "hover:bg-accent text-muted-foreground",
             )}
             title="분할 화면"
           >
@@ -253,7 +252,7 @@ export function EditorToolbar({
               "p-1 rounded-lg transition-colors",
               isTypewriterMode
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground"
+                : "hover:bg-accent text-muted-foreground",
             )}
             title="타자기 모드 (커서를 화면 중앙에 고정)"
           >
@@ -319,7 +318,7 @@ export function EditorToolbar({
             "p-1 rounded-lg transition-colors",
             rightSidebarOpen
               ? "bg-primary/10 text-primary"
-              : "hover:bg-accent text-muted-foreground"
+              : "hover:bg-accent text-muted-foreground",
           )}
           title="복선/AI 사이드바"
         >
@@ -333,7 +332,7 @@ export function EditorToolbar({
           <motion.div
             className={cn(
               "h-full shadow-[0_0_8px_rgba(var(--primary),0.5)]",
-              analysisStatus === "completed" ? "bg-green-500" : "bg-primary"
+              analysisStatus === "completed" ? "bg-green-500" : "bg-primary",
             )}
             initial={{ width: 0, opacity: 1 }}
             animate={{
@@ -424,7 +423,7 @@ function TitleBreadcrumb({
                       "truncate max-w-[150px] transition-colors",
                       isLast
                         ? "font-bold text-foreground hover:text-primary"
-                        : "font-medium text-muted-foreground"
+                        : "font-medium text-muted-foreground",
                     )}
                     title={
                       isLast && !isDemo ? "클릭하여 제목 편집" : item.title
@@ -481,10 +480,10 @@ function TitleBreadcrumb({
 }
 
 interface ViewModeButtonsProps {
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   onViewModeChange: (
-    newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
+    newMode: "editor" | "scrivenings" | "outline",
+    currentMode: "editor" | "scrivenings" | "outline",
   ) => void;
 }
 
@@ -493,7 +492,6 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
     { mode: "editor" as const, icon: Layout, label: "단일" },
     { mode: "scrivenings" as const, icon: List, label: "통합" },
     { mode: "outline" as const, icon: TableProperties, label: "개요" },
-    { mode: "corkboard" as const, icon: LayoutGrid, label: "카드" },
   ];
 
   return (
@@ -507,7 +505,7 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
             "flex items-center justify-center p-1 rounded-md transition-all duration-200",
             viewMode === mode
               ? "bg-card text-primary shadow-sm ring-1 ring-border"
-              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50",
           )}
         >
           <Icon className="w-4 h-4" />
