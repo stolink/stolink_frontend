@@ -108,7 +108,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.projectId = projectId;
             state.buffer = [];
             state.bufferCharCount = 0;
-            state.bufferCharCount = 0;
             state.lastConsistencyReport = null; // 프로젝트 변경 시 리포트 초기화
             // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
 
@@ -132,7 +131,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // 같은 문서의 이전 청크가 있으면 교체 (덮어쓰기)
           const existingIndex = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId
+            (chunk) => chunk.documentId === documentId,
           );
 
           if (existingIndex >= 0) {
@@ -162,7 +161,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       removeFromBuffer: (documentId) => {
         set((state) => {
           const index = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId
+            (chunk) => chunk.documentId === documentId,
           );
           if (index >= 0) {
             state.bufferCharCount -= state.buffer[index].charCount;
@@ -211,10 +210,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      setJobId: (id, type = "analysis") => {
-        console.log(
-          `[useAnalysisBufferStore] setJobId: ID=${id}, Type=${type}`
-        );
         set((state) => {
           state.currentJobId = id;
           state.currentJobType = id ? type : null;
@@ -231,7 +226,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             }
           }
         });
-      },
 
       addJobId: (projectId, id, type = "analysis") => {
         set((state) => {
@@ -394,8 +388,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         activeJobs: state.activeJobs, // 추가
         lastAnalyzedHashes: state.lastAnalyzedHashes,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // 설정 상수 export (테스트 및 UI 표시용)
