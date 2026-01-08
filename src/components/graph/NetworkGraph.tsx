@@ -60,7 +60,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       onNodeSelect,
       selectedNodeId: propsSelectedNodeId,
     },
-    ref
+    ref,
   ) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -76,18 +76,26 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       nodes: initialNodes,
       links: initialLinks,
     });
-    });
+
     // Internal state for uncontrolled mode, or sync with props
-    const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | null>(null);
+    const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<
+      string | null
+    >(null);
 
-    const selectedNodeId = propsSelectedNodeId !== undefined ? propsSelectedNodeId : internalSelectedNodeId;
+    const selectedNodeId =
+      propsSelectedNodeId !== undefined
+        ? propsSelectedNodeId
+        : internalSelectedNodeId;
 
-    const handleNodeClick = useCallback((id: string | null) => {
+    const handleNodeClick = useCallback(
+      (id: string | null) => {
         if (propsSelectedNodeId === undefined) {
-             setInternalSelectedNodeId(id);
+          setInternalSelectedNodeId(id);
         }
         onNodeSelect?.(id);
-    }, [onNodeSelect, propsSelectedNodeId]);
+      },
+      [onNodeSelect, propsSelectedNodeId],
+    );
 
     // Filter Logic (Strict Star Topology)
     const getFilteredData = useCallback(() => {
@@ -156,11 +164,11 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
                     : (l.target as NetworkNode).id
                   : typeof l.source === "string"
                     ? l.source
-                    : (l.source as NetworkNode).id
+                    : (l.source as NetworkNode).id,
             );
 
             const neighbors = currentSimNodes.filter((n) =>
-              connectedNodeIds.includes(n.id)
+              connectedNodeIds.includes(n.id),
             );
             if (neighbors.length > 0) {
               newNode.x =
@@ -242,21 +250,21 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .forceSimulation<NetworkNode, NetworkLink>(currentNodes)
         .force(
           "charge",
-          d3.forceManyBody().strength(() => (selectedNodeId ? -1000 : -400))
+          d3.forceManyBody().strength(() => (selectedNodeId ? -1000 : -400)),
         ) // Spread more if focused?
         .force(
           "link",
           d3
             .forceLink<NetworkNode, NetworkLink>(processedLinks)
             .id((d) => d.id)
-            .distance(100)
+            .distance(100),
         )
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force(
           "collide",
           d3
             .forceCollide<NetworkNode>((d) => (d.radius || 20) + 10)
-            .iterations(2)
+            .iterations(2),
         );
 
       simulationRef.current = simulation;
@@ -268,7 +276,6 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .attr("class", "links")
         .selectAll("path")
         .data(processedLinks)
-        .join("path")
         .join("path")
         .attr("stroke", (d) => {
           if (d.type && RELATION_COLORS[d.type.toUpperCase()]) {
@@ -290,7 +297,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .attr("r", (d) => (d.radius || 5) + (selectedNodeId === d.id ? 5 : 0))
         .attr("fill", (d) => OBSIDIAN_COLORS(String(d.group)))
         .attr("stroke", (d) =>
-          selectedNodeId === d.id ? "#fff" : "transparent"
+          selectedNodeId === d.id ? "#fff" : "transparent",
         )
         .attr("stroke-width", 2)
         .attr("cursor", "pointer")
@@ -313,10 +320,10 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .style("font-size", "10px")
         .style("font-family", "sans-serif")
         .style("opacity", (d) =>
-          selectedNodeId && d.id !== selectedNodeId ? 0.5 : 0.9
+          selectedNodeId && d.id !== selectedNodeId ? 0.5 : 0.9,
         )
         .style("visibility", (d) =>
-          (d.radius || 5) < 10 && !selectedNodeId ? "hidden" : "visible"
+          (d.radius || 5) < 10 && !selectedNodeId ? "hidden" : "visible",
         );
       // Apply drag behavior
       (node as d3.Selection<Element, NetworkNode, SVGGElement, unknown>).call(
@@ -335,7 +342,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
             if (!e.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
-          })
+          }),
       );
 
       // Tick Function
@@ -386,7 +393,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         ref={wrapperRef}
         className={cn(
           "border rounded-lg overflow-hidden bg-[#1e1e1e] shadow-inner font-sans",
-          className
+          className,
         )}
       >
         <svg
@@ -399,7 +406,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         />
       </div>
     );
-  }
+  },
 );
 
 NetworkGraph.displayName = "NetworkGraph";
