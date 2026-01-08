@@ -31,9 +31,7 @@ import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
 export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 export { GROUP_COLORS } from "./constants";
-export { RelationshipEditDialog } from "./RelationshipEditDialog";
 export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
-export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -113,6 +111,20 @@ export const CharacterGraph = forwardRef<
     }, [initialLinks]);
 
     // --- Hover Tooltip State ---
+<<<<<<< HEAD
+=======
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      type: string;
+      strength: number;
+      label?: string | null;
+      description?: string;
+      sourceName: string;
+      targetName: string;
+      x: number;
+      y: number;
+      link: RelationshipLink; // Store link to open modal
+    } | null>(null);
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -728,7 +740,11 @@ export const CharacterGraph = forwardRef<
         if (!sourceNode || !targetNode) return;
 
         // Generate mock data for now (replace with real API call later)
+<<<<<<< HEAD
         const mockData = generateAnalysisData(
+=======
+        const mockData = generateMockAnalysisData(
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
           {
             id: sourceNode.id,
             name: sourceNode.name,
@@ -739,10 +755,15 @@ export const CharacterGraph = forwardRef<
             name: targetNode.name,
             imageUrl: targetNode.imageUrl,
           },
+<<<<<<< HEAD
           link.relationTypes || [link.type as string],
           link.strength,
           events,
           link.description
+=======
+          link.type as string,
+          link.strength
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
         );
 
         setDeepAnalysisData(mockData);
@@ -752,6 +773,33 @@ export const CharacterGraph = forwardRef<
     );
 
     // Handle Link Hover for Tooltip
+<<<<<<< HEAD
+=======
+    const handleLinkHover = useCallback(
+      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
+        if (!link || !coords) {
+          setHoveredLinkData(null);
+          return;
+        }
+
+        setHoveredLinkData({
+          type: link.type as string,
+          relationTypes: link.relationTypes, // Add this field
+          strength: link.strength,
+          label: link.label,
+          description: link.description,
+          sourceName:
+            typeof link.source === "object" ? link.source.name : "Source",
+          targetName:
+            typeof link.target === "object" ? link.target.name : "Target",
+          x: coords.x,
+          y: coords.y,
+          link: link,
+        });
+      },
+      []
+    );
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
 
     const handleLinkHover = useCallback(
       (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
@@ -1076,6 +1124,26 @@ export const CharacterGraph = forwardRef<
               })}
 
             {/* Tooltip on Hover */}
+<<<<<<< HEAD
+=======
+            {hoveredLinkData && (
+              <RelationshipEventTooltip
+                type={hoveredLinkData.type as UIRelationType}
+                types={hoveredLinkData.relationTypes as UIRelationType[]} // Pass types
+                strength={hoveredLinkData.strength}
+                description={hoveredLinkData.description}
+                sourceName={hoveredLinkData.sourceName}
+                targetName={hoveredLinkData.targetName}
+                x={hoveredLinkData.x + 5} // Close offset
+                y={hoveredLinkData.y + 5}
+                events={[]} // Pass empty events for now or fetch if needed
+                onEventClick={() => {}}
+                onOpenDeepAnalysis={() =>
+                  handleOpenDeepAnalysis(hoveredLinkData.link)
+                }
+              />
+            )}
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
 
             {nodes
               .filter(

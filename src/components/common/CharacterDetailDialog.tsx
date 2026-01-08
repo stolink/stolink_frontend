@@ -210,12 +210,6 @@ export default function CharacterDetailDialog({
       enabled: !!displayCharacter?._id && isOpen,
     }
   );
-  console.log(
-    "CharacterDetailDialog Rendered. ActiveTab:",
-    activeTab,
-    "CharacterEvents:",
-    characterEvents?.length
-  );
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
@@ -315,13 +309,11 @@ export default function CharacterDetailDialog({
         // Extract precise prompt fields from setting if available (for backend to use directly)
         const additionalOptions = selectedSetting
           ? {
-              visual_background: String(
-                (selectedSetting as any).visual_background || ""
-              ),
-              atmosphere: String((selectedSetting as any).atmosphere || ""),
-              lighting: String((selectedSetting as any).lighting || ""),
-              time_of_day: String((selectedSetting as any).time_of_day || ""),
-              art_style: String((selectedSetting as any).art_style || ""),
+              visual_background: (selectedSetting as any).visual_background,
+              atmosphere: (selectedSetting as any).atmosphere,
+              lighting: (selectedSetting as any).lighting,
+              time_of_day: (selectedSetting as any).time_of_day,
+              art_style: (selectedSetting as any).art_style,
             }
           : undefined;
         const { jobId } = await imageService.generateCharacterImage(
@@ -329,7 +321,7 @@ export default function CharacterDetailDialog({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, string>,
+          selectedSetting as unknown as Record<string, unknown>,
           additionalOptions
         );
 
@@ -360,6 +352,7 @@ export default function CharacterDetailDialog({
       manualPrompt,
       toast,
       setGlobalJobId,
+      additionalOptions,
     ]
   );
 
@@ -908,11 +901,7 @@ function TabItem({
     <TabsTrigger
       value={value}
       className="group relative h-8 px-5 rounded-full font-medium text-espresso-500 transition-all
-<<<<<<< HEAD
       data-[state=active]:text-white data-[state=active]:!bg-espresso-900 data-[state=active]:shadow-lg
-=======
-      data-[state=active]:text-primary-foreground data-[state=active]:bg-espresso-800 data-[state=active]:shadow-lg
->>>>>>> 004f31d (fix(lint): resolve all 400+ eslint errors and warnings)
       data-[state=active]:ring-2 data-[state=active]:ring-white/50
       hover:text-espresso-900 hover:bg-white/50"
     >

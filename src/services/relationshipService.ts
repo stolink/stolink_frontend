@@ -45,7 +45,7 @@ export interface BackendRelationship {
  */
 export function transformBackendRelationship(
   rel: BackendRelationship,
-  index: number,
+  index: number
 ): Relationship {
   const type = rel.relation_type as RelationshipType;
   return {
@@ -81,14 +81,14 @@ export const relationshipService = {
   getAll: async () => {
     throw new Error(
       "GET /projects/{projectId}/relationships endpoint has been removed. " +
-        "Use characterService.getAll() and extract from character.relationships instead.",
+        "Use characterService.getAll() and extract from character.relationships instead."
     );
   },
 
   create: async (payload: CreateRelationshipInput) => {
     const response = await api.post<ApiResponse<Relationship>>(
       "/relationships",
-      payload,
+      payload
     );
     return response.data;
   },
@@ -96,14 +96,14 @@ export const relationshipService = {
   update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
     const response = await api.patch<ApiResponse<Relationship>>(
       `/relationships/${id}`,
-      payload,
+      payload
     );
     return response.data;
   },
 
   delete: async (id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/relationships/${id}`,
+      `/relationships/${id}`
     );
     return response.data;
   },

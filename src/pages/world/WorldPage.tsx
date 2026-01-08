@@ -14,7 +14,6 @@ import { roleLabels } from "./constants";
   CharacterGraph,
   type CharacterGraphRef,
   AnalysisSummaryModal,
-  RelationshipEditDialog,
   RelationshipDetailSheet,
 } from "@/components/CharacterGraph";
 import {
@@ -139,7 +138,6 @@ export default function WorldPage() {
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
     null
   );
@@ -281,8 +279,12 @@ export default function WorldPage() {
       setSelectedRelationship(null);
       return;
     }
+<<<<<<< HEAD
     // Deep Analysis 보다는 먼저 Sheet를 열어줍니다.
     setSelectedRelationship(link);
+=======
+    // Link Click logic removed as we use internal Deep Analysis
+>>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
     console.log("Link clicked:", link);
   };
 
@@ -670,6 +672,7 @@ export default function WorldPage() {
         }}
       />
 
+<<<<<<< HEAD
       <RelationshipDetailSheet
         relationship={selectedRelationship}
         isOpen={!!selectedRelationship}
@@ -709,38 +712,7 @@ export default function WorldPage() {
         onEdit={() => setIsRelationshipEditOpen(true)}
       />
 
-      {/* Relationship Edit Dialog */}
-      {projectId && selectedRelationship && (
-        <RelationshipEditDialog
-          key={selectedRelationship.id}
-          relationship={selectedRelationship}
-          isOpen={isRelationshipEditOpen}
-          onClose={() => setIsRelationshipEditOpen(false)}
-          onSave={() => {
-            setIsRelationshipEditOpen(false);
-            setSelectedRelationship(null);
-          }}
-          projectId={projectId}
-          sourceName={
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
-            )?.profile?.name ||
-            selectedRelationship?.source ||
-            ""
-          }
-          targetName={
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
-            )?.profile?.name ||
-            selectedRelationship?.target ||
-            ""
-          }
-        />
-      )}
+
       {/* Analysis Result Summary Modal */}
       {analysisDiff && (
         <AnalysisSummaryModal
