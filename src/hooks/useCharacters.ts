@@ -27,6 +27,16 @@ export function useCharacters(
       const response = await characterService.getAll(projectId);
       const data = response.data;
 
+      // [Diagnostic] Log keys for debugging duplicate key warning
+      const ids = data.map((c) => c._id);
+      const uniqueIds = new Set(ids);
+      if (ids.length !== uniqueIds.size) {
+        console.warn("[useCharacters] Duplicate character IDs detected:", {
+          total: ids.length,
+          unique: uniqueIds.size,
+          duplicates: ids.filter((id, index) => ids.indexOf(id) !== index),
+        });
+      }
       // [Fix] Deduplicate by _id to prevent React key warnings
       const seen = new Set<string>();
       return data.filter((c) => {

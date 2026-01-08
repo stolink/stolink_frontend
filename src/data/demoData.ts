@@ -253,7 +253,7 @@ const createDefaultCharacter = (
   overrides: Partial<Character> & {
     _id: string;
     profile: Character["profile"];
-  },
+  }
 ): Character => ({
   _id: overrides._id,
   projectId: overrides.projectId || "demo-project-id",

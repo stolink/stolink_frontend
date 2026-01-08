@@ -34,6 +34,7 @@ interface RelationshipEventTooltipProps {
   types?: string[];
   strength: number;
   description?: string;
+  /** 전체 카드 클릭 시 심층 분석 모달 열기 */
   onOpenDeepAnalysis?: () => void;
 }
 

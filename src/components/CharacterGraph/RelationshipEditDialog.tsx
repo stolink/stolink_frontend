@@ -168,11 +168,7 @@ export function RelationshipEditDialog({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch
-              id="bidirectional"
-              checked={bidirectional}
-              onCheckedChange={setBidirectional}
-            />
+            <Switch checked={bidirectional} onChange={setBidirectional} />
             <Label htmlFor="bidirectional">상호 관계 (양방향)</Label>
           </div>
         </div>

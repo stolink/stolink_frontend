@@ -14,10 +14,10 @@ export type { UIRelationType };
  * Character extras['관계']에서 RelationshipLink 배열 생성 (레거시 데이터 지원용)
  */
 export function generateLinksFromCharacters(
-  characters: Character[],
+  characters: Character[]
 ): RelationshipLink[] {
   console.warn(
-    "generateLinksFromCharacters is deprecated. Use extractRelationshipLinks from @/utils/relationshipMapper instead.",
+    "generateLinksFromCharacters is deprecated. Use extractRelationshipLinks from @/utils/relationshipMapper instead."
   );
   const links: RelationshipLink[] = [];
   const linkSet = new Set<string>();
@@ -72,7 +72,7 @@ export function generateLinksFromCharacters(
       const targetId = rel.target;
 
       const targetChar = characters.find(
-        (c) => c._id === targetId || c.profile?.name === targetId,
+        (c) => c._id === targetId || c.profile?.name === targetId
       );
 
       if (targetChar) {
@@ -105,7 +105,7 @@ export function generateLinksFromCharacters(
  * 링크 목록을 기반으로 각 캐릭터의 관계 수(차수, Degree Centrality)를 계산합니다.
  */
 export function calculateRelationCounts(
-  links: RelationshipLink[],
+  links: RelationshipLink[]
 ): Record<string, number> {
   const counts: Record<string, number> = {};
 
@@ -129,7 +129,7 @@ export function calculateRelationCounts(
 export function getRelationshipColor(
   type: UIRelationType,
   _strength: number,
-  relationTypes?: string[],
+  relationTypes?: string[]
 ): string {
   // 5개 이상의 복합 관계인 경우 무조건 complex 색상 반환
   if (relationTypes && relationTypes.length >= 5) {
