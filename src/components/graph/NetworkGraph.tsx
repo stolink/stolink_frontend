@@ -45,6 +45,10 @@ const RELATION_COLORS: Record<string, string> = {
   MENTOR: "#9C27B0", // Purple
   RIVAL: "#FF9800", // Orange
   NEUTRAL: "#9CA3AF", // Gray
+  MASTER_SERVANT: "#7E57C2", // Deep Purple
+  COWORKER: "#0288D1", // Light Blue
+  CLASSMATE: "#AED581", // Light Green
+  COMPLEX: "#78909C", // Blue Grey
 };
 
 const DEFAULT_LINK_COLOR = "#555";

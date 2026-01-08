@@ -34,7 +34,7 @@ const KEYWORD_COLORS: Record<string, string> = {
   로맨스: "bg-pink-50 border-pink-200 text-pink-700",
 };
 
-const DEFAULT_KEYWORD_COLOR = "bg-stone-50 border-stone-200 text-stone-700";
+const DEFAULT_KEYWORD_COLOR = "bg-cloud-50 border-cloud-200 text-espresso-700";
 
 export function InsightsPanel({
   insights,

@@ -588,4 +588,15 @@ export const DEMO_CHARACTERS: Character[] = [
 // =====================================================
 // 데모용 아이템 데이터 (레미제라블) - 기능 제거됨
 // =====================================================
-export const DEMO_ITEMS: unknown[] = [];
+export interface DemoItem {
+  id: string;
+  name: string;
+  type: string;
+  extras?: {
+    설명?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export const DEMO_ITEMS: DemoItem[] = [];

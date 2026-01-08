@@ -207,7 +207,7 @@ export const GLOW_CONFIG = {
 } as const;
 
 // =====================================================
-// 🌫️ 그룹 배경 (Fog) 색상 팔레트
+// 🌫️ 그룹 배경 (Fog) 색상 팔레트 (Deprecated - 클라우드 제거됨)
 // =====================================================
 
 export const GROUP_COLORS = [
@@ -220,3 +220,39 @@ export const GROUP_COLORS = [
   "#FCE7F3", // Pink 100
   "#FEF3C7", // Amber 100
 ] as const;
+
+// =====================================================
+// 🏴 Faction 테두리 링 색상 (동적 할당용)
+// =====================================================
+
+/**
+ * Faction별 테두리 링 색상 팔레트
+ * 노드 외곽에 Faction 소속을 표시하는 링에 사용
+ */
+export const FACTION_RING_COLORS = [
+  "#6366F1", // Indigo 500
+  "#EC4899", // Pink 500
+  "#10B981", // Emerald 500
+  "#F97316", // Orange 500
+  "#8B5CF6", // Violet 500
+  "#0EA5E9", // Sky 500
+  "#EF4444", // Red 500
+  "#F59E0B", // Amber 500
+  "#14B8A6", // Teal 500
+  "#A855F7", // Purple 500
+] as const;
+
+/**
+ * Faction 이름에서 색상 인덱스를 결정하는 해시 함수
+ * 동일 Faction 이름은 항상 동일한 색상을 반환
+ */
+export function getFactionColor(factionName: string | undefined): string {
+  if (!factionName || factionName === "무소속") {
+    return "#94A3B8"; // Slate 400 (무소속 기본 색상)
+  }
+  // 간단한 문자열 해시
+  const hash = factionName
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return FACTION_RING_COLORS[hash % FACTION_RING_COLORS.length];
+}

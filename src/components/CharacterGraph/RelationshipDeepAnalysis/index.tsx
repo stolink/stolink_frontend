@@ -1,26 +1,27 @@
 // =====================================================
 // 🎯 Relationship Deep Analysis Modal
-// 캐릭터 관계 심층 분석 메인 모달 컴포넌트
+// 캐릭터 관계 심층 분석 메인 모달 컴포넌트 (Enhanced Design)
 // =====================================================
 
 import { motion, AnimatePresence } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X, ArrowLeftRight, Activity } from "lucide-react";
+import { X, ArrowLeftRight, Activity, Calendar } from "lucide-react";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { CharacterPortraitPanel } from "./components/CharacterPortraitPanel";
 import { InsightsPanel } from "./components/InsightsPanel";
 import { RelationshipTimelineGraph } from "./components/RelationshipTimelineGraph";
+import { RelationshipWarningBanner } from "./components/RelationshipWarningBanner";
+import { EncounterSummary } from "./components/EncounterSummary";
+import { SharedScenesPanel } from "./components/SharedScenesPanel";
 import { Badge } from "@stolink/ui";
 import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 interface RelationshipDeepAnalysisModalProps {
-  /** 모달 열림 상태 */
   isOpen: boolean;
-  /** 모달 닫기 핸들러 */
   onClose: () => void;
-  /** 분석 데이터 */
   data: RelationshipDeepAnalysisData | null;
+  onNavigateToEvent?: (eventId: string) => void;
 }
 
 // 관계 타입 라벨
@@ -33,30 +34,33 @@ const RELATION_TYPE_LABELS: Record<string, string> = {
   MENTOR: "스승",
   FAMILY: "가족",
   NEUTRAL: "중립",
-  friendly: "우호적",
-  hostile: "적대적",
-  romantic: "로맨틱",
+  MASTER_SERVANT: "주종",
+  COWORKER: "동료",
+  CLASSMATE: "동창",
+  COMPLEX: "애증",
 };
 
-// 관계 타입 색상
-const RELATION_TYPE_COLORS: Record<string, string> = {
-  ALLY: "bg-teal-500/20 text-teal-300 border-teal-500/30",
-  FRIEND: "bg-green-500/20 text-green-300 border-green-500/30",
-  RIVAL: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  ENEMY: "bg-red-500/20 text-red-300 border-red-500/30",
-  ROMANTIC: "bg-pink-500/20 text-pink-300 border-pink-500/30",
-  MENTOR: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  FAMILY: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  NEUTRAL: "bg-cloud-500/20 text-cloud-300 border-cloud-500/30",
-  friendly: "bg-teal-500/20 text-teal-300 border-teal-500/30",
-  hostile: "bg-red-500/20 text-red-300 border-red-500/30",
-  romantic: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+// 관계 타입 스타일 (배경색, 텍스트색, 테두리색)
+const RELATION_TYPE_STYLES: Record<string, string> = {
+  ALLY: "bg-teal-50 text-teal-700 border-teal-200",
+  FRIEND: "bg-green-50 text-green-700 border-green-200",
+  RIVAL: "bg-orange-50 text-orange-700 border-orange-200",
+  ENEMY: "bg-rose-50 text-rose-700 border-rose-200",
+  ROMANTIC: "bg-pink-50 text-pink-700 border-pink-200",
+  MENTOR: "bg-blue-50 text-blue-700 border-blue-200",
+  FAMILY: "bg-purple-50 text-purple-700 border-purple-200",
+  NEUTRAL: "bg-cloud-100 text-espresso-600 border-cloud-200",
+  MASTER_SERVANT: "bg-violet-50 text-violet-700 border-violet-200",
+  COWORKER: "bg-sky-50 text-sky-700 border-sky-200",
+  CLASSMATE: "bg-lime-50 text-lime-700 border-lime-200",
+  COMPLEX: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 export function RelationshipDeepAnalysisModal({
   isOpen,
   onClose,
   data,
+  onNavigateToEvent,
 }: RelationshipDeepAnalysisModalProps) {
   if (!data) return null;
 
@@ -70,16 +74,17 @@ export function RelationshipDeepAnalysisModal({
     relationshipType,
     currentStrength,
     since,
+    warnings,
+    firstEncounter,
+    lastEncounter,
+    sharedScenes,
   } = data;
 
-  const typeLabel =
-    RELATION_TYPE_LABELS[relationshipType.toUpperCase()] ||
-    RELATION_TYPE_LABELS[relationshipType] ||
-    relationshipType;
-  const typeColor =
-    RELATION_TYPE_COLORS[relationshipType.toUpperCase()] ||
-    RELATION_TYPE_COLORS[relationshipType] ||
-    "bg-mocha-500/20 text-mocha-300 border-mocha-500/30";
+  const typeKey = relationshipType.toUpperCase();
+  const typeLabel = RELATION_TYPE_LABELS[typeKey] || relationshipType;
+  const typeStyle =
+    RELATION_TYPE_STYLES[typeKey] ||
+    "bg-mocha-50 text-mocha-700 border-mocha-200";
 
   return (
     <AnimatePresence>
@@ -89,7 +94,7 @@ export function RelationshipDeepAnalysisModal({
             {/* Backdrop */}
             <DialogPrimitive.Overlay asChild>
               <motion.div
-                className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-md"
+                className="fixed inset-0 z-[150] bg-espresso-900/40 backdrop-blur-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -102,145 +107,243 @@ export function RelationshipDeepAnalysisModal({
               <motion.div
                 className={cn(
                   "fixed left-1/2 top-1/2 z-[151]",
-                  "w-[95vw] max-w-[900px] max-h-[90vh]",
+                  "w-[95vw] max-w-[900px] max-h-[92vh]",
                   "overflow-hidden rounded-2xl",
-                  "bg-[#F9F9F7]/95 backdrop-blur-xl",
-                  "border border-cloud-200",
-                  "shadow-2xl shadow-espresso-900/10",
+                  "bg-[#FDFDFD]", // Warm white background
+                  "shadow-2xl shadow-espresso-900/20",
                 )}
                 initial={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
                 animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
                 exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
-                {/* Header */}
-                <motion.div
-                  className="flex items-center justify-between px-6 py-4 border-b border-cloud-200/60 bg-white/50"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-teal-500/10">
-                      <Activity className="w-5 h-5 text-teal-600" />
-                    </div>
+                {/* Header (Premium Look) */}
+                <div className="relative px-8 py-5 border-b border-cloud-200 bg-white/80 backdrop-blur-sm z-10">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-lg font-bold text-espresso-900 font-serif">
-                        관계 심층 분석
+                      {/* Subtitle / Context */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold text-espresso-400 uppercase tracking-widest">
+                          Relationship Log
+                        </span>
+                        <div className="h-px w-8 bg-cloud-300" />
+                      </div>
+
+                      {/* Character Names */}
+                      <h2 className="text-2xl font-serif font-bold text-espresso-900 flex items-center gap-3">
+                        <span className="text-espresso-800">
+                          {sourceCharacter.name}
+                        </span>
+                        <span className="text-cloud-300 font-light text-xl">
+                          &times;
+                        </span>
+                        <span className="text-espresso-800">
+                          {targetCharacter.name}
+                        </span>
                       </h2>
-                      <p className="text-xs text-espresso-500">
-                        {sourceCharacter.name} ↔ {targetCharacter.name}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {/* Relationship Type Badge */}
-                    <Badge
-                      intent="outline"
-                      className={cn("px-3 py-1 border font-medium", typeColor)}
-                    >
-                      {typeLabel}
-                    </Badge>
-
-                    {/* Strength Indicator */}
-                    <div className="flex items-center gap-1.5 text-espresso-600">
-                      <span className="text-xs">강도:</span>
-                      <span className="text-sm font-bold text-teal-600">
-                        {currentStrength}/10
-                      </span>
                     </div>
 
-                    {/* Since Badge */}
-                    {since && (
-                      <Badge
-                        intent="secondary"
-                        className="bg-cloud-100 text-espresso-500 border-cloud-200"
+                    <div className="flex items-center gap-3">
+                      {/* Strength Meter */}
+                      <div className="flex flex-col items-end mr-2">
+                        <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider">
+                          Bond Strength
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <div className="flex gap-0.5">
+                            {[...Array(10)].map((_, i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "w-1 h-3 rounded-full transition-all",
+                                  i < currentStrength
+                                    ? "bg-mocha-500"
+                                    : "bg-cloud-200",
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="ml-1 text-sm font-bold text-mocha-600 font-serif">
+                            {currentStrength}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Relationship Badge */}
+                      <div
+                        className={cn(
+                          "px-4 py-1.5 rounded-full border text-sm font-bold shadow-sm",
+                          typeStyle,
+                        )}
                       >
-                        {since}부터
-                      </Badge>
-                    )}
+                        {typeLabel}
+                      </div>
 
-                    {/* Close Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onClose}
-                      className="text-espresso-400 hover:text-espresso-900 hover:bg-cloud-200/50"
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
+                      {/* Close Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="ml-2 rounded-full w-8 h-8 text-espresso-400 hover:text-espresso-900 hover:bg-cloud-100"
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
-                </motion.div>
+
+                  {/* Meta Info Bar */}
+                  <div className="flex items-center gap-4 mt-3 text-xs text-espresso-500 font-medium">
+                    {since && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-cloud-50 border border-cloud-100">
+                        <Calendar className="w-3.5 h-3.5 text-mocha-400" />
+                        Started from{" "}
+                        <span className="text-espresso-800">{since}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-cloud-50 border border-cloud-100">
+                      <Activity className="w-3.5 h-3.5 text-mocha-400" />
+                      Last Active:{" "}
+                      <span className="text-espresso-800">Chapter 12</span>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Scrollable Content */}
-                <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-6 bg-[#F9F9F7]">
-                  <div className="space-y-6">
-                    {/* === TOP SECTION: Bi-directional Radar Charts === */}
-                    <motion.div
-                      className="grid grid-cols-2 gap-4"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      {/* Source → Target */}
-                      <div className="bg-white rounded-xl border border-cloud-200 shadow-sm p-2">
-                        <CharacterPortraitPanel
-                          character={sourceCharacter}
-                          attributes={sourceToTargetAttributes}
-                          targetName={targetCharacter.name}
-                          position="left"
-                          animationDelay={0.2}
-                        />
-                      </div>
+                <div className="overflow-y-auto max-h-[calc(92vh-100px)] bg-[#FAFAF8]">
+                  {" "}
+                  {/* Warm grey background */}
+                  <div className="p-8 space-y-8 max-w-4xl mx-auto">
+                    {/* === SECTION 1: WARNINGS === */}
+                    {warnings && warnings.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                      >
+                        <RelationshipWarningBanner warnings={warnings} />
+                      </motion.div>
+                    )}
 
-                      {/* Target → Source */}
-                      <div className="bg-white rounded-xl border border-cloud-200 shadow-sm p-2">
-                        <CharacterPortraitPanel
-                          character={targetCharacter}
-                          attributes={targetToSourceAttributes}
-                          targetName={sourceCharacter.name}
-                          position="right"
-                          animationDelay={0.3}
-                        />
-                      </div>
-                    </motion.div>
+                    {/* === SECTION 2: CURRENT STATE (Radar Charts) === */}
+                    <section>
+                      <h3 className="flex items-center gap-3 text-sm font-bold text-espresso-400 uppercase tracking-widest mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mocha-400" />
+                        Current Dynamics
+                        <div className="h-px flex-1 bg-cloud-200/50" />
+                      </h3>
 
-                    {/* === MIDDLE SECTION: Insights === */}
-                    <InsightsPanel insights={insights} animationDelay={0.4} />
-
-                    {/* === BOTTOM SECTION: Timeline Graph === */}
-                    <motion.div
-                      className={cn(
-                        "rounded-xl p-5",
-                        "bg-white",
-                        "border border-cloud-200 shadow-sm",
-                      )}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      {/* Section Header */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="p-1.5 rounded-lg bg-indigo-50">
-                          <ArrowLeftRight className="w-4 h-4 text-indigo-500" />
+                      <motion.div
+                        className="grid grid-cols-2 gap-6"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        {/* Card Container Style */}
+                        <div className="bg-white rounded-2xl border border-cloud-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] p-1 hover:shadow-lg transition-shadow duration-500">
+                          {/* Inner Content */}
+                          <CharacterPortraitPanel
+                            character={sourceCharacter}
+                            attributes={sourceToTargetAttributes}
+                            targetName={targetCharacter.name}
+                            position="left"
+                            animationDelay={0.3}
+                          />
                         </div>
-                        <h4 className="text-sm font-semibold text-espresso-800 uppercase tracking-wider">
-                          관계 변천사
-                        </h4>
-                        <span className="text-xs text-espresso-400">
-                          (중요도 8+ 이벤트)
-                        </span>
+
+                        <div className="bg-white rounded-2xl border border-cloud-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] p-1 hover:shadow-lg transition-shadow duration-500">
+                          <CharacterPortraitPanel
+                            character={targetCharacter}
+                            attributes={targetToSourceAttributes}
+                            targetName={sourceCharacter.name}
+                            position="right"
+                            animationDelay={0.4}
+                          />
+                        </div>
+                      </motion.div>
+                    </section>
+
+                    {/* === SECTION 3: JOURNEY (Encounter & Timeline) === */}
+                    <section>
+                      <h3 className="flex items-center gap-3 text-sm font-bold text-espresso-400 uppercase tracking-widest mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        Relationship Journey
+                        <div className="h-px flex-1 bg-cloud-200/50" />
+                      </h3>
+
+                      <div className="space-y-6">
+                        {/* Timeline Connector */}
+                        {(firstEncounter || lastEncounter) && (
+                          <EncounterSummary
+                            firstEncounter={firstEncounter}
+                            lastEncounter={lastEncounter}
+                            onNavigate={onNavigateToEvent}
+                          />
+                        )}
+
+                        {/* Timeline Graph */}
+                        <motion.div
+                          className="bg-white rounded-2xl border border-cloud-200 shadow-sm p-6"
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.5 }}
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <ArrowLeftRight className="w-4 h-4 text-indigo-400" />
+                              <span className="text-sm font-bold text-espresso-800">
+                                Timeline Analysis
+                              </span>
+                            </div>
+                            <Badge
+                              intent="secondary"
+                              className="text-[10px] bg-cloud-100 text-espresso-500"
+                            >
+                              Last 6 Months
+                            </Badge>
+                          </div>
+
+                          <RelationshipTimelineGraph
+                            data={timeline}
+                            width={820}
+                            height={220}
+                            animationDelay={0.6}
+                          />
+                        </motion.div>
+                      </div>
+                    </section>
+
+                    {/* === SECTION 4: INSIGHTS & SCENES === */}
+                    <div className="grid grid-cols-[1.2fr_1fr] gap-6">
+                      {/* Left: Insights */}
+                      <div className="space-y-4">
+                        <h3 className="flex items-center gap-3 text-sm font-bold text-espresso-400 uppercase tracking-widest">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          Key Insights
+                        </h3>
+                        <InsightsPanel
+                          insights={insights}
+                          animationDelay={0.6}
+                        />
                       </div>
 
-                      {/* Timeline Graph */}
-                      <RelationshipTimelineGraph
-                        data={timeline}
-                        width={820}
-                        height={220}
-                        animationDelay={0.6}
-                      />
-                    </motion.div>
+                      {/* Right: Shared Scenes */}
+                      <div className="space-y-4">
+                        <h3 className="flex items-center gap-3 text-sm font-bold text-espresso-400 uppercase tracking-widest">
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                          Moments
+                        </h3>
+                        {sharedScenes && (
+                          <SharedScenesPanel
+                            scenes={sharedScenes}
+                            onNavigate={onNavigateToEvent}
+                            maxVisible={3}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Padding */}
+                    <div className="h-4" />
                   </div>
                 </div>
               </motion.div>

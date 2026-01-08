@@ -258,7 +258,35 @@ export function estimateAttributesFromRelation(
       functionalTrust: s * 0.6,
       valueAlignment: s * 0.5,
       interdependence: s * 0.7,
-      latentTension: (10 - s) * 0.4,
+      latentTension: (10 - s) * 0.6,
+    },
+    MASTER_SERVANT: {
+      emotionalBond: s * 0.5,
+      functionalTrust: s * 0.9,
+      valueAlignment: s * 0.6,
+      interdependence: s * 0.8,
+      latentTension: (10 - s) * 0.7,
+    },
+    COWORKER: {
+      emotionalBond: s * 0.4,
+      functionalTrust: s * 0.85,
+      valueAlignment: s * 0.5,
+      interdependence: s * 0.6,
+      latentTension: (10 - s) * 0.8,
+    },
+    CLASSMATE: {
+      emotionalBond: s * 0.6,
+      functionalTrust: s * 0.5,
+      valueAlignment: s * 0.5,
+      interdependence: s * 0.3,
+      latentTension: (10 - s) * 0.9,
+    },
+    COMPLEX: {
+      emotionalBond: s * 0.9,
+      functionalTrust: s * 0.4,
+      valueAlignment: 10 - s * 0.5, // 가치관 충돌
+      interdependence: s * 0.7,
+      latentTension: s * 0.9, // 높은 긴장도
     },
     NEUTRAL: {
       emotionalBond: 5,
@@ -367,6 +395,33 @@ export function generateMockAnalysisData(
     keywords: ["신뢰", "갈등", "화해", "동맹"],
   };
 
+  // 경고 감지
+  const warnings = detectRelationshipWarnings(sourceToTarget, targetToSource);
+
+  // 첫/마지막 만남
+  const firstEncounter = {
+    eventId: timeline[0].eventId,
+    chapter: `Chapter ${timeline[0].chapter}`,
+    title: timeline[0].title,
+    timestamp: timeline[0].timestamp || undefined,
+  };
+
+  const lastEncounter = {
+    eventId: timeline[timeline.length - 1].eventId,
+    chapter: `Chapter ${timeline[timeline.length - 1].chapter}`,
+    title: timeline[timeline.length - 1].title,
+    timestamp: timeline[timeline.length - 1].timestamp || undefined,
+  };
+
+  // 공동 등장 씬
+  const sharedScenes = timeline.map((t) => ({
+    eventId: t.eventId,
+    chapter: `Chapter ${t.chapter}`,
+    title: t.title,
+    description: t.description,
+    importance: t.importance,
+  }));
+
   return {
     sourceCharacter: source,
     targetCharacter: target,
@@ -377,5 +432,153 @@ export function generateMockAnalysisData(
     relationshipType,
     currentStrength: strength,
     since: "Chapter 1",
+    // NEW fields
+    firstEncounter,
+    lastEncounter,
+    sharedScenes,
+    warnings,
+  };
+}
+
+/**
+ * 관계 경고 감지
+ * 레이더 차트 비대칭 및 긴장 수준 분석
+ */
+export function detectRelationshipWarnings(
+  sourceToTarget: RelationshipAttributes,
+  targetToSource: RelationshipAttributes,
+): import("@/types/relationshipAnalysis").RelationshipWarning[] {
+  const warnings: import("@/types/relationshipAnalysis").RelationshipWarning[] =
+    [];
+
+  // 1. 감정적 유대 비대칭 감지
+  const bondDiff = Math.abs(
+    sourceToTarget.emotionalBond - targetToSource.emotionalBond,
+  );
+  if (bondDiff >= 4) {
+    const stronger =
+      sourceToTarget.emotionalBond > targetToSource.emotionalBond
+        ? "Source"
+        : "Target";
+    warnings.push({
+      type: "asymmetry",
+      severity: bondDiff >= 6 ? "high" : "medium",
+      message: `일방적 감정: ${stronger}가 상대를 훨씬 더 아낌 (차이: ${bondDiff.toFixed(1)})`,
+    });
+  }
+
+  // 2. 신뢰 비대칭 감지
+  const trustDiff = Math.abs(
+    sourceToTarget.functionalTrust - targetToSource.functionalTrust,
+  );
+  if (trustDiff >= 4) {
+    const stronger =
+      sourceToTarget.functionalTrust > targetToSource.functionalTrust
+        ? "Source"
+        : "Target";
+    warnings.push({
+      type: "asymmetry",
+      severity: trustDiff >= 6 ? "high" : "medium",
+      message: `신뢰 불균형: ${stronger}만 상대를 신뢰 (차이: ${trustDiff.toFixed(1)})`,
+    });
+  }
+
+  // 3. 높은 잠재적 긴장
+  const avgTension =
+    (sourceToTarget.latentTension + targetToSource.latentTension) / 2;
+  if (avgTension >= 7) {
+    warnings.push({
+      type: "tension",
+      severity: avgTension >= 8.5 ? "high" : "medium",
+      message: `높은 긴장 상태: 갈등 발생 가능성 높음 (긴장도: ${avgTension.toFixed(1)}/10)`,
+    });
+  }
+
+  // 4. 가치관 충돌
+  const valueDiff = Math.abs(
+    sourceToTarget.valueAlignment - targetToSource.valueAlignment,
+  );
+  if (
+    valueDiff >= 5 ||
+    (sourceToTarget.valueAlignment < 4 && targetToSource.valueAlignment < 4)
+  ) {
+    warnings.push({
+      type: "conflict",
+      severity: "medium",
+      message: "가치관 불일치: 근본적인 갈등 소지 있음",
+    });
+  }
+
+  return warnings;
+}
+
+/**
+ * 두 캐릭터의 공동 등장 씬 추출
+ */
+export function extractSharedScenes(
+  events: Event[],
+  sourceId: string,
+  targetId: string,
+): import("@/types/relationshipAnalysis").SharedScene[] {
+  return events
+    .filter(
+      (e) =>
+        e.participants.includes(sourceId) && e.participants.includes(targetId),
+    )
+    .sort((a, b) => b.importance - a.importance)
+    .map((e) => ({
+      eventId: e.eventId,
+      chapter: `Chapter ${extractChapterNumber(e)}`,
+      title: e.narrativeSummary || e.description.slice(0, 50),
+      description: e.description.slice(0, 100),
+      importance: e.importance,
+    }));
+}
+
+/**
+ * 첫/마지막 만남 정보 추출
+ */
+export function extractEncounterInfo(
+  events: Event[],
+  sourceId: string,
+  targetId: string,
+): {
+  first: import("@/types/relationshipAnalysis").EncounterInfo | undefined;
+  last: import("@/types/relationshipAnalysis").EncounterInfo | undefined;
+} {
+  const sharedEvents = events
+    .filter(
+      (e) =>
+        e.participants.includes(sourceId) && e.participants.includes(targetId),
+    )
+    .sort((a, b) => {
+      if (a.timestamp && b.timestamp) {
+        return (
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+      }
+      return a.eventId.localeCompare(b.eventId);
+    });
+
+  if (sharedEvents.length === 0) {
+    return { first: undefined, last: undefined };
+  }
+
+  const firstEvent = sharedEvents[0];
+  const lastEvent = sharedEvents[sharedEvents.length - 1];
+
+  return {
+    first: {
+      eventId: firstEvent.eventId,
+      chapter: `Chapter ${extractChapterNumber(firstEvent)}`,
+      title: firstEvent.narrativeSummary || firstEvent.description.slice(0, 50),
+      timestamp: firstEvent.timestamp || undefined,
+    },
+    last: {
+      eventId: lastEvent.eventId,
+      chapter: `Chapter ${extractChapterNumber(lastEvent)}`,
+      title: lastEvent.narrativeSummary || lastEvent.description.slice(0, 50),
+      timestamp: lastEvent.timestamp || undefined,
+    },
   };
 }

@@ -83,6 +83,40 @@ export interface RelationshipInsights {
 }
 
 /**
+ * 두 캐릭터 간 관계 정의 (동상이몽 표현용)
+ */
+export interface RelationshipDefinition {
+  /** Source가 Target을 어떻게 정의하는지 */
+  sourceDefinesTarget: string | null;
+  /** Target이 Source를 어떻게 정의하는지 */
+  targetDefinesSource: string | null;
+  /** 정의가 불일치하는지 (동상이몽) */
+  isConflicting: boolean;
+}
+
+/**
+ * 미해결 이슈 타입
+ */
+export type ActiveIssueType =
+  | "promise"
+  | "conflict"
+  | "secret"
+  | "foreshadowing";
+
+/**
+ * 미해결 이슈 (진행 중인 복선/갈등)
+ */
+export interface ActiveIssue {
+  id: string;
+  type: ActiveIssueType;
+  title: string;
+  description?: string;
+  chapter?: string;
+  daysRemaining?: number;
+  relatedCharacterIds: string[];
+}
+
+/**
  * 캐릭터 기본 정보 (모달 표시용)
  */
 export interface AnalysisCharacterInfo {
@@ -115,6 +149,50 @@ export interface RelationshipDeepAnalysisData {
   relationshipType: string;
   currentStrength: number;
   since?: string;
+
+  // === NEW: 추가 분석 정보 ===
+  /** 관계 정의 (동상이몽) */
+  relationshipDefinition?: RelationshipDefinition;
+  /** 진행 중인 이슈 */
+  activeIssues?: ActiveIssue[];
+  /** 첫 만남 정보 */
+  firstEncounter?: EncounterInfo;
+  /** 마지막 만남 정보 */
+  lastEncounter?: EncounterInfo;
+  /** 공동 등장 씬 목록 */
+  sharedScenes?: SharedScene[];
+  /** 관계 경고 (비대칭, 긴장 등) */
+  warnings?: RelationshipWarning[];
+}
+
+/**
+ * 만남 정보
+ */
+export interface EncounterInfo {
+  eventId: string;
+  chapter: string;
+  title: string;
+  timestamp?: string;
+}
+
+/**
+ * 공동 등장 씬
+ */
+export interface SharedScene {
+  eventId: string;
+  chapter: string;
+  title: string;
+  description?: string;
+  importance: number;
+}
+
+/**
+ * 관계 경고
+ */
+export interface RelationshipWarning {
+  type: "asymmetry" | "tension" | "conflict";
+  severity: "low" | "medium" | "high";
+  message: string;
 }
 
 /**

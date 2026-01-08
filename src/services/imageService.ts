@@ -110,7 +110,24 @@ export const imageService = {
     if (!response) throw lastError || new Error("Job status check failed");
 
     // Handle both wrapped (response.data.data) and flattened (response.data) formats
-    const rawData = response.data.data || response.data;
+    interface RawJobResponse {
+      data?: RawJobResponse;
+      jobId?: string;
+      status?: string;
+      progress?: number;
+      message?: string;
+      error?: string;
+      createdAt?: string;
+      created_at?: string;
+      updatedAt?: string;
+      updated_at?: string;
+      result?: ImageGenerationResult;
+      imageUrl?: string;
+      prompt?: string;
+      modelUsed?: string;
+    }
+    const responseData = response.data as RawJobResponse;
+    const rawData = responseData.data || responseData;
 
     if (!rawData || !rawData.status) {
       console.error(

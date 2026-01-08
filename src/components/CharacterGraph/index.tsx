@@ -16,12 +16,11 @@ import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS, type UIRelationType } from "./constants";
+import { type UIRelationType } from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
 import { TiledBackground } from "./TiledBackground";
-import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 import { NetworkControls } from "./NetworkControls";
 import { CharacterSearchOverlay } from "./CharacterSearchOverlay";
 import { TimelineSlider } from "./TimelineSlider";
@@ -80,7 +79,6 @@ export const CharacterGraph = forwardRef<
     const gRef = useRef<SVGGElement>(null);
 
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [enableGrouping, setEnableGrouping] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
     const [hoveredRelationType, setHoveredRelationType] =
@@ -141,15 +139,6 @@ export const CharacterGraph = forwardRef<
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNodeClick, onLinkClick]);
-    // State for Link Hover Tooltip
-    const [hoveredLinkData, setHoveredLinkData] = useState<{
-      link: RelationshipLink;
-      x: number;
-      y: number;
-    } | null>(null);
-
-    // Tooltip close timer for smooth interaction
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Map to store node ID -> original Character for reliable lookup
     const nodeCharacterMapRef = useRef<Map<string, Character>>(new Map());
@@ -357,36 +346,8 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping },
+      { width, height },
     );
-
-    /**
-     * 동적 그룹 클라우드 설정
-     * - initialNodes 기반으로 그룹 목록 생성
-     * - 빈 그룹 숨기기는 tick 핸들러에서 visibility로 제어
-     */
-    const groupConfig = useMemo(() => {
-      // 1. 각 그룹별 멤버 수를 카운트합니다.
-      const groupCounts = initialNodes.reduce(
-        (acc, node) => {
-          const g = node.group;
-          if (g) acc[g] = (acc[g] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-
-      // 2. 멤버가 1명 이상인 그룹만 추출합니다.
-      const activeGroups = Object.keys(groupCounts).filter(
-        (groupName) => groupCounts[groupName] > 0,
-      );
-
-      return activeGroups.map((group, index) => ({
-        name: group,
-        color: GROUP_COLORS[index % GROUP_COLORS.length],
-        id: `group-gradient-${index}`,
-      }));
-    }, [initialNodes]);
 
     // 주요 캐릭터만 보기 필터 적용
     const filteredNodeIds = useMemo(() => {
@@ -406,50 +367,13 @@ export const CharacterGraph = forwardRef<
       return mainNodeIds;
     }, [nodes, showMainOnly]);
 
-    // Cache for D3 selections to avoid DOM querying in every tick
-    const groupSelectionCache = useRef<
-      Map<
-        string,
-        {
-          cloud: d3.Selection<d3.BaseType, unknown, null, undefined>;
-          label: d3.Selection<d3.BaseType, unknown, null, undefined>;
-        }
-      >
-    >(new Map());
-
-    // Cleanup cache on unmount
-    useEffect(() => {
-      const cache = groupSelectionCache.current;
-      return () => {
-        cache.clear();
-      };
-    }, []);
-
-    // Clear cache when group config OR enableGrouping changes
-    // This fixes the bug where clouds don't show on second toggle
-    useEffect(() => {
-      groupSelectionCache.current.clear();
-
-      // When grouping is disabled, ensure all clouds/labels are hidden
-      if (!enableGrouping && gRef.current) {
-        const g = d3.select(gRef.current);
-        g.selectAll('[id^="cloud-"]')
-          .attr("visibility", "hidden")
-          .attr("d", "");
-        g.selectAll('[id^="label-"]').attr("visibility", "hidden");
-      }
-    }, [groupConfig, enableGrouping]);
-
     useEffect(() => {
       if (!simulation || !gRef.current) return;
 
       const g = d3.select(gRef.current);
 
       // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
-      let frameCount = 0;
       simulation.on("tick", () => {
-        frameCount++;
-
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
@@ -508,144 +432,12 @@ export const CharacterGraph = forwardRef<
         nodeSel.attr("transform", (d) =>
           d ? `translate(${d.x}, ${d.y})` : "",
         );
-
-        // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
-        // 그룹 클라우드 위치 및 크기 업데이트 (노드 분포 범위 기반)
-        if (enableGrouping && frameCount % 5 === 0) {
-          // tick마다 최신 노드 위치 기반으로 그룹별 노드 재계산
-          const currentNodesByGroup: Record<string, CharacterNode[]> = {};
-          simulation.nodes().forEach((node) => {
-            if (node.group) {
-              if (!currentNodesByGroup[node.group])
-                currentNodesByGroup[node.group] = [];
-              currentNodesByGroup[node.group].push(node);
-            }
-          });
-
-          // 라벨 위치 정보 저장 (충돌 감지용)
-          const labelPositions: Array<{
-            x: number;
-            y: number;
-            width: number;
-            height: number;
-            name: string;
-          }> = [];
-
-          // groupConfig의 모든 그룹에 대해 처리
-          groupConfig.forEach((config) => {
-            const groupName = config.name;
-            const groupNodes = currentNodesByGroup[groupName] || [];
-            const safeId = groupName.replace(/\s+/g, "-");
-
-            // Use Cached Selection
-            let cached = groupSelectionCache.current.get(safeId);
-            if (!cached) {
-              cached = {
-                cloud: g.select(`#cloud-${safeId}`),
-                label: g.select(`#label-${safeId}`),
-              };
-              groupSelectionCache.current.set(safeId, cached);
-            }
-            const { cloud: cloudEl, label: labelEl } = cached;
-
-            // 노드가 없으면 숨김 처리
-            if (groupNodes.length === 0) {
-              cloudEl.attr("visibility", "hidden");
-              labelEl.attr("visibility", "hidden");
-              return;
-            }
-
-            // 노드가 있으면 표시
-            cloudEl.attr("visibility", "visible");
-            labelEl.attr("visibility", "visible");
-
-            // Centroid 계산
-            let sumX = 0,
-              sumY = 0;
-            groupNodes.forEach((n) => {
-              sumX += n.x || 0;
-              sumY += n.y || 0;
-            });
-            const cx = sumX / groupNodes.length;
-            const cy = sumY / groupNodes.length;
-
-            // 각 노드의 centroid로부터 최대 거리 계산
-            let maxDistance = 0;
-            groupNodes.forEach((n) => {
-              const dx = (n.x || 0) - cx;
-              const dy = (n.y || 0) - cy;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist > maxDistance) maxDistance = dist;
-            });
-
-            // 동적 반경 계산
-            const k = 80;
-            const nodeCount = groupNodes.length;
-            const baseRadius = k * Math.sqrt(nodeCount);
-            const spreadRadius = maxDistance + 80;
-            const dynamicRadius = Math.max(120, baseRadius, spreadRadius);
-
-            // 그룹 크기에 따라 폰트 크기 동적 조정 (최소 32, 최대 64)
-            const fontSize = Math.max(32, Math.min(64, dynamicRadius / 4));
-
-            // 초기 라벨 위치 (클라우드 상단)
-            let labelX = cx;
-            let labelY = cy - dynamicRadius * 0.6;
-
-            // 라벨 크기 추정 (폰트 크기 기반)
-            const estimatedWidth = groupName.length * fontSize * 0.7;
-            const estimatedHeight = fontSize * 1.2;
-
-            // 충돌 감지 및 위치 조정
-            let hasCollision = true;
-            let attempts = 0;
-            const maxAttempts = 8;
-            const angleStep = (Math.PI * 2) / maxAttempts;
-
-            while (hasCollision && attempts < maxAttempts) {
-              hasCollision = labelPositions.some((pos) => {
-                const dx = Math.abs(labelX - pos.x);
-                const dy = Math.abs(labelY - pos.y);
-                return (
-                  dx < (estimatedWidth + pos.width) / 2 + 20 &&
-                  dy < (estimatedHeight + pos.height) / 2 + 20
-                );
-              });
-
-              if (hasCollision) {
-                // 원형으로 위치 회전
-                const angle = angleStep * attempts;
-                const offset = dynamicRadius * 0.6;
-                labelX = cx + Math.cos(angle) * offset;
-                labelY = cy + Math.sin(angle) * offset;
-                attempts++;
-              }
-            }
-
-            // 라벨 위치 저장
-            labelPositions.push({
-              x: labelX,
-              y: labelY,
-              width: estimatedWidth,
-              height: estimatedHeight,
-              name: groupName,
-            });
-
-            // 원형 클라우드 위치/크기 업데이트 (Glassmorphism 스타일)
-            cloudEl.attr("cx", cx).attr("cy", cy).attr("r", dynamicRadius);
-
-            labelEl
-              .attr("x", labelX)
-              .attr("y", labelY)
-              .attr("font-size", fontSize);
-          });
-        }
       });
 
       return () => {
         simulation.on("tick", null); // Cleanup
       };
-    }, [simulation, enableGrouping, groupConfig]);
+    }, [simulation]);
 
     const { zoomState, centerAt, zoomIn, zoomOut, resetZoom } = useZoom(
       svgRef,
@@ -727,28 +519,6 @@ export const CharacterGraph = forwardRef<
       relationTypeFilter,
     ]);
 
-    // Handle Link Hover with Delay
-    const handleLinkHover = useCallback(
-      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
-        // Clear any pending close timer
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = null;
-        }
-
-        if (link && coords) {
-          // Open immediately
-          setHoveredLinkData({ link, x: coords.x, y: coords.y });
-        } else {
-          // Link not active on this tick; delay closing to allow entering tooltip
-          hoverTimeoutRef.current = setTimeout(() => {
-            setHoveredLinkData(null);
-          }, 150);
-        }
-      },
-      [],
-    );
-
     // Handle opening deep analysis modal
     const handleOpenDeepAnalysis = useCallback((link: RelationshipLink) => {
       const sourceNode =
@@ -775,7 +545,6 @@ export const CharacterGraph = forwardRef<
       );
 
       setDeepAnalysisData(mockData);
-      setHoveredLinkData(null); // Close tooltip
     }, []);
 
     // Search Highlighting Logic
@@ -971,69 +740,7 @@ export const CharacterGraph = forwardRef<
               </filter>
             </defs>
 
-            {enableGrouping && (
-              <g className="group-layer">
-                <defs>
-                  {groupConfig.map((config) => (
-                    <radialGradient key={config.id} id={config.id}>
-                      <stop
-                        offset="0%"
-                        stopColor={config.color}
-                        stopOpacity="0.8"
-                      />
-                      <stop
-                        offset="70%"
-                        stopColor={config.color}
-                        stopOpacity="0.4"
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor={config.color}
-                        stopOpacity="0"
-                      />
-                    </radialGradient>
-                  ))}
-                </defs>
-                {groupConfig.map((config) => (
-                  <circle
-                    key={config.name}
-                    id={`cloud-${config.name.replace(/\s+/g, "-")}`}
-                    r={200}
-                    fill={`url(#${config.id})`}
-                    visibility="hidden"
-                    style={{
-                      transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                      filter: "blur(8px)",
-                    }}
-                    className="pointer-events-none"
-                  />
-                ))}
-                {groupConfig.map((config) => (
-                  <text
-                    key={`label-${config.name}`}
-                    id={`label-${config.name.replace(/\s+/g, "-")}`}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="rgba(0,0,0,0.7)"
-                    fontSize="48"
-                    fontWeight="700"
-                    visibility="hidden"
-                    className="pointer-events-none select-none tracking-tight"
-                    style={{
-                      fontFamily: "'Nanum Myeongjo', serif",
-                      stroke: "#FFFFFF",
-                      strokeWidth: "10px",
-                      strokeLinejoin: "round",
-                      strokeLinecap: "round",
-                      paintOrder: "stroke fill",
-                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-                    }}
-                  >
-                    {config.name}
-                  </text>
-                ))}
-              </g>
-            )}
+            {/* 그룹 클라우드 제거됨 - Faction 테두리 링으로 대체 (NodeRenderer) */}
 
             {links
               .filter((link) => {
@@ -1083,8 +790,7 @@ export const CharacterGraph = forwardRef<
                         (!highlightedNodeIds?.includes(sId) ||
                           !highlightedNodeIds?.includes(tId)))
                     }
-                    onClick={onLinkClick}
-                    onHover={handleLinkHover}
+                    onClick={handleOpenDeepAnalysis}
                     showTension={showTension}
                     showLogicCheck={showLogicCheck}
                   />
@@ -1131,54 +837,6 @@ export const CharacterGraph = forwardRef<
         </svg>
 
         {/* Relationship Event Tooltip on Hover */}
-        {hoveredLinkData && (
-          <RelationshipEventTooltip
-            type={hoveredLinkData.link.type as UIRelationType}
-            strength={hoveredLinkData.link.strength}
-            description={hoveredLinkData.link.description}
-            events={
-              (hoveredLinkData.link.history || []) as {
-                eventId: string;
-                title: string;
-                chapter?: string;
-                type: UIRelationType;
-                reason?: string;
-                date?: string;
-              }[]
-            }
-            sourceName={
-              typeof hoveredLinkData.link.source === "object"
-                ? (hoveredLinkData.link.source as CharacterNode).name
-                : String(hoveredLinkData.link.source)
-            }
-            targetName={
-              typeof hoveredLinkData.link.target === "object"
-                ? (hoveredLinkData.link.target as CharacterNode).name
-                : String(hoveredLinkData.link.target)
-            }
-            x={hoveredLinkData.x}
-            y={hoveredLinkData.y}
-            onEventClick={() => {
-              // Clicking an event opens the details panel for that link
-              onLinkClick?.(hoveredLinkData.link);
-              setHoveredLinkData(null); // Close tooltip
-            }}
-            onMouseEnter={() => {
-              // Keep open when entering tooltip
-              if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current);
-                hoverTimeoutRef.current = null;
-              }
-            }}
-            onMouseLeave={() => {
-              // Close when leaving tooltip
-              setHoveredLinkData(null);
-            }}
-            onOpenDeepAnalysis={() =>
-              handleOpenDeepAnalysis(hoveredLinkData.link)
-            }
-          />
-        )}
 
         {/* Timeline Slider (4D Visualization) */}
         {totalChapters > 1 && (
@@ -1218,8 +876,6 @@ export const CharacterGraph = forwardRef<
         <NetworkControls
           relationTypeFilter={internalFilter}
           onFilterChange={handleFilterChange}
-          enableGrouping={enableGrouping}
-          onGroupingChange={setEnableGrouping}
           hoveredType={hoveredRelationType}
           onHoverType={setHoveredRelationType}
           showMainOnly={showMainOnly}

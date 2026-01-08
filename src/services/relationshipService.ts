@@ -1,24 +1,14 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { RelationType } from "@/types/character";
 
 /**
  * 관계 타입 (callback_result.json 기반 확장)
  */
-export type RelationshipType =
-  // 🆕 callback_result.json에서 사용하는 대문자 타입
-  | "ALLY"
-  | "RIVAL"
-  | "NEUTRAL"
-  | "ROMANTIC"
-  | "ENEMY"
-  | "MENTOR"
-  | "FAMILY"
-  // Legacy lowercase values
-  | "friendly"
-  | "hostile"
-  | "neutral"
-  | "romantic"
-  | "family";
+/**
+ * 관계 타입 (src/types/character.ts 참조)
+ */
+export type RelationshipType = RelationType;
 
 export interface Relationship {
   id: string;

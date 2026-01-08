@@ -36,8 +36,6 @@ const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
 interface NetworkControlsProps {
   relationTypeFilter: UIRelationType | "all";
   onFilterChange: (value: UIRelationType | "all") => void;
-  enableGrouping?: boolean;
-  onGroupingChange?: (enabled: boolean) => void;
   hoveredType?: UIRelationType | null;
   onHoverType?: (type: UIRelationType | null) => void;
   onSimulateCollapse?: () => void;
@@ -61,13 +59,10 @@ interface NetworkControlsProps {
  * 네트워크 그래프 컨트롤 패널
  * - 관계 타입 필터
  * - 범례 (인터랙티브)
- * - 그룹 토글 (Switch)
  */
 export function NetworkControls({
   relationTypeFilter,
   onFilterChange,
-  enableGrouping = false,
-  onGroupingChange,
   hoveredType,
   onHoverType,
   onSimulateCollapse,
@@ -234,24 +229,6 @@ export function NetworkControls({
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
                       주인공, 적대자 및 관계가 많은 캐릭터만 표시
-                    </p>
-                  </div>
-                )}
-
-                {/* 그룹 토글 */}
-                {onGroupingChange && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
-                        그룹 보기
-                      </Label>
-                      <Switch
-                        checked={enableGrouping}
-                        onChange={onGroupingChange}
-                      />
-                    </div>
-                    <p className="text-[9px] text-espresso-400 leading-tight">
-                      진영별로 노드를 그룹화합니다
                     </p>
                   </div>
                 )}

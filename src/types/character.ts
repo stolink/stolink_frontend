@@ -18,6 +18,10 @@ export type RelationType =
   | "ENEMY"
   | "MENTOR"
   | "FAMILY"
+  | "MASTER_SERVANT"
+  | "COWORKER"
+  | "CLASSMATE"
+  | "COMPLEX"
   // Legacy lowercase values for backward compatibility
   | "friendly"
   | "hostile"
