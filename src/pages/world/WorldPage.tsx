@@ -11,10 +11,11 @@ import type { Character, RelationshipLink } from "@/types";
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import { roleLabels } from "./constants";
 
-import {
   CharacterGraph,
   type CharacterGraphRef,
   AnalysisSummaryModal,
+  RelationshipEditDialog,
+  RelationshipDetailSheet,
 } from "@/components/CharacterGraph";
 import {
   CharacterGraphCanvas,
@@ -138,9 +139,12 @@ export default function WorldPage() {
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
     null
   );
+  const [selectedRelationship, setSelectedRelationship] =
+    useState<RelationshipLink | null>(null);
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
 
@@ -235,7 +239,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents
+    projectEvents,
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -274,10 +278,11 @@ export default function WorldPage() {
 
   const handleLinkClick = (link: RelationshipLink | null) => {
     if (!link) {
-      // Handle link deselection (if applicable, though usually clicking background just clears node selection)
+      setSelectedRelationship(null);
       return;
     }
-    // Link Click logic removed as we use internal Deep Analysis
+    // Deep Analysis 보다는 먼저 Sheet를 열어줍니다.
+    setSelectedRelationship(link);
     console.log("Link clicked:", link);
   };
 
@@ -665,6 +670,77 @@ export default function WorldPage() {
         }}
       />
 
+      <RelationshipDetailSheet
+        relationship={selectedRelationship}
+        isOpen={!!selectedRelationship}
+        onClose={() => setSelectedRelationship(null)}
+        sourceName={
+          characters.find(
+            (c) =>
+              (c._id || (c as { id?: string }).id) ===
+              selectedRelationship?.source
+          )?.profile?.name ||
+          (
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.source
+            ) as { name?: string }
+          )?.name ||
+          selectedRelationship?.source ||
+          ""
+        }
+        targetName={
+          characters.find(
+            (c) =>
+              (c._id || (c as { id?: string }).id) ===
+              selectedRelationship?.target
+          )?.profile?.name ||
+          (
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.target
+            ) as { name?: string }
+          )?.name ||
+          selectedRelationship?.target ||
+          ""
+        }
+        onEdit={() => setIsRelationshipEditOpen(true)}
+      />
+
+      {/* Relationship Edit Dialog */}
+      {projectId && selectedRelationship && (
+        <RelationshipEditDialog
+          key={selectedRelationship.id}
+          relationship={selectedRelationship}
+          isOpen={isRelationshipEditOpen}
+          onClose={() => setIsRelationshipEditOpen(false)}
+          onSave={() => {
+            setIsRelationshipEditOpen(false);
+            setSelectedRelationship(null);
+          }}
+          projectId={projectId}
+          sourceName={
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.source
+            )?.profile?.name ||
+            selectedRelationship?.source ||
+            ""
+          }
+          targetName={
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.target
+            )?.profile?.name ||
+            selectedRelationship?.target ||
+            ""
+          }
+        />
+      )}
       {/* Analysis Result Summary Modal */}
       {analysisDiff && (
         <AnalysisSummaryModal

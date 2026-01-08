@@ -133,8 +133,7 @@ export default function CharacterDetailDialog({
       },
     });
 
-  const currentJobType = useAnalysisBufferStore(
-    (state) => state.currentJobType,
+  const currentJobType = useAnalysisBufferStore((state) => state.currentJobType);
   );
 
   // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
@@ -211,6 +210,7 @@ export default function CharacterDetailDialog({
       enabled: !!displayCharacter?._id && isOpen,
     },
   );
+<<<<<<< HEAD
 
   console.log(
     "CharacterDetailDialog Rendered. ActiveTab:",
@@ -218,6 +218,8 @@ export default function CharacterDetailDialog({
     "CharacterEvents:",
     characterEvents?.length,
   );
+=======
+>>>>>>> 004f31d (fix(lint): resolve all 400+ eslint errors and warnings)
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
@@ -333,7 +335,8 @@ export default function CharacterDetailDialog({
           action,
           generatedPrompt,
           selectedSetting as unknown as Record<string, string>,
-          additionalOptions,
+          additionalOptions
+        );
         );
 
         console.log(
@@ -363,7 +366,7 @@ export default function CharacterDetailDialog({
       manualPrompt,
       toast,
       setGlobalJobId,
-    ],
+    ]
   );
 
   const handleEdit = useCallback(() => {
@@ -911,7 +914,11 @@ function TabItem({
     <TabsTrigger
       value={value}
       className="group relative h-8 px-5 rounded-full font-medium text-espresso-500 transition-all
+<<<<<<< HEAD
       data-[state=active]:text-white data-[state=active]:!bg-espresso-900 data-[state=active]:shadow-lg
+=======
+      data-[state=active]:text-primary-foreground data-[state=active]:bg-espresso-800 data-[state=active]:shadow-lg
+>>>>>>> 004f31d (fix(lint): resolve all 400+ eslint errors and warnings)
       data-[state=active]:ring-2 data-[state=active]:ring-white/50
       hover:text-espresso-900 hover:bg-white/50"
     >

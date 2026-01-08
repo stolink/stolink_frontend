@@ -102,7 +102,7 @@ export function RelationshipEventTooltip({
         <Card
           className={cn(
             "w-[360px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
-            "ring-1 ring-black/5",
+            "ring-1 ring-black/5"
           )}
         >
           {/* Header: Narrative Thread (Avatars + Tension) */}
@@ -150,7 +150,7 @@ export function RelationshipEventTooltip({
                         "w-1 h-1 rounded-full transition-all duration-300",
                         i < Math.round(strength / 2)
                           ? "bg-espresso-800 scale-110"
-                          : "bg-cloud-300 scale-90",
+                          : "bg-cloud-300 scale-90"
                       )}
                       style={{
                         backgroundColor:
@@ -229,7 +229,7 @@ export function RelationshipEventTooltip({
                         style={{
                           backgroundColor: getRelationshipColor(
                             toUIRelationType(event.type),
-                            4,
+                            4
                           ),
                         }}
                       />
@@ -292,6 +292,6 @@ export function RelationshipEventTooltip({
         </Card>
       </motion.div>
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

@@ -22,6 +22,8 @@ const RELATION_ICONS: Partial<Record<UIRelationType, React.ReactNode>> = {
   family: <Users className="w-2.5 h-2.5" />,
   neutral: <Users className="w-2.5 h-2.5" />,
   complex: <Users className="w-2.5 h-2.5" />,
+  mentor: <Layers className="w-2.5 h-2.5" />,
+  rival: <Skull className="w-2.5 h-2.5" />,
 };
 
 interface NetworkControlsD3Props {
@@ -56,8 +58,7 @@ export function NetworkControlsD3({
               size="sm"
               className={cn(
                 "w-full justify-between gap-1 h-7 text-xs bg-white/80 hover:bg-white border-cloud-200",
-                relationTypeFilter !== "all" &&
-                  "border-primary/30 bg-primary/5",
+                relationTypeFilter !== "all" && "border-primary/30 bg-primary/5"
               )}
             >
               <span className="flex items-center gap-1">
@@ -106,7 +107,7 @@ export function NetworkControlsD3({
                       {RELATION_LABELS[type]}
                     </span>
                   </DropdownMenuRadioItem>
-                ),
+                )
               )}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
@@ -140,7 +141,7 @@ export function NetworkControlsD3({
               key={type}
               className={cn(
                 "flex items-center gap-2 px-1.5 py-0.5 rounded transition-colors",
-                relationTypeFilter === type && "bg-white/80",
+                relationTypeFilter === type && "bg-white/80"
               )}
             >
               <div className="flex items-center gap-1.5">
