@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores";
 
-const API_URL = import.meta.env.VITE_API_URL || "/ai-api";
+const CHAT_API_URL = "/ai-api";
 
 /**
  * RAG 검색 결과 소스 청크
@@ -102,14 +102,14 @@ export function useChatStream(options?: UseChatStreamOptions) {
         };
 
         // Corrected path from /ai/chat/stream to /chat/stream as per guide
-        const response = await fetch(`${API_URL}/chat/stream`, {
+        const response = await fetch(`${CHAT_API_URL}/chat/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             message,
-            projectId: projectId,
-            userId: userId,
-            sessionId: sessionId,
+            project_id: projectId,
+            user_id: userId,
+            session_id: sessionId,
           }),
           signal: abortControllerRef.current.signal,
           credentials: "include", // 쿠키 자동 전송
@@ -226,10 +226,10 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
     // Call stop endpoint as per guide
     try {
-      await fetch(`${API_URL}/chat/stop`, {
+      await fetch(`${CHAT_API_URL}/chat/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ session_id: sessionId }),
       });
     } catch (err) {
       console.error("Failed to stop generation:", err);
