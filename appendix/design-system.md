@@ -4,13 +4,13 @@
 
 ## Mocha & Cloud Dancer Design System
 
-### Primary Colors (Mocha)
+### Primary Colors (Mocha - Vivid Clean Brown)
 
 | Token     | HEX     | 용도                |
 | --------- | ------- | ------------------- |
-| Mocha 500 | #A47764 | 핵심 브랜드 색상    |
-| Mocha 400 | #BD9B8D | Hover 상태 (고휘도) |
-| Mocha 700 | #7D5A4B | Dark/Active 상태    |
+| Mocha 500 | #A6735E | 핵심 브랜드 색상    |
+| Mocha 400 | #C69F8F | Hover 상태 (고휘도) |
+| Mocha 700 | #7D4E3C | Dark/Active 상태    |
 
 ### Surface Colors (Cloud)
 
@@ -21,19 +21,19 @@
 
 ### Status Colors
 
-| 이름    | HEX     | 용도                    |
-| ------- | ------- | ----------------------- |
-| Success | #5B7B4B | 성공/긍정 피드백        |
-| Warning | #B8860B | 경고 (가독성 확보 골드) |
-| Error   | #A33A3A | 오류 (공학용 레드)      |
+| 이름    | HEX     | 용도               |
+| ------- | ------- | ------------------ |
+| Success | #059669 | 성공 (Emerald-600) |
+| Warning | #D97706 | 경고 (Amber-600)   |
+| Error   | #DC2626 | 오류 (Red-600)     |
 
-### Relationship Colors (TW3K/CK3 스타일)
+### Relationship Colors (Vivid & Clear)
 
-| 관계 유형 | HEX     | 설명                       |
-| --------- | ------- | -------------------------- |
-| Friendly  | #15803D | Dark Green (신뢰, 협력)    |
-| Hostile   | #F44336 | Red (갈등, 적대)           |
-| Romantic  | #FF4081 | Vivid Blossom (애정, 열정) |
+| 관계 유형 | HEX     | 설명                     |
+| --------- | ------- | ------------------------ |
+| Friendly  | #7A8C6F | Muted Olive (신뢰, 협력) |
+| Hostile   | #E11D48 | Rose-600 (갈등, 적대)    |
+| Romantic  | #DB2777 | Pink-600 (애정, 열정)    |
 
 > **참고**: 관계 강도(Strength)에 따른 색상 구분은 제거되고 통합되었습니다.
 
