@@ -22,6 +22,10 @@ import {
   AnalysisSummaryModal,
   RelationshipEditDialog,
 } from "@/components/CharacterGraph";
+import {
+  CharacterGraphCanvas,
+  type CharacterGraphCanvasRef,
+} from "@/components/CharacterGraph/CanvasGraph";
 import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 
@@ -114,7 +118,7 @@ export default function WorldPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -125,7 +129,10 @@ export default function WorldPage() {
     UIRelationType | "all"
   >("all");
 
-  const graphRef = useRef<CharacterGraphRef>(null);
+  // Feature Flag: Canvas vs SVG 그래프 전환
+  const useCanvasGraph = import.meta.env.VITE_USE_CANVAS_GRAPH === "true";
+
+  const graphRef = useRef<CharacterGraphRef | CharacterGraphCanvasRef>(null);
   const [searchHighlightedIds, setSearchHighlightedIds] = useState<
     string[] | null
   >(null);
@@ -154,7 +161,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents,
+    projectEvents
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -284,7 +291,7 @@ export default function WorldPage() {
                   <p
                     className={cn(
                       "text-mocha-500",
-                      !showCompletionAnimation && !isStuck && "animate-pulse",
+                      !showCompletionAnimation && !isStuck && "animate-pulse"
                     )}
                   >
                     {showCompletionAnimation
@@ -399,34 +406,64 @@ export default function WorldPage() {
                 onViewProfile={() => setIsModalOpen(true)}
               />
 
-              {/* D3 CharacterGraph - 내장 검색/컨트롤 사용 */}
-              <CharacterGraph
-                characters={characters}
-                links={links}
-                onNodeDragEnd={async (node) => {
-                  if (node.id.startsWith("temp-node") || !node.x || !node.y)
-                    return;
-                  try {
-                    await updateCharacterMutation.mutateAsync({
-                      id: node.id,
-                      payload: {
-                        graphPosition: { x: node.x, y: node.y },
-                      },
-                    });
-                  } catch (e) {
-                    console.error("Failed to save node position:", e);
-                  }
-                }}
-                onNodeClick={handleNodeClick}
-                onLinkClick={handleLinkClick}
-                selectedNodeId={graphFocusId || activeCharacter?._id || null}
-                relationTypeFilter={relationTypeFilter}
-                onFilterChange={setRelationTypeFilter}
-                highlightedNodeIds={searchHighlightedIds}
-                onSearchChange={setSearchHighlightedIds}
-                showSearch={true}
-                ref={graphRef}
-              />
+              {/* CharacterGraph - Canvas (1000+ nodes) or SVG (legacy) */}
+              {useCanvasGraph ? (
+                <CharacterGraphCanvas
+                  characters={characters}
+                  links={links}
+                  onNodeDragEnd={async (node) => {
+                    if (node.id.startsWith("temp-node") || !node.x || !node.y)
+                      return;
+                    try {
+                      await updateCharacterMutation.mutateAsync({
+                        id: node.id,
+                        payload: {
+                          graphPosition: { x: node.x, y: node.y },
+                        },
+                      });
+                    } catch (e) {
+                      console.error("Failed to save node position:", e);
+                    }
+                  }}
+                  onNodeClick={handleNodeClick}
+                  onLinkClick={handleLinkClick}
+                  selectedNodeId={graphFocusId || activeCharacter?._id || null}
+                  relationTypeFilter={relationTypeFilter}
+                  onFilterChange={setRelationTypeFilter}
+                  highlightedNodeIds={searchHighlightedIds}
+                  onSearchChange={setSearchHighlightedIds}
+                  showSearch={true}
+                  ref={graphRef as React.RefObject<CharacterGraphCanvasRef>}
+                />
+              ) : (
+                <CharacterGraph
+                  characters={characters}
+                  links={links}
+                  onNodeDragEnd={async (node) => {
+                    if (node.id.startsWith("temp-node") || !node.x || !node.y)
+                      return;
+                    try {
+                      await updateCharacterMutation.mutateAsync({
+                        id: node.id,
+                        payload: {
+                          graphPosition: { x: node.x, y: node.y },
+                        },
+                      });
+                    } catch (e) {
+                      console.error("Failed to save node position:", e);
+                    }
+                  }}
+                  onNodeClick={handleNodeClick}
+                  onLinkClick={handleLinkClick}
+                  selectedNodeId={graphFocusId || activeCharacter?._id || null}
+                  relationTypeFilter={relationTypeFilter}
+                  onFilterChange={setRelationTypeFilter}
+                  highlightedNodeIds={searchHighlightedIds}
+                  onSearchChange={setSearchHighlightedIds}
+                  showSearch={true}
+                  ref={graphRef as React.RefObject<CharacterGraphRef>}
+                />
+              )}
             </div>
           )}
         </TabsContent>
@@ -577,13 +614,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source,
+              selectedRelationship?.source
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source,
+                selectedRelationship?.source
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -592,13 +629,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target,
+              selectedRelationship?.target
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target,
+                selectedRelationship?.target
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target
@@ -627,14 +664,14 @@ export default function WorldPage() {
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source,
+                selectedRelationship?.source
             )?.profile?.name || selectedRelationship?.source
           }
           targetName={
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target,
+                selectedRelationship?.target
             )?.profile?.name || selectedRelationship?.target
           }
         />

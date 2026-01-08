@@ -29,6 +29,7 @@ import { generateMockAnalysisData } from "./RelationshipDeepAnalysis/utils/analy
 export { RelationshipEditDialog } from "./RelationshipEditDialog";
 export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
 export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
+export { GROUP_COLORS } from "./constants";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -72,7 +73,7 @@ export const CharacterGraph = forwardRef<
       showSearch = true,
       onNodeDragEnd,
     },
-    ref,
+    ref
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -89,6 +90,7 @@ export const CharacterGraph = forwardRef<
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension, setShowTension] = useState(false);
     const [showLogicCheck, setShowLogicCheck] = useState(false);
+    const [enableGrouping, setEnableGrouping] = useState(false);
 
     // --- Deep Analysis Modal State ---
     const [deepAnalysisData, setDeepAnalysisData] =
@@ -100,7 +102,7 @@ export const CharacterGraph = forwardRef<
       if (initialLinks.length === 0) return 1;
       const max = Math.max(
         ...initialLinks.map((l) => l.revealedInChapter || 0),
-        1,
+        1
       );
       return max;
     }, [initialLinks]);
@@ -115,7 +117,7 @@ export const CharacterGraph = forwardRef<
         setInternalFilter(filter);
         onFilterChange?.(filter);
       },
-      [onFilterChange],
+      [onFilterChange]
     );
 
     // 검색 결과 처리
@@ -123,7 +125,7 @@ export const CharacterGraph = forwardRef<
       (matchingIds: string[] | null) => {
         onSearchChange?.(matchingIds);
       },
-      [onSearchChange],
+      [onSearchChange]
     );
 
     // Handle ESC key to clear selection
@@ -139,6 +141,26 @@ export const CharacterGraph = forwardRef<
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNodeClick, onLinkClick]);
+    // State for Link Hover Tooltip
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      link: RelationshipLink;
+      x: number;
+      y: number;
+    } | null>(null);
+
+    // Tooltip close timer for smooth interaction
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Group Selection Cache (Optimized D3)
+    const groupSelectionCache = useRef<
+      Map<
+        string,
+        {
+          cloud: d3.Selection<d3.BaseType, unknown, null, undefined>;
+          label: d3.Selection<d3.BaseType, unknown, null, undefined>;
+        }
+      >
+    >(new Map());
 
     // Map to store node ID -> original Character for reliable lookup
     const nodeCharacterMapRef = useRef<Map<string, Character>>(new Map());
@@ -182,7 +204,7 @@ export const CharacterGraph = forwardRef<
         // Since initialNodes are derived from characters, we can match by ID
         const originalChar = characters.find(
           (c) =>
-            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id),
+            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id)
         );
         if (originalChar) {
           nodeCharacterMapRef.current.set(node.id, originalChar);
@@ -196,7 +218,7 @@ export const CharacterGraph = forwardRef<
       let filtered = initialLinks;
       if (totalChapters > 1) {
         filtered = initialLinks.filter(
-          (l) => (l.revealedInChapter || 0) <= currentChapter,
+          (l) => (l.revealedInChapter || 0) <= currentChapter
         );
       }
 
@@ -346,9 +368,42 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height },
+      { width, height, enableGrouping }
     );
 
+    /**
+     * 동적 그룹 클라우드 설정
+     * - initialNodes 기반으로 그룹 목록 생성
+     * - 빈 그룹 숨기기는 tick 핸들러에서 visibility로 제어
+     */
+    const groupConfig = useMemo(() => {
+      const GROUP_COLORS_LIST = [
+        "rgba(164, 119, 100, 0.15)", // Mocha
+        "rgba(91, 123, 75, 0.15)", // Success/Green
+        "rgba(184, 134, 11, 0.15)", // Gold/Warning
+        "rgba(163, 58, 58, 0.15)", // Error/Red
+      ];
+      // 1. 각 그룹별 멤버 수를 카운트합니다.
+      const groupCounts = initialNodes.reduce(
+        (acc, node) => {
+          const g = node.group;
+          if (g) acc[g] = (acc[g] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+
+      // 2. 멤버가 1명 이상인 그룹만 추출합니다.
+      const activeGroups = Object.keys(groupCounts).filter(
+        (groupName) => groupCounts[groupName] > 0
+      );
+
+      return activeGroups.map((group, index) => ({
+        name: group,
+        color: GROUP_COLORS_LIST[index % GROUP_COLORS_LIST.length],
+        id: `group-gradient-${index}`,
+      }));
+    }, [initialNodes]);
     // 주요 캐릭터만 보기 필터 적용
     const filteredNodeIds = useMemo(() => {
       if (!showMainOnly) return null; // null = 필터 비활성화 (모든 노드 표시)
@@ -377,7 +432,7 @@ export const CharacterGraph = forwardRef<
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
-          ".link-group",
+          ".link-group"
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
@@ -430,18 +485,148 @@ export const CharacterGraph = forwardRef<
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
         nodeSel.attr("transform", (d) =>
-          d ? `translate(${d.x}, ${d.y})` : "",
+          d ? `translate(${d.x}, ${d.y})` : ""
         );
+
+        // 3. 그룹 클라우드 업데이트 (활성화된 경우)
+        if (enableGrouping && groupConfig.length > 0) {
+          // 현재 활성화된 노드들을 그룹별로 수집
+          const currentNodesByGroup: Record<string, CharacterNode[]> = {};
+          nodes.forEach((node) => {
+            if (node.group) {
+              if (!currentNodesByGroup[node.group])
+                currentNodesByGroup[node.group] = [];
+              currentNodesByGroup[node.group].push(node);
+            }
+          });
+
+          const labelPositions: Array<{
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            name: string;
+          }> = [];
+
+          // groupConfig의 모든 그룹에 대해 처리
+          groupConfig.forEach((config) => {
+            const groupName = config.name;
+            const groupNodes = currentNodesByGroup[groupName] || [];
+            const safeId = groupName.replace(/\s+/g, "-");
+
+            // Use Cached Selection
+            let cached = groupSelectionCache.current.get(safeId);
+            if (!cached) {
+              cached = {
+                cloud: g.select(`#cloud-${safeId}`),
+                label: g.select(`#label-${safeId}`),
+              };
+              groupSelectionCache.current.set(safeId, cached);
+            }
+            const { cloud: cloudEl, label: labelEl } = cached;
+
+            // 노드가 없으면 숨김 처리
+            if (groupNodes.length === 0) {
+              cloudEl.attr("visibility", "hidden");
+              labelEl.attr("visibility", "hidden");
+              return;
+            }
+
+            // 노드가 있으면 표시
+            cloudEl.attr("visibility", "visible");
+            labelEl.attr("visibility", "visible");
+
+            // Centroid 계산
+            let sumX = 0,
+              sumY = 0;
+            groupNodes.forEach((n) => {
+              sumX += n.x || 0;
+              sumY += n.y || 0;
+            });
+            const cx = sumX / groupNodes.length;
+            const cy = sumY / groupNodes.length;
+
+            // 각 노드의 centroid로부터 최대 거리 계산
+            let maxDistance = 0;
+            groupNodes.forEach((n) => {
+              const dx = (n.x || 0) - cx;
+              const dy = (n.y || 0) - cy;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist > maxDistance) maxDistance = dist;
+            });
+
+            // 동적 반경 계산
+            const k = 80;
+            const nodeCount = groupNodes.length;
+            const baseRadius = k * Math.sqrt(nodeCount);
+            const spreadRadius = maxDistance + 80;
+            const dynamicRadius = Math.max(120, baseRadius, spreadRadius);
+
+            // 그룹 크기에 따라 폰트 크기 동적 조정 (최소 32, 최대 64)
+            const fontSize = Math.max(32, Math.min(64, dynamicRadius / 4));
+
+            // 초기 라벨 위치 (클라우드 상단)
+            let labelX = cx;
+            let labelY = cy - dynamicRadius * 0.6;
+
+            // 라벨 크기 추정 (폰트 크기 기반)
+            const estimatedWidth = groupName.length * fontSize * 0.7;
+            const estimatedHeight = fontSize * 1.2;
+
+            // 충돌 감지 및 위치 조정
+            let hasCollision = true;
+            let attempts = 0;
+            const maxAttempts = 8;
+            const angleStep = (Math.PI * 2) / maxAttempts;
+
+            while (hasCollision && attempts < maxAttempts) {
+              hasCollision = labelPositions.some((pos) => {
+                const dx = Math.abs(labelX - pos.x);
+                const dy = Math.abs(labelY - pos.y);
+                return (
+                  dx < (estimatedWidth + pos.width) / 2 + 20 &&
+                  dy < (estimatedHeight + pos.height) / 2 + 20
+                );
+              });
+
+              if (hasCollision) {
+                // 원형으로 위치 회전
+                const angle = angleStep * attempts;
+                const offset = dynamicRadius * 0.6;
+                labelX = cx + Math.cos(angle) * offset;
+                labelY = cy + Math.sin(angle) * offset;
+                attempts++;
+              }
+            }
+
+            // 라벨 위치 저장
+            labelPositions.push({
+              x: labelX,
+              y: labelY,
+              width: estimatedWidth,
+              height: estimatedHeight,
+              name: groupName,
+            });
+
+            // 원형 클라우드 위치/크기 업데이트 (Glassmorphism 스타일)
+            cloudEl.attr("cx", cx).attr("cy", cy).attr("r", dynamicRadius);
+
+            labelEl
+              .attr("x", labelX)
+              .attr("y", labelY)
+              .attr("font-size", fontSize);
+          });
+        }
       });
 
       return () => {
         simulation.on("tick", null); // Cleanup
       };
-    }, [simulation]);
+    }, [simulation, enableGrouping, groupConfig, nodes]);
 
     const { zoomState, centerAt, zoomIn, zoomOut, resetZoom } = useZoom(
       svgRef,
-      gRef,
+      gRef
     );
 
     // 캐릭터 선택 처리 (검색에서 - 줌/하이라이트 포함)
@@ -459,7 +644,7 @@ export const CharacterGraph = forwardRef<
           centerAt(targetNode.x, targetNode.y, 1.35);
         }
       },
-      [onNodeClick, nodes, centerAt],
+      [onNodeClick, nodes, centerAt]
     );
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
@@ -473,7 +658,7 @@ export const CharacterGraph = forwardRef<
         setDraggedNodeId(null);
         onNodeDragEnd?.(node);
       },
-      [onNodeDragEnd],
+      [onNodeDragEnd]
     );
 
     const { dragBehavior } = useDrag({
@@ -493,7 +678,7 @@ export const CharacterGraph = forwardRef<
           return Promise.resolve();
         },
       }),
-      [nodes, centerAt],
+      [nodes, centerAt]
     );
 
     const connectedNodeIds = useMemo(() => {
@@ -541,11 +726,28 @@ export const CharacterGraph = forwardRef<
           imageUrl: targetNode.imageUrl,
         },
         link.type as string,
-        link.strength,
+        link.strength
       );
 
       setDeepAnalysisData(mockData);
     }, []);
+
+    const handleLinkHover = useCallback(
+      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+
+        if (link && coords) {
+          // Open immediately
+          setHoveredLinkData({ link, x: coords.x, y: coords.y });
+        } else {
+          // Link not active on this tick; delay closing to allow entering tooltip
+          hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredLinkData(null);
+          }, 150);
+        }
+      },
+      []
+    );
 
     // Search Highlighting Logic
     // null/undefined = 검색 비활성 (일반 모드)
@@ -563,15 +765,15 @@ export const CharacterGraph = forwardRef<
         } else {
           console.warn(
             "[CharacterGraph] Character not found for node.id:",
-            node.id,
+            node.id
           );
           console.warn(
             "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys()),
+            Array.from(nodeCharacterMapRef.current.keys())
           );
         }
       },
-      [onNodeClick],
+      [onNodeClick]
     );
 
     const handleNodeHover = useCallback(
@@ -579,7 +781,7 @@ export const CharacterGraph = forwardRef<
         if (isDragging) return;
         setHoveredNodeId(id);
       },
-      [isDragging],
+      [isDragging]
     );
 
     // Voronoi 인터랙션: 마우스가 가장 가까운 노드 자동 하이라이트
@@ -597,7 +799,7 @@ export const CharacterGraph = forwardRef<
           delaunayRef.current = Delaunay.from(
             validNodes,
             (d) => d.x!,
-            (d) => d.y!,
+            (d) => d.y!
           );
         }
       };
@@ -631,7 +833,7 @@ export const CharacterGraph = forwardRef<
         const transformed = point.matrixTransform(ctm.inverse());
         const nearestIndex = delaunayRef.current.find(
           transformed.x,
-          transformed.y,
+          transformed.y
         );
 
         if (nearestIndex !== -1 && simulation) {
@@ -657,7 +859,7 @@ export const CharacterGraph = forwardRef<
           }
         }
       },
-      [isDragging, simulation],
+      [isDragging, simulation]
     );
 
     const handleSvgMouseLeave = useCallback(() => {
@@ -740,7 +942,61 @@ export const CharacterGraph = forwardRef<
               </filter>
             </defs>
 
-            {/* 그룹 클라우드 제거됨 - Faction 테두리 링으로 대체 (NodeRenderer) */}
+            {enableGrouping && (
+              <g className="group-layer">
+                <defs>
+                  {groupConfig.map((config) => (
+                    <radialGradient key={config.id} id={config.id}>
+                      <stop
+                        offset="0%"
+                        stopColor={config.color}
+                        stopOpacity="0.8"
+                      />
+                      <stop
+                        offset="70%"
+                        stopColor={config.color}
+                        stopOpacity="0.4"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={config.color}
+                        stopOpacity="0"
+                      />
+                    </radialGradient>
+                  ))}
+                </defs>
+                {groupConfig.map((config) => (
+                  <circle
+                    key={config.name}
+                    id={`cloud-${config.name.replace(/\s+/g, "-")}`}
+                    r={200}
+                    fill={`url(#${config.id})`}
+                    visibility="hidden"
+                    style={{
+                      transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                      filter: "blur(8px)",
+                    }}
+                    className="pointer-events-none"
+                  />
+                ))}
+                {groupConfig.map((config) => (
+                  <text
+                    key={`label-${config.name}`}
+                    id={`label-${config.name.replace(/\s+/g, "-")}`}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="rgba(0,0,0,0.7)"
+                    className="font-heading pointer-events-none select-none font-bold italic mix-blend-multiply opacity-30"
+                    visibility="hidden"
+                    style={{
+                      transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    }}
+                  >
+                    {config.name}
+                  </text>
+                ))}
+              </g>
+            )}
 
             {links
               .filter((link) => {
@@ -791,6 +1047,7 @@ export const CharacterGraph = forwardRef<
                           !highlightedNodeIds?.includes(tId)))
                     }
                     onClick={handleOpenDeepAnalysis}
+                    onHover={handleLinkHover}
                     showTension={showTension}
                     showLogicCheck={showLogicCheck}
                   />
@@ -799,7 +1056,7 @@ export const CharacterGraph = forwardRef<
 
             {nodes
               .filter(
-                (node) => !filteredNodeIds || filteredNodeIds.has(node.id),
+                (node) => !filteredNodeIds || filteredNodeIds.has(node.id)
               )
               .map((node, index) => {
                 // Determine visual state based on Search vs Selection
@@ -837,6 +1094,39 @@ export const CharacterGraph = forwardRef<
         </svg>
 
         {/* Relationship Event Tooltip on Hover */}
+        {hoveredLinkData && (
+          <RelationshipEventTooltip
+            events={hoveredLinkData.link.history || []}
+            sourceName={
+              nodeCharacterMapRef.current.get(
+                typeof hoveredLinkData.link.source === "object"
+                  ? (hoveredLinkData.link.source as CharacterNode).id
+                  : hoveredLinkData.link.source
+              )?.profile?.name || "???"
+            }
+            targetName={
+              nodeCharacterMapRef.current.get(
+                typeof hoveredLinkData.link.target === "object"
+                  ? (hoveredLinkData.link.target as CharacterNode).id
+                  : hoveredLinkData.link.target
+              )?.profile?.name || "???"
+            }
+            x={hoveredLinkData.x}
+            y={hoveredLinkData.y}
+            type={hoveredLinkData.link.type}
+            strength={hoveredLinkData.link.strength}
+            description={hoveredLinkData.link.description}
+            onEventClick={() => {}} // TODO: Handle event click
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current)
+                clearTimeout(hoverTimeoutRef.current);
+            }}
+            onMouseLeave={() => handleLinkHover(null)}
+            onOpenDeepAnalysis={() =>
+              handleOpenDeepAnalysis(hoveredLinkData.link)
+            }
+          />
+        )}
 
         {/* Timeline Slider (4D Visualization) */}
         {totalChapters > 1 && (
@@ -884,6 +1174,8 @@ export const CharacterGraph = forwardRef<
           onToggleTension={setShowTension}
           showLogicCheck={showLogicCheck}
           onToggleLogicCheck={setShowLogicCheck}
+          enableGrouping={enableGrouping}
+          onGroupingChange={setEnableGrouping}
         />
 
         {/* 캐릭터 검색 오버레이 */}
@@ -903,7 +1195,7 @@ export const CharacterGraph = forwardRef<
         />
       </div>
     );
-  },
+  }
 );
 
 export { AnalysisSummaryModal } from "./AnalysisSummaryModal";

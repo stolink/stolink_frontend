@@ -43,14 +43,14 @@ export function RelationshipEditDialog({
   projectId,
 }: RelationshipEditDialogProps) {
   const [type, setType] = useState<RelationType | string>(
-    relationship?.relationType || relationship?.type || "neutral",
+    relationship?.relationType || relationship?.type || "neutral"
   );
   const [strength, setStrength] = useState<number>(relationship?.strength || 5);
   const [description, setDescription] = useState<string>(
-    relationship?.description || "",
+    relationship?.description || ""
   );
   const [bidirectional, setBidirectional] = useState<boolean>(
-    relationship?.bidirectional || false,
+    relationship?.bidirectional || false
   );
 
   // Mutation
@@ -102,7 +102,7 @@ export function RelationshipEditDialog({
           console.error("Failed to update relationship", error);
           // Optionally show toast
         },
-      },
+      }
     );
   };
 
@@ -168,7 +168,11 @@ export function RelationshipEditDialog({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Switch checked={bidirectional} onChange={setBidirectional} />
+            <Switch
+              id="bidirectional"
+              checked={bidirectional}
+              onCheckedChange={setBidirectional}
+            />
             <Label htmlFor="bidirectional">상호 관계 (양방향)</Label>
           </div>
         </div>

@@ -69,7 +69,7 @@ export function RelationshipEventTooltip({
             "hover:scale-[1.03] hover:shadow-2xl hover:border-mocha-400",
             "hover:ring-2 hover:ring-mocha-300/60",
             "active:scale-[0.98]",
-          ],
+          ]
         )}
         onClick={(e) => {
           if (onOpenDeepAnalysis) {
@@ -95,7 +95,7 @@ export function RelationshipEventTooltip({
             <div className="flex items-center justify-between">
               <Badge
                 className={cn(
-                  "px-2 py-0.5 text-xs font-medium capitalize text-white",
+                  "px-2 py-0.5 text-xs font-medium capitalize text-white"
                 )}
                 style={{
                   backgroundColor: getRelationshipColor(type, strength),
@@ -116,7 +116,7 @@ export function RelationshipEventTooltip({
                         "w-1.5 h-1.5 rounded-full transition-colors",
                         i < Math.round(strength / 2)
                           ? "bg-mocha-500"
-                          : "bg-cloud-200",
+                          : "bg-cloud-200"
                       )}
                     />
                   ))}
@@ -159,7 +159,7 @@ export function RelationshipEventTooltip({
                   <Badge
                     intent="outline"
                     className={cn(
-                      "text-[10px] px-1.5 py-0 h-5 text-white border-0",
+                      "text-[10px] px-1.5 py-0 h-5 text-white border-0"
                     )}
                     style={{
                       backgroundColor: getRelationshipColor(event.type, 5), // Default to standard strength for events
@@ -187,6 +187,6 @@ export function RelationshipEventTooltip({
         </CardContent>
       </Card>
     </div>,
-    document.body,
+    document.body
   );
 }

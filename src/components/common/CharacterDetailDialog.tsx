@@ -29,6 +29,7 @@ import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
 import { useQueryClient } from "@tanstack/react-query"; // Added useQueryClient
@@ -113,6 +114,25 @@ export default function CharacterDetailDialog({
     (state) => state.isAnalyzing,
   );
 
+  // Image generation polling
+  const { isGenerating: isPollingImage, progress: pollingProgress } =
+    useImageGenerationPolling(imageJobId, character?._id || "", {
+      onComplete: (imageUrl) => {
+        // Force refresh by adding a timestamp if not already present or as a safety
+        const cacheBusterUrl = imageUrl.includes("?")
+          ? `${imageUrl}&t=${Date.now()}`
+          : `${imageUrl}?t=${Date.now()}`;
+        setTempImageUrl(cacheBusterUrl);
+        setImageJobId(null);
+      },
+      onError: () => {
+        setImageJobId(null);
+      },
+      onTimeout: () => {
+        setImageJobId(null);
+      },
+    });
+
   const currentJobType = useAnalysisBufferStore(
     (state) => state.currentJobType,
   );
@@ -147,12 +167,12 @@ export default function CharacterDetailDialog({
 
   // Use local imageJobId as primary indicator for animation
   // This ensures animation shows even if global state updates faster than React re-renders
-  const isGenerating = !!imageJobId;
+  const isGenerating = !!imageJobId || isPollingImage;
   // Use global progress if available, otherwise show indeterminate
   const progress =
     isGlobalAnalyzing && currentJobType === "image"
-      ? useAnalysisBufferStore.getState().progress
-      : 0;
+      ? useAnalysisBufferStore.getState().progress || pollingProgress
+      : pollingProgress;
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
@@ -300,30 +320,28 @@ export default function CharacterDetailDialog({
           jobId,
         );
         setImageJobId(jobId);
-        setGlobalJobId(jobId, "image");
-        toast({
-          title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
-          description: "잠시만 기다려 주세요.",
-        });
-      } catch (err: unknown) {
-        console.error("[CharacterDetailDialog] Image generation failed:", err);
-        toast({
-          variant: "destructive",
-          title: "실패",
-          description: "이미지 생성 요청 중 오류가 발생했습니다.",
-        });
-      }
-    },
-    [
-      character,
-      displayCharacter,
-      settings,
-      selectedSettingId,
-      manualPrompt,
-      toast,
-      setGlobalJobId,
-    ],
-  );
+      setGlobalJobId(jobId, "image");
+      toast({
+        title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
+        description: "잠시만 기다려 주세요.",
+      });
+    } catch (err: unknown) {
+      console.error("[CharacterDetailDialog] Image generation failed:", err);
+      toast({
+        variant: "destructive",
+        title: "실패",
+        description: "이미지 생성 요청 중 오류가 발생했습니다.",
+      });
+    }
+  }, [
+    character,
+    displayCharacter,
+    settings,
+    selectedSettingId,
+    manualPrompt,
+    toast,
+    setGlobalJobId,
+  ]);
 
   const handleEdit = useCallback(() => {
     setIsEditMode(true);

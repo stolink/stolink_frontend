@@ -42,6 +42,8 @@ interface NetworkControlsProps {
   /** 주요 캐릭터만 보기 필터 */
   showMainOnly?: boolean;
   onShowMainOnlyChange?: (enabled: boolean) => void;
+  enableGrouping?: boolean;
+  onGroupingChange?: (enabled: boolean) => void;
   // Timeline Props
   showTimeline?: boolean;
   currentChapter?: number;
@@ -68,6 +70,8 @@ export function NetworkControls({
   onSimulateCollapse,
   showMainOnly = false,
   onShowMainOnlyChange,
+  enableGrouping = false,
+  onGroupingChange,
   // Insights
   showTension = false,
   onToggleTension,
@@ -138,7 +142,7 @@ export function NetworkControls({
                         className={cn(
                           "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-cloud-200",
                           relationTypeFilter !== "all" &&
-                            "border-mocha-300 bg-mocha-50",
+                            "border-mocha-300 bg-mocha-50"
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -224,7 +228,7 @@ export function NetworkControls({
                       </Label>
                       <Switch
                         checked={showMainOnly}
-                        onChange={onShowMainOnlyChange}
+                        onCheckedChange={onShowMainOnlyChange}
                       />
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
@@ -233,6 +237,23 @@ export function NetworkControls({
                   </div>
                 )}
 
+                {/* 그룹 토글 */}
+                {onGroupingChange && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
+                        그룹 보기
+                      </Label>
+                      <Switch
+                        checked={enableGrouping}
+                        onCheckedChange={onGroupingChange}
+                      />
+                    </div>
+                    <p className="text-[9px] text-espresso-400 leading-tight">
+                      진영별로 노드를 그룹화합니다
+                    </p>
+                  </div>
+                )}
                 {/* Simulation Debug (Temp) */}
                 {onSimulateCollapse && (
                   <div className="pt-2 border-t border-cloud-100 space-y-1.5">
@@ -265,7 +286,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showTension
                 ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-white/80 hover:bg-white",
+                : "bg-white/80 hover:bg-white"
             )}
             onClick={() => onToggleTension(!showTension)}
           >
@@ -280,7 +301,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showLogicCheck
                 ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-white/80 hover:bg-white",
+                : "bg-white/80 hover:bg-white"
             )}
             onClick={() => onToggleLogicCheck(!showLogicCheck)}
           >
@@ -347,7 +368,7 @@ export function NetworkControls({
                   "flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
                   isActive && "bg-white shadow-sm",
                   isHovered && !isActive && "bg-white/60",
-                  isDimmed && "opacity-40",
+                  isDimmed && "opacity-40"
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -381,7 +402,7 @@ export function NetworkControls({
                     "text-xs transition-colors",
                     isActive
                       ? "font-medium text-espresso-800"
-                      : "text-espresso-600",
+                      : "text-espresso-600"
                   )}
                 >
                   {RELATION_LABELS[type]}
