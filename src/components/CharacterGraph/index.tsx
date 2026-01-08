@@ -33,6 +33,7 @@ export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 export { GROUP_COLORS } from "./constants";
 export { RelationshipEditDialog } from "./RelationshipEditDialog";
 export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
+export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 
 interface CharacterGraphProps {
   characters: Character[];
