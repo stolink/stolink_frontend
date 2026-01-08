@@ -22,6 +22,8 @@ const CharacterIntegrationTest = lazy(
 const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
 
 import { TextureOverlay } from "@/components/ui/TextureOverlay";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeSync } from "@stolink/ui";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Create a client
@@ -33,6 +35,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Connect QueryClient to API client for cache clearing on logout
+import { setQueryClient } from "@/api/client";
+setQueryClient(queryClient);
 
 import { useAuthInit } from "@/hooks/useAuthInit";
 
@@ -59,8 +65,8 @@ function App() {
 
   if (isInitializing) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
-        <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
+        <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
         <p>Initializing...</p>
       </div>
     );
@@ -69,12 +75,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <ThemeSync />
         <TextureOverlay />
+        <Toaster />
         <BrowserRouter>
           <Suspense
             fallback={
-              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
-                <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
+              <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
+                <div className="w-8 h-8 border-2 border-mocha-500 border-t-transparent rounded-full animate-spin" />
                 <p>Loading...</p>
               </div>
             }
@@ -125,3 +133,6 @@ function App() {
 }
 
 export default App;
+// test
+// test
+// husky test Mon Jan  5 19:05:50 KST 2026

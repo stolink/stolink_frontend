@@ -1,5 +1,5 @@
 import { Palette } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@stolink/ui";
 import type { CharacterAppearance } from "@/types/character";
 
 interface CharacterVisualProps {
@@ -77,30 +77,33 @@ export function CharacterVisual({
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="editorial-section-heading">
-        <Palette className="h-5 w-5 text-primary/70" />
-        외모
-      </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="space-y-2">
+      {/* 제목 제거됨 (External Container에서 처리) */}
+      <div className="flex flex-col gap-2">
         {visualEntries.map(({ key, label, icon, value }) => (
-          <div key={key} className="editorial-card p-3 hover-lift group">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm opacity-70 group-hover:opacity-100 transition-opacity">
+          <div
+            key={key}
+            className="group flex items-center justify-between p-3 rounded-2xl bg-white/40 border border-white/40 shadow-sm hover:bg-white/60 hover:scale-[1.02] hover:shadow-md transition-all duration-300 cursor-default"
+          >
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-lg drop-shadow-sm grayscale-[0.3] group-hover:grayscale-0 transition-all">
                 {icon}
               </span>
-              <span className="editorial-label">{label}</span>
+              <span className="text-sm font-medium text-mocha-400 group-hover:text-mocha-700 transition-colors">
+                {label}
+              </span>
             </div>
+
             {isEditMode ? (
               <Input
                 value={value}
                 onChange={(e) => onAppearanceChange?.(key, e.target.value)}
-                className="h-8 text-sm bg-white"
-                placeholder={`${label} 입력`}
+                className="h-8 text-sm bg-white/50 border-cloud-200 text-right w-[140px] focus:bg-white"
+                placeholder="입력"
               />
             ) : (
-              <p className="text-sm font-medium text-stone-800 leading-snug">
-                {value || "-"}
+              <p className="text-sm font-bold text-espresso-900 whitespace-nowrap overflow-hidden text-ellipsis max-w-[50%] text-right group-hover:text-black">
+                {value || <span className="text-cloud-300 font-normal">-</span>}
               </p>
             )}
           </div>

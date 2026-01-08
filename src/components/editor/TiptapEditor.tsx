@@ -16,8 +16,9 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+import { debounce } from "lodash-es";
 import { Bold, Italic, ZoomIn, ZoomOut, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
@@ -27,6 +28,7 @@ import { ForeshadowingSuggest } from "./extensions/ForeshadowingSuggest";
 import { TypewriterScroll } from "./extensions/TypewriterScroll";
 import { FocusMode } from "./extensions/FocusMode";
 import { SmartPunctuation } from "./extensions/SmartPunctuation";
+import { AutoFormatter } from "./extensions/AutoFormatter";
 import { useForeshadowingStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { getEditorCSSVariables } from "@/lib/editor-styles";
@@ -51,6 +53,7 @@ export interface TiptapEditorProps {
 
 export interface TiptapEditorHandle {
   getSplitContent: () => { before: string; after: string } | null;
+  getContent: () => string;
 }
 
 const DEFAULT_CONTENT = `
@@ -86,7 +89,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       hasNextPage,
       isFetchingNextPage,
     },
-    ref,
+    ref
   ) => {
     const { id: projectId } = useParams<{ id: string }>();
     const [zoom, setZoom] = useState(DEFAULT_ZOOM);
@@ -112,6 +115,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const [showZoomControls, setShowZoomControls] = useState(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const scrollPositionRef = useRef<number>(0);
+    // Track last HTML sent to parent to prevent sync focus loops
+    const lastEmittedHTMLRef = useRef<string>("");
 
     // 복선 태그 삭제 감지용 ref (에디터 본문에서 #복선태그 삭제 시 미회수 상태로 복구)
     const prevForeshadowingIdsRef = useRef<Set<string>>(new Set());
@@ -123,14 +128,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Destructure behavior settings
     const typewriterMode = behavior?.typewriterMode ?? "off";
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const focusModeEnabled = behavior?.focusMode ?? false;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartQuotes = behavior?.smartQuotes ?? true;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartDashes = behavior?.smartDashes ?? true;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartEllipsis = behavior?.smartEllipsis ?? true;
+    // Note: focusModeEnabled, smartQuotes, smartDashes, smartEllipsis are intentionally not destructured as they are not yet implemented.
 
     // Get CSS variables and theme class from settings
     const editorSettings = {
@@ -227,6 +225,11 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }),
         FocusMode.configure({}),
         SmartPunctuation,
+        AutoFormatter.configure({
+          maxEmptyLines: 1, // 최대 연속 빈 줄 1개 까지만 허용 (가독성 최적화)
+          enableAdvancedFormatting: true,
+          smartParagraphBreaks: true,
+        }),
       ];
 
       return exts;
@@ -235,20 +238,21 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const editor = useEditor({
       editable: !readOnly,
       extensions,
-      content: sanitizeEditorContent(initialContent || DEFAULT_CONTENT),
+      content: sanitizeEditorContent(initialContent ?? DEFAULT_CONTENT),
       editorProps: {
         attributes: {
           class: cn(
             // Remove prose class - use direct styling for full width
             "w-full",
             "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80",
+            readOnly && "pointer-events-none opacity-80"
           ),
           spellcheck: "false",
         },
         // Note: handleScrollToSelection for typewriter mode now handled by TypewriterScroll extension
         handleDOMEvents: {
-          beforeinput: () => {
+          focus: () => {
+            // Update scroll position ref on focus to prevent jumping back to stale values
             if (editorContainerRef.current) {
               scrollPositionRef.current = editorContainerRef.current.scrollTop;
             }
@@ -257,49 +261,92 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         },
       },
       onUpdate: ({ editor }) => {
-        // 복선 태그 삭제 감지: 현재 에디터에 존재하는 복선 태그 ID 목록 추출
-        const currentIds = new Set<string>();
-        editor.state.doc.descendants((node) => {
-          if (node.type.name === "foreshadowingSuggest" && node.attrs.id) {
-            currentIds.add(node.attrs.id);
-          }
-        });
-
-        // 이전 상태와 비교하여 삭제된 태그 확인 및 미회수 상태로 복구
-        const store = useForeshadowingStore.getState();
-        prevForeshadowingIdsRef.current.forEach((id) => {
-          if (!currentIds.has(id)) {
-            // 태그가 삭제됨 - 회수 완료 상태였다면 미회수로 되돌림
-            const fs = store.foreshadowings[id];
-            if (fs?.status === "recovered") {
-              store.markAsPending(id);
-            }
-          }
-        });
-        prevForeshadowingIdsRef.current = currentIds;
-
-        // 기존 콜백 호출
+        // Immediate update for character count (lightweight)
         if (onUpdateRef.current) {
           onUpdateRef.current(editor.storage.characterCount.characters());
         }
-        if (onContentChangeRef.current) {
-          onContentChangeRef.current(editor.getHTML());
-        }
+
+        // Trigger debounced heavy updates
+        debouncedUpdates(editor);
       },
       // Note: Typewriter scroll now handled by TypewriterScroll extension
       onTransaction: () => {
+        // Prevent scroll resetting when transactions occur (like clicking/selection)
+        // Only force scroll if we have a captured position and content might have jumped
         requestAnimationFrame(() => {
           if (editorContainerRef.current && scrollPositionRef.current > 0) {
-            editorContainerRef.current.scrollTop = scrollPositionRef.current;
+            // If the current scroll is significantly different from what we expect,
+            // it means a transaction might have reset it (e.g. setContent)
+            const currentScroll = editorContainerRef.current.scrollTop;
+            if (Math.abs(currentScroll - scrollPositionRef.current) > 10) {
+              // Only restore if it actually jumped (likely to 0)
+              if (currentScroll === 0) {
+                editorContainerRef.current.scrollTop =
+                  scrollPositionRef.current;
+              }
+            }
           }
         });
       },
     });
 
+    // Debounced Heavy Updates (Foreshadowing Scan + HTML Generation)
+    // 500ms debounce to prevent frame drops during rapid typing
+    const debouncedUpdates = useMemo(
+      () =>
+        debounce((editor: Editor) => {
+          if (editor.isDestroyed) return;
+
+          // 1. Scan Foreshadowing Tags
+          // 복선 태그 삭제 감지: 현재 에디터에 존재하는 복선 태그 ID 목록 추출
+          const currentIds = new Set<string>();
+          editor.state.doc.descendants((node) => {
+            if (node.type.name === "foreshadowingSuggest" && node.attrs.id) {
+              currentIds.add(node.attrs.id);
+            }
+          });
+
+          // 이전 상태와 비교하여 삭제된 태그 확인 및 미회수 상태로 복구
+          const store = useForeshadowingStore.getState();
+          prevForeshadowingIdsRef.current.forEach((id) => {
+            if (!currentIds.has(id)) {
+              // 태그가 삭제됨 - 회수 완료 상태였다면 미회수로 되돌림
+              const fs = store.foreshadowings[id];
+              if (fs?.status === "recovered") {
+                store.markAsPending(id);
+              }
+            }
+          });
+          prevForeshadowingIdsRef.current = currentIds;
+
+          // 2. Content Change (HTML Generation is expensive)
+          if (onContentChangeRef.current) {
+            const html = editor.getHTML();
+            lastEmittedHTMLRef.current = html;
+            onContentChangeRef.current(html);
+          }
+        }, 500),
+      []
+    );
+
+    // Cancel debounce on unmount
+    useEffect(() => {
+      return () => {
+        debouncedUpdates.cancel();
+      };
+    }, [debouncedUpdates]);
+
     // Apply typewriter mode setting when it changes
     useEffect(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (editor && (editor.commands as any).setTypewriterPosition) {
+      // editor.view.dom checking prevents "editor view is not available" error
+      if (
+        editor &&
+        !editor.isDestroyed &&
+        editor.view &&
+        editor.view.dom &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor.commands as any).setTypewriterPosition
+      ) {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (editor.commands as any).setTypewriterPosition(typewriterMode);
@@ -311,6 +358,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Expose split functionality via ref
     useImperativeHandle(ref, () => ({
+      getContent: () => {
+        return editor?.getHTML() || "";
+      },
       getSplitContent: () => {
         if (!editor) return null;
 
@@ -360,7 +410,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
     const handleZoomOut = useCallback(
       () => adjustZoom(-ZOOM_STEP),
-      [adjustZoom],
+      [adjustZoom]
     );
 
     // Hide zoom controls after inactivity
@@ -407,16 +457,21 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       if (editor && initialContent !== undefined) {
         const currentHTML = editor.getHTML();
         const sanitizedContent = sanitizeEditorContent(initialContent);
-        const isDifferent = currentHTML !== sanitizedContent;
+
+        // Check if content is actually different from current OR last saved content
+        // This prevents the "Save -> Refetch -> setContent -> Change Event -> Save" loop
+        const isDifferentFromCurrent = currentHTML !== sanitizedContent;
+        const isDifferentFromLastSaved =
+          lastEmittedHTMLRef.current !== sanitizedContent;
         const isFocused = editor.isFocused;
 
         // Only update if content is different AND editor is not focused
-        // If focused, we assume the user is typing and we shouldn't overwrite with old server data
-        if (isDifferent && !isFocused) {
+        if (isDifferentFromCurrent && isDifferentFromLastSaved && !isFocused) {
           editor.commands.setContent(sanitizedContent);
+          lastEmittedHTMLRef.current = sanitizedContent;
         }
       }
-    }, [editor, initialContent]);
+    }, [editor, initialContent, documentId]);
 
     if (!editor) {
       return null;
@@ -447,7 +502,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                     // 하지만 이는 사용자 커서를 움직이므로 트랜잭션으로 직접 마크 제거가 좋음
                     if (!editor.isDestroyed) {
                       editor.view.dispatch(
-                        editor.state.tr.removeMark(from, to, mark.type),
+                        editor.state.tr.removeMark(from, to, mark.type)
                       );
                     }
                   });
@@ -471,7 +526,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       const text = editor.state.doc.textBetween(
         editor.state.selection.from,
         editor.state.selection.to,
-        " ",
+        " "
       );
 
       if (!text?.trim() || !projectId) {
@@ -559,7 +614,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         {editor && !readOnly && (
           <BubbleMenu
             editor={editor}
-            className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50"
+            className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50 px-1"
           >
             <Button
               variant="ghost"
@@ -572,6 +627,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               복선 저장
             </Button>
             <div className="w-px h-8 bg-mocha-200/50" />
+
             {/* 하이라이트 색상 */}
             <div className="flex items-center gap-0.5 px-1.5">
               {[
@@ -601,7 +657,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 ✕
               </button>
             </div>
+
             <div className="w-px h-8 bg-mocha-200/50" />
+
             <Button
               variant="ghost"
               size="sm"
@@ -610,7 +668,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("bold")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("bold") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("bold") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Bold className="w-3.5 h-3.5" />
@@ -623,7 +681,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("italic")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("italic") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("italic") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Italic className="w-3.5 h-3.5" />
@@ -653,6 +711,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             } as React.CSSProperties
           }
           onScroll={(e) => {
+            // Keep scroll position ref in sync with manual scrolling
+            scrollPositionRef.current = e.currentTarget.scrollTop;
+
             if (!hasNextPage || isFetchingNextPage || !fetchNextPage) return;
 
             const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -664,12 +725,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         >
           <div
             className={cn(
-              "px-8 py-10 min-h-screen transition-all duration-300 ease-out", // More padding, smooth transition
+              "px-8 py-10 min-h-screen", // Removed transition-all to prevent focus scroll jumps
               editorSettings.visual.width !== "full" &&
                 "mx-auto my-4 bg-white shadow-sm border border-mocha-100 rounded-lg", // Paper sheet look for non-full width
               editorSettings.visual.width === "full" && "px-12",
               !readOnly &&
-                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md", // Subtle focus effect
+                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md" // Subtle focus effect
             )}
             style={{
               maxWidth: editorWidth,
@@ -690,7 +751,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               "absolute bottom-3 right-3 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-all duration-200",
               showZoomControls
                 ? "opacity-100 px-2 py-1.5"
-                : "opacity-50 hover:opacity-100 px-2 py-1",
+                : "opacity-50 hover:opacity-100 px-2 py-1"
             )}
             onMouseEnter={() => setShowZoomControls(true)}
             onMouseLeave={() => setShowZoomControls(false)}
@@ -742,7 +803,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 TiptapEditor.displayName = "TiptapEditor";

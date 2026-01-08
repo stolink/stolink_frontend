@@ -5,7 +5,7 @@
  * 이미지 없이 벡터로 구현되어 무한 확장 가능합니다.
  */
 
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 
 interface BrushStrokeDividerProps {
   /** 색상 */
@@ -26,7 +26,7 @@ export function BrushStrokeDivider({
 }: BrushStrokeDividerProps) {
   return (
     <div
-      className={cn("w-full overflow-hidden", className)}
+      className={`w-full overflow-hidden ${className || ""}`}
       style={{ height }}
       aria-hidden="true"
     >

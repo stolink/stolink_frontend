@@ -157,7 +157,7 @@ export function TiledBackground({
           0,
           0,
           targetWidth,
-          targetHeight,
+          targetHeight
         );
 
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -169,7 +169,7 @@ export function TiledBackground({
           gl.RGBA,
           gl.RGBA,
           gl.UNSIGNED_BYTE,
-          offscreen,
+          offscreen
         );
       } else {
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -179,7 +179,7 @@ export function TiledBackground({
           gl.RGBA,
           gl.RGBA,
           gl.UNSIGNED_BYTE,
-          image,
+          image
         );
       }
 
@@ -188,7 +188,7 @@ export function TiledBackground({
       gl.texParameteri(
         gl.TEXTURE_2D,
         gl.TEXTURE_MIN_FILTER,
-        gl.LINEAR_MIPMAP_LINEAR,
+        gl.LINEAR_MIPMAP_LINEAR
       );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 

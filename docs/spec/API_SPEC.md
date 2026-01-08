@@ -60,6 +60,10 @@ X-User-Id: {userId}  // 일부 API에서 사용
 | GET    | `/api/auth/me`              | ✅   | 내 정보 조회  |
 | PATCH  | `/api/auth/me`              | ✅   | 내 정보 수정  |
 
+// ⚠️ Note: 소셜 로그인(OAuth) 경로는 `/api/oauth2/...`로 시작합니다.
+// - `/api/oauth2/authorization/google`
+// - `/api/login/oauth2/code/google`
+
 ### 1.1 POST /api/auth/register
 
 **Request:**
@@ -579,9 +583,59 @@ X-User-Id: {userId}  // 일부 API에서 사용
 | POST   | `/api/ai/chat`              | ✅   | AI 챗봇     |
 | POST   | `/api/ai/consistency-check` | ✅   | 일관성 검사 |
 | POST   | `/api/ai/generate-image`    | ✅   | 이미지 생성 |
-| POST   | `/api/ai/analyze`           | ✅   | 작품 분석   |
+| GET    | `/api/sse/connect`          | ✅   | SSE 연결    |
+| POST   | `/api/ai/analyze`           | ✅   | 증분 분석   |
 
-### 11.1 POST /api/ai/chat
+### 11.1 GET /api/sse/connect
+
+**Query Parameters:**
+
+| 파라미터    | 타입   | 필수 | 설명        |
+| ----------- | ------ | ---- | ----------- |
+| `projectId` | string | ✅   | 프로젝트 ID |
+
+**Response:** `text/event-stream`
+
+- **Events**:
+  - `heartbeat`: 연결 유지 확인
+  - `progress`: 작업 진행률 (`{ jobId, progress, message }`)
+  - `completed`: 작업 완료 (`{ jobId, result }`)
+  - `failed`: 작업 실패 (`{ jobId, error }`)
+
+### 11.2 POST /api/ai/analyze
+
+**Description**: 버퍼링된 문서 변경사항을 전송하여 증분 분석을 요청합니다.
+
+**Request:**
+
+```json
+{
+  "projectId": "uuid",
+  "chunks": [
+    // 변경된 문서 버퍼 목록
+    {
+      "documentId": "uuid",
+      "content": "변경된 HTML 내용...",
+      "timestamp": "2024-01-04T00:00:00Z"
+    }
+  ],
+  "force": false // 강제 전체 재분석 여부
+}
+```
+
+**Response:** `202 Accepted`
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "uuid", // SSE를 통해 진행상황 수신
+    "status": "processing"
+  }
+}
+```
+
+### 11.3 POST /api/ai/chat
 
 **Request:**
 
@@ -668,6 +722,7 @@ X-User-Id: {userId}  // 일부 API에서 사용
 | 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의                                              |
 | 1.1  | 2025.12.26 | Job Polling 상태값 문서화, wordCount 백엔드 계산 명시, 응답 형식 대안 추가 |
 | 1.2  | 2026.01.02 | Foreshadowing 타입 동기화 (tag 필드, appearances 배열 구조 반영)           |
+| 1.3  | 2026.01.04 | OAuth 경로 명시(`/api/oauth2`), SSE 및 증분 분석 API 추가                  |
 
 ---
 

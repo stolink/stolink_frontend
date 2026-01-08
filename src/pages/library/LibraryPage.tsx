@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useToast } from "@/hooks/useToast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -16,10 +17,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
+import { BookCardSkeleton } from "@/components/library/BookCardSkeleton";
 import { InteractiveLightOverlay } from "@/components/effects";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
 import { BookCard } from "@/components/library/BookCard";
 import { CreateBookModal } from "@/components/library/CreateBookModal";
 import { useAuthStore } from "@/stores";
@@ -33,6 +35,7 @@ import {
   useUpdateProject,
 } from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
+import { useLogout } from "@/hooks/useAuth";
 import {
   documentService,
   mapBackendToFrontend,
@@ -68,11 +71,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function LibraryPage() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { mutate: performLogout } = useLogout();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ========== 새로운 상태 변수들 ==========
@@ -176,11 +181,19 @@ export default function LibraryPage() {
       setShowDeleteConfirm(false);
 
       if (failedIds.length > 0) {
-        alert(`${failedIds.length}개의 프로젝트 삭제에 실패했습니다.`);
+        toast({
+          title: "삭제 실패",
+          description: `${failedIds.length}개의 프로젝트 삭제에 실패했습니다.`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("[LibraryPage] Batch delete failed:", error);
-      alert("프로젝트 삭제 중 오류가 발생했습니다.");
+      toast({
+        title: "오류 발생",
+        description: "프로젝트 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     } finally {
       setIsDeletingBatch(false);
     }
@@ -192,6 +205,17 @@ export default function LibraryPage() {
   };
 
   const handleCreateProject = async () => {
+    // 로그인 상태 확인
+    if (!user?.id) {
+      toast({
+        title: "로그인 필요",
+        description: "작품을 생성하려면 로그인이 필요합니다.",
+        variant: "destructive",
+      });
+      navigate("/");
+      return;
+    }
+
     setIsCreatingProject(true);
     try {
       const { _create } = useDocumentStore.getState();
@@ -245,7 +269,11 @@ export default function LibraryPage() {
       navigate(`/projects/${projectId}/editor`);
     } catch (error) {
       console.error("[LibraryPage] Create project failed:", error);
-      alert("작품 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      toast({
+        title: "작품 생성 실패",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     } finally {
       setIsCreatingProject(false);
     }
@@ -313,9 +341,11 @@ export default function LibraryPage() {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
 
       // 5. 라이브러리에서 확인할 수 있도록 알림
-      alert(
-        `"${title}" 원고 처리가 시작되었습니다. 완료되면 알림을 받으실 수 있습니다.`,
-      );
+      toast({
+        title: "원고 처리 시작",
+        description: `"${title}" 원고 처리가 시작되었습니다.`,
+        variant: "success",
+      });
     } catch (error) {
       console.error("Import failed:", error);
 
@@ -324,14 +354,19 @@ export default function LibraryPage() {
         (error.name === "QuotaExceededError" ||
           error.name === "NS_ERROR_DOM_QUOTA_REACHED")
       ) {
-        alert(
-          "저장 용량이 부족합니다. 브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
-        );
+        toast({
+          title: "저장 용량 부족",
+          description:
+            "브라우저 저장 공간을 정리하거나 더 작은 파일로 시도해주세요.",
+          variant: "destructive",
+        });
       } else {
-        alert(
-          "가져오기에 실패했습니다: " +
-            (error instanceof Error ? error.message : "알 수 없는 오류"),
-        );
+        toast({
+          title: "가져오기 실패",
+          description:
+            error instanceof Error ? error.message : "알 수 없는 오류",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -355,7 +390,11 @@ export default function LibraryPage() {
     const file = e.target.files?.[0];
     if (file && coverUpdateTargetId) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("이미지 크기는 5MB 이하여야 합니다.");
+        toast({
+          title: "파일 크기 초과",
+          description: "이미지 크기는 5MB 이하여야 합니다.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -392,12 +431,12 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-50 bg-paper/80 backdrop-blur-md border-b border-border shadow-sm">
+    <div className="min-h-screen bg-paper selection:bg-mocha-100 selection:text-mocha-900">
+      <header className="sticky top-0 z-50 bg-paper/95 backdrop-blur-xl border-b border-cloud-200/80 shadow-sm">
         {/* Ver.1: SVG 동적 광원 효과 */}
         <InteractiveLightOverlay />
-        <div className="max-w-7xl mx-auto px-6 py-4 relative z-10">
-          <div className="flex flex-col gap-6">
+        <div className="max-w-7xl mx-auto px-6 py-5 relative z-10">
+          <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
@@ -409,10 +448,10 @@ export default function LibraryPage() {
 
               <div className="flex items-center gap-3">
                 <div className="relative hidden lg:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                   <Input
-                    placeholder="제목으로 검색..."
-                    className="pl-9 h-9 w-[240px] bg-white border-input focus:border-mocha-400 focus:ring-mocha-200 transition-all text-sm rounded-full"
+                    placeholder="작품명 검색..."
+                    className="pl-9 h-9 w-[240px] bg-cloud-50 border-cloud-200 focus:border-mocha-400 focus:ring-1 focus:ring-mocha-200 hover:bg-cloud-100 transition-all text-sm rounded-lg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -421,12 +460,14 @@ export default function LibraryPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
+                      intent="ghost"
                       size="sm"
-                      className="h-9 gap-2 bg-white border-input text-muted-foreground"
+                      className="h-9 gap-2 text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
                     >
                       <Filter className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">필터</span>
+                      <span className="hidden sm:inline text-xs font-medium">
+                        필터
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -450,12 +491,14 @@ export default function LibraryPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
+                      intent="ghost"
                       size="sm"
-                      className="h-9 gap-2 bg-white border-input text-muted-foreground"
+                      className="h-9 gap-2 text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
                     >
                       <ArrowUpDown className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">정렬</span>
+                      <span className="hidden sm:inline text-xs font-medium">
+                        정렬
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -489,26 +532,29 @@ export default function LibraryPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* 편집 모드 버튼 */}
                 <Button
-                  variant={isEditMode ? "destructive" : "outline"}
+                  intent={isEditMode ? "destructive" : "ghost"}
                   size="sm"
                   className={cn(
                     "h-9 gap-2",
                     !isEditMode &&
-                      "bg-white border-input text-muted-foreground",
+                      "text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200",
                   )}
                   onClick={handleToggleEditMode}
                 >
                   {isEditMode ? (
                     <>
                       <X className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">취소</span>
+                      <span className="hidden sm:inline text-xs font-medium">
+                        취소
+                      </span>
                     </>
                   ) : (
                     <>
                       <Pencil className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">편집</span>
+                      <span className="hidden sm:inline text-xs font-medium">
+                        편집
+                      </span>
                     </>
                   )}
                 </Button>
@@ -516,10 +562,10 @@ export default function LibraryPage() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={cn(
-                    "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
+                    "rounded-lg p-1.5 transition-all duration-200 outline-none",
                     viewMode === "grid"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600",
+                      : "text-stone-400 hover:text-mocha-600 hover:bg-mocha-50",
                   )}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -527,10 +573,10 @@ export default function LibraryPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={cn(
-                    "rounded-full p-1.5 transition-all outline-none focus:ring-2 focus:ring-mocha-200",
+                    "rounded-lg p-1.5 transition-all duration-200 outline-none",
                     viewMode === "list"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-mocha-600",
+                      : "text-stone-400 hover:text-mocha-600 hover:bg-mocha-50",
                   )}
                 >
                   <List className="h-4 w-4" />
@@ -541,7 +587,7 @@ export default function LibraryPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="ghost"
+                      intent="ghost"
                       size="sm"
                       className="h-9 w-9 rounded-full bg-mocha-100 hover:bg-mocha-200"
                     >
@@ -560,8 +606,8 @@ export default function LibraryPage() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => {
-                        logout();
-                        navigate("/");
+                        performLogout();
+                        // navigate handled by useLogout hook
                       }}
                       className="text-red-600 focus:text-red-600"
                     >
@@ -574,10 +620,10 @@ export default function LibraryPage() {
             </div>
 
             <div className="relative w-full lg:hidden">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               <Input
-                placeholder="제목으로 검색..."
-                className="pl-9 h-10 w-full bg-white border-input focus:bg-white transition-all text-sm"
+                placeholder="작품명 검색..."
+                className="pl-9 h-10 w-full bg-cloud-50 border-cloud-200 focus:border-mocha-400 focus:ring-1 focus:ring-mocha-200 transition-all text-sm rounded-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -586,23 +632,29 @@ export default function LibraryPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-10 pb-32">
+      <main className="max-w-7xl mx-auto px-6 py-12 lg:py-16 pb-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="mb-10"
         >
-          <h2 className="text-2xl font-heading font-bold text-foreground inline-block brush-underline pb-1">
-            내 서재
+          <h2 className="text-3xl lg:text-4xl font-bold text-espresso-900 inline-block tracking-tight">
+            서재
           </h2>
+          {!isLoading && projects.length > 0 && (
+            <p className="mt-2 text-stone-500 text-sm">
+              {projects.length}권의 작품이 당신을 기다리고 있어요
+            </p>
+          )}
         </motion.div>
 
         <motion.div
           className={cn(
-            "grid gap-8",
+            "grid gap-6 lg:gap-8",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "grid-cols-1",
+              : "grid-cols-1 max-w-3xl",
           )}
           initial={false}
           animate="visible"
@@ -629,17 +681,15 @@ export default function LibraryPage() {
           {/* CreateBookCard, ImportBookCard 제거됨 - 하단 플로팅 버튼으로 대체 */}
 
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 8 }).map((_, i) => (
               <motion.div
                 key={`skeleton-${i}`}
-                variants={itemVariants}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.4 }}
                 className="h-full min-h-[320px]"
               >
-                <div className="bg-white rounded-xl border border-input p-6 h-full animate-pulse">
-                  <div className="h-32 bg-muted rounded mb-4"></div>
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-muted rounded w-1/2"></div>
-                </div>
+                <BookCardSkeleton />
               </motion.div>
             ))
           ) : error ? (
@@ -723,26 +773,38 @@ export default function LibraryPage() {
 
         {/* Empty State - No Projects at all */}
         {projects.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-24 h-24 bg-sage-50 rounded-full flex items-center justify-center mb-6 text-sage-400">
-              <FileText className="h-12 w-12" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex flex-col items-center justify-center py-24 lg:py-32 text-center"
+          >
+            <div className="relative mb-8">
+              <div className="w-28 h-28 bg-mocha-100 rounded-full flex items-center justify-center shadow-paper-floating">
+                <FileText className="h-14 w-14 text-mocha-400" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-sage-100 rounded-full flex items-center justify-center border-4 border-paper">
+                <Plus className="h-5 w-5 text-sage-600" />
+              </div>
             </div>
-            <h3 className="text-2xl font-heading font-bold text-stone-900 mb-2">
-              📚 아직 작품이 없어요
+            <h3 className="text-2xl lg:text-3xl font-bold text-espresso-900 mb-3">
+              아직 작품이 없어요
             </h3>
-            <p className="text-stone-500 mb-6 max-w-md">
+            <p className="text-stone-500 mb-8 max-w-md leading-relaxed">
               첫 작품을 만들어 당신만의 이야기를 시작해보세요.
               <br />
               복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
             </p>
-            <Button
-              size="lg"
-              className="gap-2"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="w-5 h-5" />새 작품 만들기
-            </Button>
-          </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                size="lg"
+                className="gap-2.5 px-8 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <Plus className="w-5 h-5" />새 작품 만들기
+              </Button>
+            </motion.div>
+          </motion.div>
         )}
       </main>
 
@@ -752,13 +814,21 @@ export default function LibraryPage() {
       {/* ========== 새 작품 만들기 플로팅 버튼 ========== */}
       {!isEditMode && projects.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{
+            type: "spring",
+            damping: 15,
+            stiffness: 200,
+            delay: 0.3,
+          }}
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
           className="fixed bottom-8 right-8 z-40"
         >
           <Button
             size="lg"
-            className="gap-2 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full px-6"
+            className="gap-2.5 shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-full px-7 py-6 text-base font-semibold"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="w-5 h-5" />새 작품 만들기
@@ -775,14 +845,15 @@ export default function LibraryPage() {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
           >
-            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 text-stone-900 dark:text-stone-100 px-6 py-3 rounded-full shadow-xl flex items-center gap-3">
-              <span className="font-medium">
+            <div className="bg-paper border border-cloud-200 text-stone-700 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm flex items-center gap-4">
+              <span className="text-sm font-medium">
                 {selectedBooks.length}개 선택됨
               </span>
+              <div className="w-px h-5 bg-cloud-200" />
               <Button
-                variant="ghost"
+                intent="ghost"
                 size="sm"
-                className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 gap-2 font-semibold"
+                className="text-rose-600 hover:bg-rose-50 gap-2 font-semibold"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -844,7 +915,7 @@ export default function LibraryPage() {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="새 제목"
-              className="w-full"
+              className="w-full bg-cloud-50 border-cloud-200 focus:border-mocha-400 focus:ring-1 focus:ring-mocha-200 rounded-lg"
               autoFocus
             />
           </div>

@@ -12,8 +12,8 @@ import type {
   EditorWidth,
   TypewriterMode,
   CaretStyle,
-} from "./types/editorSettings";
-import { getDefaultEditorSettings } from "./types/editorSettings";
+} from "@/types/editorSettings";
+import { getDefaultEditorSettings } from "@/types/editorSettings";
 
 interface EditorSettingActions {
   // Typography actions
@@ -42,6 +42,7 @@ interface EditorSettingActions {
   setSmartDashes: (enabled: boolean) => void;
   setSmartEllipsis: (enabled: boolean) => void;
   setLinguisticMode: (mode: BehaviorSettings["linguisticMode"]) => void;
+  setPerformanceMode: (enabled: boolean) => void;
 
   // System actions
   setAutoSaveInterval: (interval: SystemSettings["autoSaveInterval"]) => void;
@@ -78,14 +79,14 @@ export const useEditorSettingStore = create<EditorSettingState>()(
         set((state) => {
           state.typography.lineHeight = Math.min(
             3.0,
-            Math.max(1.0, lineHeight)
+            Math.max(1.0, lineHeight),
           );
         }),
       setLetterSpacing: (letterSpacing) =>
         set((state) => {
           state.typography.letterSpacing = Math.min(
             0.1,
-            Math.max(-0.05, letterSpacing)
+            Math.max(-0.05, letterSpacing),
           );
         }),
       setParagraphSpacing: (spacing) =>
@@ -163,6 +164,10 @@ export const useEditorSettingStore = create<EditorSettingState>()(
         set((state) => {
           state.behavior.linguisticMode = mode;
         }),
+      setPerformanceMode: (enabled) =>
+        set((state) => {
+          state.behavior.performanceMode = enabled;
+        }),
 
       // System actions
       setAutoSaveInterval: (interval) =>
@@ -222,6 +227,6 @@ export const useEditorSettingStore = create<EditorSettingState>()(
           system: { ...defaults.system, ...state.system },
         };
       },
-    }
-  )
+    },
+  ),
 );

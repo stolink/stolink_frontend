@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,24 +19,42 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RelationType } from "@/types";
-import { RELATION_LABELS, RELATION_COLORS_HEX } from "./constants";
+import {
+  RELATION_LABELS,
+  RELATION_COLORS_HEX,
+  type UIRelationType,
+} from "./constants";
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<RelationType, React.ReactNode> = {
+const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <Users className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
 };
 
 interface NetworkControlsProps {
-  relationTypeFilter: RelationType | "all";
-  onFilterChange: (value: RelationType | "all") => void;
+  relationTypeFilter: UIRelationType | "all";
+  onFilterChange: (value: UIRelationType | "all") => void;
   enableGrouping?: boolean;
   onGroupingChange?: (enabled: boolean) => void;
-  hoveredType?: RelationType | null;
-  onHoverType?: (type: RelationType | null) => void;
+  hoveredType?: UIRelationType | null;
+  onHoverType?: (type: UIRelationType | null) => void;
+  onSimulateCollapse?: () => void;
+  /** 주요 캐릭터만 보기 필터 */
+  showMainOnly?: boolean;
+  onShowMainOnlyChange?: (enabled: boolean) => void;
+  // Timeline Props
+  showTimeline?: boolean;
+  currentChapter?: number;
+  totalChapters?: number;
+  onChapterChange?: (val: number) => void;
+
+  // Insights Props
+  showTension?: boolean;
+  onToggleTension?: (val: boolean) => void;
+  showLogicCheck?: boolean;
+  onToggleLogicCheck?: (val: boolean) => void;
 }
 
 /**
@@ -52,6 +70,18 @@ export function NetworkControls({
   onGroupingChange,
   hoveredType,
   onHoverType,
+  onSimulateCollapse,
+  showMainOnly = false,
+  onShowMainOnlyChange,
+  // Insights
+  showTension = false,
+  onToggleTension,
+  showLogicCheck = false,
+  onToggleLogicCheck,
+  // Timeline
+  currentChapter,
+  totalChapters,
+  onChapterChange,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -60,7 +90,7 @@ export function NetworkControls({
       ? "모든 관계"
       : RELATION_LABELS[relationTypeFilter];
 
-  const relationTypes = Object.keys(RELATION_LABELS) as RelationType[];
+  const relationTypes = Object.keys(RELATION_LABELS) as UIRelationType[];
 
   return (
     <>
@@ -108,12 +138,12 @@ export function NetworkControls({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="outline"
+                        intent="outline"
                         size="sm"
                         className={cn(
                           "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-stone-200",
                           relationTypeFilter !== "all" &&
-                            "border-mocha-300 bg-mocha-50",
+                            "border-mocha-300 bg-mocha-50"
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -137,7 +167,7 @@ export function NetworkControls({
                       <DropdownMenuRadioGroup
                         value={relationTypeFilter}
                         onValueChange={(v) =>
-                          onFilterChange(v as RelationType | "all")
+                          onFilterChange(v as UIRelationType | "all")
                         }
                       >
                         <DropdownMenuRadioItem
@@ -190,6 +220,24 @@ export function NetworkControls({
                   )}
                 </div>
 
+                {/* 주요 캐릭터만 필터 */}
+                {onShowMainOnlyChange && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                        주요 캐릭터만
+                      </Label>
+                      <Switch
+                        checked={showMainOnly}
+                        onChange={onShowMainOnlyChange}
+                      />
+                    </div>
+                    <p className="text-[9px] text-stone-400 leading-tight">
+                      주인공, 적대자 및 관계가 많은 캐릭터만 표시
+                    </p>
+                  </div>
+                )}
+
                 {/* 그룹 토글 */}
                 {onGroupingChange && (
                   <div className="space-y-1.5">
@@ -207,11 +255,87 @@ export function NetworkControls({
                     </p>
                   </div>
                 )}
+
+                {/* Simulation Debug (Temp) */}
+                {onSimulateCollapse && (
+                  <div className="pt-2 border-t border-stone-100 space-y-1.5">
+                    <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                      Simulation
+                    </Label>
+                    <Button
+                      intent="destructive"
+                      size="sm"
+                      onClick={onSimulateCollapse}
+                      className="w-full h-7 text-[10px] font-medium"
+                    >
+                      Trigger Collapse 💥
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* 우측 상단 Insights Panel Toggle */}
+      <div className="absolute right-3 top-3 z-20 flex gap-2">
+        {onToggleTension && (
+          <Button
+            variant={showTension ? "default" : "secondary"}
+            size="sm"
+            className={cn(
+              "h-8 text-xs gap-1.5 shadow-sm",
+              showTension
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-white/80 hover:bg-white"
+            )}
+            onClick={() => onToggleTension(!showTension)}
+          >
+            🔥 Tension
+          </Button>
+        )}
+        {onToggleLogicCheck && (
+          <Button
+            variant={showLogicCheck ? "default" : "secondary"}
+            size="sm"
+            className={cn(
+              "h-8 text-xs gap-1.5 shadow-sm",
+              showLogicCheck
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-white/80 hover:bg-white"
+            )}
+            onClick={() => onToggleLogicCheck(!showLogicCheck)}
+          >
+            ⚠️ Logic
+          </Button>
+        )}
+      </div>
+
+      {/* 하단 타임라인 슬라이더 - 중앙 */}
+      {onChapterChange &&
+        currentChapter !== undefined &&
+        totalChapters !== undefined && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
+            <div className="bg-white/80 backdrop-blur-md border border-stone-200 shadow-xl rounded-2xl p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                <span>Timeline Visualization</span>
+                <span>
+                  Chapter {currentChapter} / {totalChapters}
+                </span>
+              </div>
+              {/* Simple Slider Implementation using native range for now, or use TimelineSlider component if we imported it here?
+                    Actually, NetworkControls is getting crowded. The user requested TimelineSlider as separate component.
+                    We should render it in index.tsx instead of inside NetworkControls to keep separation.
+                    But wait, NetworkControls was supposed to be the "Controls".
+                    The implementation plan said "Modify NetworkControls to add Timeline section".
+                    Let's just expose the props and let index.tsx handle layout if possible, or render basic controls here.
+                    Actually, let's skip rendering Timeline inside NetworkControls and render it in index.tsx as a parallel sibling.
+                    NetworkControls handles the "Menu" at top left.
+                */}
+            </div>
+          </div>
+        )}
 
       {/* 하단 범례 - 인터랙티브 */}
       <motion.div
@@ -246,7 +370,7 @@ export function NetworkControls({
                   "flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
                   isActive && "bg-white shadow-sm",
                   isHovered && !isActive && "bg-white/60",
-                  isDimmed && "opacity-40",
+                  isDimmed && "opacity-40"
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -278,7 +402,7 @@ export function NetworkControls({
                 <span
                   className={cn(
                     "text-xs transition-colors",
-                    isActive ? "font-medium text-stone-800" : "text-stone-600",
+                    isActive ? "font-medium text-stone-800" : "text-stone-600"
                   )}
                 >
                   {RELATION_LABELS[type]}

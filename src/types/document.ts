@@ -26,6 +26,9 @@ export interface Document {
   // === Timestamps ===
   createdAt: string;
   updatedAt: string;
+
+  // === Publishing Status ===
+  isPublished?: boolean; // 커뮤니티(Storead) 게시 완료 여부
 }
 
 export interface DocumentMetadata {

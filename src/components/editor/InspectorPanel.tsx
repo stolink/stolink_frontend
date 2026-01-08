@@ -48,18 +48,18 @@ function CollapsibleSection({
             "p-1.5 rounded-lg transition-colors",
             isOpen
               ? "bg-mocha-100 text-mocha-700"
-              : "bg-stone-100 text-stone-500",
+              : "bg-cloud-100 text-mocha-500",
           )}
         >
           <Icon className="w-3.5 h-3.5" />
         </div>
-        <span className="text-sm font-bold text-stone-700">{title}</span>
+        <span className="text-sm font-bold text-espresso-800">{title}</span>
         {count !== undefined && count > 0 && (
           <span className="ml-auto text-xs font-medium text-mocha-500 bg-mocha-50 px-2 py-0.5 rounded-full">
             {count}
           </span>
         )}
-        <div className="ml-2 text-stone-400">
+        <div className="ml-2 text-mocha-400">
           {isOpen ? (
             <ChevronDown className="w-3.5 h-3.5" />
           ) : (
@@ -75,7 +75,7 @@ function CollapsibleSection({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="px-4 pb-4 border-t border-stone-50 pt-3">
+            <div className="px-4 pb-4 border-t border-cloud-50 pt-3">
               {children}
             </div>
           </motion.div>
@@ -144,7 +144,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-stone-50/30">
+    <div className="flex flex-col h-full bg-cloud-50/30">
       {/* 헤더 */}
       <div className="px-4 py-3 border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
             <BookOpen className="w-3.5 h-3.5 text-mocha-700" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-stone-900">레퍼런스</h3>
+            <h3 className="text-sm font-bold text-espresso-900">레퍼런스</h3>
           </div>
         </div>
       </div>
@@ -171,10 +171,10 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
                 placeholder="이 장면에 대한 아이디어, 잊지 말아야 할 설정을 기록하세요..."
-                className="w-full h-32 resize-none bg-stone-50/50 border border-stone-200 rounded-lg p-3 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-mocha-200 focus:border-mocha-300 transition-all leading-relaxed"
+                className="w-full h-32 resize-none bg-cloud-50/50 border border-cloud-200 rounded-lg p-3 text-sm text-espresso-800 placeholder:text-mocha-400 focus:outline-none focus:ring-1 focus:ring-mocha-200 focus:border-mocha-300 transition-all leading-relaxed"
               />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-stone-400 font-medium">
+                <span className="text-[10px] text-mocha-400 font-medium">
                   {notes.length}자
                 </span>
                 {hasChanges && (
@@ -194,7 +194,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
               </div>
             </div>
           ) : (
-            <div className="text-xs text-stone-400 text-center py-4 italic bg-stone-50 rounded-lg border border-dashed border-stone-200">
+            <div className="text-xs text-mocha-400 text-center py-4 italic bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
               문서를 선택하면 메모를 작성할 수 있습니다
             </div>
           )}
@@ -212,7 +212,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
               {characters.map((char) => (
                 <div
                   key={char._id}
-                  className="group flex items-start gap-3 p-2 rounded-xl hover:bg-stone-50 border border-transparent hover:border-stone-200 transition-all cursor-pointer"
+                  className="group flex items-start gap-3 p-2 rounded-xl hover:bg-cloud-50 border border-transparent hover:border-cloud-200 transition-all cursor-pointer"
                 >
                   <div
                     className={cn(
@@ -221,14 +221,14 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                         ? "bg-gradient-to-br from-indigo-500 to-blue-600"
                         : char.role === "antagonist"
                           ? "bg-gradient-to-br from-rose-500 to-red-600"
-                          : "bg-gradient-to-br from-stone-400 to-stone-500",
+                          : "bg-gradient-to-br from-mocha-400 to-mocha-500",
                     )}
                   >
                     {char.profile?.name?.[0] || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-stone-800 truncate group-hover:text-mocha-700 transition-colors">
+                      <p className="text-sm font-bold text-espresso-800 truncate group-hover:text-mocha-700 transition-colors">
                         {char.profile?.name || "이름 없음"}
                       </p>
                       <span
@@ -238,7 +238,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                             ? "bg-indigo-50 text-indigo-700"
                             : char.role === "antagonist"
                               ? "bg-rose-50 text-rose-700"
-                              : "bg-stone-100 text-stone-600",
+                              : "bg-cloud-100 text-mocha-700",
                         )}
                       >
                         {char.role === "protagonist"
@@ -249,7 +249,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                       </span>
                     </div>
                     {char.profile?.backstory && (
-                      <p className="text-xs text-stone-500 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-mocha-500 mt-1 line-clamp-2 leading-relaxed">
                         {String(char.profile.backstory)}
                       </p>
                     )}
@@ -261,7 +261,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                             .map((trait, i) => (
                               <span
                                 key={i}
-                                className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-full"
+                                className="text-[10px] text-mocha-500 bg-cloud-100 px-1.5 py-0.5 rounded-full"
                               >
                                 #{trait}
                               </span>
@@ -273,7 +273,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
               ))}
             </div>
           ) : (
-            <div className="text-xs text-stone-400 text-center py-4 bg-stone-50 rounded-lg border border-dashed border-stone-200">
+            <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
               월드 페이지에서 캐릭터를 추가하세요
             </div>
           )}
@@ -286,7 +286,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
           count={0}
           defaultOpen={false}
         >
-          <div className="text-xs text-stone-400 text-center py-4 bg-stone-50 rounded-lg border border-dashed border-stone-200">
+          <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
             등록된 장소가 없습니다
           </div>
         </CollapsibleSection>
@@ -298,7 +298,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
           count={0}
           defaultOpen={false}
         >
-          <div className="text-xs text-stone-400 text-center py-4 bg-stone-50 rounded-lg border border-dashed border-stone-200">
+          <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
             등록된 아이템이 없습니다
           </div>
         </CollapsibleSection>

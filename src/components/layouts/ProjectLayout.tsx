@@ -3,10 +3,11 @@ import { BookOpen, ChevronLeft } from "lucide-react";
 import { ActivityBar } from "./ActivityBar";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
-import { useEditorStore } from "@/stores";
+import { useEditorStore, useAnalysisBufferStore } from "@/stores";
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * ProjectLayout - Header-First Layout (Dashboard Style)
@@ -22,6 +23,7 @@ export function ProjectLayout() {
   const { data: project } = useProject(id || "", { enabled: !!id });
   const { mutate: updateProject } = useUpdateProject();
   const { saveStatus, lastSavedAt } = useEditorStore();
+  const { isAnalyzing, progress: analysisProgress } = useAnalysisBufferStore();
 
   // Check Demo Mode
   const isDemo = location.pathname.includes("/demo");
@@ -75,13 +77,38 @@ export function ProjectLayout() {
       {/* Global Header - Fixed Top */}
       {!isDemo && (
         <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm z-20 relative">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0 relative h-full">
+            {/* Analysis Progress Bar (Centered in Nav Area) */}
+            <AnimatePresence>
+              {isAnalyzing && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="w-48 h-1 bg-primary/10 rounded-full overflow-hidden border border-primary/5 shadow-sm"
+                  >
+                    <motion.div
+                      className="h-full bg-primary shadow-[0_0_10px_rgba(164,119,100,0.4)]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${analysisProgress}%` }}
+                      transition={{
+                        type: "spring",
+                        damping: 25,
+                        stiffness: 120,
+                      }}
+                    />
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
             {/* Home / Back to Library Button */}
             <Button
-              variant="ghost"
+              intent="ghost"
               size="sm"
               onClick={() => navigate("/library")}
-              className="group gap-1.5 pl-2 pr-3 hover:bg-muted text-muted-foreground hover:text-primary transition-colors"
+              className="group gap-1.5 pl-2 pr-3 hover:bg-muted text-muted-foreground hover:text-primary transition-colors h-9 relative z-10"
               title="서재로 돌아가기"
             >
               <ChevronLeft className="w-4 h-4 opacity-70 group-hover:-translate-x-0.5 transition-transform" />

@@ -8,8 +8,9 @@ import {
   Quote,
   ChevronDown,
   ChevronUp,
+  CheckCircle2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -31,16 +32,36 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   const {
     messages,
     streaming,
+    analyzing,
+    analysisComplete,
     currentResponse,
     currentSources,
     sendMessage,
     cancelStream,
     resetSession,
+    clearAnalysisComplete,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
     },
   });
+
+  // 분석 완료 애니메이션 표시 상태
+  const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
+
+  // 분석 완료 시 애니메이션 트리거
+  useEffect(() => {
+    if (analysisComplete) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowCompleteAnimation(true);
+      // 0.8초 후 애니메이션 숨기고 응답 표시
+      const timer = setTimeout(() => {
+        setShowCompleteAnimation(false);
+        clearAnalysisComplete();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [analysisComplete, clearAnalysisComplete]);
 
   // 메시지 추가 시 스크롤
   useEffect(() => {
@@ -96,7 +117,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 scrollbar-thin scrollbar-thumb-mocha-100 scrollbar-track-transparent">
         <AnimatePresence mode="wait">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !streaming ? (
             <motion.div
               key="empty-state"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -136,8 +157,127 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                 <MessageBubble key={message.id} message={message} />
               ))}
 
-              {/* Streaming Response */}
-              {streaming && currentResponse && (
+              {/* 토스 스타일 분석 완료 애니메이션 */}
+              <AnimatePresence>
+                {showCompleteAnimation && (
+                  <motion.div
+                    key="analysis-complete"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                    className="flex flex-col items-center justify-center py-12 relative"
+                  >
+                    {/* 배경 글로우 효과 */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <div
+                        className="w-40 h-40 rounded-full blur-3xl"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(var(--sage-200), 0.5) 0%, rgba(var(--sage-100), 0.2) 50%, transparent 100%)",
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* 파티클 효과 */}
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0.5, 1, 0.3],
+                          x: Math.cos((i * Math.PI * 2) / 8) * 55,
+                          y: Math.sin((i * Math.PI * 2) / 8) * 55,
+                        }}
+                        transition={{
+                          duration: 0.5,
+                          delay: 0.12 + i * 0.025,
+                          ease: "easeOut",
+                        }}
+                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-sage-400 to-sage-500"
+                        style={{
+                          left: "50%",
+                          top: "45%",
+                          marginLeft: -4,
+                          marginTop: -4,
+                        }}
+                      />
+                    ))}
+
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 18,
+                        delay: 0.05,
+                      }}
+                      className="relative z-10"
+                    >
+                      {/* 메인 아이콘 */}
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 280,
+                          damping: 16,
+                        }}
+                        className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-sage-50 via-sage-100 to-sage-200 flex items-center justify-center shadow-xl border border-sage-200/60"
+                      >
+                        <CheckCircle2
+                          className="w-9 h-9 text-sage-600"
+                          strokeWidth={2.5}
+                        />
+                      </motion.div>
+
+                      {/* 외곽 링 펄스 1 */}
+                      <motion.div
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={{ scale: 1.8, opacity: [0, 0.5, 0] }}
+                        transition={{
+                          duration: 0.45,
+                          delay: 0.12,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-full border-2 border-sage-300"
+                      />
+                      {/* 외곽 링 펄스 2 */}
+                      <motion.div
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={{ scale: 2.3, opacity: [0, 0.25, 0] }}
+                        transition={{
+                          duration: 0.55,
+                          delay: 0.2,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-full border border-sage-200"
+                      />
+                    </motion.div>
+
+                    <motion.span
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        delay: 0.28,
+                        duration: 0.22,
+                        ease: "easeOut",
+                      }}
+                      className="mt-5 text-sm font-semibold text-sage-700 tracking-wide"
+                    >
+                      분석 완료
+                    </motion.span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Streaming Response - 완료 애니메이션 후 표시 */}
+              {streaming && currentResponse && !showCompleteAnimation && (
                 <div className="flex flex-col gap-3 mr-auto items-start max-w-[95%]">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-px w-4 bg-mocha-100" />
@@ -163,58 +303,143 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                 </div>
               )}
 
-              {/* Generative Loading State */}
-              {streaming && !currentResponse && (
-                <div className="flex flex-col gap-3 mr-auto items-start">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="h-px w-4 bg-mocha-100" />
-                    <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase">
-                      analyzing graph
+              {/* Generative Loading State - 프리미엄 분석 중 애니메이션 */}
+              {streaming && analyzing && !showCompleteAnimation && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex flex-col items-center justify-center py-10 relative"
+                >
+                  {/* 배경 글로우 */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <motion.div
+                      animate={{
+                        opacity: [0.3, 0.5, 0.3],
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="w-36 h-36 rounded-full blur-2xl"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(166, 140, 114, 0.4) 0%, rgba(166, 140, 114, 0.2) 50%, transparent 100%)",
+                      }}
+                    />
+                  </div>
+
+                  {/* 메인 로딩 오브 */}
+                  <div className="relative w-20 h-20">
+                    {/* 외곽 회전 링 */}
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-0 rounded-full border-2 border-dashed border-mocha-200/60"
+                    />
+
+                    {/* 두 번째 회전 링 (반대 방향) */}
+                    <motion.div
+                      animate={{ rotate: -360 }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-2 rounded-full border border-mocha-300/40"
+                    />
+
+                    {/* 중심 오브 */}
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.08, 1],
+                        boxShadow: [
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                          "0 0 30px rgba(0, 0, 0, 0.1)",
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-4 rounded-full bg-gradient-to-br from-mocha-50 via-white to-mocha-100 flex items-center justify-center shadow-lg border border-mocha-100/50"
+                    >
+                      <Network className="w-5 h-5 text-mocha-500" />
+                    </motion.div>
+
+                    {/* 궤도 위 도트들 */}
+                    {[...Array(3)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          rotate: 360,
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "linear",
+                          delay: i * 0.8,
+                        }}
+                        className="absolute inset-0"
+                        style={{ transformOrigin: "center center" }}
+                      >
+                        <motion.div
+                          animate={{
+                            scale: [0.8, 1.2, 0.8],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.4,
+                          }}
+                          className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-mocha-400 to-mocha-500"
+                          style={{
+                            top: -4,
+                            left: "50%",
+                            marginLeft: -4,
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* 텍스트 레이블 */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-5 flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs font-semibold text-mocha-500 tracking-wide">
+                      그래프 분석 중
                     </span>
-                  </div>
-                  <div className="bg-white border border-mocha-100/50 rounded-2xl p-6 shadow-paper">
-                    <div className="flex gap-3 items-center">
-                      <motion.div
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.3, 0.7, 0.3],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="w-2 h-2 rounded-full bg-mocha-400"
-                      />
-                      <motion.div
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.3, 0.7, 0.3],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 0.3,
-                        }}
-                        className="w-2 h-2 rounded-full bg-mocha-300"
-                      />
-                      <motion.div
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.3, 0.7, 0.3],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 0.6,
-                        }}
-                        className="w-2 h-2 rounded-full bg-mocha-200"
-                      />
-                    </div>
-                  </div>
-                </div>
+                    <motion.div className="flex gap-1">
+                      {[...Array(3)].map((_, i) => (
+                        <motion.span
+                          key={i}
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                          className="text-mocha-400"
+                        >
+                          •
+                        </motion.span>
+                      ))}
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
               )}
             </div>
           )}
@@ -372,7 +597,7 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
           >
             {sources.map((source, idx) => (
               <div
-                key={source.chunk_uuid}
+                key={source.chunkUuid}
                 className="relative pl-6 group/source"
               >
                 {/* Vertical Line */}
@@ -387,7 +612,7 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
                     Source {idx + 1}
                   </span>
                   <span className="text-xs font-bold text-espresso-800 leading-tight">
-                    {source.metadata?.document_title || "Untitled Fragment"}
+                    {source.metadata?.documentTitle || "Untitled Fragment"}
                   </span>
                   <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic">
                     "{source.content}"

@@ -22,8 +22,8 @@ export function useDrag(options: UseDragOptions) {
   // 드래그 시작
   const handleDragStart = useCallback(
     (
-      event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      _event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
+      d: CharacterNode
     ) => {
       // 시뮬레이션 활성화 (드래그한 노드만 이동 - alphaTarget으로 부하 제어)
       if (simulation) {
@@ -35,26 +35,26 @@ export function useDrag(options: UseDragOptions) {
       d.fy = d.y;
       onDragStart?.(d);
     },
-    [onDragStart, simulation],
+    [onDragStart, simulation]
   );
 
   // 드래그 중 - 최소한의 작업만
   const handleDrag = useCallback(
     (
       event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      d: CharacterNode
     ) => {
       d.fx = event.x;
       d.fy = event.y;
     },
-    [],
+    []
   );
 
   // 드래그 종료
   const handleDragEnd = useCallback(
     (
-      event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
-      d: CharacterNode,
+      _event: d3.D3DragEvent<SVGGElement, CharacterNode, CharacterNode>,
+      d: CharacterNode
     ) => {
       isDraggingRef.current = false;
 
@@ -68,7 +68,7 @@ export function useDrag(options: UseDragOptions) {
       d.fy = null;
       onDragEnd?.(d);
     },
-    [onDragEnd, simulation],
+    [onDragEnd, simulation]
   );
 
   // D3 drag behavior 생성
@@ -76,7 +76,7 @@ export function useDrag(options: UseDragOptions) {
   // useState(() => ...) guarantees single initialization and is safe for render access.
   // The instance is stable, and listeners are updated in useEffect.
   const [dragBehavior] = useState(() =>
-    d3.drag<SVGGElement, CharacterNode, unknown>(),
+    d3.drag<SVGGElement, CharacterNode, unknown>()
   );
 
   useEffect(() => {

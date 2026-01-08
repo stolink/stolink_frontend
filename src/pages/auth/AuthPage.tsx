@@ -21,14 +21,22 @@ export default function AuthPage() {
   // 로딩 중이거나 이미 인증된 상태면 화면 깜빡임 방지를 위해 null 반환
   if (isAuthenticated) return null;
 
-  // URL 에러 파라미터 처리 (예: ?error=oauth_failed)
+  // URL 에러 파라미터 처리 (예: ?error=oauth_failed&error_description=...)
   const error = searchParams.get("error");
-  const errorMessage =
-    error === "oauth_failed"
-      ? "소셜 로그인에 실패했습니다."
-      : error === "no_token"
-        ? "토큰을 받아오지 못했습니다."
-        : "";
+  const errorDescription = searchParams.get("error_description");
+
+  let errorMessage = "";
+  if (error === "oauth_failed") {
+    errorMessage = "소셜 로그인에 실패했습니다.";
+  } else if (error === "no_token") {
+    errorMessage = "토큰을 받아오지 못했습니다.";
+  } else if (error) {
+    errorMessage = "로그인 중 오류가 발생했습니다.";
+  }
+
+  if (errorDescription) {
+    errorMessage += ` (${decodeURIComponent(errorDescription)})`;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-paper">

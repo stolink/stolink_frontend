@@ -8,12 +8,8 @@
  * - 역할 가중치 (10%)
  */
 
-import type {
-  Character,
-  CharacterRole,
-  RelationshipLink,
-  RelationType,
-} from "@/types";
+import type { Character, CharacterRole, RelationshipLink } from "@/types";
+import type { UIRelationType } from "@/components/CharacterGraph/constants";
 
 // =====================================================
 // 📊 타입 정의
@@ -64,7 +60,7 @@ const ROLE_WEIGHTS: Record<CharacterRole, number> = {
 };
 
 // 관계 유형별 가중치 (갈등 중심 인물 강조)
-const RELATION_TYPE_WEIGHTS: Record<RelationType, number> = {
+const RELATION_TYPE_WEIGHTS: Record<UIRelationType, number> = {
   hostile: 1.2, // 갈등의 중심
   romantic: 1.1, // 서사적 중요도
   friendly: 1.0, // 기본
@@ -140,7 +136,8 @@ export function calculateNetworkImportanceWithIndex(
     // 강도 가중치 (1-10 → 0.1-1.0)
     const strengthWeight = (link.strength || 5) / 10;
     // 관계 유형 가중치
-    const typeWeight = RELATION_TYPE_WEIGHTS[link.type] || 1.0;
+    const typeWeight =
+      RELATION_TYPE_WEIGHTS[link.type as UIRelationType] || 1.0;
     totalScore += strengthWeight * typeWeight;
   }
 
@@ -178,7 +175,8 @@ export function calculateNetworkImportance(
     if (sourceId === characterId || targetId === characterId) {
       connectionCount++;
       const strengthWeight = (link.strength || 5) / 10;
-      const typeWeight = RELATION_TYPE_WEIGHTS[link.type] || 1.0;
+      const typeWeight =
+        RELATION_TYPE_WEIGHTS[link.type as UIRelationType] || 1.0;
       totalScore += strengthWeight * typeWeight;
     }
   }

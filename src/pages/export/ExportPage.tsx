@@ -10,14 +10,15 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Button } from "@stolink/ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@stolink/ui";
 import { useParams } from "react-router-dom";
 import {
   exportToTxt,
@@ -42,10 +43,41 @@ interface ExportFormat {
   title: string;
   description: string;
   icon: typeof FileText;
-  color: string;
+  accentColor: string; // Left bar accent color
+  iconColor: string;
   bgColor: string;
   disabled?: boolean;
 }
+
+// Animation variants matching StatsPage
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
+
+const fadeInVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.4 } },
+};
 
 export default function ExportPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -68,7 +100,6 @@ export default function ExportPage() {
   }, []);
 
   // Filter documents for current project
-  // If no documents found for projectId, fall back to sample project
   let projectDocuments = documents.filter(
     (doc: Document) => doc.projectId === projectId,
   );
@@ -80,59 +111,66 @@ export default function ExportPage() {
     );
   }
 
-  // Get project title (from first folder or default)
+  // Get project title
   const projectTitle =
     projectDocuments.find((doc: Document) => doc.type === "folder")?.title ||
     "작품";
 
+  // Export formats with Mocha/Cloud design system colors
   const exportFormats: ExportFormat[] = [
     {
       id: "pdf",
       title: "PDF",
       description: "출력용 PDF 파일",
       icon: FileText,
-      color: "text-red-500",
-      bgColor: "bg-red-50",
+      accentColor: "#A33A3A", // Error red (document-like)
+      iconColor: "text-[#A33A3A]",
+      bgColor: "bg-red-50/50",
     },
     {
       id: "docx",
       title: "Word (DOCX)",
       description: "Microsoft Word 형식",
       icon: FileText,
-      color: "text-blue-500",
-      bgColor: "bg-blue-50",
+      accentColor: "#5B7B9C", // Muted blue
+      iconColor: "text-[#5B7B9C]",
+      bgColor: "bg-blue-50/50",
     },
     {
       id: "txt",
       title: "텍스트 (TXT)",
       description: "순수 텍스트 파일",
       icon: FileText,
-      color: "text-muted-foreground",
-      bgColor: "bg-cloud-50",
+      accentColor: "#8D8B88", // Cloud gray
+      iconColor: "text-[#8D8B88]",
+      bgColor: "bg-[#F1F0EC]",
     },
     {
       id: "markdown",
       title: "마크다운 (MD)",
       description: "마크다운 형식",
       icon: FileText,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50",
+      accentColor: "#8B7A8C", // Muted lavender
+      iconColor: "text-[#8B7A8C]",
+      bgColor: "bg-purple-50/50",
     },
     {
       id: "epub",
       title: "EPUB",
       description: "전자책 형식",
       icon: Book,
-      color: "text-green-500",
-      bgColor: "bg-green-50",
+      accentColor: "#5B7B4B", // Success green
+      iconColor: "text-[#5B7B4B]",
+      bgColor: "bg-green-50/50",
     },
     {
       id: "json",
       title: "JSON 백업",
       description: "전체 데이터 백업",
       icon: FileJson,
-      color: "text-amber-500",
-      bgColor: "bg-amber-50",
+      accentColor: "#A47764", // Mocha primary
+      iconColor: "text-[#A47764]",
+      bgColor: "bg-[#F1F0EC]",
     },
   ];
 
@@ -180,15 +218,12 @@ export default function ExportPage() {
         }
 
         setExportStatus((prev) => ({ ...prev, [formatId]: "success" }));
-
-        // Reset after 2 seconds
         setTimeout(() => {
           setExportStatus((prev) => ({ ...prev, [formatId]: "idle" }));
         }, 2000);
       } catch (error) {
         console.error("Export error:", error);
         setExportStatus((prev) => ({ ...prev, [formatId]: "error" }));
-
         setTimeout(() => {
           setExportStatus((prev) => ({ ...prev, [formatId]: "idle" }));
         }, 3000);
@@ -201,11 +236,10 @@ export default function ExportPage() {
     fileInputRef.current?.click();
   };
 
-  // Read file with encoding detection (UTF-8 first, then EUC-KR for Korean files)
+  // Read file with encoding detection
   const readFileWithEncoding = async (file: File): Promise<string> => {
     const buffer = await file.arrayBuffer();
 
-    // Try UTF-8 first
     try {
       const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
       const text = utf8Decoder.decode(buffer);
@@ -216,7 +250,6 @@ export default function ExportPage() {
       // UTF-8 decoding failed
     }
 
-    // Fallback to EUC-KR (common for old Korean files)
     try {
       const eucKrDecoder = new TextDecoder("euc-kr");
       return eucKrDecoder.decode(buffer);
@@ -231,7 +264,6 @@ export default function ExportPage() {
     const rawText = await readFileWithEncoding(file);
     const title = file.name.replace(/\.(txt|md)$/i, "");
 
-    // Smart text cleanup: remove hard line breaks within paragraphs
     const cleanText = (text: string): string => {
       let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
       cleaned = cleaned
@@ -245,8 +277,6 @@ export default function ExportPage() {
     };
 
     const text = cleanText(rawText);
-
-    // Convert plain text to HTML paragraphs
     const content = text
       .split("\n\n")
       .filter((p) => p.trim())
@@ -257,7 +287,6 @@ export default function ExportPage() {
     const now = new Date().toISOString();
     const targetProjectId = projectId || SAMPLE_PROJECT_ID;
 
-    // Find or create "가져온 문서" folder
     let importFolderId = Object.values(documents).find(
       (doc) =>
         doc.projectId === targetProjectId &&
@@ -319,7 +348,6 @@ export default function ExportPage() {
 
     await handleFiles(Array.from(files));
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -336,7 +364,6 @@ export default function ExportPage() {
         const ext = file.name.split(".").pop()?.toLowerCase();
 
         if (ext === "json") {
-          // JSON backup restore
           const data = await importFromJson(file);
           if (data.documents && Array.isArray(data.documents)) {
             const { _setAll } = useDocumentStore.getState();
@@ -344,7 +371,6 @@ export default function ExportPage() {
             importedCount++;
           }
         } else if (ext === "txt" || ext === "md") {
-          // Text file import
           await importTextFile(file);
           importedCount++;
         }
@@ -384,195 +410,266 @@ export default function ExportPage() {
     }
   };
 
-  const getButtonIcon = (formatId: string, status: ExportStatus) => {
-    const format = exportFormats.find((f) => f.id === formatId);
-    if (!format) return null;
-
+  const getButtonIcon = (format: ExportFormat, status: ExportStatus) => {
     switch (status) {
       case "loading":
-        return <Loader2 className={`h-6 w-6 ${format.color} animate-spin`} />;
+        return (
+          <Loader2 className={`h-6 w-6 ${format.iconColor} animate-spin`} />
+        );
       case "success":
-        return <Check className="h-6 w-6 text-green-500" />;
+        return <Check className="h-6 w-6 text-[#5B7B4B]" />;
       case "error":
-        return <AlertCircle className="h-6 w-6 text-red-500" />;
+        return <AlertCircle className="h-6 w-6 text-[#A33A3A]" />;
       default:
-        return <format.icon className={`h-6 w-6 ${format.color}`} />;
+        return <format.icon className={`h-6 w-6 ${format.iconColor}`} />;
     }
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-paper p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Download className="h-6 w-6 text-mocha-500" />
-            내보내기 / 가져오기
+    <div className="h-full overflow-y-auto bg-cloud-50 p-6 lg:p-8 selection:bg-mocha-100">
+      <motion.div
+        className="max-w-4xl mx-auto space-y-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header with animation */}
+        <motion.div className="flex flex-col gap-2" variants={fadeInVariants}>
+          <h1 className="text-4xl  font-bold text-espresso-900 flex items-center gap-3 tracking-tight">
+            <motion.div
+              whileHover={{ rotate: 10, scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <Download className="w-8 h-8 text-mocha-500" />
+            </motion.div>
+            가져오기 및 내보내기
           </h1>
-          <p className="text-muted-foreground mt-1">
-            작품을 다양한 형식으로 내보내거나 백업 파일을 가져오세요
+          <p className="text-mocha-500 font-medium">
+            작품 데이터를 원고 파일로 내보내거나 외부 문서를 가져옵니다.
           </p>
           {projectDocuments.length > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">
-              📄 {projectDocuments.filter((d) => d.type === "text").length}개
-              문서 준비됨
-            </p>
+            <motion.p
+              className="text-xs text-mocha-400 font-bold uppercase tracking-widest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              [ {projectDocuments.filter((d) => d.type === "text").length} 개의
+              문서가 준비되었습니다 ]
+            </motion.p>
           )}
-        </div>
+        </motion.div>
 
         {/* Export Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              내보내기
-            </CardTitle>
-            <CardDescription>
-              원하는 형식을 선택하여 작품을 내보내세요
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {exportFormats.map((format) => (
-                <button
-                  key={format.id}
-                  onClick={() => handleExport(format.id)}
-                  disabled={
-                    format.disabled || exportStatus[format.id] === "loading"
-                  }
-                  className={`p-4 rounded-xl border-2 border-input hover:border-mocha-300
-                           hover:shadow-md transition-all text-left group
-                           ${format.disabled ? "opacity-50 cursor-not-allowed" : ""}
-                           ${exportStatus[format.id] === "success" ? "border-status-success/50 bg-status-success/10" : ""}
-                           ${exportStatus[format.id] === "error" ? "border-status-error/50 bg-status-error/10" : ""}`}
+        <motion.div variants={cardVariants}>
+          <Card className="border-none shadow-paper bg-white relative overflow-hidden group hover:shadow-paper-floating transition-all duration-300 rounded-xl">
+            <div className="absolute left-0 top-0 w-1 h-full bg-mocha-500" />
+
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-espresso-900 flex items-center gap-2 tracking-tight">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400 }}
                 >
-                  <div
-                    className={`w-12 h-12 ${format.bgColor} rounded-xl flex items-center justify-center mb-3
-                                  group-hover:scale-110 transition-transform`}
+                  <Download className="w-5 h-5 text-mocha-500/60" />
+                </motion.div>
+                내보내기
+              </CardTitle>
+              <CardDescription className="text-mocha-500 font-medium">
+                원하는 원고 형식을 선택하여 저장하세요.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <motion.div
+                className="grid grid-cols-2 md:grid-cols-3 gap-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {exportFormats.map((format) => (
+                  <motion.button
+                    key={format.id}
+                    variants={cardVariants}
+                    onClick={() => handleExport(format.id)}
+                    disabled={
+                      format.disabled || exportStatus[format.id] === "loading"
+                    }
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative p-5 rounded-xl border border-cloud-100 text-left group
+                      transition-all duration-300 overflow-hidden bg-cloud-50
+                      hover:border-mocha-200 hover:shadow-paper-floating hover:bg-white
+                      ${format.disabled ? "opacity-50 cursor-not-allowed" : ""}
+                      ${exportStatus[format.id] === "success" ? "border-emerald-200 bg-emerald-50" : ""}
+                      ${exportStatus[format.id] === "error" ? "border-rose-200 bg-rose-50" : ""}`}
                   >
-                    {getButtonIcon(
-                      format.id,
-                      exportStatus[format.id] || "idle",
-                    )}
-                  </div>
-                  <h3 className="font-medium">{format.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {format.description}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                    {/* Accent bar */}
+                    <div
+                      className="absolute left-0 top-0 w-1 h-full transition-all duration-300 group-hover:w-1.5"
+                      style={{ backgroundColor: format.accentColor }}
+                    />
+
+                    <div
+                      className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-4
+                        group-hover:scale-110 transition-transform duration-300 border border-cloud-200 shadow-sm`}
+                    >
+                      {getButtonIcon(format, exportStatus[format.id] || "idle")}
+                    </div>
+                    <h3 className="font-bold text-espresso-900 text-sm">
+                      {format.title}
+                    </h3>
+                    <p className="text-xs text-mocha-400 mt-1 font-medium">
+                      {format.description}
+                    </p>
+                  </motion.button>
+                ))}
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Import Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              가져오기
-            </CardTitle>
-            <CardDescription>
-              TXT, MD 파일을 새 문서로 추가하거나 JSON 백업을 복원하세요
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept=".json,.txt,.md"
-              multiple
-              className="hidden"
-            />
-            <div
-              onClick={handleImportClick}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-xl p-8
-                        text-center transition-colors cursor-pointer
-                        ${importStatus === "success" ? "border-status-success/50 bg-status-success/10" : ""}
-                        ${importStatus === "error" ? "border-status-error/50 bg-status-error/10" : ""}
-                        ${importStatus === "idle" ? "border-muted-foreground/30 hover:border-mocha-400 hover:bg-mocha-400/10" : ""}
-                        ${importStatus === "loading" ? "border-mocha-400 bg-mocha-400/10" : ""}`}
-            >
-              <div className="w-16 h-16 bg-cloud-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                {importStatus === "loading" ? (
-                  <Loader2 className="h-8 w-8 text-mocha-500 animate-spin" />
-                ) : importStatus === "success" ? (
-                  <Check className="h-8 w-8 text-status-success" />
+        <motion.div variants={cardVariants}>
+          <Card className="border-none shadow-sm bg-white relative overflow-hidden hover:shadow-paper-hover transition-all duration-300">
+            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#7A8C6F]" />
+
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg  font-bold text-[#3D302A] flex items-center gap-2">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
+                  <Upload className="w-5 h-5 text-[#7A8C6F]" />
+                </motion.div>
+                가져오기
+              </CardTitle>
+              <CardDescription className="text-[#8D8B88]">
+                TXT, MD 파일을 새 문서로 추가하거나 JSON 백업을 복원하세요
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".json,.txt,.md"
+                multiple
+                className="hidden"
+              />
+              <motion.div
+                onClick={handleImportClick}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className={`border-2 border-dashed rounded-xl p-8
+                  text-center transition-all cursor-pointer
+                  ${importStatus === "success" ? "border-[#5B7B4B]/50 bg-[#5B7B4B]/5" : ""}
+                  ${importStatus === "error" ? "border-[#A33A3A]/50 bg-[#A33A3A]/5" : ""}
+                  ${importStatus === "idle" ? "border-[#BD9B8D]/40 hover:border-[#A47764] hover:bg-[#A47764]/5" : ""}
+                  ${importStatus === "loading" ? "border-[#A47764] bg-[#A47764]/10" : ""}`}
+              >
+                <motion.div
+                  className="w-16 h-16 bg-[#F1F0EC] rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  animate={
+                    importStatus === "loading"
+                      ? { rotate: 360 }
+                      : importStatus === "success"
+                        ? { scale: [1, 1.1, 1] }
+                        : {}
+                  }
+                  transition={
+                    importStatus === "loading"
+                      ? { repeat: Infinity, duration: 2, ease: "linear" }
+                      : { duration: 0.3 }
+                  }
+                >
+                  {importStatus === "loading" ? (
+                    <Loader2 className="h-8 w-8 text-[#A47764] animate-spin" />
+                  ) : importStatus === "success" ? (
+                    <Check className="h-8 w-8 text-[#5B7B4B]" />
+                  ) : importStatus === "error" ? (
+                    <AlertCircle className="h-8 w-8 text-[#A33A3A]" />
+                  ) : (
+                    <Archive className="h-8 w-8 text-[#8D8B88]" />
+                  )}
+                </motion.div>
+
+                {importStatus === "success" ? (
+                  <>
+                    <h3 className="font-semibold mb-2 text-[#5B7B4B]">
+                      가져오기 완료!
+                    </h3>
+                    <p className="text-sm text-[#5B7B4B]/80">
+                      데이터가 성공적으로 복원되었습니다.
+                    </p>
+                  </>
                 ) : importStatus === "error" ? (
-                  <AlertCircle className="h-8 w-8 text-status-error" />
+                  <>
+                    <h3 className="font-semibold mb-2 text-[#A33A3A]">
+                      가져오기 실패
+                    </h3>
+                    <p className="text-sm text-[#A33A3A]/80">{importError}</p>
+                  </>
                 ) : (
-                  <Archive className="h-8 w-8 text-muted-foreground" />
+                  <>
+                    <h3 className="font-semibold mb-2 text-[#3D302A]">
+                      파일을 드래그하거나 클릭하세요
+                    </h3>
+                    <p className="text-sm text-[#8D8B88]">
+                      지원 형식: TXT, MD, JSON
+                    </p>
+                    <Button
+                      intent="outline"
+                      className="mt-4 border-[#BD9B8D] text-[#A47764] hover:bg-[#A47764]/10"
+                      disabled={importStatus === "loading"}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      파일 선택
+                    </Button>
+                  </>
                 )}
-              </div>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-              {importStatus === "success" ? (
-                <>
-                  <h3 className="font-medium mb-2 text-green-700">
-                    가져오기 완료!
-                  </h3>
-                  <p className="text-sm text-green-600">
-                    데이터가 성공적으로 복원되었습니다.
-                  </p>
-                </>
-              ) : importStatus === "error" ? (
-                <>
-                  <h3 className="font-medium mb-2 text-red-700">
-                    가져오기 실패
-                  </h3>
-                  <p className="text-sm text-red-600">{importError}</p>
-                </>
-              ) : (
-                <>
-                  <h3 className="font-medium mb-2">
-                    파일을 드래그하거나 클릭하세요
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    지원 형식: TXT, MD, JSON
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    disabled={importStatus === "loading"}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    파일 선택
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Info Section */}
+        <motion.div variants={cardVariants}>
+          <Card className="border-none shadow-sm bg-gradient-to-br from-[#F1F0EC] to-white relative overflow-hidden">
+            <div className="absolute left-0 top-0 w-1.5 h-full bg-[#B8860B]" />
 
-        {/* Info */}
-        <Card className="bg-amber-50/50 border-amber-100">
-          <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <FileText className="h-4 w-4 text-amber-600" />
+            <CardContent className="pt-6">
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#B8860B]/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-5 w-5 text-[#B8860B]" />
+                </div>
+                <div className="text-sm text-[#3D302A]">
+                  <p className="font-semibold mb-2 text-[#7D5A4B]">
+                    내보내기 팁
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-[#8D8B88]">
+                    <li>
+                      <strong className="text-[#3D302A]">TXT/MD</strong>는 다른
+                      편집기에서 열어볼 때 유용합니다
+                    </li>
+                    <li>
+                      <strong className="text-[#3D302A]">DOCX</strong>는 출판사
+                      제출이나 인쇄에 적합합니다
+                    </li>
+                    <li>
+                      <strong className="text-[#3D302A]">JSON 백업</strong>은
+                      정기적으로 해두세요 - 모든 데이터를 복원할 수 있습니다
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <div className="text-sm text-amber-800">
-                <p className="font-medium mb-1">내보내기 팁</p>
-                <ul className="list-disc list-inside space-y-1 text-amber-700">
-                  <li>
-                    <strong>TXT/MD</strong>는 다른 편집기에서 열어볼 때
-                    유용합니다
-                  </li>
-                  <li>
-                    <strong>DOCX</strong>는 출판사 제출이나 인쇄에 적합합니다
-                  </li>
-                  <li>
-                    <strong>JSON 백업</strong>은 정기적으로 해두세요 - 모든
-                    데이터를 복원할 수 있습니다
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

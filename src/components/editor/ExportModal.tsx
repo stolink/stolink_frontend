@@ -14,7 +14,7 @@ import {
   FileDown,
   Send,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -269,7 +269,11 @@ export default function ExportModal({
               name: c.profile?.name,
               age: c.profile?.age || undefined,
               gender: c.profile?.gender,
-              personality: c.personality?.coreTraits,
+              personality: {
+                coreTraits: c.personality?.coreTraits,
+                flaws: c.personality?.flaws,
+                values: c.personality?.values,
+              },
               backstory: c.profile?.backstory,
               imageUrl: c.imageUrl || undefined,
             },

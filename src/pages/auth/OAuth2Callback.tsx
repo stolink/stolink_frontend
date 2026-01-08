@@ -20,8 +20,12 @@ export default function OAuth2Callback() {
       const error = searchParams.get("error");
 
       if (success === "true") {
-        // 성공 → 사용자 정보 조회
+        // 성공 → refresh 먼저 호출하여 accessToken 발급 후 사용자 정보 조회
         try {
+          // 1. refresh 호출 (쿠키 기반으로 accessToken 발급)
+          await authService.refresh();
+
+          // 2. accessToken이 발급된 후 사용자 정보 조회
           const userResponse = await authService.getMe();
           setUser(userResponse.data);
           navigate("/library", { replace: true });
@@ -45,7 +49,7 @@ export default function OAuth2Callback() {
   }, [searchParams, navigate, setUser]);
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600 font-serif gap-4">
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-600  gap-4">
       <div className="w-8 h-8 border-2 border-mocha-600 border-t-transparent rounded-full animate-spin" />
       <p>로그인 처리 중...</p>
     </div>

@@ -11,6 +11,7 @@ import {
 } from "@/repositories/LocalDocumentRepository";
 import { useEditorStore } from "@/stores/useEditorStore";
 import { useForeshadowingStore } from "@/stores/useForeshadowingStore";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import type {
   Document,
   DocumentTreeNode,
@@ -73,8 +74,7 @@ export function useDocumentTree(projectId: string) {
       }
     },
     enabled: !!projectId,
-    staleTime: 0, // Always refetch to get latest tree from backend
-    refetchOnMount: "always", // Force refetch when component mounts
+    staleTime: 30000, // 30s - Reduces unnecessary tree refetches while maintaining sync via mutations
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
       if (
@@ -216,7 +216,8 @@ export function useDocumentContent(id: string | null) {
     },
     initialPageParam: 1,
     enabled: !!id,
-    staleTime: 0,
+    staleTime: 60000, // 1 min - Content is stable unless mutated
+    gcTime: 1000 * 60 * 10, // 10 mins cache for better UX when switching back to recently visited sections
     retry: (failureCount, error) => {
       if (
         (error as { response?: { status?: number } })?.response?.status === 404
@@ -270,8 +271,23 @@ export function useDocumentContent(id: string | null) {
             updatedAt: response.data.updatedAt,
           });
 
-          // Invalidate query to reset pagination to page 1 with new content structure
-          queryClient.invalidateQueries({ queryKey: documentKeys.content(id) });
+          // Manually update the infinite query cache to avoid a redundant GET request
+          // Since saveContent handles the whole document rewrite, we reset pages to reflect the current content
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          queryClient.setQueryData(documentKeys.content(id), (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: [
+                {
+                  content: newContent,
+                  page: 1,
+                  totalPages: 1, // Full rewrite usually results in 1 page or backend handles re-pagination on next fetch
+                },
+              ],
+              pageParams: [1],
+            };
+          });
         }
       } catch (error) {
         console.error("Failed to save content:", error);
@@ -473,6 +489,23 @@ export function useDocumentMutations(projectId: string) {
 
         // 6. 섹션 삭제 시 해당 섹션에 연결된 복선도 삭제 (고아 데이터 방지)
         useForeshadowingStore.getState().deleteByDocumentId(id);
+
+        // 7. 분석 버퍼에서 삭제된 문서 및 하위 문서 제거 (Ghost Chunk 방지)
+        const { removeFromBuffer } = useAnalysisBufferStore.getState();
+        const idsToRemove = [id];
+
+        // 현재 상태에서 하위 문서 찾기 (Optimistic Update 전 상태인 documents 참조)
+        const findDescendants = (parentId: string) => {
+          Object.values(documents).forEach((d) => {
+            if (d.parentId === parentId) {
+              idsToRemove.push(d.id);
+              findDescendants(d.id);
+            }
+          });
+        };
+        findDescendants(id);
+
+        idsToRemove.forEach((docId) => removeFromBuffer(docId));
       }
     },
     [projectId, queryClient],

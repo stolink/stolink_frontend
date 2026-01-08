@@ -1,7 +1,7 @@
 import { memo, useRef, useEffect, useState, useMemo } from "react";
 import * as d3 from "d3";
 import type { RelationshipLink, CharacterNode } from "@/types";
-import { getRelationshipColor } from "./utils";
+import { getRelationshipColor, type UIRelationType } from "./utils";
 
 interface LinkRendererProps {
   link: RelationshipLink;
@@ -13,16 +13,17 @@ interface LinkRendererProps {
     coords?: { x: number; y: number }
   ) => void;
   onClick?: (link: RelationshipLink) => void;
+  /** 네트워크 붕괴 시각화를 위한 변경 상태 */
+  changeType?: "inversion" | "collapse" | "new" | "conflict" | "updated";
+  /** 붉은 파동이 도달하는 시간 (ms) */
+  rippleDelay?: number;
+  /** AI Insights */
+  showTension?: boolean;
+  showLogicCheck?: boolean;
 }
 
 /**
- * SVG 링크(엣지) 렌더러 - Premium Flowing Animation
- *
- * Features:
- * - 물 흐르듯 부드러운 그라데이션 애니메이션
- * - 관계 타입별 고유 색상/패턴
- * - 강도 기반 굵기/속도/입체감
- * - 호버 시 강화된 글로우 + 파티클 느낌
+ * SVG 링크(엣지) 렌더러 - Premium Flowing Animation & Network Collapse
  */
 export const LinkRenderer = memo(function LinkRenderer({
   link,
@@ -31,25 +32,25 @@ export const LinkRenderer = memo(function LinkRenderer({
   isFiltered,
   onClick,
   onHover,
+  changeType,
+  rippleDelay = 0,
+  showTension = false,
+  showLogicCheck = false,
 }: LinkRendererProps) {
   const groupRef = useRef<SVGGElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // 고유 ID 생성 (그라데이션용)
+  // 고유 ID 생성
   const gradientId = useMemo(() => `flow-gradient-${link.id}`, [link.id]);
   const glowFilterId = useMemo(() => `glow-${link.id}`, [link.id]);
 
-  // Fallback random delay (stable across renders) - Moved up to avoid conditional hook call
-  // Using useState initializer to avoid impure function in useMemo
+  // Fallback random delay
   const [randomDelay] = useState(() => Math.random() * 2);
 
   // D3 데이터 바인딩
   useEffect(() => {
     if (groupRef.current) {
-      // [Fix] Bind data to the GROUP element so the parent's optimized tick handler can access it
       d3.select(groupRef.current).datum(link);
-
-      // Also bind to paths to ensure child elements have access if needed
       d3.select(groupRef.current).selectAll("path").datum(link);
     }
   }, [link]);
@@ -57,17 +58,32 @@ export const LinkRenderer = memo(function LinkRenderer({
   const source = link.source as CharacterNode;
   const target = link.target as CharacterNode;
 
-  const primaryColor = getRelationshipColor(link.type, link.strength);
+  // === Color & Style Logic for network collapse ===
+  const primaryColor = useMemo(() => {
+    if (changeType === "inversion") return "#EF4444"; // Red-500 (Hostile)
+    if (changeType === "collapse") return "#9CA3AF"; // Gray-400 (Broken)
+    if (changeType === "new") return "#EAB308"; // Yellow-500 (Gold)
+    if (changeType === "conflict") return "#F59E0B"; // Amber-500 (Warning)
+    if (changeType === "updated") return "#3B82F6"; // Blue-500 (Updated)
+    return getRelationshipColor(link.type as UIRelationType, link.strength);
+  }, [link.type, link.strength, changeType]);
 
-  // 보조 색상 (그라데이션용 - 더 밝은 버전, 거의 흰색에 가깝게)
   const secondaryColor = useMemo(() => {
-    // Electric feel needs very bright color
     const hex = primaryColor.replace("#", "");
     const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + 120);
     const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + 120);
     const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + 120);
     return `rgb(${r}, ${g}, ${b})`;
   }, [primaryColor]);
+
+  // Collapse 상태일 때 점선 처리
+  const dashArray = useMemo(() => {
+    if (changeType === "collapse") return "4, 6"; // 점선 (붕괴)
+    if (changeType === "new") return undefined; // 실선
+    return link.type === "hostile"
+      ? `${6 + link.strength}, ${4 + (10 - link.strength) / 2}`
+      : undefined;
+  }, [changeType, link.type, link.strength]);
 
   if (
     source.x === undefined ||
@@ -78,48 +94,56 @@ export const LinkRenderer = memo(function LinkRenderer({
     return null;
   }
 
-  // 강도 기반 스타일 계산
-  const baseWidth = 2 + ((link.strength - 1) / 9) * 3; // 2-5px
+  // 강도 기반 스타일 (Multi-Dimensional Mapping: 1~10 -> 1px~5px)
+  // Strength 1 -> 1px
+  // Strength 10 -> 5px
+  const baseWidth = 1 + ((link.strength - 1) / 9) * 4;
   const activeBonus = (isHovered ? 2 : 0) + (isHighlighted ? 1.5 : 0);
   const strokeWidth = baseWidth + activeBonus;
 
+  // 애니메이션용 CSS 클래스
+  const transitionStyle = {
+    transitionProperty:
+      "stroke, stroke-width, stroke-opacity, stroke-dasharray",
+    transitionDuration: "800ms", // 천천히 변함
+    transitionDelay: `${rippleDelay}ms`, // 파동 도달 시간
+    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+  };
+
   // 투명도
-  const getOpacity = () => {
+  const opacity = (() => {
+    if (changeType === "collapse") return 0.3; // 붕괴된 관계는 희미하게
     if (isFiltered) return 0.02;
     if (isDimmed) return 0.08;
     if (isHighlighted) return 0.95;
     if (isHovered) return 1;
     return 0.4 + (link.strength / 10) * 0.2;
-  };
-  const opacity = getOpacity();
-  // 적대 관계 점선
-  const dashArray =
-    link.type === "hostile"
-      ? `${6 + link.strength}, ${4 + (10 - link.strength) / 2}`
-      : undefined;
+  })();
 
-  // 활성 상태 (호버 또는 하이라이트)
   const isActive = (isHighlighted || isHovered) && !isFiltered && !isDimmed;
+  const showFlow = !isFiltered && changeType !== "collapse"; // 붕괴된 라인은 흐름 없음
 
-  // Idle 상태 (아무것도 선택/호버 안됨 - 주인공 흐름 애니메이션용)
-  // const isIdle = !isHighlighted && !isDimmed && !isFiltered && !isActive;
+  // AI Insights Detection
+  const isTense = useMemo(() => {
+    if (!showTension) return false;
+    // High strength negative relation (MetaCategory = negative)
+    const isNegative =
+      link.type === "hostile" || link.type === "rival" || link.type === "ENEMY";
+    return isNegative && link.strength >= 7;
+  }, [showTension, link.type, link.strength]);
 
-  // 흐름 애니메이션 활성화 조건 (Active or Idle)
-  // [Modified] 항상 흐름 애니메이션 표시 (필터링된 것 제외)
-  const showFlow = !isFiltered;
+  const isContradictory = useMemo(() => {
+    return showLogicCheck && link.logicCheck?.isContradictory;
+  }, [showLogicCheck, link.logicCheck]);
 
-  // Animation Parameters based on State
-  // [Modified] 항상 BFS Rhythmic 속도 유지 (Interaction에 따라 빨라지지 않음 - Global Wave 유지)
+  // Inversion/New Animation: Pulse/Flash effect handled via CSS Keyframes in global styles or inline styles?
+  // We'll use the transition logic for color change.
+
   const flowDuration = 3 - (link.strength / 10) * 1.5;
-
-  // BFS depth 기반 딜레이 (Protagonist로부터 퍼져나가는 효과)
-  // [Modified] Interaction 여부와 관계없이 항상 BFS Depth 따름
   const flowDelay =
     link.flowDepth !== undefined && link.flowDepth >= 0
       ? link.flowDepth * 0.2
       : randomDelay;
-
-  // [Modified] Interaction 시 애니메이션 리셋 방지 (Constant Key)
   const animKey = "constant-flow";
 
   return (
@@ -191,6 +215,8 @@ export const LinkRenderer = memo(function LinkRenderer({
           </stop>
         </linearGradient>
 
+        {/* 화살표 마커 Removed */}
+
         {/* 글로우 필터 */}
         <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation={isActive ? 4 : 2} result="blur" />
@@ -224,11 +250,14 @@ export const LinkRenderer = memo(function LinkRenderer({
         strokeOpacity={isFiltered ? 0 : opacity * 0.4}
         strokeLinecap="round"
         strokeDasharray={dashArray}
-        style={{ transform: "translate(1px, 2px)" }}
+        style={{
+          transform: "translate(1px, 2px)",
+          ...transitionStyle, // Apply Ripple Transition
+        }}
       />
 
       {/* === Layer 3: 부드러운 외부 글로우 === */}
-      {!isFiltered && !isDimmed && (
+      {!isFiltered && !isDimmed && changeType !== "collapse" && (
         <path
           className="link-path"
           fill="none"
@@ -236,7 +265,43 @@ export const LinkRenderer = memo(function LinkRenderer({
           strokeWidth={strokeWidth + 6}
           strokeOpacity={isActive ? 0.25 : 0.08}
           strokeLinecap="round"
-          style={{ filter: "blur(6px)" }}
+          style={{
+            filter: "blur(6px)",
+            ...transitionStyle, // Apply Ripple Transition
+          }}
+        />
+      )}
+
+      {/* Tension Heatmap Overlay (Red Glow) */}
+      {isTense && !isFiltered && (
+        <path
+          className="link-path-tension animate-pulse"
+          fill="none"
+          stroke="#EF4444"
+          strokeWidth={strokeWidth + 10}
+          strokeOpacity={0.4}
+          strokeLinecap="round"
+          style={{
+            filter: "blur(12px)",
+            ...transitionStyle,
+          }}
+        />
+      )}
+
+      {/* Logic Check Contradiction Overlay (Amber Glow/Mark) */}
+      {isContradictory && !isFiltered && (
+        <path
+          className="link-path-contradiction"
+          fill="none"
+          stroke="#F59E0B"
+          strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.9}
+          strokeLinecap="round"
+          strokeDasharray="4, 4"
+          style={{
+            filter: "drop-shadow(0 0 4px #F59E0B)",
+            ...transitionStyle,
+          }}
         />
       )}
 
@@ -247,16 +312,18 @@ export const LinkRenderer = memo(function LinkRenderer({
         stroke={primaryColor}
         strokeWidth={strokeWidth}
         // 기본 0.5 이상 유지하여 "너무 연해지지 않도록"
-        strokeOpacity={isFiltered ? 0.05 : isDimmed ? 0.1 : 0.5}
+        strokeOpacity={isFiltered ? 0.05 : isDimmed ? 0.1 : 0.6}
         strokeLinecap="round"
         strokeDasharray={dashArray}
         style={{
-          transition: "stroke-width 200ms, stroke-opacity 200ms",
+          ...transitionStyle, // Apply Ripple Transition
         }}
+        // Removed markerEnd as per "High-Dimensional" design request (clunky arrows removed)
       />
 
-      {/* === Layer 5: Flow Overlay (Electric Pulse) === */}
-      {showFlow && (
+      {/* === Layer 5: Flow Overlay (Directionality) === */}
+      {/* Bidirectional: No flow (Pulse maybe?) | Unidirectional: Flow A -> B */}
+      {showFlow && !link.bidirectional && (
         <path
           className="link-path"
           fill="none"
@@ -265,23 +332,63 @@ export const LinkRenderer = memo(function LinkRenderer({
           strokeOpacity={1}
           strokeLinecap="round"
           strokeDasharray={dashArray}
-          // Remove mixBlendMode: screen (causes invisibility on light bg)
+          style={{
+            ...transitionStyle, // Match base line movement/color
+          }}
         />
       )}
 
       {/* === Layer 6: 하이라이트 (상단 빛 반사) - 더 subtle하게 === */}
-      <path
-        className="link-path"
-        fill="none"
-        stroke="rgba(255,255,255,0.4)"
-        strokeWidth={Math.max(0.8, strokeWidth * 0.3)}
-        strokeOpacity={isFiltered ? 0 : isDimmed ? 0.05 : isActive ? 0.5 : 0.2}
-        strokeLinecap="round"
-        strokeDasharray={dashArray}
-        style={{ transform: "translate(-0.3px, -0.8px)" }}
-      />
+      {changeType !== "collapse" && (
+        <path
+          className="link-path"
+          fill="none"
+          stroke="rgba(255,255,255,0.4)"
+          strokeWidth={Math.max(0.8, strokeWidth * 0.3)}
+          strokeOpacity={
+            isFiltered ? 0 : isDimmed ? 0.05 : isActive ? 0.5 : 0.2
+          }
+          strokeLinecap="round"
+          strokeDasharray={dashArray}
+          style={{
+            transform: "translate(-0.3px, -0.8px)",
+            ...transitionStyle,
+          }}
+        />
+      )}
 
-      {/* === Layer 7: Removed Pulse Sphere per user request === */}
+      {/* === Layer 7: Conflict Warning Icon === */}
+      {changeType === "conflict" && (
+        <foreignObject
+          x={(source.x + target.x) / 2 - 12}
+          y={(source.y + target.y) / 2 - 12}
+          width={24}
+          height={24}
+          className="pointer-events-none overflow-visible"
+          style={{
+            opacity: 0,
+            animation: `fadeIn 0.5s forwards ${rippleDelay}ms`, // Pop in with ripple
+          }}
+        >
+          <div className="flex items-center justify-center w-full h-full text-xl animate-bounce">
+            ⚠️
+          </div>
+        </foreignObject>
+      )}
+
+      {isContradictory && !isFiltered && (
+        <foreignObject
+          x={(source.x + target.x) / 2 - 12}
+          y={(source.y + target.y) / 2 - 32}
+          width={24}
+          height={24}
+          className="pointer-events-none overflow-visible"
+        >
+          <div className="flex items-center justify-center w-full h-full text-xl animate-bounce">
+            🚫
+          </div>
+        </foreignObject>
+      )}
     </g>
   );
 });

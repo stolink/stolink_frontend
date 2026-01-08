@@ -1,5 +1,5 @@
 import { X, Type, Minus, Plus, List, BookOpen, ScrollText } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import type { Theme, ViewMode } from "./theme";
 import { getThemeStyle, getThemeButtonStyle } from "./theme";
@@ -41,11 +41,11 @@ export function ReaderHeader({
     <header
       className={cn(
         "h-14 px-4 flex items-center justify-between border-b shrink-0 transition-colors",
-        styles.header
+        styles.header,
       )}
     >
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button intent="ghost" size="icon" onClick={onClose}>
           <X className="h-5 w-5" />
         </Button>
         <h1 className="font-heading text-lg font-semibold">{bookTitle}</h1>
@@ -60,7 +60,7 @@ export function ReaderHeader({
         />
 
         {/* TOC Toggle */}
-        <Button variant="ghost" size="icon" onClick={onToggleToc}>
+        <Button intent="ghost" size="icon" onClick={onToggleToc}>
           <List className="h-5 w-5" />
         </Button>
 
@@ -93,7 +93,7 @@ function ViewModeToggle({ viewMode, styles, onChange }: ViewModeToggleProps) {
         onClick={() => onChange("book")}
         className={cn(
           "px-3 py-1 rounded-md text-sm flex items-center gap-1.5 transition-colors",
-          viewMode === "book" ? styles.activeControl : styles.inactiveControl
+          viewMode === "book" ? styles.activeControl : styles.inactiveControl,
         )}
         title="책 모드 (방향키로 이동)"
       >
@@ -103,7 +103,7 @@ function ViewModeToggle({ viewMode, styles, onChange }: ViewModeToggleProps) {
         onClick={() => onChange("scroll")}
         className={cn(
           "px-3 py-1 rounded-md text-sm flex items-center gap-1.5 transition-colors",
-          viewMode === "scroll" ? styles.activeControl : styles.inactiveControl
+          viewMode === "scroll" ? styles.activeControl : styles.inactiveControl,
         )}
         title="스크롤 모드"
       >
@@ -136,11 +136,11 @@ function FontSizeControls({
     <div
       className={cn(
         "flex items-center gap-1 px-2 border-l border-r mx-2",
-        borderColor
+        borderColor,
       )}
     >
       <Button
-        variant="ghost"
+        intent="ghost"
         size="icon"
         onClick={onDecrease}
         disabled={!canDecrease}
@@ -149,7 +149,7 @@ function FontSizeControls({
       </Button>
       <Type className="h-4 w-4" />
       <Button
-        variant="ghost"
+        intent="ghost"
         size="icon"
         onClick={onIncrease}
         disabled={!canIncrease}
@@ -181,7 +181,7 @@ function ThemeSwitcher({ currentTheme, onThemeChange }: ThemeSwitcherProps) {
           className={cn(
             "w-6 h-6 rounded-full border-2 transition-all",
             getThemeButtonStyle(key),
-            currentTheme === key && "ring-2 ring-mocha-500 ring-offset-2"
+            currentTheme === key && "ring-2 ring-mocha-500 ring-offset-2",
           )}
           title={title}
         />

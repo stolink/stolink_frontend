@@ -26,7 +26,7 @@ export function usePredictivePrefetch(
   options?: {
     scrollThreshold?: number; // 0-1, 기본 0.8
     enabled?: boolean;
-  },
+  }
 ) {
   const queryClient = useQueryClient();
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -40,8 +40,6 @@ export function usePredictivePrefetch(
       if (hasPrefetchedRef.current.has(chapterId)) return;
       hasPrefetchedRef.current.add(chapterId);
 
-      console.log(`[Prefetch] Starting prefetch for chapter: ${chapterId}`);
-
       try {
         // TanStack Query를 통한 프리페치
         await queryClient.prefetchQuery({
@@ -49,18 +47,16 @@ export function usePredictivePrefetch(
           queryFn: () => documentService.getById(chapterId),
           staleTime: 5 * 60 * 1000, // 5분
         });
-
-        console.log(`[Prefetch] Successfully prefetched chapter: ${chapterId}`);
       } catch (error) {
         console.error(
           `[Prefetch] Failed to prefetch chapter: ${chapterId}`,
-          error,
+          error
         );
         // 실패 시 다시 시도할 수 있도록 Set에서 제거
         hasPrefetchedRef.current.delete(chapterId);
       }
     },
-    [queryClient],
+    [queryClient]
   );
 
   useEffect(() => {
@@ -82,9 +78,6 @@ export function usePredictivePrefetch(
       connection?.effectiveType === "2g";
 
     if (shouldSkipPrefetch) {
-      console.log(
-        "[Prefetch] Skipped due to data saver mode or slow connection",
-      );
       return;
     }
 
@@ -95,7 +88,6 @@ export function usePredictivePrefetch(
       document.querySelector(".ProseMirror")?.parentElement;
 
     if (!scrollArea) {
-      console.log("[Prefetch] No scroll area found, prefetching immediately");
       // 스크롤 영역이 없으면 즉시 프리페치
       prefetchChapter(nextChapter.id);
       return;
@@ -117,7 +109,7 @@ export function usePredictivePrefetch(
         root: scrollArea,
         threshold: [scrollThreshold],
         rootMargin: "0px 0px -20% 0px", // 하단 20% 전에 트리거
-      },
+      }
     );
 
     // 스크롤 영역의 마지막 자식 관찰 (하단 도달 감지)
@@ -141,7 +133,7 @@ export function usePredictivePrefetch(
     (chapterId: string) => {
       prefetchChapter(chapterId);
     },
-    [prefetchChapter],
+    [prefetchChapter]
   );
 
   return {

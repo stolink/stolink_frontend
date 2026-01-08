@@ -11,7 +11,7 @@ import {
   Plus,
   Package,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useForeshadowingStore } from "@/stores";
@@ -337,7 +337,7 @@ const ForeshadowingPanel = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 -mt-1 -mr-1 text-stone-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                  className="h-7 w-7 -mt-1 -mr-1 text-mocha-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
                   onClick={() => handleDelete(fs.id)}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -347,8 +347,8 @@ const ForeshadowingPanel = ({
               {/* 요약 (드래그한 텍스트) */}
               {fs.description && (
                 <div className="relative mb-4 group/desc">
-                  <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent pr-1">
-                    <p className="text-[13px] text-stone-600 leading-relaxed italic bg-stone-50/50 p-3 rounded-xl border border-stone-100/80 shadow-inner group-hover/desc:bg-stone-50 transition-colors">
+                  <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-cloud-200 scrollbar-track-transparent pr-1">
+                    <p className="text-[13px] text-mocha-600 leading-relaxed italic bg-cloud-50/50 p-3 rounded-xl border border-cloud-100/80 shadow-inner group-hover/desc:bg-cloud-50 transition-colors">
                       "{fs.description}"
                     </p>
                   </div>
@@ -361,7 +361,7 @@ const ForeshadowingPanel = ({
                   const relatedItems = getRelatedNames(fs.relatedCharacterIds);
                   return (
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mr-1">
+                      <span className="text-[10px] font-bold text-mocha-400 uppercase tracking-wider mr-1">
                         Related
                       </span>
                       {relatedItems && relatedItems.length > 0 && (
@@ -386,7 +386,7 @@ const ForeshadowingPanel = ({
                                 onClick={() =>
                                   handleRemoveRelated(fs.id, item.id)
                                 }
-                                className="ml-1 hover:bg-stone-100 rounded-full p-0.5 transition-colors"
+                                className="ml-1 hover:bg-cloud-100 rounded-full p-0.5 transition-colors"
                               >
                                 <X className="w-2 h-2" />
                               </button>
@@ -445,7 +445,7 @@ const ForeshadowingPanel = ({
                             autoFocus
                           />
                           {relatedSearchQuery && (
-                            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-stone-100 rounded-lg shadow-xl z-20 max-h-40 overflow-y-auto p-1">
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-cloud-100 rounded-lg shadow-xl z-20 max-h-40 overflow-y-auto p-1">
                               {getFilteredRelatedOptions(
                                 fs.relatedCharacterIds,
                               ).map((option, index) => (
@@ -455,7 +455,7 @@ const ForeshadowingPanel = ({
                                     "w-full px-2 py-1.5 text-left text-xs flex items-center gap-2 rounded-md transition-colors",
                                     focusedOptionIndex === index
                                       ? "bg-sage-50 text-sage-900"
-                                      : "text-stone-600 hover:bg-stone-50",
+                                      : "text-mocha-600 hover:bg-cloud-50",
                                   )}
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={() =>
@@ -468,7 +468,7 @@ const ForeshadowingPanel = ({
                                         "w-3 h-3",
                                         focusedOptionIndex === index
                                           ? "text-sage-500"
-                                          : "text-stone-400",
+                                          : "text-mocha-400",
                                       )}
                                     />
                                   ) : (
@@ -477,7 +477,7 @@ const ForeshadowingPanel = ({
                                         "w-3 h-3",
                                         focusedOptionIndex === index
                                           ? "text-sage-500"
-                                          : "text-stone-400",
+                                          : "text-mocha-400",
                                       )}
                                     />
                                   )}
@@ -488,7 +488,7 @@ const ForeshadowingPanel = ({
                               ))}
                               {getFilteredRelatedOptions(fs.relatedCharacterIds)
                                 .length === 0 && (
-                                <div className="px-2 py-1.5 text-xs text-stone-400 text-center">
+                                <div className="px-2 py-1.5 text-xs text-mocha-400 text-center">
                                   결과 없음
                                 </div>
                               )}
@@ -502,7 +502,7 @@ const ForeshadowingPanel = ({
                             setRelatedSearchQuery("");
                             setFocusedOptionIndex(0);
                           }}
-                          className="flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-stone-300 text-stone-400 hover:border-sage-400 hover:text-sage-600 hover:bg-sage-50 transition-all ml-1"
+                          className="flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-cloud-300 text-mocha-400 hover:border-sage-400 hover:text-sage-600 hover:bg-sage-50 transition-all ml-1"
                           title="연관 요소 추가"
                         >
                           <Plus className="w-3 h-3" />
@@ -514,19 +514,19 @@ const ForeshadowingPanel = ({
               </div>
 
               {/* 위치 정보 (클릭 시 섹션 이동) */}
-              <div className="border-t border-stone-100 pt-3 flex items-center justify-between gap-2">
+              <div className="border-t border-cloud-100 pt-3 flex items-center justify-between gap-2">
                 {fs.appearances.length > 0 &&
                 fs.appearances[0].sectionTitle &&
                 fs.appearances[0].sectionTitle !== "알 수 없음" &&
                 fs.appearances[0].documentId ? (
                   <button
-                    className="flex-1 flex items-center gap-1.5 text-[10px] text-stone-500 hover:text-sage-600 hover:bg-sage-50 px-2 py-1.5 rounded-lg transition-colors group/loc"
+                    className="flex-1 flex items-center gap-1.5 text-[10px] text-mocha-500 hover:text-sage-600 hover:bg-sage-50 px-2 py-1.5 rounded-lg transition-colors group/loc"
                     onClick={() =>
                       onNavigateToPosition?.(fs.appearances[0].documentId!)
                     }
                     title="해당 섹션으로 이동"
                   >
-                    <MapPin className="w-3 h-3 shrink-0 text-stone-300 group-hover/loc:text-sage-400 transition-colors" />
+                    <MapPin className="w-3 h-3 shrink-0 text-mocha-300 group-hover/loc:text-sage-400 transition-colors" />
                     <span className="truncate max-w-[120px] font-medium">
                       {fs.appearances[0].sectionTitle}
                     </span>

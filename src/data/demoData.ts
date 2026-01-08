@@ -313,7 +313,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["자비로움", "강인함", "희생적"],
+      personality: {
+        coreTraits: ["자비로움", "강인함", "희생적"],
+        flaws: ["과거의 죄책감"],
+        values: ["구원", "희생"],
+      },
       backstory:
         "빵 한 조각을 훔친 죄로 19년간 복역한 후, 미리엘 주교의 감화로 새 삶을 살기로 결심한 인물.",
       faction: {
@@ -337,7 +341,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["집요함", "원칙주의", "냉철함"],
+      personality: {
+        coreTraits: ["집요함", "원칙주의", "냉철함"],
+        flaws: ["융통성 부족"],
+        values: ["법과 질서"],
+      },
       backstory:
         "법과 질서를 맹신하며, 장발장을 평생 쫓는 형사. 법 앞에는 예외가 없다고 믿는다.",
       faction: {
@@ -361,7 +369,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "여성",
       race: "인간",
       mbti: null,
-      personality: ["모성애", "비극적", "순수함"],
+      personality: {
+        coreTraits: ["모성애", "비극적", "순수함"],
+        flaws: ["나약함"],
+        values: ["딸을 위한 희생"],
+      },
       backstory:
         "코제트를 부양하기 위해 모든 것을 희생하는 어머니. 사회의 부조리에 짓밟힌 비운의 여인.",
       faction: {
@@ -385,7 +397,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "여성",
       race: "인간",
       mbti: null,
-      personality: ["순수함", "희망적", "사랑스러움"],
+      personality: {
+        coreTraits: ["순수함", "희망적", "사랑스러움"],
+        flaws: ["세상 물정에 어두움"],
+        values: ["사랑", "가족"],
+      },
       backstory:
         "팡틴의 딸이자 장발장의 양녀. 어두운 과거를 뒤로하고 마리우스와 사랑에 빠진다.",
       faction: {
@@ -409,7 +425,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["이상주의", "열정적", "로맨틱"],
+      personality: {
+        coreTraits: ["이상주의", "열정적", "로맨틱"],
+        flaws: ["우유부단"],
+        values: ["자유", "사랑"],
+      },
       backstory:
         "공화주의 사상을 가진 청년. 혁명에 가담하지만 코제트와의 사랑으로 갈등한다.",
       faction: {
@@ -433,7 +453,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "여성",
       race: "인간",
       mbti: null,
-      personality: ["희생적", "질투", "비극적"],
+      personality: {
+        coreTraits: ["희생적", "질투", "비극적"],
+        flaws: ["짝사랑의 집착"],
+        values: ["진정한 사랑"],
+      },
       backstory:
         "테나르디에 부부의 딸. 어린 시절 코제트를 괴롭혔으나, 나중에 마리우스를 사랑하여 그를 위해 희생한다.",
       faction: {
@@ -457,7 +481,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["카리스마", "냉철함", "이상주의"],
+      personality: {
+        coreTraits: ["카리스마", "냉철함", "이상주의"],
+        flaws: ["감정 배제"],
+        values: ["자유", "평등"],
+      },
       backstory:
         "아베쎄(ABC) 벗들의 리더. 혁명에 자신의 모든 것을 바치는 열정적인 지도자.",
       faction: {
@@ -481,7 +509,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["탐욕스러움", "비열함", "기회주의"],
+      personality: {
+        coreTraits: ["탐욕스러움", "비열함", "기회주의"],
+        flaws: ["탐욕"],
+        values: ["돈", "자기 이익"],
+      },
       backstory:
         "돈을 위해서라면 무슨 짓이든 하는 악당. 워털루 전쟁 때 장교를 구했다는 거짓말로 훈장을 받았다.",
       faction: {
@@ -505,7 +537,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["용감함", "자유분방", "명랑함"],
+      personality: {
+        coreTraits: ["용감함", "자유분방", "명랑함"],
+        flaws: ["무모함"],
+        values: ["자유", "우정"],
+      },
       backstory:
         "파리의 부랑아. 테나르디에의 버려진 아들이며, 혁명군을 돕다 전사한다.",
       faction: {
@@ -529,7 +565,11 @@ export const DEMO_CHARACTERS: Character[] = [
       gender: "남성",
       race: "인간",
       mbti: null,
-      personality: ["성자", "자비로움", "검소함"],
+      personality: {
+        coreTraits: ["성자", "자비로움", "검소함"],
+        flaws: [],
+        values: ["신앙", "용서", "구원"],
+      },
       backstory:
         "디뉴의 주교. 장발장에게 은촛대를 주며 그를 구원하고 정직한 삶으로 인도한다.",
       faction: {

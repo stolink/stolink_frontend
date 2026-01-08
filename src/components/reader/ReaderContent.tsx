@@ -34,7 +34,7 @@ export const ReaderContent = forwardRef<HTMLDivElement, ReaderContentProps>(
       onPrev,
       onNext,
     },
-    ref
+    ref,
   ) {
     const styles = getThemeStyle(theme);
 
@@ -44,7 +44,7 @@ export const ReaderContent = forwardRef<HTMLDivElement, ReaderContentProps>(
         className={cn(
           "flex-1 overflow-y-auto transition-colors relative",
           styles.container,
-          viewMode === "book" && "cursor-pointer select-none"
+          viewMode === "book" && "cursor-pointer select-none",
         )}
       >
         {viewMode === "scroll" ? (
@@ -67,7 +67,7 @@ export const ReaderContent = forwardRef<HTMLDivElement, ReaderContentProps>(
         )}
       </main>
     );
-  }
+  },
 );
 
 interface ScrollModeContentProps {
@@ -95,13 +95,13 @@ function ScrollModeContent({
           <h2
             className={cn(
               "text-2xl font-heading font-bold mb-8 text-center",
-              titleColor
+              titleColor,
             )}
           >
             {chapter.title}
           </h2>
           <div
-            className="font-body leading-relaxed"
+            className=" leading-relaxed"
             style={{ lineHeight: "1.9" }}
             dangerouslySetInnerHTML={{
               __html: chapter.content.replace(/\n/g, "<br/><br/>"),
@@ -179,7 +179,7 @@ function BookModeContent({
 
         {/* 콘텐츠 (자동으로 좌→우 흐름) */}
         <div
-          className="font-body h-full"
+          className=" h-full"
           dangerouslySetInnerHTML={{
             __html: currentChapter.content.replace(/\n/g, "<br/><br/>"),
           }}
@@ -210,7 +210,7 @@ function ClickableZone({
       className={cn(
         "absolute top-0 bottom-0 w-1/2 cursor-pointer z-10",
         "hover:bg-black/5 transition-colors",
-        isLeft ? "left-0" : "right-0"
+        isLeft ? "left-0" : "right-0",
       )}
       onClick={onClick}
     >
@@ -219,7 +219,7 @@ function ClickableZone({
           className={cn(
             "absolute top-1/2 -translate-y-1/2 opacity-0 hover:opacity-100 transition-opacity",
             arrowColor,
-            isLeft ? "left-4" : "right-4"
+            isLeft ? "left-4" : "right-4",
           )}
         >
           <Arrow className="h-12 w-12" />

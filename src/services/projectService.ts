@@ -1,30 +1,8 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { Project, ProjectStats } from "@/types";
 
-export interface Project {
-  id: string;
-  title: string;
-  genre: string;
-  description?: string;
-  coverImage?: string;
-  status: "writing" | "completed";
-  author?: string;
-  extras?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  stats?: ProjectStats;
-}
-
-export interface ProjectStats {
-  totalCharacters: number;
-  totalWords: number;
-  chapterCount: number;
-  characterCount: number;
-  foreshadowingRecoveryRate: number;
-  consistencyScore: number;
-  writingDays?: number;
-  estimatedPages?: number;
-}
+export type { Project, ProjectStats };
 
 export interface ProjectListParams {
   status?: "writing" | "completed" | "all";

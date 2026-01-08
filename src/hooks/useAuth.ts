@@ -61,8 +61,9 @@ export function useLogin() {
         navigate("/library");
       }
     },
-    onError: (error) => {
-      console.error("Login Failed:", error);
+    onError: () => {
+      // Login failure is expected (wrong password, etc.) - no console log needed
+      // UI error is handled by the component
     },
   });
 }

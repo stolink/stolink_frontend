@@ -1,14 +1,36 @@
-# 환경 설정 로드
+#!/bin/sh
+# Husky commit-msg hook
+
+# 환경 설정 - PATH 확장
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
-# NVM 로드
-if [ -f "$HOME/.nvm/nvm.sh" ]; then
-  . "$HOME/.nvm/nvm.sh"
-elif [ -f "/opt/homebrew/opt/nvm/nvm.sh" ]; then
-  . "/opt/homebrew/opt/nvm/nvm.sh"
+# NVM 로드 (여러 경로 시도)
+load_nvm() {
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    . "$NVM_DIR/nvm.sh" --no-use >/dev/null 2>&1
+    nvm use >/dev/null 2>&1 || true
+    return 0
+  elif [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
+    . "/opt/homebrew/opt/nvm/nvm.sh" --no-use >/dev/null 2>&1
+    nvm use >/dev/null 2>&1 || true
+    return 0
+  fi
+  return 1
+}
+
+# NVM 로드 시도 (실패해도 계속 진행)
+load_nvm || true
+
+# Node 확인
+if ! command -v node >/dev/null 2>&1; then
+  # Homebrew node 직접 사용
+  if [ -x "/opt/homebrew/bin/node" ]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+  elif [ -x "/usr/local/bin/node" ]; then
+    export PATH="/usr/local/bin:$PATH"
+  fi
 fi
 
-# Zsh 설정 로드
-[ -f "$HOME/.zshrc" ] && . "$HOME/.zshrc" >/dev/null 2>&1
-
-npx --no -- commitlint --edit $1
+npx --no -- commitlint --edit "$1"
