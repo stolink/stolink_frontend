@@ -6,13 +6,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Users, Sparkles, Network, UserRound, X } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
-import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
-import type {
-  Character,
-  RelationshipLink,
-  DetailedRelationship,
-  CharacterNode,
-} from "@/types";
+
+import type { Character, RelationshipLink } from "@/types";
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import { roleLabels } from "./constants";
 
@@ -20,7 +15,6 @@ import {
   CharacterGraph,
   type CharacterGraphRef,
   AnalysisSummaryModal,
-  RelationshipEditDialog,
 } from "@/components/CharacterGraph";
 import {
   CharacterGraphCanvas,
@@ -116,14 +110,11 @@ export default function WorldPage() {
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
     null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
-  const [selectedRelationship, setSelectedRelationship] =
-    useState<DetailedRelationship | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
     UIRelationType | "all"
@@ -199,33 +190,8 @@ export default function WorldPage() {
       // Handle link deselection (if applicable, though usually clicking background just clears node selection)
       return;
     }
-    // Resolve source/target IDs (D3 replaces strings with objects)
-    const sourceId =
-      typeof link.source === "object"
-        ? (link.source as CharacterNode).id
-        : link.source;
-    const targetId =
-      typeof link.target === "object"
-        ? (link.target as CharacterNode).id
-        : link.target;
-
-    const detailedRel: DetailedRelationship = {
-      ...link, // id, strength, type, description, history, since, evolved_from, bidirectional
-      id: link.id,
-      target: String(targetId), // DetailedRelationship expects string ID
-      source: String(sourceId), // DetailedRelationship expects string ID
-      type: link.type, // RelationType is compatible with BackendRelationshipType
-      relationType: link.type,
-      strength: link.strength,
-
-      // Use mapped data from link (originally from DB)
-      description: link.description,
-      bidirectional: link.bidirectional,
-      evolvedFrom: link.evolvedFrom,
-      since: link.since,
-      history: link.history,
-    };
-    setSelectedRelationship(detailedRel);
+    // Link Click logic removed as we use internal Deep Analysis
+    console.log("Link clicked:", link);
   };
 
   return (
@@ -605,77 +571,6 @@ export default function WorldPage() {
           }
         }}
       />
-
-      <RelationshipDetailSheet
-        relationship={selectedRelationship}
-        isOpen={!!selectedRelationship}
-        onClose={() => setSelectedRelationship(null)}
-        sourceName={
-          characters.find(
-            (c) =>
-              (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
-          )?.profile?.name ||
-          (
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
-            ) as { name?: string }
-          )?.name ||
-          selectedRelationship?.source
-        }
-        targetName={
-          characters.find(
-            (c) =>
-              (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
-          )?.profile?.name ||
-          (
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
-            ) as { name?: string }
-          )?.name ||
-          selectedRelationship?.target
-        }
-        onEdit={() => setIsRelationshipEditOpen(true)}
-      />
-
-      {/* Relationship Edit Dialog */}
-      {projectId && selectedRelationship && (
-        <RelationshipEditDialog
-          key={selectedRelationship.id}
-          relationship={selectedRelationship}
-          isOpen={isRelationshipEditOpen}
-          onClose={() => setIsRelationshipEditOpen(false)}
-          onSave={() => {
-            // Refetch or update happens via React Query invalidation
-            // Close dialog
-            setIsRelationshipEditOpen(false);
-            // Optional: Close detailed sheet to reflect clean state or let it update?
-            // If data updates, DetailSheet might flicker or show old data until refetch.
-            // Better to close DetailSheet too?
-            setSelectedRelationship(null);
-          }}
-          projectId={projectId}
-          sourceName={
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
-            )?.profile?.name || selectedRelationship?.source
-          }
-          targetName={
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
-            )?.profile?.name || selectedRelationship?.target
-          }
-        />
-      )}
 
       {/* Analysis Result Summary Modal */}
       {analysisDiff && (

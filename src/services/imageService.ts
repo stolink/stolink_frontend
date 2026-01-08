@@ -27,6 +27,13 @@ export const imageService = {
     action: "create" | "edit",
     description: string,
     setting?: Record<string, unknown>,
+    additionalOptions?: {
+      visual_background?: string;
+      atmosphere?: string;
+      lighting?: string;
+      time_of_day?: string;
+      art_style?: string;
+    }
   ): Promise<{ jobId: string; status: string }> => {
     try {
       const response = await api.post<
@@ -36,6 +43,7 @@ export const imageService = {
         action,
         description,
         setting,
+        ...additionalOptions,
       });
 
       // Handle both wrapped (response.data.data) and flattened (response.data) formats
@@ -48,7 +56,7 @@ export const imageService = {
       if (!result || !result.jobId) {
         console.error(
           "[imageService] Invalid generation response:",
-          response.data,
+          response.data
         );
         throw new Error("Failed to get jobId from generation response");
       }
@@ -78,7 +86,7 @@ export const imageService = {
    * @returns Job status with image generation result
    */
   getImageJobStatus: async (
-    jobId: string,
+    jobId: string
   ): Promise<JobResponse<ImageGenerationResult>> => {
     let response;
     let retries = 3;
@@ -97,7 +105,7 @@ export const imageService = {
         // If 404, the job might not be indexed yet, retry
         if (axiosError.response?.status === 404 && retries > 1) {
           console.warn(
-            `[imageService] Job ${jobId} not found (404), retrying... (${retries - 1} left)`,
+            `[imageService] Job ${jobId} not found (404), retrying... (${retries - 1} left)`
           );
           await new Promise((resolve) => setTimeout(resolve, 1500));
           retries--;
@@ -132,7 +140,7 @@ export const imageService = {
     if (!rawData || !rawData.status) {
       console.error(
         "[imageService] Invalid job status response:",
-        response.data,
+        response.data
       );
       throw new Error("Invalid job status response");
     }

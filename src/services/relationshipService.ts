@@ -16,7 +16,8 @@ export interface Relationship {
   targetId: string;
   source?: { id: string; name?: string; [key: string]: unknown };
   target?: { id: string; name?: string; [key: string]: unknown };
-  type: RelationshipType;
+  types: RelationshipType[]; // Updated
+  type?: RelationshipType; // Deprecated
   strength: number; // 1-10
   description?: string;
   bidirectional?: boolean;
@@ -44,7 +45,7 @@ export interface BackendRelationship {
  */
 export function transformBackendRelationship(
   rel: BackendRelationship,
-  index: number,
+  index: number
 ): Relationship {
   return {
     id: `rel-${rel.source}-${rel.target}-${index}`,
@@ -60,8 +61,10 @@ export function transformBackendRelationship(
 export interface CreateRelationshipInput {
   sourceId: string;
   targetId: string;
-  type: RelationshipType;
+  types: RelationshipType[]; // Updated: List of types
   strength: number;
+  bidirectional?: boolean; // Added
+  description?: string; // Added
   extras?: Record<string, unknown>;
 }
 
@@ -76,14 +79,14 @@ export const relationshipService = {
   getAll: async () => {
     throw new Error(
       "GET /projects/{projectId}/relationships endpoint has been removed. " +
-        "Use characterService.getAll() and extract from character.relationships instead.",
+        "Use characterService.getAll() and extract from character.relationships instead."
     );
   },
 
   create: async (payload: CreateRelationshipInput) => {
     const response = await api.post<ApiResponse<Relationship>>(
       "/relationships",
-      payload,
+      payload
     );
     return response.data;
   },
@@ -91,14 +94,14 @@ export const relationshipService = {
   update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
     const response = await api.patch<ApiResponse<Relationship>>(
       `/relationships/${id}`,
-      payload,
+      payload
     );
     return response.data;
   },
 
   delete: async (id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/relationships/${id}`,
+      `/relationships/${id}`
     );
     return response.data;
   },

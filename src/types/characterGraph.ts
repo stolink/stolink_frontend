@@ -66,7 +66,9 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   id: string; // 생성: `${source}-${target}`
   source: string | CharacterNode;
   target: string | CharacterNode;
-  type: RelationType; // from relation_type
+  type: RelationType; // @deprecated Use relationTypes[0] or primaryType
+  relationTypes?: RelationType[]; // New multi-type support
+  primaryType?: RelationType; // Main type for coloring if needed
   strength: number;
   label?: string; // Legacy alias for description
   description?: string;

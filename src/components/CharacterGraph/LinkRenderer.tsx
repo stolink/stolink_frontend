@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number },
+    coords?: { x: number; y: number }
   ) => void;
   onClick?: (link: RelationshipLink) => void;
   /** 네트워크 붕괴 시각화를 위한 변경 상태 */
@@ -217,11 +217,46 @@ export const LinkRenderer = memo(function LinkRenderer({
 
         {/* 화살표 마커 Removed */}
 
+        {/* Super Edge Gradient (Heartbeat Intertwined) */}
+        {link.segments && link.segments.length > 1 && (
+          <linearGradient
+            id={`super-edge-${link.id}`}
+            gradientUnits="userSpaceOnUse"
+            x1={source.x}
+            y1={source.y}
+            x2={target.x}
+            y2={target.y}
+          >
+            {(() => {
+              // Create repeating pattern of colors
+              const colors = link.segments.map((s) =>
+                getRelationshipColor(s.type as UIRelationType, link.strength)
+              );
+              // Intertwine them: A -> B -> C -> A -> B ...
+              const stops = [];
+              const numPeats = 3; // How many times pattern repeats
+              const totalStops = colors.length * numPeats;
+
+              for (let i = 0; i <= totalStops; i++) {
+                const colorIndex = i % colors.length;
+                stops.push(
+                  <stop
+                    key={i}
+                    offset={`${(i / totalStops) * 100}%`}
+                    stopColor={colors[colorIndex]}
+                  />
+                );
+              }
+              return stops;
+            })()}
+          </linearGradient>
+        )}
+
         {/* 글로우 필터 */}
         <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation={isActive ? 4 : 2} result="blur" />
           <feFlood
-            floodColor={primaryColor}
+            floodColor={link.segments ? "#ffffff" : primaryColor} // White glow for multi-color
             floodOpacity={isActive ? 0.6 : 0.3}
           />
           <feComposite in2="blur" operator="in" />
@@ -309,7 +344,11 @@ export const LinkRenderer = memo(function LinkRenderer({
       <path
         className="link-path"
         fill="none"
-        stroke={primaryColor}
+        stroke={
+          link.segments && link.segments.length > 1
+            ? `url(#super-edge-${link.id})`
+            : primaryColor
+        }
         strokeWidth={strokeWidth}
         // 기본 0.5 이상 유지하여 "너무 연해지지 않도록"
         strokeOpacity={isFiltered ? 0.05 : isDimmed ? 0.1 : 0.6}

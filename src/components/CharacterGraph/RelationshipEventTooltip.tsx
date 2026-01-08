@@ -25,6 +25,7 @@ interface RelationshipEventTooltipProps {
   onMouseLeave?: () => void;
   // Added props for DB data
   type: UIRelationType;
+  types?: UIRelationType[]; // Added for multi-type support
   strength: number;
   description?: string;
   /** 전체 카드 클릭 시 심층 분석 모달 열기 */
@@ -42,7 +43,9 @@ export function RelationshipEventTooltip({
   onEventClick,
   onMouseEnter,
   onMouseLeave,
+  onMouseLeave,
   type,
+  types,
   strength,
   description,
   onOpenDeepAnalysis,
@@ -93,17 +96,36 @@ export function RelationshipEventTooltip({
           {/* Main Stats from DB */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Badge
-                className={cn(
-                  "px-2 py-0.5 text-xs font-medium capitalize text-white"
-                )}
-                style={{
-                  backgroundColor: getRelationshipColor(type, strength),
-                  borderColor: getRelationshipColor(type, strength),
-                }}
-              >
-                {type}
-              </Badge>
+              {types && types.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {types.map((t, idx) => (
+                    <Badge
+                      key={idx}
+                      className={cn(
+                        "px-2 py-0.5 text-xs font-medium capitalize text-white"
+                      )}
+                      style={{
+                        backgroundColor: getRelationshipColor(t, strength),
+                        borderColor: getRelationshipColor(t, strength),
+                      }}
+                    >
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <Badge
+                  className={cn(
+                    "px-2 py-0.5 text-xs font-medium capitalize text-white"
+                  )}
+                  style={{
+                    backgroundColor: getRelationshipColor(type, strength),
+                    borderColor: getRelationshipColor(type, strength),
+                  }}
+                >
+                  {type}
+                </Badge>
+              )}
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold text-espresso-400">
                   Strength

@@ -67,11 +67,11 @@ export function CharacterPortraitPanel({
           <img
             src={character.imageUrl}
             alt={character.name}
-            className="w-20 h-20 rounded-full object-cover border-2 border-cloud-200 shadow-md"
+            className="w-32 h-32 rounded-full object-cover border-4 border-cloud-200 shadow-md"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border-2 border-cloud-200 shadow-md">
-            <span className="text-2xl font-bold text-white font-serif">
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border-4 border-cloud-200 shadow-md">
+            <span className="text-4xl font-bold text-white font-serif">
               {getInitials(character.name)}
             </span>
           </div>
@@ -81,7 +81,7 @@ export function CharacterPortraitPanel({
         <div
           className={cn(
             "absolute inset-0 rounded-full animate-pulse",
-            isLeft ? "ring-2 ring-teal-500/30" : "ring-2 ring-rose-500/30",
+            isLeft ? "ring-2 ring-teal-500/30" : "ring-2 ring-rose-500/30"
           )}
           style={{ animationDelay: `${animationDelay}s` }}
         />

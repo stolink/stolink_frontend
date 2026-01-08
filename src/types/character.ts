@@ -119,7 +119,8 @@ export interface CharacterPersonality {
  */
 export interface CharacterRelation {
   target: string;
-  type: RelationType | string; // String for flexibility with new types
+  type: RelationType | string; // @deprecated Use relationTypes
+  relationTypes?: string[]; // New: Multiple relation types
   history: string | null;
   strength: number;
   description: string;
@@ -290,7 +291,7 @@ export function getCharacterFaction(char: Character): string {
  * 관계 배열을 가져오는 헬퍼 (레거시 호환)
  */
 export function getCharacterRelationships(
-  char: Character,
+  char: Character
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }

@@ -71,7 +71,7 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
@@ -92,13 +92,13 @@ export default function CharacterDetailDialog({
     if (displayCharacter) {
       console.log(
         "[CharacterDetailDialog] displayCharacter imageUrl:",
-        displayCharacter.imageUrl,
+        displayCharacter.imageUrl
       );
     }
     if (fetchedCharacter) {
       console.log(
         "[CharacterDetailDialog] fetchedCharacter imageUrl:",
-        fetchedCharacter.imageUrl,
+        fetchedCharacter.imageUrl
       );
     }
   }, [displayCharacter, fetchedCharacter, isOpen, character]);
@@ -111,7 +111,7 @@ export default function CharacterDetailDialog({
 
   // Watch for global image job completion
   const isGlobalAnalyzing = useAnalysisBufferStore(
-    (state) => state.isAnalyzing,
+    (state) => state.isAnalyzing
   );
 
   // Image generation polling
@@ -134,7 +134,7 @@ export default function CharacterDetailDialog({
     });
 
   const currentJobType = useAnalysisBufferStore(
-    (state) => state.currentJobType,
+    (state) => state.currentJobType
   );
 
   // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
@@ -144,7 +144,7 @@ export default function CharacterDetailDialog({
       // Job finished - add delay to ensure animation is visible
       const timer = setTimeout(async () => {
         console.log(
-          "[CharacterDetailDialog] Global image job finished. Refetching character data.",
+          "[CharacterDetailDialog] Global image job finished. Refetching character data."
         );
         // Use refetchQueries instead of invalidateQueries for immediate data refresh
         await queryClient.refetchQueries({ queryKey: ["characters"] });
@@ -176,7 +176,7 @@ export default function CharacterDetailDialog({
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id,
+    character?._id
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -201,7 +201,7 @@ export default function CharacterDetailDialog({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter, // displayCharacter 사용
+    displayCharacter // displayCharacter 사용
   );
 
   // 캐릭터의 이벤트(일대기) 조회
@@ -209,7 +209,7 @@ export default function CharacterDetailDialog({
     displayCharacter?._id ?? null,
     {
       enabled: !!displayCharacter?._id && isOpen,
-    },
+    }
   );
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
@@ -226,7 +226,7 @@ export default function CharacterDetailDialog({
             // Deduplicate and filter valid settings to prevent key collisions
             const validSettings = res.data.filter((s) => s && s.id);
             const uniqueSettings = Array.from(
-              new Map(validSettings.map((s) => [s.id, s])).values(),
+              new Map(validSettings.map((s) => [s.id, s])).values()
             );
             setSettings(uniqueSettings);
           }
@@ -241,7 +241,7 @@ export default function CharacterDetailDialog({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>,
+      settingOverride?: Record<string, unknown>
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -258,7 +258,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -307,41 +307,56 @@ export default function CharacterDetailDialog({
           action,
         });
 
+        // Extract precise prompt fields from setting if available (for backend to use directly)
+        const additionalOptions = selectedSetting
+          ? {
+              visual_background: selectedSetting.visual_background,
+              atmosphere: selectedSetting.atmosphere,
+              lighting: selectedSetting.lighting,
+              time_of_day: selectedSetting.time_of_day,
+              art_style: selectedSetting.art_style,
+            }
+          : undefined;
+
         const { jobId } = await imageService.generateCharacterImage(
           character.projectId,
           character._id,
           action,
           generatedPrompt,
           selectedSetting as unknown as Record<string, unknown>,
+          additionalOptions
         );
 
         console.log(
           "[CharacterDetailDialog] -> CHARACTER IMAGE JOB STARTED:",
-          jobId,
+          jobId
         );
         setImageJobId(jobId);
-      setGlobalJobId(jobId, "image");
-      toast({
-        title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
-        description: "잠시만 기다려 주세요.",
-      });
-    } catch (err: unknown) {
-      console.error("[CharacterDetailDialog] Image generation failed:", err);
-      toast({
-        variant: "destructive",
-        title: "실패",
-        description: "이미지 생성 요청 중 오류가 발생했습니다.",
-      });
-    }
-  }, [
-    character,
-    displayCharacter,
-    settings,
-    selectedSettingId,
-    manualPrompt,
-    toast,
-    setGlobalJobId,
-  ]);
+        setGlobalJobId(jobId, "image");
+        toast({
+          title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
+          description: "잠시만 기다려 주세요.",
+        });
+      } catch (err: unknown) {
+        console.error("[CharacterDetailDialog] Image generation failed:", err);
+        toast({
+          variant: "destructive",
+          title: "실패",
+          description: "이미지 생성 요청 중 오류가 발생했습니다.",
+        });
+      }
+    },
+    [
+      character,
+      displayCharacter,
+      settings,
+      selectedSettingId,
+      manualPrompt,
+      toast,
+      setGlobalJobId,
+      additionalOptions,
+    ]
+  );
 
   const handleEdit = useCallback(() => {
     setIsEditMode(true);
@@ -364,7 +379,7 @@ export default function CharacterDetailDialog({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance,
+      editedCharacter.appearance
     );
 
     if (onSave) {
@@ -386,7 +401,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    [],
+    []
   );
 
   const handleAppearanceChange = useCallback(
@@ -402,7 +417,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    [],
+    []
   );
 
   if (!character) {
@@ -578,7 +593,7 @@ export default function CharacterDetailDialog({
                             className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) => setManualPrompt(e.target.value)}
                           />
                         </div>
@@ -648,7 +663,7 @@ export default function CharacterDetailDialog({
                                   >
                                     #{trait}
                                   </span>
-                                ),
+                                )
                               )}
                             </div>
                           </div>
@@ -695,11 +710,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.occupation || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -720,11 +735,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
@@ -745,11 +760,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.family || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>,
+                              e: React.ChangeEvent<HTMLInputElement>
                             ) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value,
+                                e.target.value
                               )
                             }
                             className="mt-1"
