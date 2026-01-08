@@ -11,6 +11,7 @@ import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import { cn } from "@/lib/utils";
 import type { Character, CharacterNode, RelationshipLink } from "@/types";
+import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
@@ -24,8 +25,11 @@ import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 import { NetworkControls } from "./NetworkControls";
 import { CharacterSearchOverlay } from "./CharacterSearchOverlay";
 import { TimelineSlider } from "./TimelineSlider";
+import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
+import { generateMockAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
 export { RelationshipEditDialog } from "./RelationshipEditDialog";
 export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
+export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -87,6 +91,10 @@ export const CharacterGraph = forwardRef<
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension, setShowTension] = useState(false);
     const [showLogicCheck, setShowLogicCheck] = useState(false);
+
+    // --- Deep Analysis Modal State ---
+    const [deepAnalysisData, setDeepAnalysisData] =
+      useState<RelationshipDeepAnalysisData | null>(null);
 
     // --- Timeline State (4D Visualization) ---
     const [currentChapter, setCurrentChapter] = useState(1);
@@ -741,6 +749,35 @@ export const CharacterGraph = forwardRef<
       [],
     );
 
+    // Handle opening deep analysis modal
+    const handleOpenDeepAnalysis = useCallback((link: RelationshipLink) => {
+      const sourceNode =
+        typeof link.source === "object" ? (link.source as CharacterNode) : null;
+      const targetNode =
+        typeof link.target === "object" ? (link.target as CharacterNode) : null;
+
+      if (!sourceNode || !targetNode) return;
+
+      // Generate mock data for now (replace with real API call later)
+      const mockData = generateMockAnalysisData(
+        {
+          id: sourceNode.id,
+          name: sourceNode.name,
+          imageUrl: sourceNode.imageUrl,
+        },
+        {
+          id: targetNode.id,
+          name: targetNode.name,
+          imageUrl: targetNode.imageUrl,
+        },
+        link.type as string,
+        link.strength,
+      );
+
+      setDeepAnalysisData(mockData);
+      setHoveredLinkData(null); // Close tooltip
+    }, []);
+
     // Search Highlighting Logic
     // null/undefined = 검색 비활성 (일반 모드)
     // [] = 검색 활성이나 결과 없음 (모두 딤 처리)
@@ -1137,6 +1174,9 @@ export const CharacterGraph = forwardRef<
               // Close when leaving tooltip
               setHoveredLinkData(null);
             }}
+            onOpenDeepAnalysis={() =>
+              handleOpenDeepAnalysis(hoveredLinkData.link)
+            }
           />
         )}
 
@@ -1198,6 +1238,13 @@ export const CharacterGraph = forwardRef<
             onSearch={handleSearchChange}
           />
         )}
+
+        {/* 관계 심층 분석 모달 */}
+        <RelationshipDeepAnalysisModal
+          isOpen={deepAnalysisData !== null}
+          onClose={() => setDeepAnalysisData(null)}
+          data={deepAnalysisData}
+        />
       </div>
     );
   },
