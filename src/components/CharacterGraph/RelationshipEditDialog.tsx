@@ -131,12 +131,6 @@ export function RelationshipEditDialog({
                 <SelectItem value="friendly">Friendly (우호적)</SelectItem>
                 <SelectItem value="hostile">Hostile (적대적)</SelectItem>
                 <SelectItem value="romantic">Romantic (로맨틱)</SelectItem>
-                <SelectItem value="family">Family (자매/형제/가족)</SelectItem>
-                <SelectItem value="neutral">Neutral (중립)</SelectItem>
-                <SelectItem value="ally">Ally (동맹)</SelectItem>
-                <SelectItem value="rival">Rival (라이벌)</SelectItem>
-                <SelectItem value="enemy">Enemy (적)</SelectItem>
-                <SelectItem value="mentor">Mentor (멘토)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -64,9 +64,6 @@ const RELATION_TYPE_WEIGHTS: Record<UIRelationType, number> = {
   hostile: 1.2, // 갈등의 중심
   romantic: 1.1, // 서사적 중요도
   friendly: 1.0, // 기본
-  mentor: 1.1,
-  family: 1.0,
-  rival: 1.1,
 };
 
 // 비트 유형별 가중치

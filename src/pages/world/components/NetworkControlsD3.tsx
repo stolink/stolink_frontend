@@ -19,9 +19,6 @@ const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <Users className="w-2.5 h-2.5" />,
   hostile: <Skull className="w-2.5 h-2.5" />,
   romantic: <Heart className="w-2.5 h-2.5" />,
-  mentor: <Layers className="w-2.5 h-2.5" />,
-  family: <Users className="w-2.5 h-2.5" />,
-  rival: <Skull className="w-2.5 h-2.5" />,
 };
 
 interface NetworkControlsD3Props {
