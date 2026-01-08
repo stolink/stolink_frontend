@@ -92,7 +92,7 @@ export default function SharedProjectPage() {
 
   if (!shareId) {
     return (
-      <div className="h-screen flex items-center justify-center bg-paper text-stone-500">
+      <div className="h-screen flex items-center justify-center bg-paper text-espresso-500">
         잘못된 접근입니다. (공유 ID 누락)
       </div>
     );
@@ -133,10 +133,10 @@ export default function SharedProjectPage() {
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
                 <AlertCircle className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900">
+              <h2 className="text-xl font-bold text-espresso-900">
                 접근이 제한된 작품입니다
               </h2>
-              <p className="text-stone-500">
+              <p className="text-espresso-500">
                 이 작품을 보려면 비밀번호를 입력하세요.
               </p>
             </div>
@@ -159,7 +159,7 @@ export default function SharedProjectPage() {
     }
 
     return (
-      <div className="h-screen flex items-center justify-center bg-paper text-stone-500">
+      <div className="h-screen flex items-center justify-center bg-paper text-espresso-500">
         <div className="text-center">
           <p className="mb-4">작품을 불러올 수 없습니다.</p>
           <Button onClick={() => window.location.reload()}>다시 시도</Button>
@@ -171,12 +171,12 @@ export default function SharedProjectPage() {
   // If no readable chapters found
   if (chapters.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center bg-paper text-stone-500">
+      <div className="h-screen flex items-center justify-center bg-paper text-espresso-500">
         <div className="text-center">
-          <div className="w-16 h-16 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-cloud-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">📭</span>
           </div>
-          <h2 className="text-xl font-bold text-stone-800 mb-2">
+          <h2 className="text-xl font-bold text-espresso-800 mb-2">
             내용이 없습니다
           </h2>
           <p className="mb-4">이 작품에는 아직 읽을 수 있는 문서가 없습니다.</p>

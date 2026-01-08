@@ -68,15 +68,6 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
     reason?: string;
     date?: string;
   }[];
-  /** Chapter where this relationship was first revealed (for 4D Timeline) */
-  revealedInChapter?: number;
-  /** Algorithmic Insights: Logic Check (contradiction detected) */
-  logicCheck?: {
-    isContradictory: boolean;
-    reason: string;
-  };
-  /** Algorithmic Insights: Tension Heatmap (1-10) */
-  tensionScore?: number;
 }
 
 /**

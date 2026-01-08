@@ -185,7 +185,7 @@ export function CharacterRelationships({
 
                     <div className="flex-1 min-w-0 pt-0.5">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-base font-bold text-stone-800 truncate group-hover:text-primary transition-colors">
+                        <h4 className="text-base font-bold text-espresso-800 truncate group-hover:text-primary transition-colors">
                           {rel.name}
                         </h4>
                       </div>

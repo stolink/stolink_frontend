@@ -128,7 +128,6 @@ export const useManuscriptJobStore = create<ManuscriptJobState>()(
 
       removeJob: (projectId) =>
         set((state) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [projectId]: _, ...rest } = state.jobs;
           return { jobs: rest };
         }),

@@ -37,11 +37,11 @@ export function NodePreviewCard({ character, position }: NodePreviewCardProps) {
         top: adjustedY,
       }}
     >
-      <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-stone-200 overflow-hidden w-[280px]">
+      <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-cloud-200 overflow-hidden w-[280px]">
         {/* 헤더: 이미지 + 기본 정보 */}
-        <div className="flex items-start gap-3 p-3 bg-stone-50/50">
+        <div className="flex items-start gap-3 p-3 bg-cloud-50/50">
           {/* 아바타 - 이니셜 기반 with 그라데이션 */}
-          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-stone-200 shadow-sm">
+          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-cloud-200 shadow-sm">
             {character.imageUrl ? (
               <img
                 src={character.imageUrl}
@@ -65,7 +65,7 @@ export function NodePreviewCard({ character, position }: NodePreviewCardProps) {
           {/* 이름, 역할, 진영 */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-stone-900 truncate">
+              <h3 className="font-bold text-espresso-900 truncate">
                 {character.profile?.name || "이름 없음"}
               </h3>
               {/* 상태 배지 */}
@@ -86,7 +86,7 @@ export function NodePreviewCard({ character, position }: NodePreviewCardProps) {
                 {ROLE_LABELS[character.role || "other"] || character.role}
               </span>
               {character.profile?.faction?.name && (
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-espresso-500">
                   {character.profile.faction.name}
                 </span>
               )}
@@ -97,14 +97,14 @@ export function NodePreviewCard({ character, position }: NodePreviewCardProps) {
         {/* 성격 키워드 */}
         {character.personality?.coreTraits &&
           character.personality.coreTraits.length > 0 && (
-            <div className="px-3 py-2 border-t border-stone-100">
+            <div className="px-3 py-2 border-t border-cloud-100">
               <div className="flex flex-wrap gap-1">
                 {character.personality.coreTraits
                   .slice(0, 3)
                   .map((trait, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] px-2 py-0.5 bg-stone-100 text-stone-600 rounded-full"
+                      className="text-[10px] px-2 py-0.5 bg-cloud-100 text-espresso-600 rounded-full"
                     >
                       {trait}
                     </span>
@@ -115,8 +115,8 @@ export function NodePreviewCard({ character, position }: NodePreviewCardProps) {
 
         {/* 관계 수 */}
         {character.relations?.graph && character.relations.graph.length > 0 && (
-          <div className="px-3 py-2 border-t border-stone-100 bg-stone-50/50">
-            <div className="flex items-center gap-3 text-xs text-stone-600">
+          <div className="px-3 py-2 border-t border-cloud-100 bg-cloud-50/50">
+            <div className="flex items-center gap-3 text-xs text-espresso-600">
               <span>
                 관계{" "}
                 <strong className="text-mocha-600">

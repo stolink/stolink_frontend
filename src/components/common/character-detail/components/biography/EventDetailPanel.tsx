@@ -51,10 +51,10 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
         exit="exit"
         className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-md"
       >
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-stone-200 shadow-lg overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-cloud-200 shadow-lg overflow-hidden">
           {/* 헤더 */}
           <div
-            className="px-4 py-3 border-b border-stone-100 flex items-center justify-between"
+            className="px-4 py-3 border-b border-cloud-100 flex items-center justify-between"
             style={{
               background: `linear-gradient(135deg, ${config.accentColor}15, transparent)`,
             }}
@@ -96,7 +96,7 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
             <Button
               intent="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full hover:bg-stone-100"
+              className="h-7 w-7 rounded-full hover:bg-cloud-100"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -111,12 +111,12 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
             </h4>
 
             {/* 설명 */}
-            <p className="text-sm text-stone-600 leading-relaxed">
+            <p className="text-sm text-espresso-600 leading-relaxed">
               {event.description}
             </p>
 
             {/* 메타 정보 */}
-            <div className="flex flex-wrap gap-3 pt-2 text-xs text-stone-500">
+            <div className="flex flex-wrap gap-3 pt-2 text-xs text-espresso-500">
               {/* 참여 캐릭터 */}
               {event.participants.length > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -136,8 +136,8 @@ export function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
 
             {/* 시각적 장면 설명 (있는 경우) */}
             {event.visualScene && (
-              <div className="mt-3 p-3 bg-stone-50 rounded-lg">
-                <p className="text-xs text-stone-500 italic">
+              <div className="mt-3 p-3 bg-cloud-50 rounded-lg">
+                <p className="text-xs text-espresso-500 italic">
                   &ldquo;{event.visualScene}&rdquo;
                 </p>
               </div>

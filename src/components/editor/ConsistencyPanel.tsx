@@ -93,7 +93,7 @@ export default function ConsistencyPanel() {
             <AlertTriangle className="w-3.5 h-3.5" />
             오류 {errorCount}
           </div>
-          <div className="w-px h-6 bg-stone-200" />
+          <div className="w-px h-6 bg-cloud-200" />
           <div
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
@@ -105,7 +105,7 @@ export default function ConsistencyPanel() {
             <AlertTriangle className="w-3.5 h-3.5" />
             경고 {warningCount}
           </div>
-          <div className="w-px h-6 bg-stone-200" />
+          <div className="w-px h-6 bg-cloud-200" />
           <div
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",

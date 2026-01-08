@@ -101,7 +101,7 @@ export function ForeshadowingPanel({
             "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 border",
             activeStatus === "pending"
               ? "bg-mocha-500 text-white border-mocha-500 shadow-paper-floating"
-              : "text-stone-500 border-transparent hover:bg-cloud-100",
+              : "text-espresso-500 border-transparent hover:bg-cloud-100",
           )}
         >
           <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export function ForeshadowingPanel({
             "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 border",
             activeStatus === "recovered"
               ? "bg-emerald-500 text-white border-emerald-500 shadow-paper-floating"
-              : "text-stone-500 border-transparent hover:bg-cloud-100",
+              : "text-espresso-500 border-transparent hover:bg-cloud-100",
           )}
         >
           <div className="flex items-center gap-3">
@@ -172,13 +172,15 @@ export function ForeshadowingPanel({
         </button>
 
         <div className="mt-auto pt-4 border-t border-cloud-100">
-          <div className="text-[10px] text-stone-400 uppercase tracking-widest mb-3 px-2 font-bold">
+          <div className="text-[10px] text-espresso-400 uppercase tracking-widest mb-3 px-2 font-bold">
             통계
           </div>
           <div className="p-3 bg-white border border-cloud-100 rounded-xl shadow-paper">
             <div className="flex items-center justify-between text-[10px] font-bold uppercase">
-              <span className="text-stone-400">총 복선</span>
-              <span className="text-stone-900">{allForeshadowings.length}</span>
+              <span className="text-espresso-400">총 복선</span>
+              <span className="text-espresso-900">
+                {allForeshadowings.length}
+              </span>
             </div>
             <div className="mt-3 h-1.5 bg-cloud-100 rounded-full overflow-hidden">
               <div
@@ -314,7 +316,7 @@ export function ForeshadowingPanel({
                               "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all",
                               appearance.isRecovery
                                 ? "bg-emerald-100 text-emerald-600"
-                                : "bg-stone-100 text-stone-500 group-hover/item:bg-primary/10 group-hover/item:text-primary",
+                                : "bg-cloud-100 text-espresso-500 group-hover/item:bg-primary/10 group-hover/item:text-primary",
                             )}
                           >
                             {appearance.isRecovery ? (
@@ -324,19 +326,19 @@ export function ForeshadowingPanel({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-stone-700 truncate group-hover/item:text-primary transition-colors">
+                            <p className="text-sm font-medium text-espresso-700 truncate group-hover/item:text-primary transition-colors">
                               {appearance.sectionTitle ||
                                 appearance.chapterTitle ||
                                 "알 수 없음"}
                             </p>
-                            <p className="text-[11px] text-stone-400 mt-0.5">
+                            <p className="text-[11px] text-espresso-400 mt-0.5">
                               {appearance.isRecovery
                                 ? "복선 회수 시점"
                                 : "최초 등장"}
                             </p>
                           </div>
                           {appearance.documentId && onNavigateToSection && (
-                            <ArrowRight className="w-4 h-4 text-stone-300 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all shrink-0" />
+                            <ArrowRight className="w-4 h-4 text-espresso-300 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all shrink-0" />
                           )}
                         </button>
                       ))}

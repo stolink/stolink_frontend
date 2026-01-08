@@ -87,7 +87,7 @@ export function CreateBookModal({
               <h3 className="text-lg font-bold text-espresso-900 group-hover:text-mocha-700 transition-colors">
                 {isCreating ? "생성 중..." : "빈 문서로 시작"}
               </h3>
-              <p className="text-sm text-stone-500 mt-1.5 leading-relaxed">
+              <p className="text-sm text-espresso-500 mt-1.5 leading-relaxed">
                 새로운 이야기를 시작하세요
               </p>
             </div>
@@ -135,7 +135,7 @@ export function CreateBookModal({
               <h3 className="text-lg font-bold text-espresso-900 group-hover:text-sage-700 transition-colors">
                 기존 원고 불러오기
               </h3>
-              <p className="text-sm text-stone-500 mt-1.5 leading-relaxed">
+              <p className="text-sm text-espresso-500 mt-1.5 leading-relaxed">
                 TXT, MD 파일 지원
               </p>
             </div>

@@ -70,7 +70,7 @@ export function ConflictAlertOverlay({
                 <motion.div
                   animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
-                  className="absolute -inset-6 bg-stone-400/20 rounded-full"
+                  className="absolute -inset-6 bg-cloud-400/20 rounded-full"
                 />
 
                 {/* Floating Icon (No Card Background) */}
@@ -83,20 +83,20 @@ export function ConflictAlertOverlay({
                   }}
                   className="relative"
                 >
-                  <BookOpen className="w-16 h-16 text-stone-700 drop-shadow-lg" />
+                  <BookOpen className="w-16 h-16 text-espresso-700 drop-shadow-lg" />
                 </motion.div>
 
                 {/* Spinner Badge */}
-                <div className="absolute -bottom-2 -right-2 bg-stone-800 rounded-full p-2 shadow-lg ring-4 ring-white/30">
+                <div className="absolute -bottom-2 -right-2 bg-espresso-800 rounded-full p-2 shadow-lg ring-4 ring-white/30">
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 </div>
               </div>
 
               <div className="text-center">
-                <h3 className="text-3xl font-bold text-stone-800 mb-2 tracking-tight drop-shadow-sm">
+                <h3 className="text-3xl font-bold text-espresso-800 mb-2 tracking-tight drop-shadow-sm">
                   개연성 분석 중
                 </h3>
-                <p className="text-lg text-stone-600 font-medium opacity-80">
+                <p className="text-lg text-espresso-600 font-medium opacity-80">
                   잠시만 기다려주세요...
                 </p>
               </div>
@@ -149,7 +149,7 @@ export function ConflictAlertOverlay({
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="text-4xl font-bold text-stone-800 mb-3 tracking-tight drop-shadow-sm"
+                  className="text-4xl font-bold text-espresso-800 mb-3 tracking-tight drop-shadow-sm"
                 >
                   분석 완료!
                 </motion.h3>

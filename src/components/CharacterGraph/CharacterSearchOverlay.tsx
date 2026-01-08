@@ -164,9 +164,9 @@ export function CharacterSearchOverlay({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={clearSearch}
-                className="absolute right-3 p-1 rounded-full hover:bg-stone-100 transition-colors"
+                className="absolute right-3 p-1 rounded-full hover:bg-cloud-100 transition-colors"
               >
-                <X className="h-4 w-4 text-stone-400" />
+                <X className="h-4 w-4 text-espresso-400" />
               </motion.button>
             )}
           </AnimatePresence>
@@ -174,8 +174,8 @@ export function CharacterSearchOverlay({
 
         {/* Keyboard shortcut hint */}
         {!isFocused && !query && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 pointer-events-none">
-            <kbd className="px-1.5 py-0.5 bg-stone-100 rounded text-[10px] ">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-espresso-400 pointer-events-none">
+            <kbd className="px-1.5 py-0.5 bg-cloud-100 rounded text-[10px] ">
               ⌘K
             </kbd>
           </div>
@@ -324,11 +324,11 @@ export function CharacterSearchOverlay({
             exit={{ opacity: 0, y: -10 }}
             className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 shadow-xl p-4 text-center"
           >
-            <p className="text-stone-500 text-sm">
-              "<span className="font-medium text-stone-700">{query}</span>"에
+            <p className="text-espresso-500 text-sm">
+              "<span className="font-medium text-espresso-700">{query}</span>"에
               해당하는 캐릭터가 없습니다
             </p>
-            <p className="text-stone-400 text-xs mt-1">
+            <p className="text-espresso-400 text-xs mt-1">
               초성 검색도 지원합니다 (예: ㅈㅂㅈ)
             </p>
           </motion.div>

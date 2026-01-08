@@ -29,12 +29,7 @@ import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
-import {
-  imageService,
-  settingService,
-  eventService,
-  type ProjectSetting,
-} from "@/services";
+import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -74,7 +69,7 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
@@ -118,12 +113,12 @@ export default function CharacterDetailDialog({
       onTimeout: () => {
         setImageJobId(null);
       },
-    }
+    },
   );
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -147,19 +142,16 @@ export default function CharacterDetailDialog({
   }
 
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   // 캐릭터의 이벤트(일대기) 조회
-  const {
-    data: characterEvents = [],
-    isLoading: isEventsLoading,
-    isError: isEventsError,
-    error: eventsError,
-    fetchStatus: eventsFetchStatus,
-  } = useCharacterEvents(displayCharacter?._id ?? null, {
-    enabled: !!displayCharacter?._id && isOpen,
-  });
+  const { data: characterEvents = [] } = useCharacterEvents(
+    displayCharacter?._id ?? null,
+    {
+      enabled: !!displayCharacter?._id && isOpen,
+    },
+  );
 
   const { toast } = useToast();
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
@@ -176,7 +168,7 @@ export default function CharacterDetailDialog({
             // Deduplicate and filter valid settings to prevent key collisions
             const validSettings = res.data.filter((s) => s && s.id);
             const uniqueSettings = Array.from(
-              new Map(validSettings.map((s) => [s.id, s])).values()
+              new Map(validSettings.map((s) => [s.id, s])).values(),
             );
             setSettings(uniqueSettings);
           }
@@ -191,7 +183,7 @@ export default function CharacterDetailDialog({
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -208,7 +200,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -256,7 +248,7 @@ export default function CharacterDetailDialog({
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>
+          selectedSetting as unknown as Record<string, unknown>,
         );
 
         setImageJobId(jobId);
@@ -279,7 +271,7 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
-    ]
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -303,7 +295,7 @@ export default function CharacterDetailDialog({
     // Compare appearance to detect changes for image update
     const hasAppearanceChanged = !isEqual(
       character?.appearance,
-      editedCharacter.appearance
+      editedCharacter.appearance,
     );
 
     if (onSave) {
@@ -325,7 +317,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -341,7 +333,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
@@ -373,7 +365,7 @@ export default function CharacterDetailDialog({
             {/* Primary Tone (Mocha/Warm) */}
             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-b from-primary/10 to-orange-100/20 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
             {/* Neutral Warm Stone */}
-            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-stone-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-cloud-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
             {/* Soft Cloud Highlight */}
             <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-[#F5F5F0]/30 rounded-full blur-[80px] mix-blend-overlay animate-pulse-slow delay-1000" />
           </div>
@@ -476,15 +468,15 @@ export default function CharacterDetailDialog({
                           <Wand2 className="w-6 h-6 animate-pulse-slow" />
                         </div>
                         <div>
-                          <h3 className="editorial-name text-xl text-stone-900">
+                          <h3 className="editorial-name text-xl text-espresso-900">
                             스튜디오
                           </h3>
-                          <p className="magazine-caption text-sm mt-0.5 text-stone-500">
+                          <p className="magazine-caption text-sm mt-0.5 text-espresso-500">
                             AI와 함께 캐릭터의 모습을 이끌어내세요
                           </p>
                         </div>
                       </div>
-                      <Separator className="bg-stone-100" />
+                      <Separator className="bg-cloud-100" />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-2">
                           <Label className="editorial-label">배경 스타일</Label>
@@ -492,7 +484,7 @@ export default function CharacterDetailDialog({
                             value={selectedSettingId}
                             onValueChange={setSelectedSettingId}
                           >
-                            <SelectTrigger className="bg-paper border-stone-200 hover:border-primary/40 transition-colors">
+                            <SelectTrigger className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors">
                               <SelectValue placeholder="배경 선택 (기본)" />
                             </SelectTrigger>
                             <SelectContent
@@ -514,10 +506,10 @@ export default function CharacterDetailDialog({
                           <Label className="editorial-label">추가 묘사</Label>
                           <Input
                             placeholder="예: 비를 맞고 있는, 활짝 웃는..."
-                            className="bg-paper border-stone-200 hover:border-primary/40 transition-colors"
+                            className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) => setManualPrompt(e.target.value)}
                           />
                         </div>
@@ -531,7 +523,7 @@ export default function CharacterDetailDialog({
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 px-1">
                             <UserRound className="h-4 w-4 text-primary/70" />
-                            <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                            <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                               핵심 프로필
                             </h3>
                           </div>
@@ -564,7 +556,7 @@ export default function CharacterDetailDialog({
                               />
                             </div>
                             {/* Decorative Icon Watermark */}
-                            <UserRound className="absolute -bottom-4 -right-4 w-32 h-32 text-stone-900/[0.03] group-hover:scale-110 transition-transform duration-500" />
+                            <UserRound className="absolute -bottom-4 -right-4 w-32 h-32 text-espresso-900/[0.03] group-hover:scale-110 transition-transform duration-500" />
                           </div>
                         </div>
 
@@ -574,7 +566,7 @@ export default function CharacterDetailDialog({
                           <div className="space-y-3">
                             <div className="flex items-center gap-2 px-1">
                               <Heart className="h-4 w-4 text-primary/70" />
-                              <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                              <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                                 성격 키워드
                               </h3>
                             </div>
@@ -583,11 +575,11 @@ export default function CharacterDetailDialog({
                                 (trait, i) => (
                                   <span
                                     key={i}
-                                    className="px-4 py-1.5 rounded-full bg-paper/60 text-stone-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
+                                    className="px-4 py-1.5 rounded-full bg-paper/60 text-espresso-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
                                   >
                                     #{trait}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -598,13 +590,13 @@ export default function CharacterDetailDialog({
                       <div className="space-y-4 h-full">
                         <div className="flex items-center gap-2 px-1">
                           <Palette className="h-4 w-4 text-primary/70" />
-                          <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                          <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                             외모 특징
                           </h3>
                         </div>
                         <div className="editorial-card p-6 space-y-4 h-full bg-gradient-to-br from-paper/70 to-paper/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl relative overflow-hidden group">
                           {/* Decorative Icon Watermark */}
-                          <Palette className="absolute -top-6 -right-6 w-32 h-32 text-stone-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
+                          <Palette className="absolute -top-6 -right-6 w-32 h-32 text-espresso-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
                           <div className="relative z-10">
                             <CharacterVisual
                               appearance={displayCharacter.appearance}
@@ -634,17 +626,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.occupation || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.occupation || "미정"}
                           </p>
                         )}
@@ -659,17 +651,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.birthplace || "미정"}
                           </p>
                         )}
@@ -684,17 +676,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.family || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.family || "미정"}
                           </p>
                         )}
@@ -705,7 +697,7 @@ export default function CharacterDetailDialog({
                           <Flag className="w-4 h-4 text-primary/70" />
                           <span className="editorial-label">소속 세력</span>
                         </div>
-                        <p className="text-sm font-semibold text-stone-800">
+                        <p className="text-sm font-semibold text-espresso-800">
                           {displayCharacter.profile.faction?.name || "무소속"}
                         </p>
                       </div>
@@ -825,10 +817,10 @@ function TabItem({
   return (
     <TabsTrigger
       value={value}
-      className="group relative h-8 px-5 rounded-full font-medium text-stone-500 transition-all
-      data-[state=active]:text-primary-foreground data-[state=active]:bg-stone-800 data-[state=active]:shadow-lg
+      className="group relative h-8 px-5 rounded-full font-medium text-espresso-500 transition-all
+      data-[state=active]:text-primary-foreground data-[state=active]:bg-espresso-800 data-[state=active]:shadow-lg
       data-[state=active]:ring-2 data-[state=active]:ring-white/50
-      hover:text-stone-900 hover:bg-white/50"
+      hover:text-espresso-900 hover:bg-white/50"
     >
       <span className="relative z-10 flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
@@ -850,14 +842,16 @@ function ProfileItem({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-stone-400">
+      <div className="flex items-center gap-1.5 text-espresso-400">
         <Icon className="w-3 h-3" />
         <span className="text-xs font-medium uppercase tracking-wider">
           {label}
         </span>
       </div>
-      <span className="text-base font-semibold text-stone-800 pl-0.5">
-        {value || <span className="text-stone-300 font-normal italic">-</span>}
+      <span className="text-base font-semibold text-espresso-800 pl-0.5">
+        {value || (
+          <span className="text-espresso-300 font-normal italic">-</span>
+        )}
       </span>
     </div>
   );

@@ -41,7 +41,7 @@ export function NetworkControlsD3({
       <div className="absolute left-3 top-3 z-20 frosted-glass rounded-lg p-2.5 space-y-2 min-w-[120px] editorial-fade-in">
         <div className="flex items-center gap-1.5">
           <Layers className="h-3 w-3 text-primary" />
-          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+          <span className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
             필터
           </span>
         </div>
@@ -52,7 +52,7 @@ export function NetworkControlsD3({
               intent="outline"
               size="sm"
               className={cn(
-                "w-full justify-between gap-1 h-7 text-xs bg-white/80 hover:bg-white border-stone-200",
+                "w-full justify-between gap-1 h-7 text-xs bg-white/80 hover:bg-white border-cloud-200",
                 relationTypeFilter !== "all" &&
                   "border-primary/30 bg-primary/5",
               )}
@@ -62,7 +62,7 @@ export function NetworkControlsD3({
                   RELATION_ICONS[relationTypeFilter]}
                 <span className="font-medium text-xs">{activeFilterLabel}</span>
               </span>
-              <ChevronDown className="h-2.5 w-2.5 text-stone-400" />
+              <ChevronDown className="h-2.5 w-2.5 text-espresso-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-40">
@@ -75,8 +75,8 @@ export function NetworkControlsD3({
                 className="cursor-pointer text-xs"
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-gradient-to-br from-stone-200 to-stone-100 flex items-center justify-center">
-                    <span className="w-1 h-1 rounded-full bg-stone-400" />
+                  <span className="w-3 h-3 rounded-full bg-gradient-to-br from-cloud-200 to-stone-100 flex items-center justify-center">
+                    <span className="w-1 h-1 rounded-full bg-cloud-400" />
                   </span>
                   모든 관계
                 </span>
@@ -113,7 +113,7 @@ export function NetworkControlsD3({
         {relationTypeFilter !== "all" && (
           <button
             onClick={() => onFilterChange("all")}
-            className="w-full text-[10px] text-stone-400 hover:text-stone-600 transition-colors text-center"
+            className="w-full text-[10px] text-espresso-400 hover:text-espresso-600 transition-colors text-center"
           >
             초기화
           </button>
@@ -127,7 +127,7 @@ export function NetworkControlsD3({
       >
         <div className="flex items-center gap-1.5 mb-1.5">
           <div className="w-0.5 h-3 rounded-full bg-primary" />
-          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+          <span className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
             범례
           </span>
         </div>
@@ -157,7 +157,7 @@ export function NetworkControlsD3({
                   }}
                 />
               </div>
-              <span className="text-[10px] text-stone-600">
+              <span className="text-[10px] text-espresso-600">
                 {RELATION_LABELS[type]}
               </span>
             </div>

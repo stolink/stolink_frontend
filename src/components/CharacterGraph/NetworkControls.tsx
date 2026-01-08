@@ -108,7 +108,7 @@ export function NetworkControls({
         >
           <div className="flex items-center gap-2">
             <Layers className="h-3.5 w-3.5 text-mocha-500" />
-            <span className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-espresso-600 uppercase tracking-wider">
               컨트롤
             </span>
           </div>
@@ -116,7 +116,7 @@ export function NetworkControls({
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="h-3.5 w-3.5 text-stone-400" />
+            <ChevronDown className="h-3.5 w-3.5 text-espresso-400" />
           </motion.div>
         </button>
 
@@ -132,7 +132,7 @@ export function NetworkControls({
               <div className="p-3 pt-0 space-y-4">
                 {/* 필터 드롭다운 */}
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                  <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
                     필터
                   </Label>
                   <DropdownMenu>
@@ -141,9 +141,9 @@ export function NetworkControls({
                         intent="outline"
                         size="sm"
                         className={cn(
-                          "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-stone-200",
+                          "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-cloud-200",
                           relationTypeFilter !== "all" &&
-                            "border-mocha-300 bg-mocha-50"
+                            "border-mocha-300 bg-mocha-50",
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -160,7 +160,7 @@ export function NetworkControls({
                             {activeFilterLabel}
                           </span>
                         </span>
-                        <ChevronDown className="h-3 w-3 text-stone-400" />
+                        <ChevronDown className="h-3 w-3 text-espresso-400" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-40">
@@ -175,8 +175,8 @@ export function NetworkControls({
                           className="cursor-pointer text-xs"
                         >
                           <span className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-stone-200 to-stone-100 flex items-center justify-center">
-                              <span className="w-1 h-1 rounded-full bg-stone-400" />
+                            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-cloud-200 to-stone-100 flex items-center justify-center">
+                              <span className="w-1 h-1 rounded-full bg-cloud-400" />
                             </span>
                             모든 관계
                           </span>
@@ -213,7 +213,7 @@ export function NetworkControls({
                   {relationTypeFilter !== "all" && (
                     <button
                       onClick={() => onFilterChange("all")}
-                      className="w-full text-[10px] text-stone-400 hover:text-stone-600 transition-colors text-center py-1"
+                      className="w-full text-[10px] text-espresso-400 hover:text-espresso-600 transition-colors text-center py-1"
                     >
                       초기화
                     </button>
@@ -224,7 +224,7 @@ export function NetworkControls({
                 {onShowMainOnlyChange && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                      <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
                         주요 캐릭터만
                       </Label>
                       <Switch
@@ -232,7 +232,7 @@ export function NetworkControls({
                         onChange={onShowMainOnlyChange}
                       />
                     </div>
-                    <p className="text-[9px] text-stone-400 leading-tight">
+                    <p className="text-[9px] text-espresso-400 leading-tight">
                       주인공, 적대자 및 관계가 많은 캐릭터만 표시
                     </p>
                   </div>
@@ -242,7 +242,7 @@ export function NetworkControls({
                 {onGroupingChange && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                      <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
                         그룹 보기
                       </Label>
                       <Switch
@@ -250,7 +250,7 @@ export function NetworkControls({
                         onChange={onGroupingChange}
                       />
                     </div>
-                    <p className="text-[9px] text-stone-400 leading-tight">
+                    <p className="text-[9px] text-espresso-400 leading-tight">
                       진영별로 노드를 그룹화합니다
                     </p>
                   </div>
@@ -258,8 +258,8 @@ export function NetworkControls({
 
                 {/* Simulation Debug (Temp) */}
                 {onSimulateCollapse && (
-                  <div className="pt-2 border-t border-stone-100 space-y-1.5">
-                    <Label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                  <div className="pt-2 border-t border-cloud-100 space-y-1.5">
+                    <Label className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
                       Simulation
                     </Label>
                     <Button
@@ -288,7 +288,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showTension
                 ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-white/80 hover:bg-white"
+                : "bg-white/80 hover:bg-white",
             )}
             onClick={() => onToggleTension(!showTension)}
           >
@@ -303,7 +303,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showLogicCheck
                 ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-white/80 hover:bg-white"
+                : "bg-white/80 hover:bg-white",
             )}
             onClick={() => onToggleLogicCheck(!showLogicCheck)}
           >
@@ -317,8 +317,8 @@ export function NetworkControls({
         currentChapter !== undefined &&
         totalChapters !== undefined && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
-            <div className="bg-white/80 backdrop-blur-md border border-stone-200 shadow-xl rounded-2xl p-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+            <div className="bg-white/80 backdrop-blur-md border border-cloud-200 shadow-xl rounded-2xl p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] font-bold text-espresso-500 uppercase tracking-wider">
                 <span>Timeline Visualization</span>
                 <span>
                   Chapter {currentChapter} / {totalChapters}
@@ -346,10 +346,10 @@ export function NetworkControls({
       >
         <div className="flex items-center gap-2 mb-2">
           <div className="w-0.5 h-3 rounded-full bg-mocha-500" />
-          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+          <span className="text-[10px] font-semibold text-espresso-500 uppercase tracking-wider">
             범례
           </span>
-          <span className="text-[9px] text-stone-400 ml-auto">
+          <span className="text-[9px] text-espresso-400 ml-auto">
             클릭하여 필터
           </span>
         </div>
@@ -370,7 +370,7 @@ export function NetworkControls({
                   "flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
                   isActive && "bg-white shadow-sm",
                   isHovered && !isActive && "bg-white/60",
-                  isDimmed && "opacity-40"
+                  isDimmed && "opacity-40",
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -402,7 +402,9 @@ export function NetworkControls({
                 <span
                   className={cn(
                     "text-xs transition-colors",
-                    isActive ? "font-medium text-stone-800" : "text-stone-600"
+                    isActive
+                      ? "font-medium text-espresso-800"
+                      : "text-espresso-600",
                   )}
                 >
                   {RELATION_LABELS[type]}
@@ -411,7 +413,7 @@ export function NetworkControls({
                 {/* Active indicator */}
                 {isActive && <Eye className="w-3 h-3 text-mocha-500 ml-auto" />}
                 {isDimmed && (
-                  <EyeOff className="w-3 h-3 text-stone-300 ml-auto" />
+                  <EyeOff className="w-3 h-3 text-espresso-300 ml-auto" />
                 )}
               </motion.div>
             );

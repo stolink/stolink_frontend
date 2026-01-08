@@ -52,8 +52,8 @@ const ROLE_COLORS: Record<string, string> = {
   antagonist: "bg-rose-50 text-rose-600 border-rose-200",
   mentor: "bg-amber-50 text-amber-600 border-amber-200",
   sidekick: "bg-emerald-50 text-emerald-600 border-emerald-200",
-  supporting: "bg-stone-100 text-stone-600 border-stone-200",
-  other: "bg-stone-100 text-stone-600 border-stone-200",
+  supporting: "bg-cloud-100 text-espresso-600 border-cloud-200",
+  other: "bg-cloud-100 text-espresso-600 border-cloud-200",
 };
 
 interface NetworkDetailPanelD3Props {
@@ -101,7 +101,7 @@ export function NetworkDetailPanelD3({
           <Button
             intent="ghost"
             size="icon"
-            className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-stone-50 -mr-2 -mt-2 rounded-full"
+            className="h-8 w-8 text-espresso-400 hover:text-espresso-600 hover:bg-cloud-50 -mr-2 -mt-2 rounded-full"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -128,11 +128,11 @@ export function NetworkDetailPanelD3({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-stone-900 truncate tracking-tight">
+            <h3 className="text-xl font-bold text-espresso-900 truncate tracking-tight">
               {selectedCharacter.profile?.name || "이름 없음"}
             </h3>
             {selectedCharacter.profile?.faction?.name && (
-              <p className="magazine-caption text-xs not-italic text-stone-400 mt-1">
+              <p className="magazine-caption text-xs not-italic text-espresso-400 mt-1">
                 {selectedCharacter.profile.faction.name}
               </p>
             )}
@@ -146,22 +146,22 @@ export function NetworkDetailPanelD3({
           <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <Network className="h-4 w-4 text-mocha-500" />
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
                 관계 인물
               </span>
             </div>
-            <div className="text-2xl font-bold text-stone-900">
+            <div className="text-2xl font-bold text-espresso-900">
               {connectedLinks.length}
             </div>
           </div>
           <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-mocha-500" />
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
                 등장 횟수
               </span>
             </div>
-            <div className="text-2xl font-bold text-stone-900">-</div>
+            <div className="text-2xl font-bold text-espresso-900">-</div>
           </div>
         </div>
       </div>
@@ -178,20 +178,22 @@ export function NetworkDetailPanelD3({
               ? personality
               : [];
           const mood = selectedCharacter.currentMood;
-          const archetypeSelection = selectedCharacter.archetype || "Unknown";
+          const archetypeSelection =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (selectedCharacter as any).archetype || "Unknown";
 
           return (
             <>
               {/* Mental State & Emotion Glow */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-extrabold text-stone-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
                     <Activity className="w-3 h-3 text-mocha-400" />
                     심리 상태 (Soul State)
                   </h4>
                   <Badge
                     variant="secondary"
-                    className="text-[10px] font-bold px-2 py-0 h-5 bg-white border-stone-200"
+                    className="text-[10px] font-bold px-2 py-0 h-5 bg-white border-cloud-200"
                   >
                     {archetypeSelection}
                   </Badge>
@@ -214,15 +216,15 @@ export function NetworkDetailPanelD3({
                         "bg-amber-400":
                           mood?.emotion === "Anxious" ||
                           mood?.emotion === "Fear",
-                      }
+                      },
                     )}
                   />
 
                   <div className="flex items-center justify-between relative z-10">
-                    <span className="text-sm font-semibold text-stone-700">
+                    <span className="text-sm font-semibold text-espresso-700">
                       {mood?.emotion || "평온함"}
                     </span>
-                    <span className="text-[10px] text-stone-400 font-medium">
+                    <span className="text-[10px] text-espresso-400 font-medium">
                       강도: {mood?.intensity || 5}/10
                     </span>
                   </div>
@@ -244,7 +246,7 @@ export function NetworkDetailPanelD3({
                           "bg-amber-500":
                             mood?.emotion === "Anxious" ||
                             mood?.emotion === "Fear",
-                        }
+                        },
                       )}
                     />
                   </div>
@@ -253,7 +255,7 @@ export function NetworkDetailPanelD3({
 
               {/* Core Traits & Values */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-extrabold text-stone-400 uppercase tracking-widest flex items-center gap-1.5">
+                <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Brain className="w-3 h-3 text-mocha-400" />
                   핵심 기질 & 가치관
                 </h4>
@@ -265,14 +267,14 @@ export function NetworkDetailPanelD3({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.05 }}
-                        className="px-2.5 py-1 bg-white border border-cloud-200 rounded-lg text-[11px] text-stone-600 font-medium shadow-sm active:shadow-none transition-shadow"
+                        className="px-2.5 py-1 bg-white border border-cloud-200 rounded-lg text-[11px] text-espresso-600 font-medium shadow-sm active:shadow-none transition-shadow"
                       >
                         {trait}
                       </motion.span>
                     ))
                   ) : (
                     <div className="w-full py-4 text-center border border-dashed border-cloud-300 rounded-xl">
-                      <p className="text-[10px] text-stone-400">
+                      <p className="text-[10px] text-espresso-400">
                         학습된 성격 데이터가 없습니다
                       </p>
                     </div>
@@ -327,7 +329,7 @@ export function NetworkDetailPanelD3({
                     className="editorial-card flex items-center gap-3 p-3 hover-lift cursor-pointer group editorial-fade-in"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-stone-100 to-white flex items-center justify-center text-lg border border-stone-100 shadow-sm overflow-hidden group-hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-stone-100 to-white flex items-center justify-center text-lg border border-cloud-100 shadow-sm overflow-hidden group-hover:shadow-md transition-shadow">
                       {otherChar?.imageUrl ? (
                         <img
                           src={otherChar.imageUrl}
@@ -343,7 +345,7 @@ export function NetworkDetailPanelD3({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-stone-800 truncate group-hover:text-primary transition-colors">
+                      <div className="font-semibold text-sm text-espresso-800 truncate group-hover:text-primary transition-colors">
                         {otherChar?.profile?.name || "이름 없음"}
                       </div>
                       <Badge
@@ -351,7 +353,7 @@ export function NetworkDetailPanelD3({
                         className={cn(
                           "mt-1.5 text-[10px] px-2 py-0.5 h-5 gap-1 rounded-full",
                           RELATION_BADGE_COLORS[relType as UIRelationType] ||
-                            "bg-stone-200 text-stone-600"
+                            "bg-cloud-200 text-espresso-600",
                         )}
                       >
                         {RELATION_ICONS[relType as UIRelationType]}

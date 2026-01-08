@@ -13,7 +13,7 @@ import {
   X,
   ArrowLeft,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -219,11 +219,11 @@ export function ExportDownloadModal({
         <div className="px-6 py-5 max-h-[400px] overflow-y-auto space-y-5">
           {/* 섹션 선택 */}
           <div>
-            <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2 block">
+            <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-2 block">
               내보낼 섹션
             </Label>
             <select
-              className="w-full px-4 py-3 bg-cloud-50 border border-stone-200 rounded-2xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
+              className="w-full px-4 py-3 bg-cloud-50 border border-cloud-200 rounded-2xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
               value={selectedDocId}
               onChange={(e) => setSelectedDocId(e.target.value)}
             >
@@ -236,7 +236,7 @@ export function ExportDownloadModal({
                 <option value="">내보낼 내용이 없습니다</option>
               )}
             </select>
-            <div className="flex items-center gap-3 mt-2 text-xs text-stone-400">
+            <div className="flex items-center gap-3 mt-2 text-xs text-espresso-400">
               <span>{wordCount.toLocaleString()}자</span>
               <span>•</span>
               <span>약 {readTime}분 읽기</span>
@@ -245,7 +245,7 @@ export function ExportDownloadModal({
 
           {/* 형식 선택 */}
           <div>
-            <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2 block">
+            <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-2 block">
               출력 형식
             </Label>
             <div className="space-y-2">
@@ -258,7 +258,7 @@ export function ExportDownloadModal({
                     "flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-200",
                     selectedPreset === p.id
                       ? "border-mocha-400 bg-gradient-to-r from-mocha-400/10 to-mocha-500/5 ring-1 ring-mocha-400/30 shadow-sm"
-                      : "border-stone-200 hover:border-mocha-400/50 hover:shadow-sm bg-white",
+                      : "border-cloud-200 hover:border-mocha-400/50 hover:shadow-sm bg-white",
                   )}
                 >
                   <input
@@ -274,19 +274,19 @@ export function ExportDownloadModal({
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                       selectedPreset === p.id
                         ? "border-mocha-500 bg-mocha-500"
-                        : "border-stone-300",
+                        : "border-cloud-300",
                     )}
                   >
                     {selectedPreset === p.id && (
                       <Check className="w-3 h-3 text-white" />
                     )}
                   </div>
-                  <p.icon className="w-4 h-4 text-stone-400" />
+                  <p.icon className="w-4 h-4 text-espresso-400" />
                   <div className="flex-1">
                     <span className="text-sm font-semibold text-espresso-900">
                       {p.name}
                     </span>
-                    <span className="text-xs text-stone-400 ml-2">
+                    <span className="text-xs text-espresso-400 ml-2">
                       {p.description}
                     </span>
                   </div>
@@ -297,13 +297,13 @@ export function ExportDownloadModal({
         </div>
 
         {/* 푸터 */}
-        <div className="px-6 py-4 border-t border-stone-100 bg-cloud-50/50">
+        <div className="px-6 py-4 border-t border-cloud-100 bg-cloud-50/50">
           <div className="flex gap-3">
             {onBack && (
               <Button
                 variant="ghost"
                 onClick={onBack}
-                className="h-11 px-4 text-stone-500 hover:text-stone-700"
+                className="h-11 px-4 text-espresso-500 hover:text-espresso-700"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 이전
@@ -312,7 +312,7 @@ export function ExportDownloadModal({
             <Button
               variant="outline"
               onClick={handleCopyText}
-              className="flex-1 h-11 border-stone-200 text-stone-600 hover:bg-stone-50"
+              className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
             >
               {copied ? (
                 <Check className="w-4 h-4 mr-2 text-mocha-600" />
@@ -324,7 +324,7 @@ export function ExportDownloadModal({
             <Button
               variant="outline"
               onClick={handleDownloadTXT}
-              className="flex-1 h-11 border-stone-200 text-stone-600 hover:bg-stone-50"
+              className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
             >
               <Download className="w-4 h-4 mr-2" />
               TXT

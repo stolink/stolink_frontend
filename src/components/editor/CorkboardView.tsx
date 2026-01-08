@@ -189,7 +189,7 @@ export default function CorkboardView({
       <div className="relative sticky top-0 z-10 flex items-center gap-2 mb-6 px-4 py-3 bg-white/80 backdrop-blur-md rounded-xl border border-cloud-200/50 shadow-sm max-w-fit mx-auto">
         <LayoutGrid className="w-4 h-4 text-mocha-500" />
         <h2 className="text-sm font-bold text-espresso-800">코르크보드</h2>
-        <div className="w-px h-3 bg-stone-300 mx-1" />
+        <div className="w-px h-3 bg-cloud-300 mx-1" />
         <span className="text-xs font-medium text-mocha-500">
           {cards.length} Cards
         </span>
