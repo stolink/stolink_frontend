@@ -19,7 +19,7 @@ const defaultSteps = [
 
 export function Stepper({ currentStep, steps = defaultSteps }: StepperProps) {
   return (
-    <div className="flex items-center justify-center gap-2 py-4 px-6 bg-cloud-50 border-b border-stone-200">
+    <div className="flex items-center justify-center gap-2 py-4 px-6 bg-cloud-50 border-b border-cloud-200">
       {steps.map((step, index) => {
         const stepNumber = index + 1;
         const isCompleted = stepNumber < currentStep;
@@ -35,7 +35,7 @@ export function Stepper({ currentStep, steps = defaultSteps }: StepperProps) {
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors",
                   isCompleted && "bg-sage-500 text-white",
                   isActive && "bg-mocha-500 text-white",
-                  isPending && "bg-stone-200 text-stone-500",
+                  isPending && "bg-cloud-200 text-espresso-500",
                 )}
               >
                 {isCompleted ? <Check className="w-4 h-4" /> : stepNumber}
@@ -45,7 +45,7 @@ export function Stepper({ currentStep, steps = defaultSteps }: StepperProps) {
                   "text-sm font-medium",
                   isCompleted && "text-sage-700",
                   isActive && "text-mocha-700",
-                  isPending && "text-stone-400",
+                  isPending && "text-espresso-400",
                 )}
               >
                 {step.label}
@@ -57,7 +57,7 @@ export function Stepper({ currentStep, steps = defaultSteps }: StepperProps) {
               <div
                 className={cn(
                   "w-12 h-0.5 mx-3",
-                  stepNumber < currentStep ? "bg-sage-500" : "bg-stone-200",
+                  stepNumber < currentStep ? "bg-sage-500" : "bg-cloud-200",
                 )}
               />
             )}

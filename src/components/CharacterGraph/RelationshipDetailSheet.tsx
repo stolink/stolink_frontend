@@ -14,7 +14,9 @@ import {
   Heart,
   Skull,
   User,
+  Pencil,
 } from "lucide-react";
+import { Button } from "@stolink/ui";
 import type { DetailedRelationship } from "@/types/character";
 import { cn } from "@/lib/utils";
 import { getRelationshipColor, type UIRelationType } from "./utils";
@@ -25,6 +27,7 @@ interface RelationshipDetailSheetProps {
   onClose: () => void;
   sourceName?: string;
   targetName?: string;
+  onEdit?: () => void;
 }
 
 // Local constants removed in favor of getRelationshipColor helper
@@ -47,6 +50,7 @@ export function RelationshipDetailSheet({
   onClose,
   sourceName,
   targetName,
+  onEdit,
 }: RelationshipDetailSheetProps) {
   if (!relationship) return null;
 
@@ -91,6 +95,18 @@ export function RelationshipDetailSheet({
                     <ArrowLeftRight className="w-3 h-3" />
                     상호 관계
                   </Badge>
+                )}
+                <div className="flex-1" />
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-mocha-400 hover:text-mocha-600"
+                    onClick={onEdit}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span className="sr-only">수정</span>
+                  </Button>
                 )}
               </div>
 

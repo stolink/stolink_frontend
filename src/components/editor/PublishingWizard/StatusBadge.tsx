@@ -12,7 +12,7 @@ interface StatusBadgeProps {
 
 const statusStyles = {
   published: "bg-sage-100 text-sage-700",
-  unpublished: "bg-stone-100 text-stone-600",
+  unpublished: "bg-cloud-100 text-espresso-600",
 };
 
 const statusLabels = {

@@ -30,7 +30,7 @@ export function Toaster() {
                 isSuccess && "bg-sage-50/95 border-sage-200 text-sage-700",
                 !isDestructive &&
                   !isSuccess &&
-                  "bg-white/95 border-mocha-200/60 text-espresso-900"
+                  "bg-white/95 border-mocha-200/60 text-espresso-900",
               )}
             >
               <div className="flex items-start gap-3">
@@ -42,7 +42,7 @@ export function Toaster() {
                     isSuccess && "bg-sage-100 text-sage-600",
                     !isDestructive &&
                       !isSuccess &&
-                      "bg-mocha-100 text-mocha-600"
+                      "bg-mocha-100 text-mocha-600",
                   )}
                 >
                   {isDestructive ? (
@@ -61,7 +61,7 @@ export function Toaster() {
                       "font-heading font-semibold text-sm leading-tight",
                       isDestructive && "text-red-900",
                       isSuccess && "text-sage-700",
-                      !isDestructive && !isSuccess && "text-espresso-900"
+                      !isDestructive && !isSuccess && "text-espresso-900",
                     )}
                   >
                     {toast.title}
@@ -72,7 +72,7 @@ export function Toaster() {
                         "mt-1 text-sm leading-relaxed opacity-80",
                         isDestructive && "text-red-700",
                         isSuccess && "text-sage-600",
-                        !isDestructive && !isSuccess && "text-stone-600"
+                        !isDestructive && !isSuccess && "text-espresso-600",
                       )}
                     >
                       {toast.description}

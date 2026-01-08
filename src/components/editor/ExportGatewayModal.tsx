@@ -105,7 +105,7 @@ export function ExportGatewayModal({
               onClick={() => setSelection("download")}
               className={cn(
                 "w-full flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200",
-                "border-stone-200 hover:border-mocha-400 hover:shadow-paper bg-white",
+                "border-cloud-200 hover:border-mocha-400 hover:shadow-paper bg-white",
               )}
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center shadow-sm">
@@ -115,11 +115,11 @@ export function ExportGatewayModal({
                 <div className="font-bold text-espresso-900 mb-1">
                   파일 다운로드
                 </div>
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-espresso-500">
                   HTML, TXT 형식으로 원고를 내보냅니다
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-stone-400" />
+              <ChevronRight className="w-5 h-5 text-espresso-400" />
             </motion.button>
 
             {/* 커뮤니티 배포 카드 */}
@@ -129,7 +129,7 @@ export function ExportGatewayModal({
               onClick={() => setSelection("publish")}
               className={cn(
                 "w-full flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200",
-                "border-stone-200 hover:border-mocha-400 hover:shadow-paper bg-white",
+                "border-cloud-200 hover:border-mocha-400 hover:shadow-paper bg-white",
               )}
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-mocha-100 to-mocha-50 flex items-center justify-center shadow-sm">
@@ -139,11 +139,11 @@ export function ExportGatewayModal({
                 <div className="font-bold text-espresso-900 mb-1">
                   커뮤니티 배포
                 </div>
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-espresso-500">
                   Storead에 다중 섹션을 한 번에 배포합니다
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-stone-400" />
+              <ChevronRight className="w-5 h-5 text-espresso-400" />
             </motion.button>
           </div>
         </DialogContent>

@@ -50,7 +50,7 @@ export function SortableDocumentItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-3 p-3 bg-white rounded-xl border border-stone-200",
+        "flex items-center gap-3 p-3 bg-white rounded-xl border border-cloud-200",
         "hover:shadow-paper-hover transition-shadow duration-200",
         isDragging && "shadow-paper-floating opacity-80 z-10",
       )}
@@ -60,7 +60,7 @@ export function SortableDocumentItem({
         <button
           {...attributes}
           {...listeners}
-          className="p-1 text-stone-400 hover:text-stone-600 cursor-grab active:cursor-grabbing"
+          className="p-1 text-espresso-400 hover:text-espresso-600 cursor-grab active:cursor-grabbing"
         >
           <GripVertical className="w-4 h-4" />
         </button>
@@ -79,7 +79,7 @@ export function SortableDocumentItem({
           </span>
           <StatusBadge isPublished={item.isPublished} />
         </div>
-        <span className="text-xs text-stone-400">
+        <span className="text-xs text-espresso-400">
           {item.wordCount.toLocaleString()}자
         </span>
       </div>
@@ -88,7 +88,7 @@ export function SortableDocumentItem({
       {onRemove && (
         <button
           onClick={() => onRemove(item.id)}
-          className="p-1 text-stone-400 hover:text-status-error transition-colors"
+          className="p-1 text-espresso-400 hover:text-status-error transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

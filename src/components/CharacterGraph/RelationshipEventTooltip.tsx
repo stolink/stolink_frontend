@@ -56,13 +56,13 @@ export function RelationshipEventTooltip({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <Card className="w-64 shadow-xl border-stone-200 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="p-3 pb-2 border-b border-stone-100 bg-stone-50/50">
-          <CardTitle className="text-sm font-medium text-stone-600 flex items-center gap-2">
+      <Card className="w-64 shadow-xl border-cloud-200 bg-white/95 backdrop-blur-sm">
+        <CardHeader className="p-3 pb-2 border-b border-cloud-100 bg-cloud-50/50">
+          <CardTitle className="text-sm font-medium text-espresso-600 flex items-center gap-2">
             <Activity className="w-4 h-4 text-mocha-500" />
             Relationship Events
           </CardTitle>
-          <p className="text-xs text-stone-400">
+          <p className="text-xs text-espresso-400">
             {sourceName} & {targetName}
           </p>
         </CardHeader>
@@ -72,7 +72,7 @@ export function RelationshipEventTooltip({
             <div className="flex items-center justify-between">
               <Badge
                 className={cn(
-                  "px-2 py-0.5 text-xs font-medium capitalize text-white"
+                  "px-2 py-0.5 text-xs font-medium capitalize text-white",
                 )}
                 style={{
                   backgroundColor: getRelationshipColor(type, strength),
@@ -82,7 +82,7 @@ export function RelationshipEventTooltip({
                 {type}
               </Badge>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase font-bold text-stone-400">
+                <span className="text-[10px] uppercase font-bold text-espresso-400">
                   Strength
                 </span>
                 <div className="flex gap-0.5">
@@ -93,7 +93,7 @@ export function RelationshipEventTooltip({
                         "w-1.5 h-1.5 rounded-full transition-colors",
                         i < Math.round(strength / 2)
                           ? "bg-mocha-500"
-                          : "bg-stone-200"
+                          : "bg-cloud-200",
                       )}
                     />
                   ))}
@@ -101,15 +101,15 @@ export function RelationshipEventTooltip({
               </div>
             </div>
             {description && (
-              <p className="text-xs text-stone-600 leading-relaxed border-l-2 border-stone-200 pl-2 italic">
+              <p className="text-xs text-espresso-600 leading-relaxed border-l-2 border-cloud-200 pl-2 italic">
                 "{description}"
               </p>
             )}
           </div>
 
           {events && events.length > 0 && (
-            <div className="space-y-1 pt-2 border-t border-stone-100">
-              <span className="text-[10px] uppercase font-bold text-stone-400 block mb-1">
+            <div className="space-y-1 pt-2 border-t border-cloud-100">
+              <span className="text-[10px] uppercase font-bold text-espresso-400 block mb-1">
                 Recent Events
               </span>
               {events.map((event) => (
@@ -119,15 +119,15 @@ export function RelationshipEventTooltip({
                     e.stopPropagation();
                     onEventClick(event);
                   }}
-                  className="group flex items-center justify-between p-2 rounded-md hover:bg-stone-100 cursor-pointer transition-colors"
+                  className="group flex items-center justify-between p-2 rounded-md hover:bg-cloud-100 cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-stone-700 group-hover:text-mocha-600 transition-colors">
+                    <span className="text-sm font-semibold text-espresso-700 group-hover:text-mocha-600 transition-colors">
                       {event.title}
                     </span>
                     {/* Show time only if available */}
                     {(event.chapter || event.date) && (
-                      <span className="text-[10px] text-stone-400 flex items-center gap-1">
+                      <span className="text-[10px] text-espresso-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {event.chapter || event.date}
                       </span>
@@ -136,7 +136,7 @@ export function RelationshipEventTooltip({
                   <Badge
                     intent="outline"
                     className={cn(
-                      "text-[10px] px-1.5 py-0 h-5 text-white border-0"
+                      "text-[10px] px-1.5 py-0 h-5 text-white border-0",
                     )}
                     style={{
                       backgroundColor: getRelationshipColor(event.type, 5), // Default to standard strength for events
@@ -151,6 +151,6 @@ export function RelationshipEventTooltip({
         </CardContent>
       </Card>
     </div>,
-    document.body
+    document.body,
   );
 }

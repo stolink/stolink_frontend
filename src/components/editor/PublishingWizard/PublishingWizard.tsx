@@ -10,7 +10,7 @@
 import { useState, useMemo } from "react";
 import { X, ArrowLeft, ArrowRight, Send, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { Stepper } from "./Stepper";
 import { SelectionStep } from "./SelectionStep";
@@ -394,12 +394,12 @@ export function PublishingWizard({
         </div>
 
         {/* 푸터 */}
-        <div className="px-6 py-4 border-t border-stone-100 bg-cloud-50/50">
+        <div className="px-6 py-4 border-t border-cloud-100 bg-cloud-50/50">
           <div className="flex justify-between">
             <Button
               variant="ghost"
               onClick={currentStep === 1 ? onBack || onClose : goToPrevStep}
-              className="h-11 px-4 text-stone-500 hover:text-stone-700"
+              className="h-11 px-4 text-espresso-500 hover:text-espresso-700"
             >
               {currentStep === 1 ? (
                 <>

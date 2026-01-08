@@ -66,7 +66,7 @@ export function BiographyTree({
   // 컨텐츠 전체 너비
   const contentWidth = Math.max(
     sortedEvents.length * SPACING + CONTAINER_PADDING * 2,
-    800
+    800,
   );
 
   const handleNodeClick = useCallback(
@@ -74,7 +74,7 @@ export function BiographyTree({
       onEventClick(eventId);
       setDetailOpen(true);
     },
-    [onEventClick]
+    [onEventClick],
   );
 
   const closeDetail = useCallback(() => {
@@ -95,8 +95,8 @@ export function BiographyTree({
   return (
     <div
       className={cn(
-        "relative w-full h-[500px] rounded-2xl overflow-hidden border border-stone-200/60 shadow-paper bg-cloud-50",
-        className
+        "relative w-full h-[500px] rounded-2xl overflow-hidden border border-cloud-200/60 shadow-paper bg-cloud-50",
+        className,
       )}
     >
       {/* 타임라인 방향 표시 */}
@@ -171,7 +171,7 @@ export function BiographyTree({
             >
               {/* 헤더 */}
               <div
-                className="flex items-center justify-between p-4 border-b border-stone-100"
+                className="flex items-center justify-between p-4 border-b border-cloud-100"
                 style={{
                   backgroundColor:
                     getEventTypeConfig(selectedEvent.eventType).accentColor +
@@ -183,7 +183,7 @@ export function BiographyTree({
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{
                       backgroundColor: getEventTypeConfig(
-                        selectedEvent.eventType
+                        selectedEvent.eventType,
                       ).accentColor,
                     }}
                   >
@@ -192,7 +192,7 @@ export function BiographyTree({
                     })}
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-stone-500">
+                    <span className="text-xs font-medium text-espresso-500">
                       #{selectedIndex + 1} ·{" "}
                       {getEventTypeConfig(selectedEvent.eventType).label}
                     </span>
@@ -202,13 +202,13 @@ export function BiographyTree({
                   onClick={closeDetail}
                   className="p-2 hover:bg-white/50 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-stone-500" />
+                  <X className="w-5 h-5 text-espresso-500" />
                 </button>
               </div>
 
               {/* 내용 */}
               <div className="p-5 space-y-4 overflow-y-auto max-h-[350px]">
-                <h3 className="text-xl font-bold text-stone-800">
+                <h3 className="text-xl font-bold text-espresso-800">
                   {selectedEvent.narrativeSummary}
                   {getImportanceLevel(selectedEvent.importance) === "major" && (
                     <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
@@ -217,7 +217,7 @@ export function BiographyTree({
                   )}
                 </h3>
 
-                <div className="flex flex-wrap gap-3 text-sm text-stone-500">
+                <div className="flex flex-wrap gap-3 text-sm text-espresso-500">
                   {selectedEvent.timestamp && (
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4" />
@@ -233,10 +233,10 @@ export function BiographyTree({
                 </div>
 
                 {selectedEvent.participants.length > 0 && (
-                  <div className="bg-stone-50 rounded-xl p-3">
+                  <div className="bg-cloud-50 rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-4 h-4 text-stone-400" />
-                      <span className="text-sm font-medium text-stone-600">
+                      <Users className="w-4 h-4 text-espresso-400" />
+                      <span className="text-sm font-medium text-espresso-600">
                         참여 인물
                       </span>
                     </div>
@@ -244,7 +244,7 @@ export function BiographyTree({
                       {selectedEvent.participants.map((p, i) => (
                         <span
                           key={i}
-                          className="text-sm px-2 py-0.5 bg-white rounded-full border border-stone-200 text-stone-700"
+                          className="text-sm px-2 py-0.5 bg-white rounded-full border border-cloud-200 text-espresso-700"
                         >
                           {p}
                         </span>
@@ -253,7 +253,7 @@ export function BiographyTree({
                   </div>
                 )}
 
-                <p className="text-stone-700 leading-relaxed">
+                <p className="text-espresso-700 leading-relaxed">
                   {selectedEvent.description || "상세 설명이 없습니다."}
                 </p>
 
@@ -270,7 +270,7 @@ export function BiographyTree({
               </div>
 
               {/* 네비게이션 */}
-              <div className="p-3 border-t border-stone-100 flex items-center justify-between bg-stone-50">
+              <div className="p-3 border-t border-cloud-100 flex items-center justify-between bg-cloud-50">
                 <button
                   onClick={() => {
                     if (selectedIndex > 0) {
@@ -278,11 +278,11 @@ export function BiographyTree({
                     }
                   }}
                   disabled={selectedIndex === 0}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-stone-600 hover:bg-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-espresso-600 hover:bg-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> 이전
                 </button>
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-espresso-400">
                   {selectedIndex + 1} / {sortedEvents.length}
                 </span>
                 <button
@@ -292,7 +292,7 @@ export function BiographyTree({
                     }
                   }}
                   disabled={selectedIndex === sortedEvents.length - 1}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-stone-600 hover:bg-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-espresso-600 hover:bg-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   다음 <ChevronRight className="w-4 h-4" />
                 </button>
@@ -398,7 +398,7 @@ function SignpostNode({
         whileTap={{ scale: 0.95 }}
         className={cn(
           "relative flex items-center justify-center rounded-lg shadow-lg transition-all",
-          isSelected && "ring-2 ring-white ring-offset-2"
+          isSelected && "ring-2 ring-white ring-offset-2",
         )}
         style={{
           width: isMajor ? 44 : 36,
@@ -425,7 +425,7 @@ function SignpostNode({
       </motion.div>
 
       {/* 호버 라벨 */}
-      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-12 px-3 py-1.5 bg-stone-900/90 backdrop-blur-sm rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-12 px-3 py-1.5 bg-espresso-900/90 backdrop-blur-sm rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
         {event.narrativeSummary?.slice(0, 20) || "이벤트"}...
         <div className="absolute left-1/2 -translate-x-1/2 -top-1 border-4 border-transparent border-b-stone-900/90" />
       </div>

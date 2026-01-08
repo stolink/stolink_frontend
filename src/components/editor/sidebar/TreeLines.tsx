@@ -9,7 +9,7 @@ interface TreeLinesProps {
  *
  * 미니멀 디자인을 위해 연결선 제거 - 들여쓰기만으로 계층 표현
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 export function TreeLines(_props: TreeLinesProps) {
   return null;
 }

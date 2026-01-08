@@ -386,6 +386,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       return () => {
         simulation.stop();
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [width, height, getFilteredData, selectedNodeId]); // Re-run when data/filter changes
 
     return (

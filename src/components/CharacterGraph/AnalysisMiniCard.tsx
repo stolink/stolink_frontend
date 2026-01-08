@@ -90,7 +90,7 @@ export const AnalysisMiniCard: React.FC<AnalysisMiniCardProps> = ({
                   e.stopPropagation();
                   onDismiss();
                 }}
-                className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-600 transition-all z-10"
+                className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-espresso-400 hover:text-espresso-600 transition-all z-10"
                 style={{
                   background:
                     "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,245,244,0.9) 100%)",
@@ -128,10 +128,10 @@ export const AnalysisMiniCard: React.FC<AnalysisMiniCardProps> = ({
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1">
-                  <span className="text-sm font-bold text-stone-800">
+                  <span className="text-sm font-bold text-espresso-800">
                     분석 완료
                   </span>
-                  <p className="text-[10px] text-stone-400">
+                  <p className="text-[10px] text-espresso-400">
                     {totalChanges}개 변경사항
                   </p>
                 </div>
@@ -176,7 +176,7 @@ export const AnalysisMiniCard: React.FC<AnalysisMiniCardProps> = ({
               </div>
 
               {/* Hint */}
-              <p className="text-[10px] text-stone-400 mt-3 flex items-center gap-1">
+              <p className="text-[10px] text-espresso-400 mt-3 flex items-center gap-1">
                 <span className="inline-block w-1 h-1 rounded-full bg-mocha-300" />
                 클릭하여 상세 보기
               </p>

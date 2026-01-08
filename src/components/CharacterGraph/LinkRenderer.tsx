@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number }
+    coords?: { x: number; y: number },
   ) => void;
   onClick?: (link: RelationshipLink) => void;
   /** 네트워크 붕괴 시각화를 위한 변경 상태 */
@@ -85,15 +85,6 @@ export const LinkRenderer = memo(function LinkRenderer({
       : undefined;
   }, [changeType, link.type, link.strength]);
 
-  if (
-    source.x === undefined ||
-    source.y === undefined ||
-    target.x === undefined ||
-    target.y === undefined
-  ) {
-    return null;
-  }
-
   // 강도 기반 스타일 (Multi-Dimensional Mapping: 1~10 -> 1px~5px)
   // Strength 1 -> 1px
   // Strength 10 -> 5px
@@ -145,6 +136,15 @@ export const LinkRenderer = memo(function LinkRenderer({
       ? link.flowDepth * 0.2
       : randomDelay;
   const animKey = "constant-flow";
+
+  if (
+    source.x === undefined ||
+    source.y === undefined ||
+    target.x === undefined ||
+    target.y === undefined
+  ) {
+    return null;
+  }
 
   return (
     <g

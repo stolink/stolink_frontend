@@ -23,7 +23,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Input } from "@/components/ui/input";
 import { TreeItem } from "./TreeItem";
 import { ContextMenu, type MenuItemType } from "./ContextMenu";

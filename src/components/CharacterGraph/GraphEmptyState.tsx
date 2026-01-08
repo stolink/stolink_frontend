@@ -169,11 +169,11 @@ export function GraphEmptyState({
         transition={{ duration: 0.5, delay: 0.6 }}
         className="text-center max-w-md"
       >
-        <h3 className="text-xl font-bold text-stone-800 mb-2 flex items-center justify-center gap-2">
+        <h3 className="text-xl font-bold text-espresso-800 mb-2 flex items-center justify-center gap-2">
           <Users className="h-5 w-5 text-mocha-500" />
           캐릭터 관계도를 시작하세요
         </h3>
-        <p className="text-stone-500 text-sm leading-relaxed">
+        <p className="text-espresso-500 text-sm leading-relaxed">
           AI가 스토리에서 캐릭터와 관계를 자동으로 분석하여
           <br />
           시각적인 관계도를 생성합니다.
@@ -196,7 +196,7 @@ export function GraphEmptyState({
             <div className="w-8 h-8 rounded-full bg-mocha-100 text-mocha-600 flex items-center justify-center text-sm font-bold">
               {item.step}
             </div>
-            <span className="text-xs text-stone-500">{item.text}</span>
+            <span className="text-xs text-espresso-500">{item.text}</span>
           </div>
         ))}
       </motion.div>

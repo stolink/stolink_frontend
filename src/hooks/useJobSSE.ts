@@ -41,7 +41,7 @@ interface UseJobSSEReturn<T> {
 export function useJobSSE<T = unknown>(
   jobId: string | null,
   getStreamUrl: (id: string) => string,
-  options: UseJobSSEOptions<T> = {}
+  options: UseJobSSEOptions<T> = {},
 ): UseJobSSEReturn<T> {
   const {
     enabled = true,
@@ -101,7 +101,6 @@ export function useJobSSE<T = unknown>(
   // Main SSE connection effect
   useEffect(() => {
     if (!jobId || !enabled) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       cleanup();
       return;
     }
@@ -209,7 +208,7 @@ export function useJobSSE<T = unknown>(
     eventSource.onerror = (e) => {
       console.error(`[useJobSSE] Error for jobId: ${jobId}`, e);
       console.log(
-        `[useJobSSE] EventSource readyState: ${eventSource.readyState}`
+        `[useJobSSE] EventSource readyState: ${eventSource.readyState}`,
       );
 
       // readyState 0 (CONNECTING) means it's trying to reconnect. Don't cleanup yet.
@@ -241,6 +240,7 @@ export function useJobSSE<T = unknown>(
     }
 
     return cleanup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, enabled, getStreamUrl, cleanup, maxConnectionTime]);
 
   return {

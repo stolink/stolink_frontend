@@ -28,6 +28,7 @@ import {
   CharacterGraph,
   type CharacterGraphRef,
   AnalysisSummaryModal,
+  RelationshipEditDialog,
 } from "@/components/CharacterGraph";
 import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 import type { AnalysisDiff } from "@/types/analysisTypes";
@@ -37,7 +38,6 @@ import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useAnalyzeStory } from "@/hooks/useAI";
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
-import { useQueryClient } from "@tanstack/react-query";
 
 // Components
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
@@ -96,7 +96,6 @@ export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
-  const _queryClient = useQueryClient();
 
   // projectId is guaranteed to be string here
   const { data: realCharacters = [] } = useCharacters(projectId || "", {
@@ -140,7 +139,7 @@ export default function WorldPage() {
           }, 1500);
         }
       },
-    }
+    },
   );
 
   const analyzeMutation = useAnalyzeStory();
@@ -162,8 +161,9 @@ export default function WorldPage() {
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -203,7 +203,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents
+    projectEvents,
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -324,7 +324,7 @@ export default function WorldPage() {
                 <p
                   className={cn(
                     "text-mocha-500",
-                    !showCompletionAnimation && "animate-pulse"
+                    !showCompletionAnimation && "animate-pulse",
                   )}
                 >
                   {showCompletionAnimation
@@ -716,13 +716,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
+              selectedRelationship?.source,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
+                selectedRelationship?.source,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -731,18 +731,53 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
+              selectedRelationship?.target,
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
+                selectedRelationship?.target,
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target
         }
+        onEdit={() => setIsRelationshipEditOpen(true)}
       />
+
+      {/* Relationship Edit Dialog */}
+      {projectId && selectedRelationship && (
+        <RelationshipEditDialog
+          key={selectedRelationship.id}
+          relationship={selectedRelationship}
+          isOpen={isRelationshipEditOpen}
+          onClose={() => setIsRelationshipEditOpen(false)}
+          onSave={() => {
+            // Refetch or update happens via React Query invalidation
+            // Close dialog
+            setIsRelationshipEditOpen(false);
+            // Optional: Close detailed sheet to reflect clean state or let it update?
+            // If data updates, DetailSheet might flicker or show old data until refetch.
+            // Better to close DetailSheet too?
+            setSelectedRelationship(null);
+          }}
+          projectId={projectId}
+          sourceName={
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.source,
+            )?.profile?.name || selectedRelationship?.source
+          }
+          targetName={
+            characters.find(
+              (c) =>
+                (c._id || (c as { id?: string }).id) ===
+                selectedRelationship?.target,
+            )?.profile?.name || selectedRelationship?.target
+          }
+        />
+      )}
 
       {/* Analysis Result Summary Modal */}
       {analysisDiff && (
