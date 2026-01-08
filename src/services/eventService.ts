@@ -17,7 +17,7 @@ export const eventService = {
   getByCharacter: async (characterId: string): Promise<Event[]> => {
     try {
       const response = await api.get<ApiResponse<BackendEvent[]>>(
-        `/characters/${characterId}/events`
+        `/characters/${characterId}/events`,
       );
       const data = response.data.data;
 
@@ -27,8 +27,18 @@ export const eventService = {
       }
 
       return data.map(transformBackendEvent);
-    } catch (error) {
-      console.error("[eventService] getByCharacter failed:", error);
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data?: unknown; status?: number; headers?: unknown };
+        message?: string;
+      };
+      console.error("[eventService] getByCharacter failed:", {
+        error: axiosError.response?.data || axiosError.message,
+        status: axiosError.response?.status,
+        headers: axiosError.response?.headers,
+        characterId,
+        url: `/characters/${characterId}/events`,
+      });
       return [];
     }
   },
@@ -40,7 +50,7 @@ export const eventService = {
   getByProject: async (projectId: string): Promise<Event[]> => {
     try {
       const response = await api.get<ApiResponse<BackendEvent[]>>(
-        `/projects/${projectId}/events`
+        `/projects/${projectId}/events`,
       );
       const data = response.data.data;
       if (!Array.isArray(data)) return [];

@@ -28,9 +28,10 @@ import {
 import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
 import { useCharacter } from "@/hooks/useCharacters";
-import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
+import { useQueryClient } from "@tanstack/react-query"; // Added useQueryClient
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@stolink/ui";
@@ -73,6 +74,7 @@ export default function CharacterDetailDialog({
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
+  const setGlobalJobId = useAnalysisBufferStore((state) => state.setJobId);
 
   // Fetch fresh character data
   // 만약 DB에는 데이터가 있는데 리스트에는 없을 경우를 대비해 상세 조회
@@ -87,34 +89,70 @@ export default function CharacterDetailDialog({
 
   useEffect(() => {
     if (displayCharacter) {
-      // Basic logging for development check can remain if needed, but removing per user request
+      console.log(
+        "[CharacterDetailDialog] displayCharacter imageUrl:",
+        displayCharacter.imageUrl,
+      );
     }
-  }, [displayCharacter, isOpen, character]);
+    if (fetchedCharacter) {
+      console.log(
+        "[CharacterDetailDialog] fetchedCharacter imageUrl:",
+        fetchedCharacter.imageUrl,
+      );
+    }
+  }, [displayCharacter, fetchedCharacter, isOpen, character]);
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
-  // Image generation polling
-  const { isGenerating, progress } = useImageGenerationPolling(
-    imageJobId,
-    character?._id || "",
-    {
-      onComplete: (imageUrl) => {
-        // Force refresh by adding a timestamp if not already present or as a safety
-        const cacheBusterUrl = imageUrl.includes("?")
-          ? `${imageUrl}&t=${Date.now()}`
-          : `${imageUrl}?t=${Date.now()}`;
-        setTempImageUrl(cacheBusterUrl);
-        setImageJobId(null);
-      },
-      onError: () => {
-        setImageJobId(null);
-      },
-      onTimeout: () => {
-        setImageJobId(null);
-      },
-    },
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Watch for global image job completion
+  const isGlobalAnalyzing = useAnalysisBufferStore(
+    (state) => state.isAnalyzing,
   );
+
+  const currentJobType = useAnalysisBufferStore(
+    (state) => state.currentJobType,
+  );
+
+  // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
+  // Add minimum display time to ensure animation is visible even for fast jobs
+  useEffect(() => {
+    if (imageJobId && !isGlobalAnalyzing && currentJobType !== "image") {
+      // Job finished - add delay to ensure animation is visible
+      const timer = setTimeout(async () => {
+        console.log(
+          "[CharacterDetailDialog] Global image job finished. Refetching character data.",
+        );
+        // Use refetchQueries instead of invalidateQueries for immediate data refresh
+        await queryClient.refetchQueries({ queryKey: ["characters"] });
+        await queryClient.refetchQueries({
+          queryKey: ["character", character?._id],
+        });
+        setImageJobId(null);
+        setTempImageUrl(null); // Clear temp, let real data take over
+      }, 800); // Minimum 800ms animation display
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    imageJobId,
+    isGlobalAnalyzing,
+    currentJobType,
+    queryClient,
+    character?._id,
+  ]);
+
+  // Use local imageJobId as primary indicator for animation
+  // This ensures animation shows even if global state updates faster than React re-renders
+  const isGenerating = !!imageJobId;
+  // Use global progress if available, otherwise show indeterminate
+  const progress =
+    isGlobalAnalyzing && currentJobType === "image"
+      ? useAnalysisBufferStore.getState().progress
+      : 0;
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
@@ -123,6 +161,7 @@ export default function CharacterDetailDialog({
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
   // Reset edit mode and generation state when modal closes or character changes (without useEffect setState)
+  // 주의: 이미지 생성은 백그라운드에서 계속 진행되므로 글로벌 분석 상태는 정리하지 않음
   if (prevIsOpen && !isOpen) {
     setIsEditMode(false);
     setImageJobId(null);
@@ -153,7 +192,6 @@ export default function CharacterDetailDialog({
     },
   );
 
-  const { toast } = useToast();
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
   const [manualPrompt, setManualPrompt] = useState("");
@@ -243,6 +281,12 @@ export default function CharacterDetailDialog({
             ? parts.join(", ")
             : "A high quality character portrait";
 
+        console.log("[CharacterDetailDialog] REQUESTING CHARACTER IMAGE:", {
+          projectId: character.projectId,
+          characterId: character._id,
+          action,
+        });
+
         const { jobId } = await imageService.generateCharacterImage(
           character.projectId,
           character._id,
@@ -251,12 +295,18 @@ export default function CharacterDetailDialog({
           selectedSetting as unknown as Record<string, unknown>,
         );
 
+        console.log(
+          "[CharacterDetailDialog] -> CHARACTER IMAGE JOB STARTED:",
+          jobId,
+        );
         setImageJobId(jobId);
+        setGlobalJobId(jobId, "image");
         toast({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch {
+      } catch (err: unknown) {
+        console.error("[CharacterDetailDialog] Image generation failed:", err);
         toast({
           variant: "destructive",
           title: "실패",
@@ -271,6 +321,7 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
+      setGlobalJobId,
     ],
   );
 

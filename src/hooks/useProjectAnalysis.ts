@@ -6,8 +6,10 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { aiService } from "@/services/aiService";
+import { imageService } from "@/services/imageService";
 import type {
   AnalysisResultData,
   ConsistencyReport,
@@ -30,16 +32,20 @@ interface UseProjectAnalysisReturn {
   flushAndAnalyze: () => Promise<void>;
   resetAnalysis: () => void;
   lastConsistencyReport: ConsistencyReport | null; // Added
+  isStuck: boolean; // Added
+  currentJobType: "analysis" | "image" | null; // Added
 }
 
 export function useProjectAnalysis(
   projectId: string | null,
-  options: UseProjectAnalysisOptions = {}
+  options: UseProjectAnalysisOptions = {},
 ): UseProjectAnalysisReturn {
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
+  const queryClient = useQueryClient();
 
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isStuck, setIsStuck] = useState(false); // Added
 
   const pendingHashesRef = useRef<Record<string, string>>({});
 
@@ -47,9 +53,10 @@ export function useProjectAnalysis(
   const onCompleteRef = useRef(onAnalysisComplete);
   const onErrorRef = useRef(onAnalysisError);
 
-  // Stuck detection (for future use)
-  const _stuckCountRef = useRef(0);
-  const _lastProgressRef = useRef(-1);
+  // Stuck detection logic
+  const lastProgressRef = useRef<number>(-1);
+  const lastProgressUpdateRef = useRef<number>(Date.now());
+  const STUCK_TIMEOUT_MS = 60_000; // 60 seconds
 
   useEffect(() => {
     onCompleteRef.current = onAnalysisComplete;
@@ -61,29 +68,32 @@ export function useProjectAnalysis(
   const setProjectId = useAnalysisBufferStore((state) => state.setProjectId);
   const flush = useAnalysisBufferStore((state) => state.flush);
   const shouldAutoFlush = useAnalysisBufferStore(
-    (state) => state.shouldAutoFlush
+    (state) => state.shouldAutoFlush,
   );
   const setBufferAnalyzing = useAnalysisBufferStore(
-    (state) => state.setAnalyzing
+    (state) => state.setAnalyzing,
   );
   const getBufferSummary = useAnalysisBufferStore(
-    (state) => state.getBufferSummary
+    (state) => state.getBufferSummary,
   );
   const currentJobId = useAnalysisBufferStore((state) => state.currentJobId);
+  const currentJobType = useAnalysisBufferStore(
+    (state) => state.currentJobType,
+  );
   const setJobId = useAnalysisBufferStore((state) => state.setJobId);
   const setGlobalProgress = useAnalysisBufferStore(
-    (state) => state.setProgress
+    (state) => state.setProgress,
   );
   const setLastAnalyzedHashes = useAnalysisBufferStore(
-    (state) => state.setLastAnalyzedHashes
+    (state) => state.setLastAnalyzedHashes,
   );
   const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
   const resetAnalysis = useAnalysisBufferStore((state) => state.resetAnalysis);
   const lastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.lastConsistencyReport
+    (state) => state.lastConsistencyReport,
   );
   const setLastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.setLastConsistencyReport
+    (state) => state.setLastConsistencyReport,
   );
 
   // 프로젝트 ID 설정
@@ -103,7 +113,7 @@ export function useProjectAnalysis(
     error: _jobError,
     isConnected,
   } = useJobSSE<AnalysisResultData>(currentJobId, aiService.getJobStreamUrl, {
-    enabled: !!currentJobId,
+    enabled: !!currentJobId && currentJobType === "analysis",
     onComplete: (result) => {
       console.log("[useProjectAnalysis] Job Completed via SSE:", result);
       setAnalysisProgress(100);
@@ -134,21 +144,38 @@ export function useProjectAnalysis(
   useEffect(() => {
     if (
       currentJobId &&
+      currentJobType === "analysis" &&
       (jobStatus === "processing" || jobStatus === "pending")
     ) {
       setAnalysisProgress(jobProgress);
       setGlobalProgress(jobProgress);
-      // setBufferAnalyzing(true)는 jobStatus가 정확히 'processing'일 때만 수행하거나
-      // 이미 analyzing 중이 아닐 때만 호출하여 불필요한 스토어 업데이트 방지
+
+      // Check for progress changes to manage stuck state
+      if (jobProgress !== lastProgressRef.current) {
+        lastProgressRef.current = jobProgress;
+        lastProgressUpdateRef.current = Date.now();
+        if (isStuck) setIsStuck(false);
+      } else if (isAnalyzing && jobProgress < 100) {
+        const timeSinceLastUpdate = Date.now() - lastProgressUpdateRef.current;
+        if (timeSinceLastUpdate > STUCK_TIMEOUT_MS && !isStuck) {
+          console.warn(
+            `[useProjectAnalysis] Job detected as STUCK (No progress change for ${STUCK_TIMEOUT_MS}ms)`,
+          );
+          setIsStuck(true);
+        }
+      }
+
       if (!isAnalyzing) {
         setBufferAnalyzing(true);
       }
     }
   }, [
     currentJobId,
+    currentJobType,
     jobProgress,
     jobStatus,
     isAnalyzing,
+    isStuck,
     setBufferAnalyzing,
     setGlobalProgress,
   ]);
@@ -264,28 +291,34 @@ export function useProjectAnalysis(
   // Job Status Recovery & Polling Fallback
   const checkJobStatus = useCallback(async () => {
     if (!currentJobId) {
-      console.log(
-        "[useProjectAnalysis] checkJobStatus: No currentJobId, checking if stuck..."
-      );
       if (isAnalyzing) {
         console.log(
-          "[useProjectAnalysis] checkJobStatus: Stuck in isAnalyzing=true without jobId. Resetting."
+          "[useProjectAnalysis] checkJobStatus: Analyzing state but no jobId. Resetting.",
         );
         setBufferAnalyzing(false);
       }
       return;
     }
 
+    if (currentJobType !== "analysis" && currentJobType !== "image") {
+      // Not a supported job type for this hook
+      return;
+    }
+
     console.log(
-      `[useProjectAnalysis] checkJobStatus: Fetching status for ${currentJobId}`
+      `[useProjectAnalysis] checkJobStatus: Fetching status for ${currentJobId} (Type: ${currentJobType})`,
     );
     try {
-      const status =
-        await aiService.getJobStatus<AnalysisResultData>(currentJobId);
+      let status;
+      if (currentJobType === "image") {
+        status = await imageService.getImageJobStatus(currentJobId);
+      } else {
+        status = await aiService.getJobStatus<AnalysisResultData>(currentJobId);
+      }
 
       console.log(
         `[useProjectAnalysis] checkJobStatus: Full status object:`,
-        status
+        status,
       );
 
       // Check for implicit completion (if the response IS the result)
@@ -300,7 +333,7 @@ export function useProjectAnalysis(
         normalizedStatus = explicitStatus.toLowerCase().trim();
       } else if (hasResultFields) {
         console.log(
-          "[useProjectAnalysis] Implicit completion detected (Result fields found)"
+          "[useProjectAnalysis] Implicit completion detected (Result fields found)",
         );
         normalizedStatus = "completed";
       }
@@ -319,7 +352,7 @@ export function useProjectAnalysis(
         (typeof statusAny.progress === "number" && statusAny.progress >= 100)
       ) {
         console.log(
-          "[useProjectAnalysis] checkJobStatus: Job COMPLETED (or 100%). Finalizing state."
+          "[useProjectAnalysis] checkJobStatus: Job COMPLETED (or 100%). Finalizing state.",
         );
         setAnalysisProgress(100);
         setGlobalProgress(100);
@@ -332,9 +365,19 @@ export function useProjectAnalysis(
           : status.result;
 
         if (resultData) {
-          onCompleteRef.current?.(resultData);
-          if (resultData?.consistencyReport) {
-            setLastConsistencyReport(resultData.consistencyReport);
+          if (currentJobType === "analysis") {
+            const analysisResult = resultData as AnalysisResultData;
+            onCompleteRef.current?.(analysisResult);
+            if (analysisResult?.consistencyReport) {
+              setLastConsistencyReport(analysisResult.consistencyReport);
+            }
+          } else if (currentJobType === "image") {
+            console.log(
+              "[useProjectAnalysis] Image Job Completed. Invalidating character queries.",
+            );
+            // Invalidate character queries so the new imageUrl is reflected
+            queryClient.invalidateQueries({ queryKey: ["characters"] });
+            queryClient.invalidateQueries({ queryKey: ["character"] });
           }
         }
         return;
@@ -343,7 +386,7 @@ export function useProjectAnalysis(
       // Handle Failed status
       if (normalizedStatus === "failed" || normalizedStatus === "error") {
         console.error(
-          `[useProjectAnalysis] checkJobStatus: Job ${normalizedStatus}. Clearing state.`
+          `[useProjectAnalysis] checkJobStatus: Job ${normalizedStatus}. Clearing state.`,
         );
         setAnalysisError("분석 작업이 실패했습니다.");
         setBufferAnalyzing(false);
@@ -355,19 +398,32 @@ export function useProjectAnalysis(
       }
 
       // Check for other terminal statuses or unexpected strings
-      if (normalizedStatus !== "processing" && normalizedStatus !== "pending") {
-        console.warn(
-          `[useProjectAnalysis] checkJobStatus: Unknown or terminal status received: ${explicitStatus}. Resetting.`
-        );
+      // Valid in-progress statuses: processing, pending, sent (image jobs), queued
+      const validInProgressStatuses = [
+        "processing",
+        "pending",
+        "sent",
+        "queued",
+      ];
+      if (!validInProgressStatuses.includes(normalizedStatus)) {
+        if (currentJobType === "analysis") {
+          console.warn(
+            `[useProjectAnalysis] checkJobStatus: Unknown or terminal status received: ${explicitStatus}. Resetting.`,
+          );
+        } else {
+          console.log(
+            `[useProjectAnalysis] checkJobStatus: Image job status "${normalizedStatus}" not in progress. Resetting.`,
+          );
+        }
         setBufferAnalyzing(false);
         setJobId(null);
         return;
       }
 
       // Job exists and is running/pending, make sure we are in analyzing state
-      if (!isAnalyzing) {
+      if (!isAnalyzing && currentJobType === "analysis") {
         console.log(
-          `[useProjectAnalysis] checkJobStatus: Job is ${normalizedStatus}, ensuring isAnalyzing is true.`
+          `[useProjectAnalysis] checkJobStatus: Job is ${normalizedStatus}, ensuring isAnalyzing is true.`,
         );
         setBufferAnalyzing(true);
       }
@@ -379,7 +435,7 @@ export function useProjectAnalysis(
       const status = axiosError?.response?.status;
       if (status === 404 || status === 500) {
         console.log(
-          `[useProjectAnalysis] checkJobStatus: Clearing invalid job ID (Error ${status})`
+          `[useProjectAnalysis] checkJobStatus: Clearing invalid job ID (Error ${status})`,
         );
         setBufferAnalyzing(false);
         setJobId(null);
@@ -387,26 +443,38 @@ export function useProjectAnalysis(
     }
   }, [
     currentJobId,
+    currentJobType,
     isAnalyzing,
     setBufferAnalyzing,
     setGlobalProgress,
     setJobId,
     setLastConsistencyReport,
+    queryClient,
   ]);
 
   // Handle Initial Load & Job ID Changes
   useEffect(() => {
-    checkJobStatus();
-  }, [currentJobId, checkJobStatus]);
+    if (
+      currentJobId &&
+      (currentJobType === "analysis" || currentJobType === "image")
+    ) {
+      checkJobStatus();
+    }
+  }, [currentJobId, currentJobType, checkJobStatus]);
 
   // Polling Fallback: If SSE is not connected but we are expecting analysis
   useEffect(() => {
-    if (!currentJobId || !isAnalyzing || isConnected) {
+    if (
+      !currentJobId ||
+      (currentJobType !== "analysis" && currentJobType !== "image") ||
+      !isAnalyzing ||
+      isConnected
+    ) {
       return;
     }
 
     console.log(
-      "[useProjectAnalysis] SSE not active (isConnected: false). Starting 5s polling fallback..."
+      "[useProjectAnalysis] SSE not active (isConnected: false). Starting 5s polling fallback...",
     );
     const intervalId = setInterval(() => {
       checkJobStatus();
@@ -418,7 +486,7 @@ export function useProjectAnalysis(
       }
       clearInterval(intervalId);
     };
-  }, [currentJobId, isAnalyzing, isConnected, checkJobStatus]);
+  }, [currentJobId, currentJobType, isAnalyzing, isConnected, checkJobStatus]);
 
   return {
     isAnalyzing,
@@ -428,5 +496,7 @@ export function useProjectAnalysis(
     flushAndAnalyze,
     resetAnalysis,
     lastConsistencyReport,
+    isStuck, // Added
+    currentJobType, // Added
   };
 }

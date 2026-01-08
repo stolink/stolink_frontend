@@ -119,7 +119,7 @@ export const LinkRenderer = memo(function LinkRenderer({
     if (!showTension) return false;
     // High strength negative relation (MetaCategory = negative)
     const isNegative =
-      link.type === "hostile" || link.type === "rival" || link.type === "ENEMY";
+      (link.type as string) === "hostile" || (link.type as string) === "ENEMY";
     return isNegative && link.strength >= 7;
   }, [showTension, link.type, link.strength]);
 

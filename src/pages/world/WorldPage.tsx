@@ -4,15 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import {
-  Users,
-  MapPin,
-  Sword,
-  Sparkles,
-  Network,
-  UserRound,
-  X,
-} from "lucide-react";
+import { Users, Sparkles, Network, UserRound, X } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
 import type {
@@ -44,50 +36,6 @@ import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { Button } from "@stolink/ui";
-
-// Mock Places
-const places: {
-  id: string;
-  name: string;
-  type: string;
-  extras?: { chapters?: string[] };
-}[] = [
-  {
-    id: "1",
-    name: "왕국 아르카나",
-    type: "지역",
-    extras: { chapters: ["1", "3", "5"] },
-  },
-  {
-    id: "2",
-    name: "금지된 숲",
-    type: "지역",
-    extras: { chapters: ["2", "4"] },
-  },
-  {
-    id: "3",
-    name: "마법사 탑",
-    type: "건물",
-    extras: { chapters: ["3", "6"] },
-  },
-];
-
-// Mock Items
-const items: {
-  id: string;
-  name: string;
-  type: string;
-  extras?: { owner?: string };
-}[] = [
-  { id: "1", name: "전설의 검", type: "무기", extras: { owner: "주인공" } },
-  {
-    id: "2",
-    name: "마법 지팡이",
-    type: "무기",
-    extras: { owner: "현자 가온" },
-  },
-  { id: "3", name: "예언서", type: "문서", extras: { owner: "없음" } },
-];
 
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 import { useProjectEvents } from "@/hooks/useEvents";
@@ -121,26 +69,29 @@ export default function WorldPage() {
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
 
   // Polling for analysis status (Global)
-  const { isAnalyzing: isPolling, resetAnalysis } = useProjectAnalysis(
-    projectId ?? null,
-    {
-      onAnalysisComplete: (result) => {
-        if (result) {
-          const diff = calculateAnalysisDiff(characters, links, result);
-          setAnalysisDiff(diff);
+  const {
+    isAnalyzing: isPolling,
+    resetAnalysis,
+    analysisProgress,
+    isStuck,
+    currentJobType,
+  } = useProjectAnalysis(projectId ?? null, {
+    onAnalysisComplete: (result) => {
+      if (result) {
+        const diff = calculateAnalysisDiff(characters, links, result);
+        setAnalysisDiff(diff);
 
-          // Trigger success animation logic
-          setShowCompletionAnimation(true);
+        // Trigger success animation logic
+        setShowCompletionAnimation(true);
 
-          // Wait 1.5s for the user to see "Completed" state, then open modal
-          setTimeout(() => {
-            setShowCompletionAnimation(false);
-            setIsAnalysisModalOpen(true);
-          }, 1500);
-        }
-      },
+        // Wait 1.5s for the user to see "Completed" state, then open modal
+        setTimeout(() => {
+          setShowCompletionAnimation(false);
+          setIsAnalysisModalOpen(true);
+        }, 1500);
+      }
     },
-  );
+  });
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -274,9 +225,11 @@ export default function WorldPage() {
     <div className="h-full w-full flex flex-col bg-paper overflow-hidden relative selection:bg-mocha-100 selection:text-mocha-900">
       {/* ─────────────────────────────────────────────────────────────
           GLOBAL LOADING OVERLAY (Shutter Animation)
+          이미지 생성(image 타입)은 백그라운드에서 조용히 진행되므로 오버레이 표시 안 함
       ───────────────────────────────────────────────────────────── */}
       <AnimatePresence>
-        {(isPolling || showCompletionAnimation) && (
+        {((isPolling && currentJobType !== "image") ||
+          showCompletionAnimation) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -319,18 +272,62 @@ export default function WorldPage() {
 
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold font-heading text-espresso-900">
-                  {showCompletionAnimation ? "분석 완료!" : "세계관 분석 중"}
-                </h2>
-                <p
-                  className={cn(
-                    "text-mocha-500",
-                    !showCompletionAnimation && "animate-pulse",
-                  )}
-                >
                   {showCompletionAnimation
-                    ? "분석된 결과를 불러오고 있습니다..."
-                    : "AI가 스토리의 흐름을 읽고 있습니다..."}
-                </p>
+                    ? "분석 완료!"
+                    : currentJobType === "image"
+                      ? "캐릭터 이미지 생성 중"
+                      : isStuck
+                        ? "분석이 지연되고 있습니다"
+                        : "세계관 분석 중"}
+                </h2>
+                <div className="flex flex-col items-center gap-4">
+                  <p
+                    className={cn(
+                      "text-mocha-500",
+                      !showCompletionAnimation && !isStuck && "animate-pulse",
+                    )}
+                  >
+                    {showCompletionAnimation
+                      ? "분석된 결과를 불러오고 있습니다..."
+                      : currentJobType === "image"
+                        ? "캐릭터의 새로운 모습을 그리고 있습니다..."
+                        : isStuck
+                          ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
+                          : "AI가 스토리의 흐름을 읽고 있습니다..."}
+                  </p>
+
+                  {!showCompletionAnimation && (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-64 h-2 bg-cloud-100 rounded-full overflow-hidden border border-cloud-200 shadow-inner">
+                        <motion.div
+                          className="h-full bg-mocha-500"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${analysisProgress}%` }}
+                          transition={{
+                            type: "spring",
+                            bounce: 0,
+                            duration: 0.5,
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-mocha-400 font-mono font-bold text-sm">
+                          {Math.round(analysisProgress)}%
+                        </span>
+                        {isStuck && (
+                          <Button
+                            onClick={() => resetAnalysis()}
+                            size="sm"
+                            intent="secondary"
+                            className="h-7 px-3 text-xs bg-white/80 hover:bg-white border-mocha-200 text-mocha-600"
+                          >
+                            초기화 및 재시작
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -355,20 +352,7 @@ export default function WorldPage() {
               <UserRound className="h-3.5 w-3.5" />
               캐릭터
             </TabsTrigger>
-            <TabsTrigger
-              value="places"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
-            >
-              <MapPin className="h-3.5 w-3.5" />
-              장소
-            </TabsTrigger>
-            <TabsTrigger
-              value="items"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
-            >
-              <Sword className="h-3.5 w-3.5" />
-              아이템
-            </TabsTrigger>
+
             <TabsTrigger
               value="foreshadowing"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm border border-transparent data-[state=active]:bg-paper data-[state=active]:border-cloud-200 data-[state=active]:shadow-sm data-[state=active]:text-espresso-900 data-[state=inactive]:text-mocha-500 data-[state=inactive]:hover:text-mocha-700 data-[state=inactive]:hover:bg-paper/50 transition-all"
@@ -475,11 +459,7 @@ export default function WorldPage() {
               <div className="pt-20 px-8 pb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {characters.map((character, index) => (
                   <div
-                    key={
-                      character._id ||
-                      (character as { id?: string }).id ||
-                      `char-${index}`
-                    }
+                    key={`${character._id || (character as { id?: string }).id || "char"}-${index}`}
                     className="editorial-card group cursor-pointer overflow-hidden aspect-[3/4] flex flex-col hover-lift editorial-fade-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                     onClick={() => handleCardClick(character)}
@@ -534,125 +514,6 @@ export default function WorldPage() {
               </div>
             </div>
           )}
-        </TabsContent>
-
-        {/* Places */}
-        <TabsContent
-          value="places"
-          className="flex-1 m-0 overflow-y-auto editorial-fade-in"
-        >
-          <div className="p-8 max-w-5xl mx-auto h-full">
-            {places.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <EmptyIndicator
-                  icon={MapPin}
-                  title="등록된 장소가 없습니다"
-                  description="스토리의 배경이 되는 주요 장소들을 기록해보세요."
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <h2 className="editorial-section-heading mb-6">
-                  <MapPin className="h-5 w-5 text-mocha-500" />
-                  주요 장소
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {places.map((place, idx) => (
-                    <div
-                      key={place.id}
-                      className="editorial-card p-5 hover-lift cursor-pointer group editorial-fade-in"
-                      style={{ animationDelay: `${idx * 60}ms` }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-mocha-100 to-mocha-50 flex items-center justify-center shrink-0 group-hover:from-mocha-200 group-hover:to-mocha-100 transition-all">
-                          <MapPin className="h-5 w-5 text-mocha-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="editorial-name text-base group-hover:text-mocha-500 transition-colors">
-                            {place.name}
-                          </h3>
-                          <p className="text-xs text-mocha-400 mt-1">
-                            {place.type}
-                          </p>
-                          <div className="flex items-center gap-1 mt-3">
-                            <span className="text-[10px] text-mocha-400 uppercase tracking-wider">
-                              등장
-                            </span>
-                            <div className="flex gap-1">
-                              {(place.extras?.chapters || []).map((ch) => (
-                                <span
-                                  key={ch}
-                                  className="text-xs px-1.5 py-0.5 rounded bg-cloud-100 text-mocha-600"
-                                >
-                                  {ch}장
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Items */}
-        <TabsContent
-          value="items"
-          className="flex-1 m-0 overflow-y-auto editorial-fade-in"
-        >
-          <div className="p-8 max-w-5xl mx-auto h-full">
-            {items.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <EmptyIndicator
-                  icon={Sword}
-                  title="등록된 아이템이 없습니다"
-                  description="전설의 무기나 중요한 단서가 되는 물건들을 관리해보세요."
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <h2 className="editorial-section-heading mb-6">
-                  <Sword className="h-5 w-5 text-mocha-500" />
-                  주요 아이템
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {items.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className="editorial-card p-5 hover-lift cursor-pointer group editorial-fade-in"
-                      style={{ animationDelay: `${idx * 60}ms` }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center shrink-0 group-hover:from-amber-200 group-hover:to-amber-100 transition-all">
-                          <Sword className="h-5 w-5 text-amber-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="editorial-name text-base group-hover:text-amber-600 transition-colors">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-mocha-400 mt-1">
-                            {item.type}
-                          </p>
-                          <div className="flex items-center gap-2 mt-3">
-                            <span className="text-[10px] text-mocha-400 uppercase tracking-wider">
-                              소유자
-                            </span>
-                            <span className="text-xs font-medium text-mocha-600">
-                              {item.extras?.owner || "미소유"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         </TabsContent>
 
         {/* Foreshadowing */}
