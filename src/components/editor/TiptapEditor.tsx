@@ -128,14 +128,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Destructure behavior settings
     const typewriterMode = behavior?.typewriterMode ?? "off";
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const focusModeEnabled = behavior?.focusMode ?? false;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartQuotes = behavior?.smartQuotes ?? true;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartDashes = behavior?.smartDashes ?? true;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const smartEllipsis = behavior?.smartEllipsis ?? true;
+    // Note: focusModeEnabled, smartQuotes, smartDashes, smartEllipsis are intentionally not destructured as they are not yet implemented.
 
     // Get CSS variables and theme class from settings
     const editorSettings = {

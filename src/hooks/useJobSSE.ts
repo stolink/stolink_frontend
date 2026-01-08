@@ -115,6 +115,7 @@ export function useJobSSE<T = unknown>(
 
     // Connection opened
     eventSource.onopen = () => {
+      console.log(`[useJobSSE] Connection opened for jobId: ${jobId}`);
       setIsConnected(true);
       setJobStatus("processing");
     };
@@ -128,6 +129,7 @@ export function useJobSSE<T = unknown>(
 
     // Progress update
     eventSource.addEventListener("progress", (e) => {
+      console.log(`[useJobSSE] Progress event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSEProgressEvent;
         setProgress(data.percent);
@@ -139,6 +141,7 @@ export function useJobSSE<T = unknown>(
 
     // Job completed
     eventSource.addEventListener("completed", (e) => {
+      console.log(`[useJobSSE] Completed event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSECompletedEvent<T>;
         setResult(data.result);
@@ -153,6 +156,7 @@ export function useJobSSE<T = unknown>(
 
     // Job failed
     eventSource.addEventListener("failed", (e) => {
+      console.error(`[useJobSSE] Failed event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSEFailedEvent;
         setError(data.error);
@@ -164,15 +168,63 @@ export function useJobSSE<T = unknown>(
       }
     });
 
-    // Connection error
-    eventSource.onerror = () => {
-      // Only set error if we haven't received a result yet
-      if (!result && jobStatus !== "completed") {
-        setError("SSE 연결이 끊어졌습니다.");
-        setIsConnected(false);
-        onErrorRef.current?.("SSE 연결이 끊어졌습니다.");
+    // Generic message update
+    eventSource.onmessage = (e) => {
+      console.log(`[useJobSSE] Generic message for ${jobId}:`, e.data);
+      // If the backend doesn't use custom event types, it might send everything here
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === "progress" || data.percent !== undefined) {
+          setProgress(data.percent || 0);
+          setJobStatus("processing");
+        } else if (
+          data.type === "completed" ||
+          data.type === "success" ||
+          data.status === "completed" ||
+          data.status === "success" ||
+          data.status === "done"
+        ) {
+          setResult(data.result);
+          setJobStatus("completed");
+          setProgress(100);
+          onCompleteRef.current?.(data.result);
+          cleanup();
+        } else if (
+          data.type === "failed" ||
+          data.type === "error" ||
+          data.status === "failed" ||
+          data.status === "error"
+        ) {
+          setError(data.error || "Job failed");
+          setJobStatus("failed");
+          onErrorRef.current?.(data.error || "Job failed");
+          cleanup();
+        }
+      } catch {
+        // Not JSON or unknown format
       }
-      cleanup();
+    };
+
+    // Connection error
+    eventSource.onerror = (e) => {
+      console.error(`[useJobSSE] Error for jobId: ${jobId}`, e);
+      console.log(
+        `[useJobSSE] EventSource readyState: ${eventSource.readyState}`
+      );
+
+      // readyState 0 (CONNECTING) means it's trying to reconnect. Don't cleanup yet.
+      // readyState 2 (CLOSED) means it gave up.
+      if (eventSource.readyState === 2) {
+        if (!result && jobStatus !== "completed") {
+          setError("SSE 연결이 닫혔습니다.");
+          setIsConnected(false);
+          // Only cleanup if permanently closed
+          cleanup();
+        }
+      } else {
+        // Just mark as disconnected temporarily, let EventSource retry
+        setIsConnected(false);
+      }
     };
 
     // Timeout check interval
@@ -189,15 +241,7 @@ export function useJobSSE<T = unknown>(
     }
 
     return cleanup;
-  }, [
-    jobId,
-    enabled,
-    getStreamUrl,
-    cleanup,
-    maxConnectionTime,
-    result,
-    jobStatus,
-  ]);
+  }, [jobId, enabled, getStreamUrl, cleanup, maxConnectionTime]);
 
   return {
     isConnected,

@@ -123,6 +123,8 @@ export interface CharacterRelation {
   publicStance?: string;
   /** private_feeling from backend */
   privateFeeling?: string;
+  /** revealed_in_chapter for 4D Timeline */
+  revealedInChapter?: number;
 }
 
 /**
@@ -284,7 +286,7 @@ export function getCharacterFaction(char: Character): string {
  * 관계 배열을 가져오는 헬퍼 (레거시 호환)
  */
 export function getCharacterRelationships(
-  char: Character,
+  char: Character
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }

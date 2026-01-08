@@ -4,8 +4,14 @@ import type { CharacterRole } from "@/types";
 // 🎨 색상 설정
 // =====================================================
 
-// UI에서 사용하는 관계 타입 (3가지로 제한)
-export type UIRelationType = "friendly" | "hostile" | "romantic";
+// UI에서 사용하는 관계 타입
+export type UIRelationType =
+  | "friendly"
+  | "hostile"
+  | "romantic"
+  | "family"
+  | "mentor"
+  | "rival";
 
 export const MOCHA_COLORS = {
   500: "#A47764", // Primary
@@ -14,36 +20,77 @@ export const MOCHA_COLORS = {
 } as const;
 
 // =====================================================
-// 🎨 관계 타입별 통일 색상 (HEX 직접 사용)
-// CLAUDE.md 및 index.css와 완전 동기화
+// 🎨 색상 설정 (Semantic Clustering)
 // =====================================================
 
-// 관계 타입별 HEX 색상 (단일 통일 팔레트)
-export const RELATION_COLORS_HEX = {
-  friendly: "#15803D", // Dark Green (신뢰, 협력)
-  hostile: "#F44336", // Red (갈등, 적대)
-  romantic: "#FF4081", // Vivid Cherry Blossom Pink (애정, 열정)
+// 메타 카테고리 (Semantic Clustering)
+export type MetaCategory = "positive" | "negative" | "neutral";
+
+export const META_CATEGORY_COLORS = {
+  positive: "#15803D", // Green/Blue (안정, 결속)
+  negative: "#F44336", // Red/Orange (긴장, 갈등)
+  neutral: "#7C6BA8", // Purple/Grey (위계, 기능)
 } as const;
 
-// 관계 타입별 색상 팔레트 (Strength 기반 3단계 - 채도/명도 변화)
+// 관계 타입별 메타 카테고리 매핑
+export const RELATION_TO_META_CATEGORY: Record<UIRelationType, MetaCategory> = {
+  friendly: "positive",
+  romantic: "positive",
+  family: "positive", // Family -> Positive (Blue/Green)
+  hostile: "negative",
+  rival: "negative",
+  mentor: "neutral",
+};
+
+// 관계 타입별 HEX 색상 (메타 카테고리 기반 재정의)
+export const RELATION_COLORS_HEX = {
+  // Positive Group (Green/Blue)
+  friendly: "#15803D", // Standard Green
+  romantic: "#059669", // Emerald (Deep Green/Blueish) - 사랑은 헌신의 색
+  family: "#2563EB", // Blue - 혈연의 냉철한? 아니 굳건한 결속
+
+  // Negative Group (Red/Orange)
+  hostile: "#F44336", // Standard Red
+  rival: "#EA580C", // Orange - 불타는 경쟁
+
+  // Neutral Group (Purple/Grey)
+  mentor: "#7C6BA8", // Muted Purple - 고귀함/지혜
+} as const;
+
+// 관계 타입별 색상 팔레트 (Meta-Category 색조 준수)
 export const RELATION_PALETTE: Record<
   UIRelationType,
   { weak: string; standard: string; deep: string }
 > = {
   friendly: {
-    weak: "#4ADE80", // Light Green (1-3)
-    standard: "#15803D", // Dark Green (4-7)
-    deep: "#166534", // Deep Forest (8-10)
-  },
-  hostile: {
-    weak: "#FCA5A5", // Light Red (1-3)
-    standard: "#F44336", // Red (4-7)
-    deep: "#B91C1C", // Deep Red (8-10)
+    weak: "#86EFAC", // Green 300
+    standard: RELATION_COLORS_HEX.friendly,
+    deep: "#14532D", // Green 900
   },
   romantic: {
-    weak: "#FDA4AF", // Light Pink (1-3)
-    standard: "#FF4081", // Vivid Pink (4-7)
-    deep: "#BE185D", // Deep Rose (8-10)
+    weak: "#6EE7B7", // Emerald 300
+    standard: RELATION_COLORS_HEX.romantic,
+    deep: "#064E3B", // Emerald 900
+  },
+  family: {
+    weak: "#93C5FD", // Blue 300
+    standard: RELATION_COLORS_HEX.family,
+    deep: "#1E3A8A", // Blue 900
+  },
+  hostile: {
+    weak: "#FCA5A5", // Red 300
+    standard: RELATION_COLORS_HEX.hostile,
+    deep: "#7F1D1D", // Red 900
+  },
+  rival: {
+    weak: "#FDBA74", // Orange 300
+    standard: RELATION_COLORS_HEX.rival,
+    deep: "#7C2D12", // Brown/Orange 900
+  },
+  mentor: {
+    weak: "#D8B4FE", // Purple 300
+    standard: RELATION_COLORS_HEX.mentor,
+    deep: "#581C87", // Purple 900
   },
 };
 
@@ -52,6 +99,9 @@ export const RELATION_COLORS: Record<UIRelationType, string> = {
   friendly: RELATION_COLORS_HEX.friendly,
   hostile: RELATION_COLORS_HEX.hostile,
   romantic: RELATION_COLORS_HEX.romantic,
+  family: RELATION_COLORS_HEX.family,
+  mentor: RELATION_COLORS_HEX.mentor,
+  rival: RELATION_COLORS_HEX.rival,
 };
 
 // 관계 타입별 라벨 (한글)
@@ -60,6 +110,9 @@ export const RELATION_LABELS: Record<UIRelationType, string> = {
   friendly: "우호",
   hostile: "적대",
   romantic: "로맨스",
+  family: "가족",
+  mentor: "멘토",
+  rival: "라이벌",
 };
 
 // 역할별 라벨

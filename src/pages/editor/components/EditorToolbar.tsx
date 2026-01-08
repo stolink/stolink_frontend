@@ -15,6 +15,7 @@ import {
   History,
   Download,
   Sparkles,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +26,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { EditorSettingsPanel } from "@/components/editor/settings/EditorSettingsPanel";
+
+import { motion } from "framer-motion";
 
 interface EditorToolbarProps {
   // Sidebar
@@ -49,7 +52,7 @@ interface EditorToolbarProps {
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   onViewModeChange: (
     newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
+    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
   ) => void;
 
   // Split view
@@ -78,7 +81,9 @@ interface EditorToolbarProps {
 
   // Analysis Status
   analysisStatus: "idle" | "analyzing" | "completed" | "error";
+  analysisProgress?: number;
   onTriggerAnalysis?: () => void;
+  onResetAnalysis?: () => void;
   // Pagination removed for infinite scroll
 }
 
@@ -114,7 +119,9 @@ export function EditorToolbar({
   onToggleSnapshot,
   onExport,
   analysisStatus,
+  analysisProgress,
   onTriggerAnalysis,
+  onResetAnalysis,
   // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
@@ -148,7 +155,7 @@ export function EditorToolbar({
         {characterCount > 0 && (
           <span
             className={cn(
-              "text-xs font-medium px-2 py-0.5 rounded-full transition-colors text-muted-foreground bg-secondary",
+              "text-xs font-medium px-2 py-0.5 rounded-full transition-colors text-muted-foreground bg-secondary"
             )}
           >
             {characterCount.toLocaleString()}자
@@ -164,7 +171,7 @@ export function EditorToolbar({
               "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
               analysisStatus === "analyzing"
                 ? "bg-primary/10 text-primary cursor-not-allowed"
-                : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105",
+                : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105"
             )}
             title="AI 분석 실행"
           >
@@ -175,9 +182,23 @@ export function EditorToolbar({
 
         {/* Status Indicators (Reduced visibility as button shows status) */}
         {analysisStatus === "analyzing" && (
-          <span className="text-xs text-primary animate-pulse font-medium">
-            분석중...
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-primary animate-pulse font-medium">
+              분석중...
+            </span>
+            {onResetAnalysis && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResetAnalysis();
+                }}
+                className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md transition-colors"
+                title="분석 강제 종료 (상태 초기화)"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         )}
         {analysisStatus === "completed" && (
           <span className="text-xs text-green-500 font-medium">분석 완료</span>
@@ -219,7 +240,7 @@ export function EditorToolbar({
               "p-1 rounded-lg transition-colors",
               splitViewEnabled
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground",
+                : "hover:bg-accent text-muted-foreground"
             )}
             title="분할 화면"
           >
@@ -232,7 +253,7 @@ export function EditorToolbar({
               "p-1 rounded-lg transition-colors",
               isTypewriterMode
                 ? "bg-primary/10 text-primary"
-                : "hover:bg-accent text-muted-foreground",
+                : "hover:bg-accent text-muted-foreground"
             )}
             title="타자기 모드 (커서를 화면 중앙에 고정)"
           >
@@ -298,12 +319,33 @@ export function EditorToolbar({
             "p-1 rounded-lg transition-colors",
             rightSidebarOpen
               ? "bg-primary/10 text-primary"
-              : "hover:bg-accent text-muted-foreground",
+              : "hover:bg-accent text-muted-foreground"
           )}
           title="복선/AI 사이드바"
         >
           <PanelRight className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Analysis Progress Bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] pointer-events-none z-50">
+        {(analysisStatus === "analyzing" || analysisStatus === "completed") && (
+          <motion.div
+            className={cn(
+              "h-full shadow-[0_0_8px_rgba(var(--primary),0.5)]",
+              analysisStatus === "completed" ? "bg-green-500" : "bg-primary"
+            )}
+            initial={{ width: 0, opacity: 1 }}
+            animate={{
+              width: `${analysisProgress || 0}%`,
+              opacity: analysisStatus === "completed" ? [1, 1, 0] : 1,
+            }}
+            transition={{
+              width: { duration: 0.5, ease: "easeInOut" },
+              opacity: { duration: 0.5, delay: 2 },
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -382,7 +424,7 @@ function TitleBreadcrumb({
                       "truncate max-w-[150px] transition-colors",
                       isLast
                         ? "font-bold text-foreground hover:text-primary"
-                        : "font-medium text-muted-foreground",
+                        : "font-medium text-muted-foreground"
                     )}
                     title={
                       isLast && !isDemo ? "클릭하여 제목 편집" : item.title
@@ -442,7 +484,7 @@ interface ViewModeButtonsProps {
   viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
   onViewModeChange: (
     newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
+    currentMode: "editor" | "scrivenings" | "outline" | "corkboard"
   ) => void;
 }
 
@@ -465,7 +507,7 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
             "flex items-center justify-center p-1 rounded-md transition-all duration-200",
             viewMode === mode
               ? "bg-card text-primary shadow-sm ring-1 ring-border"
-              : "text-muted-foreground hover:text-foreground hover:bg-card/50",
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           )}
         >
           <Icon className="w-4 h-4" />

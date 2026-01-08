@@ -10,13 +10,16 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number },
+    coords?: { x: number; y: number }
   ) => void;
   onClick?: (link: RelationshipLink) => void;
   /** 네트워크 붕괴 시각화를 위한 변경 상태 */
   changeType?: "inversion" | "collapse" | "new" | "conflict" | "updated";
   /** 붉은 파동이 도달하는 시간 (ms) */
   rippleDelay?: number;
+  /** AI Insights */
+  showTension?: boolean;
+  showLogicCheck?: boolean;
 }
 
 /**
@@ -31,6 +34,8 @@ export const LinkRenderer = memo(function LinkRenderer({
   onHover,
   changeType,
   rippleDelay = 0,
+  showTension = false,
+  showLogicCheck = false,
 }: LinkRendererProps) {
   const groupRef = useRef<SVGGElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -89,8 +94,10 @@ export const LinkRenderer = memo(function LinkRenderer({
     return null;
   }
 
-  // 강도 기반 스타일
-  const baseWidth = 2 + ((link.strength - 1) / 9) * 3;
+  // 강도 기반 스타일 (Multi-Dimensional Mapping: 1~10 -> 1px~5px)
+  // Strength 1 -> 1px
+  // Strength 10 -> 5px
+  const baseWidth = 1 + ((link.strength - 1) / 9) * 4;
   const activeBonus = (isHovered ? 2 : 0) + (isHighlighted ? 1.5 : 0);
   const strokeWidth = baseWidth + activeBonus;
 
@@ -115,6 +122,19 @@ export const LinkRenderer = memo(function LinkRenderer({
 
   const isActive = (isHighlighted || isHovered) && !isFiltered && !isDimmed;
   const showFlow = !isFiltered && changeType !== "collapse"; // 붕괴된 라인은 흐름 없음
+
+  // AI Insights Detection
+  const isTense = useMemo(() => {
+    if (!showTension) return false;
+    // High strength negative relation (MetaCategory = negative)
+    const isNegative =
+      link.type === "hostile" || link.type === "rival" || link.type === "ENEMY";
+    return isNegative && link.strength >= 7;
+  }, [showTension, link.type, link.strength]);
+
+  const isContradictory = useMemo(() => {
+    return showLogicCheck && link.logicCheck?.isContradictory;
+  }, [showLogicCheck, link.logicCheck]);
 
   // Inversion/New Animation: Pulse/Flash effect handled via CSS Keyframes in global styles or inline styles?
   // We'll use the transition logic for color change.
@@ -195,6 +215,8 @@ export const LinkRenderer = memo(function LinkRenderer({
           </stop>
         </linearGradient>
 
+        {/* 화살표 마커 Removed */}
+
         {/* 글로우 필터 */}
         <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation={isActive ? 4 : 2} result="blur" />
@@ -250,6 +272,39 @@ export const LinkRenderer = memo(function LinkRenderer({
         />
       )}
 
+      {/* Tension Heatmap Overlay (Red Glow) */}
+      {isTense && !isFiltered && (
+        <path
+          className="link-path-tension animate-pulse"
+          fill="none"
+          stroke="#EF4444"
+          strokeWidth={strokeWidth + 10}
+          strokeOpacity={0.4}
+          strokeLinecap="round"
+          style={{
+            filter: "blur(12px)",
+            ...transitionStyle,
+          }}
+        />
+      )}
+
+      {/* Logic Check Contradiction Overlay (Amber Glow/Mark) */}
+      {isContradictory && !isFiltered && (
+        <path
+          className="link-path-contradiction"
+          fill="none"
+          stroke="#F59E0B"
+          strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.9}
+          strokeLinecap="round"
+          strokeDasharray="4, 4"
+          style={{
+            filter: "drop-shadow(0 0 4px #F59E0B)",
+            ...transitionStyle,
+          }}
+        />
+      )}
+
       {/* === Layer 4: Base Line (Solid) - 항상 잘 보이게 === */}
       <path
         className="link-path"
@@ -257,16 +312,18 @@ export const LinkRenderer = memo(function LinkRenderer({
         stroke={primaryColor}
         strokeWidth={strokeWidth}
         // 기본 0.5 이상 유지하여 "너무 연해지지 않도록"
-        strokeOpacity={isFiltered ? 0.05 : isDimmed ? 0.1 : 0.5}
+        strokeOpacity={isFiltered ? 0.05 : isDimmed ? 0.1 : 0.6}
         strokeLinecap="round"
         strokeDasharray={dashArray}
         style={{
           ...transitionStyle, // Apply Ripple Transition
         }}
+        // Removed markerEnd as per "High-Dimensional" design request (clunky arrows removed)
       />
 
-      {/* === Layer 5: Flow Overlay (Electric Pulse) === */}
-      {showFlow && (
+      {/* === Layer 5: Flow Overlay (Directionality) === */}
+      {/* Bidirectional: No flow (Pulse maybe?) | Unidirectional: Flow A -> B */}
+      {showFlow && !link.bidirectional && (
         <path
           className="link-path"
           fill="none"
@@ -313,8 +370,22 @@ export const LinkRenderer = memo(function LinkRenderer({
             animation: `fadeIn 0.5s forwards ${rippleDelay}ms`, // Pop in with ripple
           }}
         >
-          <div className="flex items-center justify-center w-full h-full">
-            <span className="text-xl animate-bounce">⚠️</span>
+          <div className="flex items-center justify-center w-full h-full text-xl animate-bounce">
+            ⚠️
+          </div>
+        </foreignObject>
+      )}
+
+      {isContradictory && !isFiltered && (
+        <foreignObject
+          x={(source.x + target.x) / 2 - 12}
+          y={(source.y + target.y) / 2 - 32}
+          width={24}
+          height={24}
+          className="pointer-events-none overflow-visible"
+        >
+          <div className="flex items-center justify-center w-full h-full text-xl animate-bounce">
+            🚫
           </div>
         </foreignObject>
       )}

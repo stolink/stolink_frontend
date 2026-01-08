@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Sparkles, BookOpen, CheckCircle2 } from "lucide-react";
@@ -65,7 +65,7 @@ export default function FogReveal({ state, className = "" }: FogRevealProps) {
         <div
           className={cn(
             "absolute inset-0 z-50 pointer-events-none overflow-hidden flex flex-col",
-            className,
+            className
           )}
         >
           {/*

@@ -44,6 +44,17 @@ interface NetworkControlsProps {
   /** 주요 캐릭터만 보기 필터 */
   showMainOnly?: boolean;
   onShowMainOnlyChange?: (enabled: boolean) => void;
+  // Timeline Props
+  showTimeline?: boolean;
+  currentChapter?: number;
+  totalChapters?: number;
+  onChapterChange?: (val: number) => void;
+
+  // Insights Props
+  showTension?: boolean;
+  onToggleTension?: (val: boolean) => void;
+  showLogicCheck?: boolean;
+  onToggleLogicCheck?: (val: boolean) => void;
 }
 
 /**
@@ -62,6 +73,15 @@ export function NetworkControls({
   onSimulateCollapse,
   showMainOnly = false,
   onShowMainOnlyChange,
+  // Insights
+  showTension = false,
+  onToggleTension,
+  showLogicCheck = false,
+  onToggleLogicCheck,
+  // Timeline
+  currentChapter,
+  totalChapters,
+  onChapterChange,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -123,7 +143,7 @@ export function NetworkControls({
                         className={cn(
                           "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-stone-200",
                           relationTypeFilter !== "all" &&
-                            "border-mocha-300 bg-mocha-50",
+                            "border-mocha-300 bg-mocha-50"
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -258,6 +278,65 @@ export function NetworkControls({
         </AnimatePresence>
       </motion.div>
 
+      {/* 우측 상단 Insights Panel Toggle */}
+      <div className="absolute right-3 top-3 z-20 flex gap-2">
+        {onToggleTension && (
+          <Button
+            variant={showTension ? "default" : "secondary"}
+            size="sm"
+            className={cn(
+              "h-8 text-xs gap-1.5 shadow-sm",
+              showTension
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-white/80 hover:bg-white"
+            )}
+            onClick={() => onToggleTension(!showTension)}
+          >
+            🔥 Tension
+          </Button>
+        )}
+        {onToggleLogicCheck && (
+          <Button
+            variant={showLogicCheck ? "default" : "secondary"}
+            size="sm"
+            className={cn(
+              "h-8 text-xs gap-1.5 shadow-sm",
+              showLogicCheck
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-white/80 hover:bg-white"
+            )}
+            onClick={() => onToggleLogicCheck(!showLogicCheck)}
+          >
+            ⚠️ Logic
+          </Button>
+        )}
+      </div>
+
+      {/* 하단 타임라인 슬라이더 - 중앙 */}
+      {onChapterChange &&
+        currentChapter !== undefined &&
+        totalChapters !== undefined && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
+            <div className="bg-white/80 backdrop-blur-md border border-stone-200 shadow-xl rounded-2xl p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                <span>Timeline Visualization</span>
+                <span>
+                  Chapter {currentChapter} / {totalChapters}
+                </span>
+              </div>
+              {/* Simple Slider Implementation using native range for now, or use TimelineSlider component if we imported it here?
+                    Actually, NetworkControls is getting crowded. The user requested TimelineSlider as separate component.
+                    We should render it in index.tsx instead of inside NetworkControls to keep separation.
+                    But wait, NetworkControls was supposed to be the "Controls".
+                    The implementation plan said "Modify NetworkControls to add Timeline section".
+                    Let's just expose the props and let index.tsx handle layout if possible, or render basic controls here.
+                    Actually, let's skip rendering Timeline inside NetworkControls and render it in index.tsx as a parallel sibling.
+                    NetworkControls handles the "Menu" at top left.
+                */}
+            </div>
+          </div>
+        )}
+
       {/* 하단 범례 - 인터랙티브 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -291,7 +370,7 @@ export function NetworkControls({
                   "flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
                   isActive && "bg-white shadow-sm",
                   isHovered && !isActive && "bg-white/60",
-                  isDimmed && "opacity-40",
+                  isDimmed && "opacity-40"
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -323,7 +402,7 @@ export function NetworkControls({
                 <span
                   className={cn(
                     "text-xs transition-colors",
-                    isActive ? "font-medium text-stone-800" : "text-stone-600",
+                    isActive ? "font-medium text-stone-800" : "text-stone-600"
                   )}
                 >
                   {RELATION_LABELS[type]}

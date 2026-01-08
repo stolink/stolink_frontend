@@ -72,7 +72,7 @@ export function RelationshipEventTooltip({
             <div className="flex items-center justify-between">
               <Badge
                 className={cn(
-                  "px-2 py-0.5 text-xs font-medium capitalize text-white",
+                  "px-2 py-0.5 text-xs font-medium capitalize text-white"
                 )}
                 style={{
                   backgroundColor: getRelationshipColor(type, strength),
@@ -93,7 +93,7 @@ export function RelationshipEventTooltip({
                         "w-1.5 h-1.5 rounded-full transition-colors",
                         i < Math.round(strength / 2)
                           ? "bg-mocha-500"
-                          : "bg-stone-200",
+                          : "bg-stone-200"
                       )}
                     />
                   ))}
@@ -125,15 +125,18 @@ export function RelationshipEventTooltip({
                     <span className="text-sm font-semibold text-stone-700 group-hover:text-mocha-600 transition-colors">
                       {event.title}
                     </span>
-                    <span className="text-[10px] text-stone-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {event.chapter || event.date || "Unknown time"}
-                    </span>
+                    {/* Show time only if available */}
+                    {(event.chapter || event.date) && (
+                      <span className="text-[10px] text-stone-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {event.chapter || event.date}
+                      </span>
+                    )}
                   </div>
                   <Badge
                     intent="outline"
                     className={cn(
-                      "text-[10px] px-1.5 py-0 h-5 text-white border-0",
+                      "text-[10px] px-1.5 py-0 h-5 text-white border-0"
                     )}
                     style={{
                       backgroundColor: getRelationshipColor(event.type, 5), // Default to standard strength for events
@@ -148,6 +151,6 @@ export function RelationshipEventTooltip({
         </CardContent>
       </Card>
     </div>,
-    document.body,
+    document.body
   );
 }

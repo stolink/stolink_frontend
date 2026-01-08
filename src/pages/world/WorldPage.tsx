@@ -12,7 +12,6 @@ import {
   Network,
   UserRound,
   X,
-  CheckCircle2,
 } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { RelationshipDetailSheet } from "@/components/CharacterGraph/RelationshipDetailSheet";
@@ -44,62 +43,105 @@ import { useQueryClient } from "@tanstack/react-query";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { EmptyIndicator } from "./components/EmptyIndicator";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@stolink/ui";
 
 // Mock Places
-const places = [
-  { id: "1", name: "왕국 아르카나", type: "지역", chapters: [1, 3, 5] },
-  { id: "2", name: "금지된 숲", type: "지역", chapters: [2, 4] },
-  { id: "3", name: "마법사 탑", type: "건물", chapters: [3, 6] },
+const places: {
+  id: string;
+  name: string;
+  type: string;
+  extras?: { chapters?: string[] };
+}[] = [
+  {
+    id: "1",
+    name: "왕국 아르카나",
+    type: "지역",
+    extras: { chapters: ["1", "3", "5"] },
+  },
+  {
+    id: "2",
+    name: "금지된 숲",
+    type: "지역",
+    extras: { chapters: ["2", "4"] },
+  },
+  {
+    id: "3",
+    name: "마법사 탑",
+    type: "건물",
+    extras: { chapters: ["3", "6"] },
+  },
 ];
 
 // Mock Items
-const items = [
-  { id: "1", name: "전설의 검", type: "무기", owner: "주인공" },
-  { id: "2", name: "마법 지팡이", type: "무기", owner: "현자 가온" },
-  { id: "3", name: "예언서", type: "문서", owner: "없음" },
+const items: {
+  id: string;
+  name: string;
+  type: string;
+  extras?: { owner?: string };
+}[] = [
+  { id: "1", name: "전설의 검", type: "무기", extras: { owner: "주인공" } },
+  {
+    id: "2",
+    name: "마법 지팡이",
+    type: "무기",
+    extras: { owner: "현자 가온" },
+  },
+  { id: "3", name: "예언서", type: "문서", extras: { owner: "없음" } },
 ];
 
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
-import { MOCK_CHARACTERS } from "@/data/mockWorldData";
-
-// UI Refactoring Flag: Set to true to use dummy data
-const USE_DUMMY_DATA = false;
+import { useProjectEvents } from "@/hooks/useEvents";
 
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
 
   // projectId is guaranteed to be string here
   const { data: realCharacters = [] } = useCharacters(projectId || "", {
-    enabled: !!projectId && !USE_DUMMY_DATA,
+    enabled: !!projectId,
   });
 
   // Switch between real and dummy data
-  const characters = USE_DUMMY_DATA ? MOCK_CHARACTERS : realCharacters;
+  const characters = realCharacters;
+
+  // 프로젝트 이벤트 로드 (관계 히스토리 표시용)
+  const { data: projectEvents = [] } = useProjectEvents(projectId || null, {
+    enabled: !!projectId,
+  });
 
   const updateCharacterMutation = useUpdateCharacter();
 
-  const { setJobId, setAnalyzing } = useAnalysisBufferStore();
+  const setJobId = useAnalysisBufferStore((state) => state.setJobId);
+  const setAnalyzing = useAnalysisBufferStore((state) => state.setAnalyzing);
 
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
+  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+
   // Polling for analysis status (Global)
-  const { isAnalyzing: isPolling, analysisProgress: progress } =
-    useProjectAnalysis(projectId ?? null, {
-      enabled: !USE_DUMMY_DATA,
+  const { isAnalyzing: isPolling, resetAnalysis } = useProjectAnalysis(
+    projectId ?? null,
+    {
       onAnalysisComplete: (result) => {
         if (result) {
           const diff = calculateAnalysisDiff(characters, links, result);
           setAnalysisDiff(diff);
-          setIsAnalysisModalOpen(true);
+
+          // Trigger success animation logic
+          setShowCompletionAnimation(true);
+
+          // Wait 1.5s for the user to see "Completed" state, then open modal
+          setTimeout(() => {
+            setShowCompletionAnimation(false);
+            setIsAnalysisModalOpen(true);
+          }, 1500);
         }
       },
-    });
+    }
+  );
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -121,7 +163,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -137,7 +179,7 @@ export default function WorldPage() {
     string[] | null
   >(null);
 
-  // ESC Key Handler (Optimized)
+  // Global Keyboard Shortcuts (ESC only - Cmd+K removed)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -158,8 +200,11 @@ export default function WorldPage() {
     return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
 
-  // Character.relationships에서 관계 데이터 추출 (using hook)
-  const links: RelationshipLink[] = useRelationshipLinks(characters);
+  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
+  const links: RelationshipLink[] = useRelationshipLinks(
+    characters,
+    projectEvents
+  );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -231,143 +276,66 @@ export default function WorldPage() {
           GLOBAL LOADING OVERLAY (Shutter Animation)
       ───────────────────────────────────────────────────────────── */}
       <AnimatePresence>
-        {isPolling && (
-          <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-auto overflow-hidden">
-            {/* Top Shutter - Removed harsh border for seamless feel */}
-            <motion.div
-              initial={{ y: "-100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-100%" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_1px_10px_rgba(164,119,100,0.05)]"
-            />
-
-            {/* Bottom Shutter - Removed harsh border */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute bottom-0 left-0 w-full h-1/2 bg-paper/95 backdrop-blur-sm shadow-[0_-1px_10px_rgba(164,119,100,0.05)]"
-            />
-
-            {/* Center Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="relative z-10 flex flex-col items-center gap-8 max-w-md w-full px-6"
-            >
-              {/* Logo / Spinner / Complete Icon */}
-              <div className="relative">
-                <AnimatePresence mode="wait">
-                  {progress < 100 ? (
-                    <motion.div
-                      key="analyzing"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="w-20 h-20 rounded-2xl bg-paper border border-cloud-200 shadow-paper-floating flex items-center justify-center relative z-10"
-                    >
-                      <Sparkles className="w-10 h-10 text-mocha-500 animate-pulse" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -20 }}
-                      animate={{
-                        scale: [0, 1.2, 1],
-                        rotate: [0, -10, 0],
-                      }}
-                      className="relative"
-                    >
-                      <motion.div
-                        animate={{
-                          rotate: [0, -2, 2, -2, 0],
-                          scale: [1, 1.05, 1],
-                        }}
-                        transition={{
-                          duration: 0.5,
-                          repeat: Infinity,
-                          repeatDelay: 2,
-                        }}
-                        className="w-24 h-24 rounded-3xl bg-emerald-500 shadow-[0_20px_40px_rgba(16,185,129,0.3)] flex items-center justify-center border-2 border-emerald-400/50"
-                      >
-                        <CheckCircle2 className="w-12 h-12 text-white" />
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                {/* Decorative glow */}
-                <div
-                  className={cn(
-                    "absolute inset-0 blur-2xl opacity-10 animate-pulse transition-colors duration-500",
-                    progress < 100 ? "bg-mocha-400" : "bg-green-400",
-                  )}
-                />
-              </div>
-
-              <div className="text-center space-y-4">
-                <motion.h3
-                  key={progress === 100 ? "done" : "doing"}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl font-bold text-espresso-900 tracking-tight"
-                >
-                  {progress < 100 ? "세계관 분석 중..." : "분석 완료!"}
-                </motion.h3>
-                <p className="text-mocha-500 font-sans text-sm leading-relaxed max-w-xs mx-auto">
-                  {progress < 100
-                    ? "AI가 본문을 데이터화하여 세계관과 인물 관계를 추출하고 있습니다."
-                    : "성공적으로 데이터를 추출했습니다. 잠시 후 결과가 표시됩니다."}
-                  <br />
-                  <span
-                    className={cn(
-                      "font-bold text-xl mt-4 block tabular-nums transition-colors duration-500",
-                      progress < 100 ? "text-mocha-500" : "text-green-600",
-                    )}
-                  >
-                    {progress}%
-                  </span>
-                </p>
-                <Progress
-                  value={progress}
-                  className={cn(
-                    "h-1.5 w-64 mx-auto rounded-full overflow-hidden transition-colors duration-500",
-                    progress < 100 ? "bg-cloud-200" : "bg-green-100",
-                  )}
-                />
-              </div>
-
-              {/* Cancel Button */}
-              <Button
-                intent="ghost"
-                className="mt-4 text-mocha-400 hover:text-red-500 hover:bg-white/50 transition-colors"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "분석 상태가 멈췄거나 너무 오래 걸리나요?\n\n'확인'을 누르면 분석 상태를 초기화하고 결과를 새로고침합니다.",
-                    )
-                  ) {
-                    setJobId(null);
-                    setAnalyzing(false);
-                    queryClient.invalidateQueries({
-                      queryKey: ["characters", projectId],
-                    });
-                    queryClient.invalidateQueries({
-                      queryKey: ["relationships", projectId],
-                    });
-                  }
-                }}
+        {(isPolling || showCompletionAnimation) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-paper/80 backdrop-blur-md flex flex-col items-center justify-center"
+          >
+            {/* Emergency Reset Button (Only show while analyzing, not during completion success) */}
+            {!showCompletionAnimation && (
+              <button
+                onClick={() => resetAnalysis()}
+                className="absolute top-8 right-8 p-2 hover:bg-destructive/10 text-mocha-400 hover:text-destructive rounded-full transition-all group"
+                title="분석 강제 중단 및 상태 초기화"
               >
-                <X className="w-4 h-4 mr-2" />
-                분석 취소
-              </Button>
-            </motion.div>
-          </div>
+                <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+              </button>
+            )}
+
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative w-24 h-24">
+                {showCompletionAnimation ? (
+                  // Success Animation State
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="absolute inset-0 bg-green-100 rounded-full flex items-center justify-center"
+                  >
+                    <Sparkles className="w-10 h-10 text-green-600 animate-pulse" />
+                  </motion.div>
+                ) : (
+                  // Analyzing Animation State
+                  <>
+                    <div className="absolute inset-0 border-4 border-mocha-200 rounded-full animate-ping opacity-20" />
+                    <div className="absolute inset-0 border-4 border-t-mocha-500 border-r-transparent border-b-mocha-500 border-l-transparent rounded-full animate-spin" />
+                    <div className="absolute inset-4 bg-mocha-100 rounded-full flex items-center justify-center animate-pulse">
+                      <Sparkles className="w-8 h-8 text-mocha-600" />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold font-heading text-espresso-900">
+                  {showCompletionAnimation ? "분석 완료!" : "세계관 분석 중"}
+                </h2>
+                <p
+                  className={cn(
+                    "text-mocha-500",
+                    !showCompletionAnimation && "animate-pulse"
+                  )}
+                >
+                  {showCompletionAnimation
+                    ? "분석된 결과를 불러오고 있습니다..."
+                    : "AI가 스토리의 흐름을 읽고 있습니다..."}
+                </p>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
@@ -611,7 +579,7 @@ export default function WorldPage() {
                               등장
                             </span>
                             <div className="flex gap-1">
-                              {place.chapters.map((ch) => (
+                              {(place.extras?.chapters || []).map((ch) => (
                                 <span
                                   key={ch}
                                   className="text-xs px-1.5 py-0.5 rounded bg-cloud-100 text-mocha-600"
@@ -674,7 +642,7 @@ export default function WorldPage() {
                               소유자
                             </span>
                             <span className="text-xs font-medium text-mocha-600">
-                              {item.owner}
+                              {item.extras?.owner || "미소유"}
                             </span>
                           </div>
                         </div>
@@ -748,13 +716,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source,
+              selectedRelationship?.source
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source,
+                selectedRelationship?.source
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.source
@@ -763,13 +731,13 @@ export default function WorldPage() {
           characters.find(
             (c) =>
               (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target,
+              selectedRelationship?.target
           )?.profile?.name ||
           (
             characters.find(
               (c) =>
                 (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target,
+                selectedRelationship?.target
             ) as { name?: string }
           )?.name ||
           selectedRelationship?.target

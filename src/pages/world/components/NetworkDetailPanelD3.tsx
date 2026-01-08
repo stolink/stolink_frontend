@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import {
   X,
   Users,
@@ -7,6 +8,11 @@ import {
   Skull,
   Network,
   TrendingUp,
+  Brain,
+  Activity,
+  Sparkles,
+  GraduationCap,
+  Swords,
 } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { Badge } from "@stolink/ui";
@@ -20,10 +26,14 @@ import {
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 색상 클래스
+// 관계 타입별 색상 클래스
 const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   friendly: "bg-emerald-500 text-white border-emerald-500",
   hostile: "bg-rose-500 text-white border-rose-500",
   romantic: "bg-pink-400 text-white border-pink-400",
+  family: "bg-blue-500 text-white border-blue-500",
+  mentor: "bg-purple-500 text-white border-purple-500",
+  rival: "bg-orange-500 text-white border-orange-500",
 };
 
 // 관계 타입별 아이콘
@@ -31,6 +41,9 @@ const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <User className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
+  family: <Users className="w-3 h-3" />,
+  mentor: <GraduationCap className="w-3 h-3" />,
+  rival: <Swords className="w-3 h-3" />,
 };
 
 // 역할별 색상
@@ -153,6 +166,137 @@ export function NetworkDetailPanelD3({
         </div>
       </div>
 
+      {/* Soul Inspector Section (Premium) */}
+      <div className="px-5 py-5 border-b border-cloud-50 space-y-5 bg-gradient-to-b from-cloud-50/30 to-white">
+        {(() => {
+          const personality =
+            selectedCharacter.profile?.personality ||
+            selectedCharacter.personality;
+          const traits = Array.isArray(personality?.coreTraits)
+            ? personality.coreTraits
+            : Array.isArray(personality)
+              ? personality
+              : [];
+          const mood = selectedCharacter.currentMood;
+          const archetypeSelection = selectedCharacter.archetype || "Unknown";
+
+          return (
+            <>
+              {/* Mental State & Emotion Glow */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-extrabold text-stone-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Activity className="w-3 h-3 text-mocha-400" />
+                    심리 상태 (Soul State)
+                  </h4>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] font-bold px-2 py-0 h-5 bg-white border-stone-200"
+                  >
+                    {archetypeSelection}
+                  </Badge>
+                </div>
+
+                <div className="relative p-3 rounded-xl border border-cloud-100 bg-white shadow-sm overflow-hidden">
+                  {/* Background Mood Color Glow */}
+                  <div
+                    className={cn(
+                      "absolute top-0 right-0 w-16 h-16 blur-2xl opacity-20 transition-all duration-1000",
+                      {
+                        "bg-emerald-400":
+                          !mood?.emotion ||
+                          mood.emotion === "Happy" ||
+                          mood.emotion === "Calm",
+                        "bg-rose-400":
+                          mood?.emotion === "Angry" ||
+                          mood?.emotion === "Hostile",
+                        "bg-blue-400": mood?.emotion === "Sad",
+                        "bg-amber-400":
+                          mood?.emotion === "Anxious" ||
+                          mood?.emotion === "Fear",
+                      }
+                    )}
+                  />
+
+                  <div className="flex items-center justify-between relative z-10">
+                    <span className="text-sm font-semibold text-stone-700">
+                      {mood?.emotion || "평온함"}
+                    </span>
+                    <span className="text-[10px] text-stone-400 font-medium">
+                      강도: {mood?.intensity || 5}/10
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1 w-full bg-cloud-50 rounded-full overflow-hidden relative z-10">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(mood?.intensity || 5) * 10}%` }}
+                      className={cn(
+                        "h-full rounded-full transition-all duration-700",
+                        {
+                          "bg-emerald-500":
+                            !mood?.emotion ||
+                            mood.emotion === "Happy" ||
+                            mood.emotion === "Calm",
+                          "bg-rose-500":
+                            mood?.emotion === "Angry" ||
+                            mood?.emotion === "Hostile",
+                          "bg-blue-500": mood?.emotion === "Sad",
+                          "bg-amber-500":
+                            mood?.emotion === "Anxious" ||
+                            mood?.emotion === "Fear",
+                        }
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Core Traits & Values */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-extrabold text-stone-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Brain className="w-3 h-3 text-mocha-400" />
+                  핵심 기질 & 가치관
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {traits.length > 0 ? (
+                    traits.slice(0, 6).map((trait: string, i: number) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="px-2.5 py-1 bg-white border border-cloud-200 rounded-lg text-[11px] text-stone-600 font-medium shadow-sm active:shadow-none transition-shadow"
+                      >
+                        {trait}
+                      </motion.span>
+                    ))
+                  ) : (
+                    <div className="w-full py-4 text-center border border-dashed border-cloud-300 rounded-xl">
+                      <p className="text-[10px] text-stone-400">
+                        학습된 성격 데이터가 없습니다
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Character Motive / Secret (if available) */}
+              {selectedCharacter.motivation && (
+                <div className="p-3 bg-mocha-50/30 border border-mocha-100 rounded-xl relative overflow-hidden group">
+                  <h4 className="text-[9px] font-bold text-mocha-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    행동 동기
+                  </h4>
+                  <p className="text-xs text-mocha-700 leading-relaxed italic line-clamp-2">
+                    "{selectedCharacter.motivation}"
+                  </p>
+                </div>
+              )}
+            </>
+          );
+        })()}
+      </div>
+
       {/* Connected Characters */}
       <ScrollArea className="flex-1">
         <div className="p-5">
@@ -207,7 +351,7 @@ export function NetworkDetailPanelD3({
                         className={cn(
                           "mt-1.5 text-[10px] px-2 py-0.5 h-5 gap-1 rounded-full",
                           RELATION_BADGE_COLORS[relType as UIRelationType] ||
-                            "bg-stone-200 text-stone-600",
+                            "bg-stone-200 text-stone-600"
                         )}
                       >
                         {RELATION_ICONS[relType as UIRelationType]}

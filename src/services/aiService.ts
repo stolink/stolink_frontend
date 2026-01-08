@@ -50,7 +50,7 @@ export const aiService = {
   // Job Status Polling
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
-      `/ai/jobs/${jobId}`,
+      `/ai/jobs/${jobId}`
     );
     return response.data.data;
   },

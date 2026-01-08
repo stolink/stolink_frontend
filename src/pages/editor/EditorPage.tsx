@@ -50,10 +50,7 @@ import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
-import type {
-  AnalysisResultData,
-  ConsistencyReport,
-} from "@/types/analysisResult";
+import type { AnalysisResultData } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import { type CharacterRelation, type Character } from "@/types/character";
 
@@ -133,7 +130,12 @@ function mapToChapterNodes(
   }));
 }
 
-export default function EditorPage({ isDemo = false }) {
+export default function EditorPage() {
+  const { id: projectId = "" } = useParams();
+  const location = useLocation();
+  const isDemo = projectId === DEMO_PROJECT_ID;
+
+  // Project Data
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
 
@@ -181,12 +183,6 @@ export default function EditorPage({ isDemo = false }) {
   );
   /* performanceMode removed */
 
-  const { id: projectIdFromParams } = useParams<{ id: string }>();
-  const projectId = isDemo
-    ? DEMO_PROJECT_ID
-    : (projectIdFromParams ?? DEMO_PROJECT_ID);
-
-  const location = useLocation();
   const initialStateFromRedirect = (
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
@@ -213,8 +209,8 @@ export default function EditorPage({ isDemo = false }) {
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-          (doc) => doc.projectId === projectId
-        ),
+            (doc) => doc.projectId === projectId
+          ),
     [allDocuments, projectId, isDemo]
   );
 
@@ -223,19 +219,16 @@ export default function EditorPage({ isDemo = false }) {
     return buildDemoChapterTree(DEMO_CHAPTERS);
   }, [isDemo]);
 
-  // documentTree removed as it was unused and mapToChapterNodes handles it
-
   const projectTitle = useMemo(() => {
     if (isDemo) return DEMO_PROJECT_TITLE;
     if (project?.title) return project.title;
     return "내 작품";
-  }, [project?.title, isDemo]);
+  }, [project, isDemo]);
 
-  const documents = useMemo(() => {
-    return isDemo
-      ? (DEMO_CHAPTERS as unknown as Document[])
-      : Object.values(localDocuments);
-  }, [isDemo, localDocuments]);
+  const documents = useMemo(
+    () => Object.values(localDocuments),
+    [localDocuments]
+  );
 
   const sidebarChapters = useMemo(() => {
     if (isDemo)
@@ -284,8 +277,8 @@ export default function EditorPage({ isDemo = false }) {
   const queryClient = useQueryClient();
   const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
-  const [consistencyReport, setConsistencyReport] =
-    useState<ConsistencyReport | null>(null);
+
+  // consistencyReport state removed in favor of store persistence
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
@@ -297,15 +290,13 @@ export default function EditorPage({ isDemo = false }) {
       const diff = calculateAnalysisDiff(
         characters,
         graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
-        result,
+        result
       );
 
       setAnalysisDiff(diff);
       setShowAnalysisSummary(true);
 
-      if (result.consistencyReport) {
-        setConsistencyReport(result.consistencyReport);
-      }
+      // setConsistencyReport handled by useProjectAnalysis store update
 
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
@@ -336,16 +327,25 @@ export default function EditorPage({ isDemo = false }) {
     return flat;
   }, [documents]);
 
-  const { flushAndAnalyze, isAnalyzing, analysisProgress, analysisError } =
-    useProjectAnalysis(isDemo ? null : projectId, {
-      enabled: !isDemo,
-      onAnalysisComplete: handleAnalysisComplete,
-    });
+  const {
+    flushAndAnalyze,
+    isAnalyzing,
+    analysisProgress,
+    analysisError,
+
+    resetAnalysis,
+    lastConsistencyReport, // Added
+  } = useProjectAnalysis(projectId, {
+    enabled: !!projectId,
+    onAnalysisComplete: handleAnalysisComplete,
+  });
+
+  const consistencyReport = lastConsistencyReport; // Alias for compatibility
 
   const analysisStatus = useMemo(() => {
+    if (analysisProgress === 100) return "completed";
     if (isAnalyzing) return "analyzing";
     if (analysisError) return "error";
-    if (analysisProgress === 100) return "completed";
     return "idle";
   }, [isAnalyzing, analysisError, analysisProgress]);
 
@@ -366,12 +366,10 @@ export default function EditorPage({ isDemo = false }) {
     async (content: string) => {
       if (!selectedSectionId) return;
       await saveContent(content);
-      if (!isDemo) {
-        addToBuffer(selectedSectionId, content);
-        flushAndAnalyze();
-      }
+      addToBuffer(selectedSectionId, content);
+      // flushAndAnalyze(); // 저장 시 즉시 분석하지 않고 버퍼링 정책에 따름
     },
-    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze]
+    [saveContent, selectedSectionId, addToBuffer]
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -390,16 +388,16 @@ export default function EditorPage({ isDemo = false }) {
     documentContent,
   ]);
 
-  useEffect(() => {
-    if (isDemo) return;
-    const handleBeforeUnload = () => {
-      flushAndAnalyze();
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isDemo, flushAndAnalyze]);
+  // 불필요한 분석 방지를 위해 unload 시 자동 분석 트리거 제거
+  // useEffect(() => {
+  //   const handleBeforeUnload = () => {
+  //     flushAndAnalyze();
+  //   };
+  //   window.addEventListener("beforeunload", handleBeforeUnload);
+  //   return () => {
+  //     window.removeEventListener("beforeunload", handleBeforeUnload);
+  //   };
+  // }, [flushAndAnalyze]);
 
   // ============================================================
   // UI & Modals State
@@ -517,6 +515,7 @@ export default function EditorPage({ isDemo = false }) {
   }, [queryDocumentId, initialStateFromRedirect, handleSelectSection]);
 
   // Auto-select first text document when documents load and no section is selected
+  // Using requestAnimationFrame to defer the setState call and avoid cascading renders
   useEffect(() => {
     if (isDemo) return;
     if (selectedSectionId) return; // Already have a selection
@@ -525,7 +524,10 @@ export default function EditorPage({ isDemo = false }) {
     // Find first text document (not folder)
     const firstTextDoc = documents.find((doc) => doc.type === "text");
     if (firstTextDoc) {
-      setSelectedSectionId(firstTextDoc.id);
+      // Defer state update to avoid cascading renders
+      requestAnimationFrame(() => {
+        setSelectedSectionId(firstTextDoc.id);
+      });
     }
   }, [
     documents,
@@ -533,7 +535,6 @@ export default function EditorPage({ isDemo = false }) {
     selectedSectionId,
     queryDocumentId,
     initialStateFromRedirect,
-    setSelectedSectionId,
   ]);
 
   return (
@@ -571,7 +572,7 @@ export default function EditorPage({ isDemo = false }) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-cloud-50",
+            isFocusMode && "bg-cloud-50"
           )}
         >
           <EditorToolbar
@@ -582,26 +583,28 @@ export default function EditorPage({ isDemo = false }) {
             sectionPath={[]} // Need to calculate or add to hook
             isEditingTitle={false} // State needed
             editedTitle={""} // State needed
-            onEditedTitleChange={() => { }}
-            onStartEditTitle={() => { }}
-            onSaveTitle={() => { }}
-            onCancelEditTitle={() => { }}
+            onEditedTitleChange={() => {}}
+            onStartEditTitle={() => {}}
+            onSaveTitle={() => {}}
+            onCancelEditTitle={() => {}}
             isDemo={isDemo}
             selectedSectionId={selectedSectionId}
             characterCount={characterCount}
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => { }}
-            onToggleFocusMode={() => { }}
+            onToggleSplitView={() => {}}
+            onToggleFocusMode={() => {}}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => { }}
+            onToggleTypewriterMode={() => {}}
             rightSidebarOpen={false}
-            onToggleRightSidebar={() => { }}
+            onToggleRightSidebar={() => {}}
             onExport={() => setShowExport(true)}
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
+            analysisProgress={analysisProgress}
             onTriggerAnalysis={handleManualAnalysis}
+            onResetAnalysis={resetAnalysis}
           />
 
           <Suspense fallback={<EditorLoadingSkeleton />}>
@@ -629,9 +632,9 @@ export default function EditorPage({ isDemo = false }) {
 
         <EditorRightSidebar
           isOpen={true} // Simplified, always open on larger screens
-          onClose={() => { }} // Placeholder
+          onClose={() => {}} // Placeholder
           activeTab="ai" // Default tab
-          onTabChange={() => { }} // Placeholder
+          onTabChange={() => {}} // Placeholder
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={

@@ -8,7 +8,7 @@
  * Design: Mocha palette with shimmer animation
  */
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 interface EditorSkeletonProps {

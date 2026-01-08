@@ -42,10 +42,19 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   evolvedFrom?: RelationType;
   since?: string;
   // New fields from schema
-  /** public_stance from relations.graph[] */
+  /** public_stance from backend */
   publicStance?: string;
-  /** private_feeling from relations.graph[] */
+  /** private_feeling from backend */
   privateFeeling?: string;
+  /** revealed_in_chapter for 4D Timeline */
+  revealedInChapter?: number;
+  /** Algorithmic Insights: Logic Check (contradiction detected) */
+  logicCheck?: {
+    isContradictory: boolean;
+    reason: string;
+  };
+  /** Algorithmic Insights: Tension Heatmap (1-10) */
+  tensionScore?: number;
   /** Curve factor for multiple links between same nodes (-1 to 1) */
   curvature?: number;
   /** BFS depth from protagonist for flow animation delay */
@@ -59,6 +68,15 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
     reason?: string;
     date?: string;
   }[];
+  /** Chapter where this relationship was first revealed (for 4D Timeline) */
+  revealedInChapter?: number;
+  /** Algorithmic Insights: Logic Check (contradiction detected) */
+  logicCheck?: {
+    isContradictory: boolean;
+    reason: string;
+  };
+  /** Algorithmic Insights: Tension Heatmap (1-10) */
+  tensionScore?: number;
 }
 
 /**
