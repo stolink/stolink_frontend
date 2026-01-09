@@ -200,7 +200,7 @@ const FactorLine = ({ factor }: { factor: StrengthFactor }) => {
           >
             {getRelationIcon(factor.type)}
           </span>
-          <span className="text-[15px] font-serif font-bold text-espresso-800 tracking-tight">
+          <span className="text-base font-serif font-bold text-espresso-800 tracking-tight">
             {label}
           </span>
         </div>
@@ -221,7 +221,7 @@ const FactorLine = ({ factor }: { factor: StrengthFactor }) => {
             transition={{ duration: 1, delay: 0.5 }}
           />
         </div>
-        <span className="text-[11px] font-bold text-espresso-300 uppercase shrink-0">
+        <span className="text-xs font-bold text-espresso-300 uppercase shrink-0">
           영향력 {factor.weight}
         </span>
       </div>
@@ -309,10 +309,10 @@ const CharacterPerspective = ({
         <div className="relative z-10 flex flex-col items-center">
           <div className="w-full flex justify-between items-center mb-10">
             <div className="flex flex-col">
-              <span className="text-[15px] font-black uppercase text-espresso-500 tracking-widest">
+              <span className="text-base font-black uppercase text-espresso-500 tracking-widest">
                 유대 깊이
               </span>
-              <span className="text-[13px] text-mocha-400 font-bold italic">
+              <span className="text-sm text-mocha-400 font-bold italic">
                 Affinity Depth
               </span>
             </div>
@@ -329,7 +329,7 @@ const CharacterPerspective = ({
               <div className="w-4 h-4 rounded-full bg-mocha-500/20 flex items-center justify-center">
                 <Info className="w-2.5 h-2.5 text-mocha-500" />
               </div>
-              <span className="text-[13px] font-black text-espresso-400 uppercase tracking-widest">
+              <span className="text-sm font-black text-espresso-400 uppercase tracking-widest">
                 관계 포인트
               </span>
             </div>
@@ -371,12 +371,12 @@ export function DeepAnalysisHero({
         <div className="flex items-center gap-6 mb-20 px-4">
           <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-white/60 border border-espresso-900/5 shadow-xl backdrop-blur-xl">
             <span className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
-            <span className="text-[13px] font-black text-espresso-800 uppercase tracking-[0.4em]">
+            <span className="text-sm font-black text-espresso-800 uppercase tracking-[0.4em]">
               Deep Discovery Analysis
             </span>
           </div>
           {since && (
-            <div className="flex items-center gap-2.5 text-[14px] text-espresso-400 font-serif italic">
+            <div className="flex items-center gap-2.5 text-base text-espresso-400 font-serif italic">
               <span className="text-mocha-300">✦</span>
               <span>인연의 시작 : {since}</span>
             </div>
@@ -423,15 +423,7 @@ export function DeepAnalysisHero({
 
             <div className="h-48 w-px bg-gradient-to-b from-transparent via-mocha-300/40 to-transparent relative z-10" />
 
-            {/* Asymmetric Strength Graph */}
-            <AsymmetricStrengthGraph
-              sourceCharacter={sourceCharacter}
-              targetCharacter={targetCharacter}
-              asymmetricStrength={asymmetricStrength}
-              sourceColor={sourceColor}
-              targetColor={targetColor}
-              className="w-80 relative z-10"
-            />
+            {/* Asymmetric Strength Graph removed from here */}
           </div>
 
           <motion.div
@@ -448,6 +440,23 @@ export function DeepAnalysisHero({
             />
           </motion.div>
         </div>
+
+        {/* Bottom Full-Width Section: Bond Balance */}
+        <motion.div
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6, ease: "easeOut" }}
+          className="mt-16 relative z-30 px-4"
+        >
+          <AsymmetricStrengthGraph
+            sourceCharacter={sourceCharacter}
+            targetCharacter={targetCharacter}
+            asymmetricStrength={asymmetricStrength}
+            sourceColor={sourceColor}
+            targetColor={targetColor}
+            className="w-full max-w-[900px] mx-auto relative z-10"
+          />
+        </motion.div>
       </motion.div>
     </div>
   );

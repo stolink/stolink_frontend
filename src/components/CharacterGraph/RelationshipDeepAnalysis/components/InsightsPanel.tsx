@@ -65,7 +65,7 @@ export function InsightsPanel({
         <div className="p-1.5 rounded-lg bg-indigo-50">
           <Sparkles className="w-4 h-4 text-indigo-500" />
         </div>
-        <h4 className="text-sm font-semibold text-espresso-800 uppercase tracking-wider">
+        <h4 className="text-base font-semibold text-espresso-800 uppercase tracking-wider">
           관계 인사이트
         </h4>
       </motion.div>
@@ -87,13 +87,13 @@ export function InsightsPanel({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
+              <span className="text-sm font-semibold text-orange-600 uppercase tracking-wider">
                 결정적 전환점
               </span>
               {decisiveTrigger?.impact && (
                 <Badge
                   intent="outline"
-                  className="text-[10px] px-1.5 py-0 h-4 border-orange-200 text-orange-600 bg-white/50"
+                  className="text-xs px-1.5 py-0 h-4 border-orange-200 text-orange-600 bg-white/50"
                 >
                   Impact: {decisiveTrigger.impact}/10
                 </Badge>
@@ -101,10 +101,10 @@ export function InsightsPanel({
             </div>
             {decisiveTrigger ? (
               <>
-                <h5 className="text-base font-bold text-espresso-900 mb-1.5 font-serif">
+                <h5 className="text-lg font-bold text-espresso-900 mb-1.5 font-serif">
                   {decisiveTrigger.title}
                 </h5>
-                <p className="text-sm text-espresso-600 leading-relaxed line-clamp-3">
+                <p className="text-base text-espresso-600 leading-relaxed line-clamp-3">
                   {decisiveTrigger.summary}
                 </p>
               </>
@@ -125,7 +125,7 @@ export function InsightsPanel({
       >
         <div className="flex items-center gap-2 mb-3">
           <Tag className="w-3.5 h-3.5 text-espresso-400" />
-          <span className="text-xs font-medium text-espresso-500">
+          <span className="text-sm font-medium text-espresso-500">
             주요 키워드
           </span>
         </div>
@@ -136,7 +136,7 @@ export function InsightsPanel({
               <motion.span
                 key={keyword}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border",
+                  "px-3 py-1.5 rounded-full text-sm font-semibold border",
                   KEYWORD_COLORS[keyword] || DEFAULT_KEYWORD_COLOR,
                 )}
                 initial={{ opacity: 0, scale: 0.8 }}

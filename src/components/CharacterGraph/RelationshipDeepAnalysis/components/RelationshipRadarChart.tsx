@@ -268,7 +268,7 @@ export function RelationshipRadarChart({
                 y={point.y}
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
-                className="fill-espresso-500 text-[10px] font-semibold"
+                className="fill-espresso-500 text-[13px] font-semibold"
                 style={{ fontFamily: "Inter, sans-serif" }}
               >
                 {axis.label}
@@ -288,7 +288,7 @@ export function RelationshipRadarChart({
               y={point.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              className="fill-espresso-900 text-[9px] font-bold"
+              className="fill-espresso-900 text-[12px] font-bold"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: animationDelay + 0.5 }}

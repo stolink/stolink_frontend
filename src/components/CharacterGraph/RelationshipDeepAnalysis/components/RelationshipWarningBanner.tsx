@@ -67,11 +67,11 @@ export function RelationshipWarningBanner({
           <Icon className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-relaxed">
+          <p className="text-base font-medium leading-relaxed">
             {primaryWarning.message}
           </p>
           {warnings.length > 1 && (
-            <p className="text-xs opacity-70 mt-1">
+            <p className="text-sm opacity-70 mt-1">
               +{warnings.length - 1}개의 추가 경고
             </p>
           )}
