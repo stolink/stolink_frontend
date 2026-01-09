@@ -2,6 +2,20 @@ import { PanelLeft, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChapterTree } from "@/components/editor/sidebar";
 import { useResizable } from "@/hooks/useResizable";
+import type { ChapterNode } from "@/components/editor/sidebar";
+
+interface EditorLeftSidebarProps {
+  chapters: ChapterNode[];
+  selectedChapterId: string | null;
+  onSelectChapter: (id: string) => void;
+  onAddChapter: () => void;
+  onRenameChapter: (id: string, newTitle: string) => void;
+  onDeleteChapter: (id: string) => void;
+  onReorderChapter: (items: ChapterNode[]) => void;
+  onMoveToFolder: (draggedId: string, targetId: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+}
 
 export default function EditorLeftSidebar({
   chapters,
