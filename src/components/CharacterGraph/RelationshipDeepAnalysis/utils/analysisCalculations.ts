@@ -503,7 +503,6 @@ export function generateAnalysisData(
     // 타입이 있는데 설명이 없는 경우 첫 번째 타입을 기반으로 기본 설명 생성
     finalDescription = `${formatKeyword(types[0])} 관계`;
   }
-
   // 비대칭 관계 속성 (레이더 차트용)
   const sourceToTarget: RelationshipAttributes = {
     emotionalBond: 7,
@@ -536,6 +535,7 @@ export function generateAnalysisData(
     if (t.includes("protector")) return "PROTECTED";
     if (t.includes("protected")) return "PROTECTOR";
     return type; // 친구, 동료 등 대칭 관계는 유지
+  };
   };
 
   // 입력받은 relationshipTypes를 기반으로 세부 요인(factors) 생성
@@ -700,9 +700,15 @@ export function generateAnalysisData(
     asymmetricStrength,
     timeline,
     insights,
+<<<<<<< HEAD
     relationshipTypes: types,
     currentStrength: finalStrength,
     since: firstEncounter?.chapter || "알 수 없음",
+=======
+    relationshipTypes,
+    currentStrength: strength,
+    since: "Chapter 1",
+>>>>>>> 80aeea1 (chore: save work before sync)
     // NEW fields
     description: finalDescription,
     firstEncounter,

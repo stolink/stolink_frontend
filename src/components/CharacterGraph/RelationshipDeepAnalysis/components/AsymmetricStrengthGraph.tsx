@@ -67,7 +67,7 @@ export function AsymmetricStrengthGraph({
     >
       {/* 헤더 */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="text-[14px] font-black text-espresso-500 uppercase tracking-[0.2em]">
+        <span className="text-[11px] font-black text-espresso-500 uppercase tracking-[0.2em]">
           유대 균형
         </span>
       </div>
@@ -153,7 +153,7 @@ export function AsymmetricStrengthGraph({
           {/* 비대칭 표시 */}
           <motion.div
             className={cn(
-              "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[13px] font-bold",
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold",
               stronger === "equal"
                 ? "bg-mocha-100 text-mocha-600"
                 : "bg-espresso-900/5 text-espresso-600",
