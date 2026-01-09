@@ -82,12 +82,12 @@ export function InsightsPanel({
     ? Array.from(
         new Set([
           ...asymmetricStrength.sourceToTarget.factors.map((f) =>
-            simplifyTerm(f.type),
+            simplifyTerm(f.type)
           ),
           ...asymmetricStrength.targetToSource.factors.map((f) =>
-            simplifyTerm(f.type),
+            simplifyTerm(f.type)
           ),
-        ]),
+        ])
       ).filter(Boolean)
     : insights.keywords || [];
 
@@ -97,7 +97,7 @@ export function InsightsPanel({
         "rounded-xl p-5",
         "bg-white",
         "border border-cloud-200 shadow-sm",
-        className,
+        className
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -114,7 +114,7 @@ export function InsightsPanel({
           <Sparkles className="w-4 h-4 text-indigo-500" />
         </div>
         <h4 className="text-base font-semibold text-espresso-800 uppercase tracking-wider">
-          결정적 사건
+          관계 인사이트
         </h4>
       </motion.div>
 
@@ -123,7 +123,7 @@ export function InsightsPanel({
         className={cn(
           "mb-5 p-4 rounded-lg",
           "bg-gradient-to-r from-orange-50 to-orange-100/50",
-          "border border-orange-100",
+          "border border-orange-100"
         )}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -185,7 +185,7 @@ export function InsightsPanel({
                 key={keyword}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-sm font-semibold border",
-                  KEYWORD_COLORS[keyword] || DEFAULT_KEYWORD_COLOR,
+                  KEYWORD_COLORS[keyword] || DEFAULT_KEYWORD_COLOR
                 )}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}

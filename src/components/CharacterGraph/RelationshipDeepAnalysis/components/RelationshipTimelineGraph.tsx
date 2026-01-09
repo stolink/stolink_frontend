@@ -149,7 +149,7 @@ export function RelationshipTimelineGraph({
       <div
         ref={containerRef}
         className={cn(
-          "flex items-center justify-center text-espresso-400 text-sm w-full",
+          "flex items-center justify-center text-espresso-400 text-base w-full",
           className,
         )}
         style={{ height }}
@@ -243,7 +243,7 @@ export function RelationshipTimelineGraph({
                   y={0}
                   textAnchor="end"
                   dominantBaseline="middle"
-                  className="fill-espresso-400 text-[10px]"
+                  className="fill-espresso-400 text-xs"
                 >
                   {tick.toFixed(0)}
                 </text>
@@ -262,7 +262,7 @@ export function RelationshipTimelineGraph({
                   <text
                     y={18}
                     textAnchor="middle"
-                    className="fill-espresso-400 text-[10px]"
+                    className="fill-espresso-400 text-xs"
                   >
                     Ch.{d.chapter}
                   </text>
@@ -274,7 +274,7 @@ export function RelationshipTimelineGraph({
             <text
               transform={`translate(-35, ${innerHeight / 2}) rotate(-90)`}
               textAnchor="middle"
-              className="fill-espresso-400 text-[11px]"
+              className="fill-espresso-400 text-xs"
             >
               누적 지수
             </text>
@@ -351,7 +351,7 @@ export function RelationshipTimelineGraph({
                 x={10}
                 y={0}
                 dominantBaseline="middle"
-                className="fill-espresso-500 text-[10px]"
+                className="fill-espresso-500 text-xs"
               >
                 우호
               </text>
@@ -360,7 +360,7 @@ export function RelationshipTimelineGraph({
                 x={60}
                 y={0}
                 dominantBaseline="middle"
-                className="fill-espresso-500 text-[10px]"
+                className="fill-espresso-500 text-xs"
               >
                 적대
               </text>
@@ -381,13 +381,13 @@ export function RelationshipTimelineGraph({
           }}
         >
           <div className="bg-white/95 backdrop-blur-sm border border-cloud-200 rounded-lg p-3 shadow-xl max-w-[200px]">
-            <div className="text-espresso-900 text-xs font-semibold mb-1">
+            <div className="text-espresso-900 text-sm font-semibold mb-1">
               Ch.{tooltip.point.chapter}: {tooltip.point.title}
             </div>
-            <div className="text-espresso-600 text-[10px] mb-2 line-clamp-2">
+            <div className="text-espresso-600 text-xs mb-2 line-clamp-2">
               {tooltip.point.description}
             </div>
-            <div className="flex gap-3 text-[10px]">
+            <div className="flex gap-3 text-xs">
               <span className="text-teal-600 font-medium">
                 우호: {tooltip.point.cumulativeFriendly.toFixed(1)}
               </span>
@@ -395,7 +395,7 @@ export function RelationshipTimelineGraph({
                 적대: {tooltip.point.cumulativeHostile.toFixed(1)}
               </span>
             </div>
-            <div className="text-espresso-400 text-[9px] mt-1">
+            <div className="text-espresso-400 text-[10px] mt-1">
               중요도: {tooltip.point.importance}/10 | 극성:{" "}
               {tooltip.point.emotionalPolarity > 0 ? "+" : ""}
               {tooltip.point.emotionalPolarity}

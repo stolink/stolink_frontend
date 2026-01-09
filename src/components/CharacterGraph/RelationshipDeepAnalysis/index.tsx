@@ -123,7 +123,7 @@ export function RelationshipDeepAnalysisModal({
                       <section>
                         <div className="flex items-center gap-4 mb-6">
                           <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                             Character Dynamics
                           </h3>
                           <span className="h-px flex-1 bg-espresso-900/10" />
@@ -170,7 +170,7 @@ export function RelationshipDeepAnalysisModal({
                       <section>
                         <div className="flex items-center gap-4 mb-6">
                           <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                             Narrative Arc
                           </h3>
                           <span className="h-px flex-1 bg-espresso-900/10" />
@@ -229,7 +229,7 @@ export function RelationshipDeepAnalysisModal({
                         <section>
                           <div className="flex items-center gap-4 mb-6">
                             <span className="h-px flex-1 bg-espresso-900/10" />
-                            <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                            <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                               Shared Moments
                             </h3>
                             <span className="h-px flex-1 bg-espresso-900/10" />
