@@ -502,10 +502,10 @@ export const CharacterGraphCanvas = forwardRef<
       const fg = graphRef.current;
 
       // Charge Force (Repulsion)
-      const chargeForce = fg.d3Force("charge") as {
-        strength?: (value: number) => void;
-      };
-      if (chargeForce?.strength) {
+      const chargeForce = fg.d3Force(
+        "charge",
+      ) as d3.ForceManyBody<CharacterNode>;
+      if (chargeForce) {
         chargeForce
           .strength(FORCE_CONFIG.charge)
           .distanceMin(FORCE_CONFIG.chargeDistanceMin)
@@ -513,21 +513,19 @@ export const CharacterGraphCanvas = forwardRef<
       }
 
       // Link Force
-      const linkForce = fg.d3Force("link") as {
-        distance?: (value: number) => { strength: (value: number) => void };
-        strength?: (value: number) => void;
-      };
-      if (linkForce?.distance) {
+      const linkForce = fg.d3Force("link") as d3.ForceLink<
+        CharacterNode,
+        RelationshipLink
+      >;
+      if (linkForce) {
         linkForce
           .distance(FORCE_CONFIG.linkDistance)
           .strength(FORCE_CONFIG.linkStrength);
       }
 
       // Center Force
-      const centerForce = fg.d3Force("center") as {
-        strength?: (value: number) => void;
-      };
-      if (centerForce?.strength) {
+      const centerForce = fg.d3Force("center") as d3.ForceCenter<CharacterNode>;
+      if (centerForce) {
         centerForce.strength(FORCE_CONFIG.centerStrength);
       }
 
@@ -536,7 +534,7 @@ export const CharacterGraphCanvas = forwardRef<
       fg.d3Force(
         "collide",
         d3
-          .forceCollide()
+          .forceCollide<CharacterNode>()
           .radius((node: CharacterNode) => {
             const role = node.role || "other";
             // Use NODE_SIZES from constants, halved because it's radius
