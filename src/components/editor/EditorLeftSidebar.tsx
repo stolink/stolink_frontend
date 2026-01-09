@@ -4,15 +4,21 @@ import { ChapterTree } from "@/components/editor/sidebar";
 import { useResizable } from "@/hooks/useResizable";
 import type { ChapterNode } from "@/components/editor/sidebar";
 
+import type { Document } from "@/types/document";
+
 interface EditorLeftSidebarProps {
   chapters: ChapterNode[];
   selectedChapterId: string | null;
   onSelectChapter: (id: string) => void;
-  onAddChapter: () => void;
+  onAddChapter: (
+    title: string,
+    parentId?: string,
+    type?: "chapter" | "section",
+  ) => Promise<Document | null>;
   onRenameChapter: (id: string, newTitle: string) => void;
   onDeleteChapter: (id: string) => void;
-  onReorderChapter: (items: ChapterNode[]) => void;
-  onMoveToFolder: (draggedId: string, targetId: string) => void;
+  onReorderChapter: (parentId: string | null, orderedIds: string[]) => void;
+  onMoveToFolder: (itemId: string, targetFolderId: string | null) => void;
   isOpen: boolean;
   onToggle: () => void;
 }
