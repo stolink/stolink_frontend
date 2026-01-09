@@ -31,6 +31,8 @@ import { RelationshipDeepAnalysisModal } from "../RelationshipDeepAnalysis";
 import { generateMockAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "../RelationshipEventTooltip";
 import { TiledBackground } from "../TiledBackground";
+import { EventDetailPanel } from "@/components/common/character-detail/components/biography/EventDetailPanel";
+import type { BiographyEvent } from "@/types/biography";
 import * as d3 from "d3";
 import { NODE_SIZES } from "../constants";
 
@@ -95,6 +97,9 @@ export const CharacterGraphCanvas = forwardRef<
     const [showTension] = useState(false);
     const [showLogicCheck] = useState(false);
     const [currentChapter, setCurrentChapter] = useState(1);
+    const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
+      null,
+    );
 
     // Zoom State for TiledBackground
     const [zoomState, setZoomState] = useState({ x: 0, y: 0, scale: 1 });
@@ -519,8 +524,65 @@ export const CharacterGraphCanvas = forwardRef<
       >;
       if (linkForce) {
         linkForce
-          .distance(FORCE_CONFIG.linkDistance)
-          .strength(FORCE_CONFIG.linkStrength);
+          .distance((link: unknown) => {
+            const relLink = link as RelationshipLink;
+            const type = (relLink.type as UIRelationType) || "neutral";
+            let configKey: keyof typeof FORCE_CONFIG.dynamic = "neutral";
+
+            if (["friendly", "ally", "classmate"].includes(type))
+              configKey = "friendly";
+            else if (["hostile", "enemy", "rival"].includes(type))
+              configKey = "hostile";
+            else if (["family", "mentor"].includes(type)) configKey = "family";
+            else if (["romantic"].includes(type)) configKey = "romantic";
+            else if (["neutral", "coworker"].includes(type))
+              configKey = "neutral";
+
+            const baseDistance =
+              FORCE_CONFIG.dynamic[
+                configKey as keyof typeof FORCE_CONFIG.dynamic
+              ]?.distance || FORCE_CONFIG.dynamic.neutral.distance;
+
+            // Dynamics based on Strength (1-3 typically)
+            // Friendly: High strength = Closer (shorter distance)
+            // Hostile: High strength = Further (longer distance separation)
+            const strengthVal = relLink.strength || 1;
+
+            if (configKey === "hostile") {
+              // More hate = More separation (Halved effect from 0.2 -> 0.1)
+              return baseDistance * (1 + (strengthVal - 1) * 0.1);
+            } else if (configKey === "friendly" || configKey === "romantic") {
+              // More love = Closer (Halved effect from 0.1 -> 0.05)
+              return Math.max(
+                20,
+                baseDistance * (1 - (strengthVal - 1) * 0.05),
+              );
+            }
+            return baseDistance;
+          })
+          .strength((link: unknown) => {
+            const relLink = link as RelationshipLink;
+            const type = (relLink.type as UIRelationType) || "neutral";
+            let configKey: keyof typeof FORCE_CONFIG.dynamic = "neutral";
+
+            if (["friendly", "ally", "classmate"].includes(type))
+              configKey = "friendly";
+            else if (["hostile", "enemy", "rival"].includes(type))
+              configKey = "hostile";
+            else if (["family", "mentor"].includes(type)) configKey = "family";
+            else if (["romantic"].includes(type)) configKey = "romantic";
+
+            const baseStrength =
+              FORCE_CONFIG.dynamic[
+                configKey as keyof typeof FORCE_CONFIG.dynamic
+              ]?.strength || FORCE_CONFIG.dynamic.neutral.strength;
+            const strengthVal = relLink.strength || 1;
+
+            // Stronger relationship = Stronger Spring (holds position better)
+            // Works for both friendly (tight bind) and hostile (rigid separation)
+            // (Halved effect from 0.15 -> 0.075)
+            return Math.min(1, baseStrength * (1 + (strengthVal - 1) * 0.075));
+          });
       }
 
       // Center Force
@@ -583,7 +645,25 @@ export const CharacterGraphCanvas = forwardRef<
         {/* Background Layer */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <TiledBackground zoomState={zoomState} className="w-full h-full" />
+          {/* Ambient Glow: Warm central light */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 50% 50%, rgba(164, 119, 100, 0.08) 0%, rgba(241, 240, 236, 0) 70%)",
+              mixBlendMode: "multiply",
+            }}
+          />
         </div>
+
+        {/* Dynamic Vignette Overlay */}
+        <div
+          className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-1000"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, transparent 40%, rgba(61, 48, 42, 0.15) 100%)",
+          }}
+        />
 
         {/* Canvas Graph */}
         <div className="z-10 absolute inset-0">
@@ -675,10 +755,12 @@ export const CharacterGraphCanvas = forwardRef<
 
               const isHighlighted =
                 selectedNodeId === sourceId || selectedNodeId === targetId;
-              const isDimmed =
-                connectedNodeIds &&
-                !connectedNodeIds.has(sourceId) &&
-                !connectedNodeIds.has(targetId);
+              // Fix: Strict Star Topology (User Feedback)
+              // Only show links that are DIRECTLY connected to the selected node.
+              // Hide links between neighbors (e.g., A->B, A->C selected. Hide B->C).
+              const isDimmed = selectedNodeId
+                ? sourceId !== selectedNodeId && targetId !== selectedNodeId
+                : false;
 
               drawLink({
                 ctx,
@@ -808,12 +890,78 @@ export const CharacterGraphCanvas = forwardRef<
                 ? (hoveredLink.link.target as CharacterNode).name
                 : "Unknown"
             }
+            sourceImage={
+              typeof hoveredLink.link.source === "object"
+                ? (hoveredLink.link.source as CharacterNode).imageUrl
+                : undefined
+            }
+            targetImage={
+              typeof hoveredLink.link.target === "object"
+                ? (hoveredLink.link.target as CharacterNode).imageUrl
+                : undefined
+            }
             x={hoveredLink.coords.x}
             y={hoveredLink.coords.y}
             type={hoveredLink.link.type as UIRelationType}
             strength={hoveredLink.link.strength}
             description={hoveredLink.link.description}
-            onEventClick={() => {}}
+            onEventClick={(event) => {
+              const source =
+                typeof hoveredLink.link.source === "object"
+                  ? (hoveredLink.link.source as CharacterNode)
+                  : { name: "Unknown" };
+              const target =
+                typeof hoveredLink.link.target === "object"
+                  ? (hoveredLink.link.target as CharacterNode)
+                  : { name: "Unknown" };
+
+              const bioEvent: BiographyEvent = {
+                eventId: event.eventId,
+                eventType: (event.type as string).toLowerCase() || "transition",
+                narrativeSummary: event.title,
+                description: event.reason || "상세 설명이 없습니다.",
+                participants: [source.name, target.name],
+                locationRef: null,
+                prevEventId: null,
+                visualScene: null,
+                timestamp: event.date || event.chapter || null,
+                importance: 5,
+                changesMade: null,
+              };
+              setSelectedEvent(bioEvent);
+            }}
+            onOpenDeepAnalysis={() => {
+              // Re-use logic from handleLinkClick to open the modal
+              const sourceId =
+                typeof hoveredLink.link.source === "object"
+                  ? (hoveredLink.link.source as CharacterNode).id
+                  : hoveredLink.link.source;
+              const targetId =
+                typeof hoveredLink.link.target === "object"
+                  ? (hoveredLink.link.target as CharacterNode).id
+                  : hoveredLink.link.target;
+
+              const sourceChar = characterMap.get(sourceId);
+              const targetChar = characterMap.get(targetId);
+
+              if (sourceChar && targetChar) {
+                const analysisData = generateMockAnalysisData(
+                  {
+                    id: sourceId,
+                    name: sourceChar.profile?.name || "Unknown",
+                    imageUrl: sourceChar.imageUrl,
+                  },
+                  {
+                    id: targetId,
+                    name: targetChar.profile?.name || "Unknown",
+                    imageUrl: targetChar.imageUrl,
+                  },
+                  hoveredLink.link.type as UIRelationType, // Correct type assertion
+                  hoveredLink.link.strength,
+                );
+                setDeepAnalysisData(analysisData);
+              }
+            }}
           />
         )}
 
@@ -822,6 +970,11 @@ export const CharacterGraphCanvas = forwardRef<
           isOpen={!!deepAnalysisData}
           onClose={() => setDeepAnalysisData(null)}
           data={deepAnalysisData}
+        />
+
+        <EventDetailPanel
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
         />
       </div>
     );

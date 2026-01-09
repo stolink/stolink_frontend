@@ -1,10 +1,11 @@
 import { createPortal } from "react-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@stolink/ui";
+import { Card, CardContent } from "@stolink/ui";
 import { Badge } from "@stolink/ui";
 import { cn } from "@/lib/utils";
-import { Activity, Clock, ChevronRight } from "lucide-react";
+import { Clock, ChevronRight, Sparkles } from "lucide-react";
 import { getRelationshipColor, type UIRelationType } from "./utils";
 import { toUIRelationType } from "./constants";
+import { motion, AnimatePresence } from "framer-motion";
 
 import type { RelationType } from "@/types";
 
@@ -21,199 +22,253 @@ interface RelationshipEventTooltipProps {
   events: HistoryEvent[];
   sourceName: string;
   targetName: string;
+  // Optional Avatar URLs (passed from parent if available, or fallback to initials)
+  sourceImage?: string;
+  targetImage?: string;
   x: number;
   y: number;
   onEventClick: (event: HistoryEvent) => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
-  // Added props for DB data
   type: UIRelationType;
-  types?: UIRelationType[]; // Added for multi-type support
+  types?: UIRelationType[];
   strength: number;
   description?: string;
-  /** 전체 카드 클릭 시 심층 분석 모달 열기 */
   onOpenDeepAnalysis?: () => void;
 }
 
-// Local constants removed in favor of getRelationshipColor helper
+// Helper for initials
+const getInitials = (name: string) => name.charAt(0).toUpperCase();
 
 export function RelationshipEventTooltip({
   events,
   sourceName,
   targetName,
+  sourceImage,
+  targetImage,
   x,
   y,
   onEventClick,
   onMouseEnter,
   onMouseLeave,
   type,
-  types,
   strength,
   description,
   onOpenDeepAnalysis,
 }: RelationshipEventTooltipProps) {
   if (!events && !description) return null;
 
+  // Determine Primary Color based on Relationship Type
+  const primaryColor = getRelationshipColor(type, strength);
+
   return createPortal(
-    <div
-      className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
-      style={{
-        left: x,
-        top: y,
-      }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <Card
-        className={cn(
-          "group w-64 shadow-xl border-cloud-200 bg-white/95 backdrop-blur-sm overflow-hidden",
-          "transition-all duration-200 ease-out",
-          // 클릭 가능 시각적 피드백
-          onOpenDeepAnalysis && [
-            "cursor-pointer",
-            "hover:scale-[1.03] hover:shadow-2xl hover:border-mocha-400",
-            "hover:ring-2 hover:ring-mocha-300/60",
-            "active:scale-[0.98]",
-          ],
-        )}
-        onClick={(e) => {
-          if (onOpenDeepAnalysis) {
-            e.stopPropagation();
-            onOpenDeepAnalysis();
-          }
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="fixed z-50 pointer-events-auto"
+        style={{
+          left: x + 15, // Offset to not cover cursor
+          top: y + 15,
         }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
-        <CardHeader className="p-3 pb-2 border-b border-cloud-100 bg-cloud-50/50">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-espresso-600 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-mocha-500" />
-              관계 정보
-            </CardTitle>
-          </div>
-          <p className="text-xs text-espresso-400">
-            {sourceName} & {targetName}
-          </p>
-        </CardHeader>
-        <CardContent className="p-2 space-y-3">
-          {/* Main Stats from DB */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              {types && types.length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                  {types.map((t, idx) => (
-                    <Badge
-                      key={idx}
-                      className={cn(
-                        "px-2 py-0.5 text-xs font-medium capitalize text-white",
-                      )}
-                      style={{
-                        backgroundColor: getRelationshipColor(t, strength),
-                        borderColor: getRelationshipColor(t, strength),
-                      }}
-                    >
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <Badge
-                  className={cn(
-                    "px-2 py-0.5 text-xs font-medium capitalize text-white",
+        <Card
+          className={cn(
+            "w-[320px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
+            "ring-1 ring-black/5",
+          )}
+        >
+          {/* Header: Narrative Thread (Avatars + Tension) */}
+          <div className="relative pt-6 pb-4 px-6 bg-gradient-to-b from-cloud-50 to-white">
+            {/* Background Decorative Line */}
+            <div className="absolute top-1/2 left-6 right-6 h-[2px] bg-cloud-200 -z-10 transform -translate-y-1/2" />
+
+            <div className="flex justify-between items-center relative z-10">
+              {/* Source Avatar */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full ring-4 ring-white shadow-md overflow-hidden bg-cloud-100 flex items-center justify-center">
+                  {sourceImage ? (
+                    <img
+                      src={sourceImage}
+                      alt={sourceName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-serif font-bold text-espresso-600">
+                      {getInitials(sourceName)}
+                    </span>
                   )}
+                </div>
+                <span className="text-xs font-bold text-espresso-800 max-w-[80px] truncate text-center">
+                  {sourceName}
+                </span>
+              </div>
+
+              {/* Central Connection Badge */}
+              <div className="flex flex-col items-center">
+                <Badge
+                  className="px-3 py-1 text-xs font-serif font-bold tracking-wide uppercase text-white shadow-md border-2 border-white"
                   style={{
-                    backgroundColor: getRelationshipColor(type, strength),
-                    borderColor: getRelationshipColor(type, strength),
+                    backgroundColor: primaryColor,
                   }}
                 >
                   {type}
                 </Badge>
-              )}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase font-bold text-espresso-400">
-                  Strength
-                </span>
-                <div className="flex gap-0.5">
+                {/* Strength Dots */}
+                <div className="flex gap-1 mt-2">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div
                       key={i}
                       className={cn(
-                        "w-1.5 h-1.5 rounded-full transition-colors",
+                        "w-1 h-1 rounded-full transition-all duration-300",
                         i < Math.round(strength / 2)
-                          ? "bg-mocha-500"
-                          : "bg-cloud-200",
+                          ? "bg-espresso-800 scale-110"
+                          : "bg-cloud-300 scale-90",
                       )}
+                      style={{
+                        backgroundColor:
+                          i < Math.round(strength / 2)
+                            ? primaryColor
+                            : undefined,
+                      }}
                     />
                   ))}
                 </div>
               </div>
+
+              {/* Target Avatar */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full ring-4 ring-white shadow-md overflow-hidden bg-cloud-100 flex items-center justify-center">
+                  {targetImage ? (
+                    <img
+                      src={targetImage}
+                      alt={targetName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-serif font-bold text-espresso-600">
+                      {getInitials(targetName)}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-espresso-800 max-w-[80px] truncate text-center">
+                  {targetName}
+                </span>
+              </div>
             </div>
+
+            {/* Description (Context) */}
             {description && (
-              <p className="text-xs text-espresso-600 leading-relaxed border-l-2 border-cloud-200 pl-2 italic">
-                "{description}"
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-4 text-center"
+              >
+                <p className="text-xs text-espresso-600 italic font-serif leading-relaxed px-2">
+                  "{description}"
+                </p>
+              </motion.div>
             )}
           </div>
 
-          {events && events.length > 0 && (
-            <div className="space-y-1 pt-2 border-t border-cloud-100">
-              <span className="text-[10px] uppercase font-bold text-espresso-400 block mb-1">
-                Recent Events
-              </span>
-              {events.map((event, index) => (
-                <div
-                  key={`${event.eventId}-${index}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEventClick(event);
-                  }}
-                  className="group flex items-center justify-between p-2 rounded-md hover:bg-cloud-100 cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-espresso-700 group-hover:text-mocha-600 transition-colors">
-                      {event.title}
-                    </span>
-                    {/* Show time only if available */}
-                    {(event.chapter || event.date) && (
-                      <span className="text-[10px] text-espresso-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {event.chapter || event.date}
-                      </span>
-                    )}
-                  </div>
-                  <Badge
-                    intent="outline"
-                    className={cn(
-                      "text-[10px] px-1.5 py-0 h-5 text-white border-0",
-                    )}
-                    style={{
-                      backgroundColor: getRelationshipColor(
-                        toUIRelationType(event.type),
-                        5,
-                      ), // Default to standard strength for events
-                    }}
-                  >
-                    {event.type}
-                  </Badge>
+          <CardContent className="p-0 bg-white">
+            {/* Timeline Events */}
+            {events && events.length > 0 && (
+              <div className="px-5 py-4 space-y-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-3.5 h-3.5 text-mocha-400" />
+                  <span className="text-[10px] uppercase font-bold text-espresso-400 tracking-wider">
+                    Timeline History
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* 클릭 CTA 영역 - 버튼 스타일 */}
-          {onOpenDeepAnalysis && (
-            <div className="mt-2 -mx-2 -mb-2 px-3 py-2.5 bg-gradient-to-r from-mocha-50 to-mocha-100 border-t border-mocha-200 flex items-center justify-between group-hover:from-mocha-100 group-hover:to-mocha-200 transition-all">
-              <span className="text-xs font-semibold text-mocha-700">
-                🔍 자세히 보기
-              </span>
-              <div className="flex items-center gap-1 text-mocha-600">
-                <span className="text-[10px] font-medium opacity-70">클릭</span>
-                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <div className="relative pl-3 space-y-4 border-l-2 border-cloud-100">
+                  {events.slice(0, 3).map((event, index) => (
+                    <motion.div
+                      key={event.eventId}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                      className="relative pl-4 group cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventClick(event);
+                      }}
+                    >
+                      {/* Timeline Dot */}
+                      <div
+                        className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-white"
+                        style={{
+                          backgroundColor: getRelationshipColor(
+                            toUIRelationType(event.type),
+                            4,
+                          ),
+                        }}
+                      />
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm font-bold text-espresso-800 font-serif group-hover:text-mocha-600 transition-colors">
+                            {event.title}
+                          </p>
+                          <span className="text-[10px] text-espresso-400 font-medium">
+                            {event.chapter || event.date || "Unknown Date"}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1.5 py-0 h-4 border-cloud-200 text-espresso-500"
+                        >
+                          {event.type}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {events.length > 3 && (
+                    <p className="pl-4 text-[10px] text-espresso-400 italic">
+                      + {events.length - 3} more events...
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>,
+            )}
+
+            {/* Footer CTA: Deep Analysis */}
+            {onOpenDeepAnalysis && (
+              <motion.div
+                whileHover={{ backgroundColor: "rgba(164, 119, 100, 0.05)" }}
+                className="border-t border-cloud-100 px-5 py-3 cursor-pointer group transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenDeepAnalysis();
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-full bg-mocha-100 text-mocha-600 group-hover:bg-mocha-500 group-hover:text-white transition-colors">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-espresso-800 group-hover:text-mocha-700 transition-colors">
+                        Deep Analysis
+                      </span>
+                      <span className="block text-[10px] text-espresso-400 group-hover:text-mocha-500 transition-colors">
+                        Click to explore details
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-cloud-300 group-hover:text-mocha-500 group-hover:translate-x-1 transition-all" />
+                </div>
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </AnimatePresence>,
     document.body,
   );
 }
