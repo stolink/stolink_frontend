@@ -5,7 +5,6 @@ import { useResizable } from "@/hooks/useResizable";
 import type { ChapterNode } from "@/components/editor/sidebar";
 
 import type { Document } from "@/types/document";
-
 interface EditorLeftSidebarProps {
   chapters: ChapterNode[];
   selectedChapterId: string | null;
