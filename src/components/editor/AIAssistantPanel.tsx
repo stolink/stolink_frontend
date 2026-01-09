@@ -39,12 +39,20 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     sendMessage,
     cancelStream,
     resetSession,
+    loadHistory,
     clearAnalysisComplete,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
     },
   });
+
+  // 페이지 진입 시 히스토리 로드
+  useEffect(() => {
+    if (projectId) {
+      loadHistory(projectId);
+    }
+  }, [projectId, loadHistory]);
 
   // 분석 완료 애니메이션 표시 상태
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
@@ -106,7 +114,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={resetSession}
+          onClick={() => resetSession(projectId ?? undefined)}
           className="h-9 w-9 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-xl"
           title="새 대화 시작"
         >
