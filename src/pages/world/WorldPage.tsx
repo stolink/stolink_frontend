@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, startTransition } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -111,7 +111,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -120,8 +120,17 @@ export default function WorldPage() {
     UIRelationType | "all"
   >("all");
 
-  // Feature Flag: Canvas vs SVG 그래프 전환
-  const useCanvasGraph = import.meta.env.VITE_USE_CANVAS_GRAPH === "true";
+  // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
+  // Canvas 그래프 강제 활성화 (디버깅)
+  const useCanvasGraph = true;
+  useEffect(
+    () =>
+      console.log(
+        "Current Graph Mode:",
+        useCanvasGraph ? "Canvas (Optimized)" : "SVG (Legacy)",
+      ),
+    [],
+  );
 
   const graphRef = useRef<CharacterGraphRef | CharacterGraphCanvasRef>(null);
   const [searchHighlightedIds, setSearchHighlightedIds] = useState<
@@ -132,8 +141,11 @@ export default function WorldPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setSelectedCharacter(null);
-        setGraphFocusId(null);
+        // startTransition으로 비긴급 업데이트 처리 (INP 개선)
+        startTransition(() => {
+          setSelectedCharacter(null);
+          setGraphFocusId(null);
+        });
       }
     };
 
@@ -152,7 +164,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents
+    projectEvents,
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -166,14 +178,18 @@ export default function WorldPage() {
 
   const handleNodeClick = (character: Character | null) => {
     if (!character) {
-      setSelectedCharacter(null);
-      setGraphFocusId(null);
+      startTransition(() => {
+        setSelectedCharacter(null);
+        setGraphFocusId(null);
+      });
       return;
     }
     const nextChar =
       selectedCharacter?._id === character._id ? null : character;
-    setSelectedCharacter(nextChar);
-    setGraphFocusId(nextChar?._id || null);
+    startTransition(() => {
+      setSelectedCharacter(nextChar);
+      setGraphFocusId(nextChar?._id || null);
+    });
 
     // Sidebar will open because selectedCharacter is set
     // Modal will be opened manually from the sidebar's "View Profile" button
@@ -257,7 +273,7 @@ export default function WorldPage() {
                   <p
                     className={cn(
                       "text-mocha-500",
-                      !showCompletionAnimation && !isStuck && "animate-pulse"
+                      !showCompletionAnimation && !isStuck && "animate-pulse",
                     )}
                   >
                     {showCompletionAnimation
@@ -360,7 +376,10 @@ export default function WorldPage() {
               />
             </div>
           ) : (
-            <div className="h-full w-full relative">
+            <div
+              className="h-full w-full relative"
+              style={{ height: "100%", contain: "layout" }}
+            >
               {/* Polling Indicator Removed (Moved to Global) */}
 
               {/* Detail Sidebar */}

@@ -47,7 +47,7 @@ const RELATION_TYPE_STYLES: Record<string, string> = {
   RIVAL: "bg-orange-50 text-orange-700 border-orange-200",
   ENEMY: "bg-rose-50 text-rose-700 border-rose-200",
   ROMANTIC: "bg-pink-50 text-pink-700 border-pink-200",
-  MENTOR: "bg-blue-50 text-blue-700 border-blue-200",
+  MENTOR: "bg-mocha-50 text-mocha-700 border-mocha-200",
   FAMILY: "bg-purple-50 text-purple-700 border-purple-200",
   NEUTRAL: "bg-cloud-100 text-espresso-600 border-cloud-200",
   MASTER_SERVANT: "bg-violet-50 text-violet-700 border-violet-200",
@@ -80,7 +80,10 @@ export function RelationshipDeepAnalysisModal({
     sharedScenes,
   } = data;
 
-  const typeKey = relationshipType.toUpperCase();
+  const safeType = data.relationshipType || "NEUTRAL";
+  const typeKey = (
+    typeof safeType === "string" ? safeType : "NEUTRAL"
+  ).toUpperCase();
   const typeLabel = RELATION_TYPE_LABELS[typeKey] || relationshipType;
   const typeStyle =
     RELATION_TYPE_STYLES[typeKey] ||

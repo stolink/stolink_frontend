@@ -13,7 +13,7 @@ interface EditorState {
   content: string;
   isSaving: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
-  lastSavedAt: Date | null;
+  lastSavedAt: string | null; // ISO timestamp for serialization
 
   // Chapter tree
   chapterTree: ChapterTreeNode[];
@@ -87,7 +87,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSaveStatus: (status) =>
     set({
       saveStatus: status,
-      lastSavedAt: status === "saved" ? new Date() : get().lastSavedAt,
+      lastSavedAt:
+        status === "saved" ? new Date().toISOString() : get().lastSavedAt,
     }),
 
   // Fixed: Using array instead of Set for serialization compatibility

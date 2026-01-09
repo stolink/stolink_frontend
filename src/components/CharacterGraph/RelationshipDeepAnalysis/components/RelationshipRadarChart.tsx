@@ -119,7 +119,7 @@ export function RelationshipRadarChart({
 
   // 속성값 배열 추출
   const values = useMemo(
-    () => axes.map((axis) => attributes[axis.key] ?? 0),
+    () => axes.map((axis) => attributes?.[axis.key] ?? 0),
     [attributes, axes],
   );
 

@@ -22,10 +22,13 @@ export type RelationType =
   | "COWORKER"
   | "CLASSMATE"
   | "COMPLEX"
-  // Legacy lowercase values for backward compatibility
+  // Legacy lowercase values for backward compatibility (full UIRelationType support)
   | "friendly"
   | "hostile"
-  | "romantic";
+  | "romantic"
+  | "family"
+  | "neutral"
+  | "complex";
 
 // Legacy aliases for compatibility
 export type BackendRelationshipType = RelationType;
@@ -291,7 +294,7 @@ export function getCharacterFaction(char: Character): string {
  * 관계 배열을 가져오는 헬퍼 (레거시 호환)
  */
 export function getCharacterRelationships(
-  char: Character
+  char: Character,
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }

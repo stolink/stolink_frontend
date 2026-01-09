@@ -132,10 +132,8 @@ export function drawNode(options: NodeRenderOptions): void {
     ctx.arc(node.x, node.y, radius - 3, 0, Math.PI * 2);
     ctx.clip();
 
-    // 필터 적용
-    if (isDimmed) {
-      ctx.filter = "grayscale(80%) brightness(0.9)";
-    }
+    // 필터 제거 - 성능 최적화 (ctx.filter는 매우 비싼 연산)
+    // isDimmed 상태는 globalAlpha로만 처리
 
     ctx.drawImage(
       img,
@@ -145,7 +143,6 @@ export function drawNode(options: NodeRenderOptions): void {
       (radius - 3) * 2,
     );
 
-    ctx.filter = "none";
     ctx.restore();
   } else {
     // 이미지 없음: 이니셜 기반 아바타 - 역할별 그라데이션
@@ -170,17 +167,13 @@ export function drawNode(options: NodeRenderOptions): void {
     ctx.fill();
     ctx.restore();
 
-    // 이니셜 텍스트
+    // 이니셜 텍스트 (shadowBlur 제거 - 성능 최적화)
     ctx.save();
     ctx.fillStyle = "white";
     ctx.font = `bold ${isImportant ? radius * 0.8 : radius * 0.7}px Pretendard`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.3)";
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetY = 1;
     ctx.fillText(initial, node.x, node.y);
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
@@ -199,11 +192,12 @@ export function drawNode(options: NodeRenderOptions): void {
     ctx.font = `${isImportant ? 700 : 500} ${Math.max(16, radius * 0.38 + 4)}px "Pretendard"`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.shadowColor = "rgba(255,255,255,0.8)";
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 1;
-    ctx.fillText(displayName, node.x, node.y + radius + (isImportant ? 20 : 12));
-    ctx.shadowBlur = 0;
+    // shadowBlur 제거 - 성능 최적화
+    ctx.fillText(
+      displayName,
+      node.x,
+      node.y + radius + (isImportant ? 20 : 12),
+    );
     ctx.restore();
   }
 

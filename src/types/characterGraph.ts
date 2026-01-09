@@ -56,6 +56,8 @@ export interface CharacterNode extends d3.SimulationNodeDatum {
   vy?: number;
   fx?: number | null;
   fy?: number | null;
+  // Index signature for react-force-graph compatibility
+  [key: string]: unknown;
 }
 
 /**
@@ -93,6 +95,12 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   curvature?: number;
   /** BFS depth from protagonist for flow animation delay */
   flowDepth?: number;
+  /** Visual rendering pattern for Super Edges */
+  visualPattern?: "standard" | "braided" | "parallel";
+  /** Is this a super-edge representing multiple relationships? */
+  isSuperEdge?: boolean;
+  /** Original link objects if this is a super-edge */
+  originalLinks?: RelationshipLink[];
   /**
    * 복합 관계 세그먼트 배열 (Super-edge)
    * 존재할 경우 type/strength 대신 segments로 렌더링

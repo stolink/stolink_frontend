@@ -45,7 +45,7 @@ export function normalizeRelationType(type: string): RelationType {
  * <CharacterGraph characters={characters} links={links} />
  */
 export function extractRelationshipLinks(
-  characters: Character[]
+  characters: Character[],
 ): RelationshipLink[] {
   const links: RelationshipLink[] = [];
   const processedPairs = new Set<string>();
@@ -127,7 +127,7 @@ export function extractRelationshipLinks(
           } else {
             // Target을 찾을 수 없으면 링크 생성 불가 (D3 에러 방지)
             console.warn(
-              `Target node not found for relationship: ${rawSourceId} -> ${rawTargetId}`
+              `Target node not found for relationship: ${rawSourceId} -> ${rawTargetId}`,
             );
             return;
           }
@@ -154,7 +154,7 @@ export function extractRelationshipLinks(
           // Fallback to single type
           relationTypes = [
             normalizeRelationType(
-              rel.relationType || rel.relation_type || rel.type || "friendly"
+              rel.relationType || rel.relation_type || rel.type || "friendly",
             ),
           ];
         }
@@ -163,7 +163,7 @@ export function extractRelationshipLinks(
         relationTypes = Array.from(new Set(relationTypes));
 
         // 4.2 Create Segments for Multi-Type Visualization
-        const segments = relationTypes.map((t, index) => ({
+        const segments = relationTypes.map((t, _index) => ({
           type: t,
           ratio: 1 / relationTypes.length, // Equal distribution for now
           isPast: false, // Could be derived from history if needed
@@ -186,13 +186,13 @@ export function extractRelationshipLinks(
           evolvedFrom:
             rel.evolvedFrom || rel.evolved_from
               ? normalizeRelationType(
-                  (rel.evolvedFrom || rel.evolved_from) as string
+                  (rel.evolvedFrom || rel.evolved_from) as string,
                 )
               : undefined,
           publicStance: rel.publicStance || rel.public_stance,
           privateFeeling: rel.privateFeeling || rel.private_feeling,
         });
-      }
+      },
     );
   });
 

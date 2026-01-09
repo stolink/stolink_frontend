@@ -25,7 +25,7 @@ const KEYWORD_COLORS: Record<string, string> = {
   배신: "bg-red-50 border-red-200 text-red-700",
   신뢰: "bg-teal-50 border-teal-200 text-teal-700",
   화해: "bg-green-50 border-green-200 text-green-700",
-  동맹: "bg-blue-50 border-blue-200 text-blue-700",
+  동맹: "bg-mocha-50 border-mocha-200 text-mocha-700",
   대화: "bg-slate-50 border-slate-200 text-slate-700",
   발견: "bg-amber-50 border-amber-200 text-amber-700",
   폭로: "bg-purple-50 border-purple-200 text-purple-700",

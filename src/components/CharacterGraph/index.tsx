@@ -16,7 +16,7 @@ import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { type UIRelationType } from "./constants";
+import { type UIRelationType, toUIRelationType } from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
@@ -73,7 +73,7 @@ export const CharacterGraph = forwardRef<
       showSearch = true,
       onNodeDragEnd,
     },
-    ref
+    ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -102,23 +102,12 @@ export const CharacterGraph = forwardRef<
       if (initialLinks.length === 0) return 1;
       const max = Math.max(
         ...initialLinks.map((l) => l.revealedInChapter || 0),
-        1
+        1,
       );
       return max;
     }, [initialLinks]);
 
     // --- Hover Tooltip State ---
-    const [hoveredLinkData, setHoveredLinkData] = useState<{
-      type: string;
-      strength: number;
-      label?: string | null;
-      description?: string;
-      sourceName: string;
-      targetName: string;
-      x: number;
-      y: number;
-      link: RelationshipLink; // Store link to open modal
-    } | null>(null);
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -130,7 +119,7 @@ export const CharacterGraph = forwardRef<
         setInternalFilter(filter);
         onFilterChange?.(filter);
       },
-      [onFilterChange]
+      [onFilterChange],
     );
 
     // 검색 결과 처리
@@ -138,7 +127,7 @@ export const CharacterGraph = forwardRef<
       (matchingIds: string[] | null) => {
         onSearchChange?.(matchingIds);
       },
-      [onSearchChange]
+      [onSearchChange],
     );
 
     // Handle ESC key to clear selection
@@ -217,7 +206,7 @@ export const CharacterGraph = forwardRef<
         // Since initialNodes are derived from characters, we can match by ID
         const originalChar = characters.find(
           (c) =>
-            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id)
+            c._id === node.id || (node.id.startsWith("temp-node-") && !c._id),
         );
         if (originalChar) {
           nodeCharacterMapRef.current.set(node.id, originalChar);
@@ -231,7 +220,7 @@ export const CharacterGraph = forwardRef<
       let filtered = initialLinks;
       if (totalChapters > 1) {
         filtered = initialLinks.filter(
-          (l) => (l.revealedInChapter || 0) <= currentChapter
+          (l) => (l.revealedInChapter || 0) <= currentChapter,
         );
       }
 
@@ -381,7 +370,7 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping }
+      { width, height },
     );
 
     /**
@@ -403,12 +392,12 @@ export const CharacterGraph = forwardRef<
           if (g) acc[g] = (acc[g] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       // 2. 멤버가 1명 이상인 그룹만 추출합니다.
       const activeGroups = Object.keys(groupCounts).filter(
-        (groupName) => groupCounts[groupName] > 0
+        (groupName) => groupCounts[groupName] > 0,
       );
 
       return activeGroups.map((group, index) => ({
@@ -445,7 +434,7 @@ export const CharacterGraph = forwardRef<
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
-          ".link-group"
+          ".link-group",
         );
         const nodeSel = g.selectAll<SVGGElement, CharacterNode>(".node-group");
 
@@ -498,7 +487,7 @@ export const CharacterGraph = forwardRef<
 
         // 2. 필수 업데이트 - 노드 위치 (매 프레임)
         nodeSel.attr("transform", (d) =>
-          d ? `translate(${d.x}, ${d.y})` : ""
+          d ? `translate(${d.x}, ${d.y})` : "",
         );
 
         // 3. 그룹 클라우드 업데이트 (활성화된 경우)
@@ -639,7 +628,7 @@ export const CharacterGraph = forwardRef<
 
     const { zoomState, centerAt, zoomIn, zoomOut, resetZoom } = useZoom(
       svgRef,
-      gRef
+      gRef,
     );
 
     // 캐릭터 선택 처리 (검색에서 - 줌/하이라이트 포함)
@@ -657,7 +646,7 @@ export const CharacterGraph = forwardRef<
           centerAt(targetNode.x, targetNode.y, 1.35);
         }
       },
-      [onNodeClick, nodes, centerAt]
+      [onNodeClick, nodes, centerAt],
     );
 
     // Optimize handlers to avoid re-binding D3 events on every render (fix zoom lag)
@@ -671,7 +660,7 @@ export const CharacterGraph = forwardRef<
         setDraggedNodeId(null);
         onNodeDragEnd?.(node);
       },
-      [onNodeDragEnd]
+      [onNodeDragEnd],
     );
 
     const { dragBehavior } = useDrag({
@@ -691,7 +680,7 @@ export const CharacterGraph = forwardRef<
           return Promise.resolve();
         },
       }),
-      [nodes, centerAt]
+      [nodes, centerAt],
     );
 
     const connectedNodeIds = useMemo(() => {
@@ -746,40 +735,16 @@ export const CharacterGraph = forwardRef<
             imageUrl: targetNode.imageUrl,
           },
           link.type as string,
-          link.strength
+          link.strength,
         );
 
         setDeepAnalysisData(mockData);
         setHoveredLinkData(null); // Close tooltip
       },
-      [onLinkClick]
+      [onLinkClick],
     );
 
     // Handle Link Hover for Tooltip
-    const handleLinkHover = useCallback(
-      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
-        if (!link || !coords) {
-          setHoveredLinkData(null);
-          return;
-        }
-
-        setHoveredLinkData({
-          type: link.type as string,
-          relationTypes: link.relationTypes, // Add this field
-          strength: link.strength,
-          label: link.label,
-          description: link.description,
-          sourceName:
-            typeof link.source === "object" ? link.source.name : "Source",
-          targetName:
-            typeof link.target === "object" ? link.target.name : "Target",
-          x: coords.x,
-          y: coords.y,
-          link: link,
-        });
-      },
-      []
-    );
 
     const handleLinkHover = useCallback(
       (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
@@ -795,7 +760,7 @@ export const CharacterGraph = forwardRef<
           }, 150);
         }
       },
-      []
+      [],
     );
 
     // Search Highlighting Logic
@@ -814,15 +779,15 @@ export const CharacterGraph = forwardRef<
         } else {
           console.warn(
             "[CharacterGraph] Character not found for node.id:",
-            node.id
+            node.id,
           );
           console.warn(
             "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys())
+            Array.from(nodeCharacterMapRef.current.keys()),
           );
         }
       },
-      [onNodeClick]
+      [onNodeClick],
     );
 
     const handleNodeHover = useCallback(
@@ -830,7 +795,7 @@ export const CharacterGraph = forwardRef<
         if (isDragging) return;
         setHoveredNodeId(id);
       },
-      [isDragging]
+      [isDragging],
     );
 
     // Voronoi 인터랙션: 마우스가 가장 가까운 노드 자동 하이라이트
@@ -848,7 +813,7 @@ export const CharacterGraph = forwardRef<
           delaunayRef.current = Delaunay.from(
             validNodes,
             (d) => d.x!,
-            (d) => d.y!
+            (d) => d.y!,
           );
         }
       };
@@ -882,7 +847,7 @@ export const CharacterGraph = forwardRef<
         const transformed = point.matrixTransform(ctm.inverse());
         const nearestIndex = delaunayRef.current.find(
           transformed.x,
-          transformed.y
+          transformed.y,
         );
 
         if (nearestIndex !== -1 && simulation) {
@@ -908,7 +873,7 @@ export const CharacterGraph = forwardRef<
           }
         }
       },
-      [isDragging, simulation]
+      [isDragging, simulation],
     );
 
     const handleSvgMouseLeave = useCallback(() => {
@@ -1104,27 +1069,10 @@ export const CharacterGraph = forwardRef<
               })}
 
             {/* Tooltip on Hover */}
-            {hoveredLinkData && (
-              <RelationshipEventTooltip
-                type={hoveredLinkData.type as UIRelationType}
-                types={hoveredLinkData.relationTypes as UIRelationType[]} // Pass types
-                strength={hoveredLinkData.strength}
-                description={hoveredLinkData.description}
-                sourceName={hoveredLinkData.sourceName}
-                targetName={hoveredLinkData.targetName}
-                x={hoveredLinkData.x + 5} // Close offset
-                y={hoveredLinkData.y + 5}
-                events={[]} // Pass empty events for now or fetch if needed
-                onEventClick={() => {}}
-                onOpenDeepAnalysis={() =>
-                  handleOpenDeepAnalysis(hoveredLinkData.link)
-                }
-              />
-            )}
 
             {nodes
               .filter(
-                (node) => !filteredNodeIds || filteredNodeIds.has(node.id)
+                (node) => !filteredNodeIds || filteredNodeIds.has(node.id),
               )
               .map((node, index) => {
                 // Determine visual state based on Search vs Selection
@@ -1169,19 +1117,19 @@ export const CharacterGraph = forwardRef<
               nodeCharacterMapRef.current.get(
                 typeof hoveredLinkData.link.source === "object"
                   ? (hoveredLinkData.link.source as CharacterNode).id
-                  : hoveredLinkData.link.source
+                  : hoveredLinkData.link.source,
               )?.profile?.name || "???"
             }
             targetName={
               nodeCharacterMapRef.current.get(
                 typeof hoveredLinkData.link.target === "object"
                   ? (hoveredLinkData.link.target as CharacterNode).id
-                  : hoveredLinkData.link.target
+                  : hoveredLinkData.link.target,
               )?.profile?.name || "???"
             }
             x={hoveredLinkData.x}
             y={hoveredLinkData.y}
-            type={hoveredLinkData.link.type}
+            type={toUIRelationType(hoveredLinkData.link.type)}
             strength={hoveredLinkData.link.strength}
             description={hoveredLinkData.link.description}
             onEventClick={() => {}} // TODO: Handle event click
@@ -1263,7 +1211,7 @@ export const CharacterGraph = forwardRef<
         />
       </div>
     );
-  }
+  },
 );
 
 export { AnalysisSummaryModal } from "./AnalysisSummaryModal";

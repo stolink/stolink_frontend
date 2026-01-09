@@ -27,10 +27,13 @@ import {
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
+const RELATION_ICONS: Partial<Record<UIRelationType, React.ReactNode>> = {
   friendly: <Users className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
+  family: <Users className="w-3 h-3" />,
+  neutral: <Users className="w-3 h-3" />,
+  complex: <Users className="w-3 h-3" />,
 };
 
 interface NetworkControlsProps {
@@ -142,7 +145,7 @@ export function NetworkControls({
                         className={cn(
                           "w-full justify-between gap-1 h-8 text-xs bg-white/80 hover:bg-white border-cloud-200",
                           relationTypeFilter !== "all" &&
-                            "border-mocha-300 bg-mocha-50"
+                            "border-mocha-300 bg-mocha-50",
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -228,7 +231,7 @@ export function NetworkControls({
                       </Label>
                       <Switch
                         checked={showMainOnly}
-                        onCheckedChange={onShowMainOnlyChange}
+                        onChange={onShowMainOnlyChange!}
                       />
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
@@ -246,7 +249,7 @@ export function NetworkControls({
                       </Label>
                       <Switch
                         checked={enableGrouping}
-                        onCheckedChange={onGroupingChange}
+                        onChange={onGroupingChange!}
                       />
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
@@ -286,7 +289,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showTension
                 ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-white/80 hover:bg-white"
+                : "bg-white/80 hover:bg-white",
             )}
             onClick={() => onToggleTension(!showTension)}
           >
@@ -301,7 +304,7 @@ export function NetworkControls({
               "h-8 text-xs gap-1.5 shadow-sm",
               showLogicCheck
                 ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-white/80 hover:bg-white"
+                : "bg-white/80 hover:bg-white",
             )}
             onClick={() => onToggleLogicCheck(!showLogicCheck)}
           >
@@ -368,7 +371,7 @@ export function NetworkControls({
                   "flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
                   isActive && "bg-white shadow-sm",
                   isHovered && !isActive && "bg-white/60",
-                  isDimmed && "opacity-40"
+                  isDimmed && "opacity-40",
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -402,7 +405,7 @@ export function NetworkControls({
                     "text-xs transition-colors",
                     isActive
                       ? "font-medium text-espresso-800"
-                      : "text-espresso-600"
+                      : "text-espresso-600",
                   )}
                 >
                   {RELATION_LABELS[type]}

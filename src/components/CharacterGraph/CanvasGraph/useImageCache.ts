@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Character } from "@/types";
 
 /**
@@ -7,8 +7,15 @@ import type { Character } from "@/types";
  */
 export function useImageCache(characters: Character[]) {
   const [cache, setCache] = useState<Map<string, HTMLImageElement>>(new Map());
+  const cacheRef = useRef(cache);
+
+  // ref를 최신 상태로 동기화
+  useEffect(() => {
+    cacheRef.current = cache;
+  }, [cache]);
 
   useEffect(() => {
+    const currentCache = cacheRef.current;
     const newCache = new Map<string, HTMLImageElement>();
     const promises: Promise<void>[] = [];
 
@@ -17,8 +24,8 @@ export function useImageCache(characters: Character[]) {
       if (!imageUrl) return;
 
       // 이미 캐시된 이미지는 재사용
-      if (cache.has(imageUrl)) {
-        newCache.set(imageUrl, cache.get(imageUrl)!);
+      if (currentCache.has(imageUrl)) {
+        newCache.set(imageUrl, currentCache.get(imageUrl)!);
         return;
       }
 

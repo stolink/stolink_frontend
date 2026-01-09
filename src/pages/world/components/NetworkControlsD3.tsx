@@ -15,10 +15,13 @@ import {
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
+const RELATION_ICONS: Partial<Record<UIRelationType, React.ReactNode>> = {
   friendly: <Users className="w-2.5 h-2.5" />,
   hostile: <Skull className="w-2.5 h-2.5" />,
   romantic: <Heart className="w-2.5 h-2.5" />,
+  family: <Users className="w-2.5 h-2.5" />,
+  neutral: <Users className="w-2.5 h-2.5" />,
+  complex: <Users className="w-2.5 h-2.5" />,
 };
 
 interface NetworkControlsD3Props {
