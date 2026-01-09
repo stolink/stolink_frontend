@@ -14,6 +14,8 @@ import { EncounterSummary } from "./components/EncounterSummary";
 import { SharedScenesPanel } from "./components/SharedScenesPanel";
 import { DeepAnalysisHero } from "./components/DeepAnalysisHero";
 import { MoodBackground } from "./components/MoodBackground";
+import { X } from "lucide-react";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 interface RelationshipDeepAnalysisModalProps {
@@ -38,8 +40,8 @@ export function RelationshipDeepAnalysisModal({
     targetToSourceAttributes,
     timeline,
     insights,
-    relationshipType,
-    currentStrength,
+    relationshipTypes,
+    asymmetricStrength,
     since,
     warnings,
     firstEncounter,
@@ -78,25 +80,33 @@ export function RelationshipDeepAnalysisModal({
               >
                 {/* Dossier Card */}
                 <div className="relative w-full max-w-6xl h-full max-h-[92vh] bg-[#FAFAF8] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
+                  {/* Fixed Close Button for the entire Dossier */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="absolute right-8 top-8 z-[100] rounded-full hover:bg-white/90 w-12 h-12 shadow-lg border border-white/60 bg-white/20 backdrop-blur-md transition-all active:scale-95"
+                  >
+                    <X className="w-7 h-7 text-espresso-800" />
+                  </Button>
+
                   {/* Dynamic Mood Background (Absolute) */}
                   <MoodBackground
-                    type={relationshipType}
+                    type={relationshipTypes[0] || "neutral"}
                     className="opacity-40"
-                  />
-
-                  {/* Header Section (Hero) - Fixed at top */}
-                  <DeepAnalysisHero
-                    sourceName={sourceCharacter.name}
-                    targetName={targetCharacter.name}
-                    relationshipType={relationshipType}
-                    strength={currentStrength}
-                    onClose={onClose}
-                    since={since}
-                    className="flex-shrink-0 bg-white/40 backdrop-blur-md border-b border-white/20"
                   />
 
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+                    {/* Hero Section - Now part of scroll */}
+                    <DeepAnalysisHero
+                      sourceCharacter={sourceCharacter}
+                      targetCharacter={targetCharacter}
+                      asymmetricStrength={asymmetricStrength}
+                      onClose={onClose}
+                      since={since}
+                    />
+
                     <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">
                       {/* 1. WARNINGS */}
                       {warnings && warnings.length > 0 && (
@@ -113,7 +123,7 @@ export function RelationshipDeepAnalysisModal({
                       <section>
                         <div className="flex items-center gap-4 mb-6">
                           <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                             Character Dynamics
                           </h3>
                           <span className="h-px flex-1 bg-espresso-900/10" />
@@ -160,34 +170,34 @@ export function RelationshipDeepAnalysisModal({
                       <section>
                         <div className="flex items-center gap-4 mb-6">
                           <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                             Narrative Arc
                           </h3>
                           <span className="h-px flex-1 bg-espresso-900/10" />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+                        <div className="space-y-8">
                           {/* Main Timeline Graph */}
                           <motion.div
-                            className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/50 shadow-sm min-h-[300px]"
+                            className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/50 shadow-sm min-h-[350px]"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6 }}
                           >
                             <RelationshipTimelineGraph
                               data={timeline}
-                              width={800} // Responsive handling needed ideally
-                              height={250}
+                              height={300}
                               animationDelay={0.7}
                             />
                           </motion.div>
 
-                          {/* Encounter Summary & Key Stats */}
-                          <div className="space-y-6">
+                          {/* Encounter Summary & Key Stats - Balanced Vertical Stack */}
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                             {(firstEncounter || lastEncounter) && (
                               <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                className="lg:col-span-2"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.7 }}
                               >
                                 <EncounterSummary
@@ -199,14 +209,15 @@ export function RelationshipDeepAnalysisModal({
                             )}
 
                             <motion.div
-                              initial={{ opacity: 0, x: 20 }}
-                              animate={{ opacity: 1, x: 0 }}
+                              className="lg:col-span-3"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.8 }}
                             >
                               <InsightsPanel
                                 insights={insights}
                                 animationDelay={0.8}
-                                className="bg-white/60 backdrop-blur-sm border-white/40"
+                                className="bg-white/60 backdrop-blur-sm border-white/40 h-full"
                               />
                             </motion.div>
                           </div>
@@ -218,7 +229,7 @@ export function RelationshipDeepAnalysisModal({
                         <section>
                           <div className="flex items-center gap-4 mb-6">
                             <span className="h-px flex-1 bg-espresso-900/10" />
-                            <h3 className="text-sm font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                            <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
                               Shared Moments
                             </h3>
                             <span className="h-px flex-1 bg-espresso-900/10" />

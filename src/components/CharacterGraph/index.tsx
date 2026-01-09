@@ -734,7 +734,7 @@ export const CharacterGraph = forwardRef<
             name: targetNode.name,
             imageUrl: targetNode.imageUrl,
           },
-          link.type as string,
+          link.relationTypes || [link.type as string],
           link.strength,
         );
 

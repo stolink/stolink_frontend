@@ -438,7 +438,7 @@ export const CharacterGraphCanvas = forwardRef<
             name: targetChar.profile?.name || "Unknown",
             imageUrl: targetChar.imageUrl,
           },
-          relLink.type,
+          relLink.relationTypes || [relLink.type],
           relLink.strength,
         );
         setDeepAnalysisData(analysisData);
@@ -619,8 +619,8 @@ export const CharacterGraphCanvas = forwardRef<
       // Wait for graph to settle slightly
       const timer = setTimeout(() => {
         if (graphRef.current) {
-          // Slower, dramatic zoom (2s)
-          graphRef.current.zoomToFit(2000, 120);
+          // Faster zoom (0.8s) for snappier entry
+          graphRef.current.zoomToFit(800, 120);
           // Fade in
           setTimeout(() => setIsLoaded(true), 100);
         }
@@ -956,7 +956,7 @@ export const CharacterGraphCanvas = forwardRef<
                     name: targetChar.profile?.name || "Unknown",
                     imageUrl: targetChar.imageUrl,
                   },
-                  hoveredLink.link.type as UIRelationType, // Correct type assertion
+                  [hoveredLink.link.type as string], // Correct type assertion
                   hoveredLink.link.strength,
                 );
                 setDeepAnalysisData(analysisData);

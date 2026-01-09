@@ -38,6 +38,9 @@ import { Button } from "@stolink/ui";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 import { useProjectEvents } from "@/hooks/useEvents";
 
+// Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
+const USE_CANVAS_GRAPH = true;
+
 export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
 
@@ -122,12 +125,11 @@ export default function WorldPage() {
 
   // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
   // Canvas 그래프 강제 활성화 (디버깅)
-  const useCanvasGraph = true;
   useEffect(
     () =>
       console.log(
         "Current Graph Mode:",
-        useCanvasGraph ? "Canvas (Optimized)" : "SVG (Legacy)",
+        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)",
       ),
     [],
   );
@@ -392,7 +394,7 @@ export default function WorldPage() {
               />
 
               {/* CharacterGraph - Canvas (1000+ nodes) or SVG (legacy) */}
-              {useCanvasGraph ? (
+              {USE_CANVAS_GRAPH ? (
                 <CharacterGraphCanvas
                   characters={characters}
                   links={links}

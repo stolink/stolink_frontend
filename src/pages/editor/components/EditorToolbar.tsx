@@ -126,15 +126,18 @@ export function EditorToolbar({
   return (
     <div className="!h-9 min-h-[36px] max-h-[36px] border-b border-border flex items-center justify-between px-3 shrink-0 bg-card overflow-hidden">
       <div className="flex items-center gap-3">
-        {!isSidebarVisible && (
-          <button
-            onClick={onToggleSidebar}
-            className="p-1 hover:bg-accent rounded-lg text-muted-foreground transition-colors mr-2"
-            title="사이드바 열기"
-          >
-            <PanelLeft className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={onToggleSidebar}
+          className={cn(
+            "p-1 rounded-lg transition-colors mr-2",
+            isSidebarVisible
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-accent text-muted-foreground",
+          )}
+          title={isSidebarVisible ? "사이드바 닫기" : "사이드바 열기"}
+        >
+          <PanelLeft className="w-5 h-5" />
+        </button>
 
         {/* Breadcrumb Style Title */}
         <TitleBreadcrumb

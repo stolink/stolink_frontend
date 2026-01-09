@@ -12,6 +12,8 @@ import type {
   RelationshipDeepAnalysisData,
   AnalysisCharacterInfo,
   TimelineCalculationConfig,
+  StrengthFactor,
+  AsymmetricStrength,
 } from "@/types/relationshipAnalysis";
 import { DEFAULT_TIMELINE_CONFIG } from "@/types/relationshipAnalysis";
 
@@ -315,10 +317,10 @@ export function estimateAttributesFromRelation(
 export function generateMockAnalysisData(
   source: AnalysisCharacterInfo,
   target: AnalysisCharacterInfo,
-  relationshipType: string = "ALLY",
+  relationshipTypes: string[] = ["ALLY"],
   strength: number = 7,
 ): RelationshipDeepAnalysisData {
-  // 비대칭 관계 시뮬레이션 (Source는 Target을 더 신뢰)
+  // 비대칭 관계 속성 (레이더 차트용)
   const sourceToTarget: RelationshipAttributes = {
     emotionalBond: 7,
     functionalTrust: 8,
@@ -333,6 +335,74 @@ export function generateMockAnalysisData(
     valueAlignment: 7,
     interdependence: 4,
     latentTension: 2,
+  };
+
+  // 비대칭 관계 강도 및 산출 근거 시뮬레이션
+  // 관계 유형을 반대 입장에서 변환 (예: 멘토 -> 멘티)
+  const invertRelationType = (type: string): string => {
+    const t = type.toLowerCase();
+    if (t.includes("mentor")) return "PUPIL";
+    if (t.includes("pupil") || t.includes("student")) return "MENTOR";
+    if (t.includes("leader")) return "FOLLOWER";
+    if (t.includes("follower")) return "LEADER";
+    if (t.includes("parent")) return "CHILD";
+    if (t.includes("child")) return "PARENT";
+    if (t.includes("master")) return "SERVANT";
+    if (t.includes("servant")) return "MASTER";
+    if (t.includes("protector")) return "PROTECTED";
+    if (t.includes("protected")) return "PROTECTOR";
+    return type; // 친구, 동료 등 대칭 관계는 유지
+  };
+
+  // 입력받은 relationshipTypes를 기반으로 세부 요인(factors) 생성
+  const generateFactorsFromTypes = (
+    types: string[],
+    isInverted: boolean = false,
+  ): StrengthFactor[] => {
+    if (!types || types.length === 0) {
+      return [{ type: "NEUTRAL", score: 5, weight: 1.0, category: "friendly" }];
+    }
+
+    const processedTypes = isInverted ? types.map(invertRelationType) : types;
+
+    // 각 타입별로 가중치를 균등하게 배분하거나 약간의 랜덤성을 줌
+    const totalWeight = 1.0;
+    return processedTypes.map((type, index) => {
+      // 마지막 요소가 남은 가중치를 모두 가져감
+      const weight =
+        index === processedTypes.length - 1
+          ? parseFloat(
+              (
+                totalWeight -
+                (processedTypes.length - 1) * (1 / (processedTypes.length + 1))
+              ).toFixed(2),
+            )
+          : parseFloat((1 / (processedTypes.length + 1)).toFixed(2));
+
+      const score = Math.floor(Math.random() * 4) + 6; // 6~9점 사이 랜덤
+      const isFriendly = !["enemy", "hostile", "적대", "경쟁", "대립"].some(
+        (t) => type.toLowerCase().includes(t),
+      );
+
+      return {
+        type,
+        score,
+        weight,
+        category: isFriendly ? "friendly" : "hostile",
+      };
+    });
+  };
+
+  const asymmetricStrength: AsymmetricStrength = {
+    sourceToTarget: {
+      total: strength, // Use the 'strength' parameter for total
+      factors: generateFactorsFromTypes(relationshipTypes),
+    },
+    targetToSource: {
+      total: Math.max(0, strength + (Math.random() * 2 - 1)), // 약간의 비대칭성 부여
+      // 타겟 입장에서는 관계 유형을 반전시켜서 계산
+      factors: generateFactorsFromTypes(relationshipTypes, true),
+    },
   };
 
   // Mock 타임라인
@@ -427,9 +497,10 @@ export function generateMockAnalysisData(
     targetCharacter: target,
     sourceToTargetAttributes: sourceToTarget,
     targetToSourceAttributes: targetToSource,
+    asymmetricStrength,
     timeline,
     insights,
-    relationshipType,
+    relationshipTypes,
     currentStrength: strength,
     since: "Chapter 1",
     // NEW fields

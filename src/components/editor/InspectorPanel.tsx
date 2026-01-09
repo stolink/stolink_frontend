@@ -30,7 +30,7 @@ function CollapsibleSection({
   defaultOpen = true,
 }: {
   title: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   count?: number;
   defaultOpen?: boolean;
