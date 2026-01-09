@@ -279,12 +279,7 @@ export default function WorldPage() {
       setSelectedRelationship(null);
       return;
     }
-<<<<<<< HEAD
-    // Deep Analysis 보다는 먼저 Sheet를 열어줍니다.
-    setSelectedRelationship(link);
-=======
     // Link Click logic removed as we use internal Deep Analysis
->>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
     console.log("Link clicked:", link);
   };
 
@@ -672,45 +667,7 @@ export default function WorldPage() {
         }}
       />
 
-<<<<<<< HEAD
-      <RelationshipDetailSheet
-        relationship={selectedRelationship}
-        isOpen={!!selectedRelationship}
-        onClose={() => setSelectedRelationship(null)}
-        sourceName={
-          characters.find(
-            (c) =>
-              (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.source
-          )?.profile?.name ||
-          (
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.source
-            ) as { name?: string }
-          )?.name ||
-          selectedRelationship?.source ||
-          ""
-        }
-        targetName={
-          characters.find(
-            (c) =>
-              (c._id || (c as { id?: string }).id) ===
-              selectedRelationship?.target
-          )?.profile?.name ||
-          (
-            characters.find(
-              (c) =>
-                (c._id || (c as { id?: string }).id) ===
-                selectedRelationship?.target
-            ) as { name?: string }
-          )?.name ||
-          selectedRelationship?.target ||
-          ""
-        }
-        onEdit={() => setIsRelationshipEditOpen(true)}
-      />
+
 
 
       {/* Analysis Result Summary Modal */}

@@ -82,7 +82,7 @@ export function CharacterPortraitPanel({
         <div
           className={cn(
             "absolute inset-0 rounded-full animate-pulse",
-            isLeft ? "ring-2 ring-teal-500/30" : "ring-2 ring-rose-500/30"
+            isLeft ? "ring-2 ring-teal-500/30" : "ring-2 ring-rose-500/30",
           )}
           style={{ animationDelay: `${animationDelay}s` }}
         />

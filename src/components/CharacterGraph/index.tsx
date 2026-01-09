@@ -111,8 +111,6 @@ export const CharacterGraph = forwardRef<
     }, [initialLinks]);
 
     // --- Hover Tooltip State ---
-<<<<<<< HEAD
-=======
     const [hoveredLinkData, setHoveredLinkData] = useState<{
       type: string;
       strength: number;
@@ -124,7 +122,6 @@ export const CharacterGraph = forwardRef<
       y: number;
       link: RelationshipLink; // Store link to open modal
     } | null>(null);
->>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -160,12 +157,7 @@ export const CharacterGraph = forwardRef<
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNodeClick, onLinkClick]);
-    // State for Link Hover Tooltip
-    const [hoveredLinkData, setHoveredLinkData] = useState<{
-      link: RelationshipLink;
-      x: number;
-      y: number;
-    } | null>(null);
+
 
     // Tooltip close timer for smooth interaction
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -740,11 +732,7 @@ export const CharacterGraph = forwardRef<
         if (!sourceNode || !targetNode) return;
 
         // Generate mock data for now (replace with real API call later)
-<<<<<<< HEAD
         const mockData = generateAnalysisData(
-=======
-        const mockData = generateMockAnalysisData(
->>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
           {
             id: sourceNode.id,
             name: sourceNode.name,
@@ -755,15 +743,10 @@ export const CharacterGraph = forwardRef<
             name: targetNode.name,
             imageUrl: targetNode.imageUrl,
           },
-<<<<<<< HEAD
           link.relationTypes || [link.type as string],
           link.strength,
           events,
           link.description
-=======
-          link.type as string,
-          link.strength
->>>>>>> f3b5cf8 (Resolve stash conflicts and finalize migration to DeepAnalysisModal)
         );
 
         setDeepAnalysisData(mockData);
@@ -773,21 +756,6 @@ export const CharacterGraph = forwardRef<
     );
 
     // Handle Link Hover for Tooltip
-<<<<<<< HEAD
-=======
-    const handleLinkHover = useCallback(
-      (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
-        if (!link || !coords) {
-          setHoveredLinkData(null);
-          return;
-        }
-
-        setHoveredLinkData({
-          type: link.type as string,
-          relationTypes: link.relationTypes, // Add this field
-          strength: link.strength,
-          label: link.label,
-          description: link.description,
           sourceName:
             typeof link.source === "object" ? link.source.name : "Source",
           targetName:
@@ -1124,8 +1092,6 @@ export const CharacterGraph = forwardRef<
               })}
 
             {/* Tooltip on Hover */}
-<<<<<<< HEAD
-=======
             {hoveredLinkData && (
               <RelationshipEventTooltip
                 type={hoveredLinkData.type as UIRelationType}
