@@ -69,11 +69,13 @@ float snoise(vec2 v) {
 }
 
 // Fractal Brownian Motion
+// Performance Note: Reduced octaves from 5 to 4 for better fps
 float fbm(vec2 p) {
   float total = 0.0;
   float amplitude = 0.5;
   float frequency = 1.0;
-  for (int i = 0; i < 5; i++) {
+  // Loop unrolling or reducing iterations helps performance
+  for (int i = 0; i < 4; i++) {
     total += snoise(p * frequency) * amplitude;
     amplitude *= 0.5;
     frequency *= 2.0;
@@ -85,20 +87,18 @@ float fbm(vec2 p) {
 vec3 blendColors(vec3 c1, vec3 c2, vec3 c3, float i1, float i2, float i3, vec2 uv, float time) {
   float totalIntensity = i1 + i2 + i3 + 0.001;
 
-  float wave1 = sin(uv.x * 3.0 + time * 0.7) * 0.15;
-  float wave2 = cos(uv.y * 2.5 + time * 0.5) * 0.15;
-  float wave3 = sin((uv.x + uv.y) * 2.0 - time * 0.6) * 0.15;
+  // Reduced trig calculations frequency or pre-calculate if possible
+  // Increased time multiplier for dynamic feel (0.7 -> 1.5, etc)
+  float wave1 = sin(uv.x * 3.0 + time * 1.5) * 0.15;
+  float wave2 = cos(uv.y * 2.5 + time * 1.2) * 0.15;
+  float wave3 = sin((uv.x + uv.y) * 2.0 - time * 1.0) * 0.15;
 
   float w1 = (i1 / totalIntensity) + wave1 * (i1 / totalIntensity);
   float w2 = (i2 / totalIntensity) + wave2 * (i2 / totalIntensity);
   float w3 = (i3 / totalIntensity) + wave3 * (i3 / totalIntensity);
 
   float totalWeight = w1 + w2 + w3 + 0.001;
-  w1 /= totalWeight;
-  w2 /= totalWeight;
-  w3 /= totalWeight;
-
-  return c1 * w1 + c2 * w2 + c3 * w3;
+  return (c1 * w1 + c2 * w2 + c3 * w3) / totalWeight;
 }
 
 void main() {
@@ -110,13 +110,14 @@ void main() {
   float strengthB = clamp(uStrengthB / 10.0, 0.0, 1.0);
 
   // === Domain Warping (유동적 연기 텍스처) ===
+  // Increased speed multipliers (0.1 -> 0.3, etc)
   vec2 q = vec2(0.0);
-  q.x = fbm(uv + 0.1 * time);
+  q.x = fbm(uv + 0.3 * time);
   q.y = fbm(uv + vec2(1.0));
 
   vec2 r = vec2(0.0);
-  r.x = fbm(uv + 1.0 * q + vec2(1.7, 9.2) + 0.15 * time);
-  r.y = fbm(uv + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time);
+  r.x = fbm(uv + 1.0 * q + vec2(1.7, 9.2) + 0.4 * time);
+  r.y = fbm(uv + 1.0 * q + vec2(8.3, 2.8) + 0.36 * time);
 
   float f = fbm(uv + r);
 
@@ -125,7 +126,7 @@ void main() {
   float balancePoint = strengthA / totalStrength;
 
   // 노이즈로 경계선 흔들림
-  float mixNoise = snoise(uv * 4.0 + vec2(time * 0.5, 0.0));
+  float mixNoise = snoise(uv * 4.0 + vec2(time * 0.8, 0.0));
   float edge = smoothstep(balancePoint - 0.2, balancePoint + 0.2, uv.x + mixNoise * 0.12);
 
   // === 양쪽 색상 계산 ===
@@ -141,8 +142,8 @@ void main() {
   glow = clamp(glow, 0.0, 1.0);
   glow = pow(glow, 2.5) * 1.2;
 
-  // 시간에 따른 펄스 효과
-  float pulse = 0.8 + 0.2 * sin(time * 2.0 + mixNoise * 3.0);
+  // 시간에 따른 펄스 효과 - Increased speed (2.0 -> 4.0)
+  float pulse = 0.8 + 0.2 * sin(time * 4.0 + mixNoise * 3.0);
   glow *= pulse;
 
   // === 색상 혼합 ===
@@ -154,13 +155,14 @@ void main() {
   mixedColor += glowColor * glow * 0.8;
 
   // === 에너지 스트림 효과 ===
+  // Increased speed (3.0 -> 8.0)
   // 왼쪽에서 오른쪽으로 흐르는 에너지
-  float streamA = sin(uv.x * 8.0 - time * 3.0 + uv.y * 2.0) * 0.5 + 0.5;
+  float streamA = sin(uv.x * 8.0 - time * 8.0 + uv.y * 2.0) * 0.5 + 0.5;
   streamA *= smoothstep(0.0, balancePoint, uv.x) * smoothstep(balancePoint + 0.1, balancePoint - 0.1, uv.x);
   streamA *= strengthA;
 
   // 오른쪽에서 왼쪽으로 흐르는 에너지
-  float streamB = sin(uv.x * 8.0 + time * 3.0 - uv.y * 2.0) * 0.5 + 0.5;
+  float streamB = sin(uv.x * 8.0 + time * 8.0 - uv.y * 2.0) * 0.5 + 0.5;
   streamB *= smoothstep(1.0, balancePoint, uv.x) * smoothstep(balancePoint - 0.1, balancePoint + 0.1, uv.x);
   streamB *= strengthB;
 

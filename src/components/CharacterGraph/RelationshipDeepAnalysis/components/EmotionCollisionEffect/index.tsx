@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, memo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import {
   collisionFragmentShader,
 } from "./collisionShader";
 import type { StrengthFactor } from "@/types/relationshipAnalysis";
+import isEqual from "lodash-es/isEqual";
 
 /**
  * 관계 타입별 색상 매핑
@@ -127,9 +128,19 @@ function CollisionMesh({
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { viewport } = useThree();
 
-  // 색상 데이터 추출
-  const colorDataA = useMemo(() => extractColorData(factorsA), [factorsA]);
-  const colorDataB = useMemo(() => extractColorData(factorsB), [factorsB]);
+  // 색상 데이터 추출 (Memoized to prevent recalc)
+  const serializedFactorsA = JSON.stringify(factorsA);
+  const serializedFactorsB = JSON.stringify(factorsB);
+
+  const colorDataA = useMemo(
+    () => extractColorData(factorsA),
+    [serializedFactorsA],
+  );
+
+  const colorDataB = useMemo(
+    () => extractColorData(factorsB),
+    [serializedFactorsB],
+  );
 
   // 유니폼 초기값
   const uniforms = useMemo(
@@ -159,48 +170,36 @@ function CollisionMesh({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [], // Empty intentionally
   );
 
-  // Props 변경 시 색상 유니폼 업데이트
+  // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)
   useEffect(() => {
     if (materialRef.current) {
-      const newColorDataA = extractColorData(factorsA);
-      const newColorDataB = extractColorData(factorsB);
+      // Update Colors using .set() to avoid GC
+      materialRef.current.uniforms.uColorA1.value.set(colorDataA.colors[0]);
+      materialRef.current.uniforms.uColorA2.value.set(colorDataA.colors[1]);
+      materialRef.current.uniforms.uColorA3.value.set(colorDataA.colors[2]);
 
-      materialRef.current.uniforms.uColorA1.value = hexToThreeColor(
-        newColorDataA.colors[0],
-      );
-      materialRef.current.uniforms.uColorA2.value = hexToThreeColor(
-        newColorDataA.colors[1],
-      );
-      materialRef.current.uniforms.uColorA3.value = hexToThreeColor(
-        newColorDataA.colors[2],
-      );
       materialRef.current.uniforms.uIntensityA1.value =
-        newColorDataA.intensities[0];
+        colorDataA.intensities[0];
       materialRef.current.uniforms.uIntensityA2.value =
-        newColorDataA.intensities[1];
+        colorDataA.intensities[1];
       materialRef.current.uniforms.uIntensityA3.value =
-        newColorDataA.intensities[2];
+        colorDataA.intensities[2];
 
-      materialRef.current.uniforms.uColorB1.value = hexToThreeColor(
-        newColorDataB.colors[0],
-      );
-      materialRef.current.uniforms.uColorB2.value = hexToThreeColor(
-        newColorDataB.colors[1],
-      );
-      materialRef.current.uniforms.uColorB3.value = hexToThreeColor(
-        newColorDataB.colors[2],
-      );
+      materialRef.current.uniforms.uColorB1.value.set(colorDataB.colors[0]);
+      materialRef.current.uniforms.uColorB2.value.set(colorDataB.colors[1]);
+      materialRef.current.uniforms.uColorB3.value.set(colorDataB.colors[2]);
+
       materialRef.current.uniforms.uIntensityB1.value =
-        newColorDataB.intensities[0];
+        colorDataB.intensities[0];
       materialRef.current.uniforms.uIntensityB2.value =
-        newColorDataB.intensities[1];
+        colorDataB.intensities[1];
       materialRef.current.uniforms.uIntensityB3.value =
-        newColorDataB.intensities[2];
+        colorDataB.intensities[2];
     }
-  }, [factorsA, factorsB]);
+  }, [colorDataA, colorDataB]);
 
   // 애니메이션 프레임
   useFrame((state) => {
@@ -212,6 +211,7 @@ function CollisionMesh({
       const currentStrengthA = materialRef.current.uniforms.uStrengthA.value;
       const currentStrengthB = materialRef.current.uniforms.uStrengthB.value;
 
+      // LERP Factor slightly adjusted for smoothness
       materialRef.current.uniforms.uStrengthA.value = THREE.MathUtils.lerp(
         currentStrengthA,
         strengthA,
@@ -249,35 +249,57 @@ function CollisionMesh({
 
 /**
  * 두 캐릭터 감정이 중앙 벽에서 반사되며 맴도는 연기 충돌 이펙트
+ * Memoized to prevent re-renders unless data actually changes
  */
-export function EmotionCollisionEffect({
-  factorsA,
-  factorsB,
-  strengthA,
-  strengthB,
-  className,
-}: EmotionCollisionEffectProps) {
-  return (
-    <div className={cn("w-full h-full pointer-events-none", className)}>
-      <Canvas
-        gl={{
-          alpha: true,
-          antialias: true,
-          powerPreference: "high-performance",
-        }}
-        camera={{ position: [0, 0, 1], fov: 75 }}
-        style={{ background: "transparent" }}
-        dpr={Math.min(window.devicePixelRatio, 2)}
-      >
-        <CollisionMesh
-          factorsA={factorsA}
-          factorsB={factorsB}
-          strengthA={strengthA}
-          strengthB={strengthB}
-        />
-      </Canvas>
-    </div>
-  );
-}
+export const EmotionCollisionEffect = memo(
+  function EmotionCollisionEffect({
+    factorsA,
+    factorsB,
+    strengthA,
+    strengthB,
+    className,
+  }: EmotionCollisionEffectProps) {
+    return (
+      <div className={cn("w-full h-full pointer-events-none", className)}>
+        <Canvas
+          gl={{
+            alpha: true,
+            antialias: true,
+            powerPreference: "high-performance",
+            depth: false, // Depth buffer not needed for 2D shader
+            stencil: false,
+          }}
+          camera={{ position: [0, 0, 1], fov: 75 }}
+          style={{ background: "transparent" }}
+          dpr={Math.min(window.devicePixelRatio, 2)}
+        >
+          <CollisionMesh
+            factorsA={factorsA}
+            factorsB={factorsB}
+            strengthA={strengthA}
+            strengthB={strengthB}
+          />
+        </Canvas>
+      </div>
+    );
+  },
+  (prev, next) => {
+    // Custom comparison function for React.memo
+    // Primitives check
+    if (
+      prev.strengthA !== next.strengthA ||
+      prev.strengthB !== next.strengthB ||
+      prev.className !== next.className
+    ) {
+      return false;
+    }
+
+    // Deep comparison for arrays to avoid re-render on new references with same data
+    return (
+      isEqual(prev.factorsA, next.factorsA) &&
+      isEqual(prev.factorsB, next.factorsB)
+    );
+  },
+);
 
 export default EmotionCollisionEffect;

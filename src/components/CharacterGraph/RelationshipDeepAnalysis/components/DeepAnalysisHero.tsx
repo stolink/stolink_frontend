@@ -411,19 +411,6 @@ export function DeepAnalysisHero({
                 className="w-full h-full"
               />
             </div>
-
-            <div className="h-48 w-px bg-gradient-to-b from-transparent via-mocha-300/40 to-transparent relative z-10" />
-
-            <div className="relative group z-10">
-              <div className="absolute inset-0 bg-mocha-500/10 rounded-full blur-3xl scale-150 animate-pulse" />
-              <div className="w-20 h-20 rounded-full border border-white/80 bg-white/60 shadow-2xl flex items-center justify-center relative z-10 backdrop-blur-sm">
-                <Users className="w-10 h-10 text-mocha-400" />
-              </div>
-            </div>
-
-            <div className="h-48 w-px bg-gradient-to-b from-transparent via-mocha-300/40 to-transparent relative z-10" />
-
-            {/* Asymmetric Strength Graph removed from here */}
           </div>
 
           <motion.div
