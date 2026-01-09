@@ -1,7 +1,13 @@
 import { memo, useRef, useEffect, useMemo } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
-import { NODE_SIZES, ROLE_COLORS, ANIMATION, STATUS_CONFIG } from "./constants";
+import {
+  NODE_SIZES,
+  ROLE_COLORS,
+  ANIMATION,
+  STATUS_CONFIG,
+  getFactionColor,
+} from "./constants";
 import { getInitial, truncateName, ROLE_GRADIENTS } from "./utils";
 
 interface NodeRendererProps {
@@ -164,6 +170,22 @@ export const NodeRenderer = memo(function NodeRenderer({
           strokeWidth={1.5}
           strokeDasharray="2 2"
           opacity={0.6}
+        />
+      )}
+
+      {/* Faction 테두리 링 - 진영 식별 */}
+      {node.group && node.group !== "무소속" && (
+        <circle
+          r={radius + 6}
+          fill="none"
+          stroke={getFactionColor(node.group)}
+          strokeWidth={2.5}
+          opacity={isDimmed ? 0.3 : 0.85}
+          strokeDasharray={isProtagonist ? undefined : "6 3"}
+          className="pointer-events-none"
+          style={{
+            transition: `opacity ${ANIMATION.highlightDuration}ms ease-out`,
+          }}
         />
       )}
 

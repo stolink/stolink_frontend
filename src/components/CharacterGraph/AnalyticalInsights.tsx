@@ -28,9 +28,11 @@ export function AnalyticalInsights({
     links.forEach((link) => {
       // Check if negative relation
       const isNegative =
-        link.type === "hostile" ||
-        link.type === "rival" ||
-        link.type === "enemy";
+        (link.type as string) === "hostile" ||
+        (link.type as string) === "ENEMY" ||
+        (link.type as string) === "rival" ||
+        (link.type as string) === "enemy" ||
+        (link.type as string) === "RIVAL";
       if (!isNegative) return;
 
       const score = (link.strength || 1) * 2; // Higher strength = more tension
@@ -121,9 +123,17 @@ export function AnalyticalInsights({
 
             // Pattern: Friend-Enemy-Friend (A friends with B, A friends with C, but B-C are enemies)
             if (
-              (ab === "friendly" || ab === "ally") &&
-              (ac === "friendly" || ac === "ally") &&
-              (bc === "hostile" || bc === "enemy" || bc === "rival")
+              ((ab as string) === "friendly" ||
+                (ab as string) === "ally" ||
+                (ab as string) === "ALLY") &&
+              ((ac as string) === "friendly" ||
+                (ac as string) === "ally" ||
+                (ac as string) === "ALLY") &&
+              ((bc as string) === "hostile" ||
+                (bc as string) === "enemy" ||
+                (bc as string) === "rival" ||
+                (bc as string) === "ENEMY" ||
+                (bc as string) === "RIVAL")
             ) {
               // Check duplicate
               const key = [nodeA.id, n1.target, n2.target].sort().join("-");

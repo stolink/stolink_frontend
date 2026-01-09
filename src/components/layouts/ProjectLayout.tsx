@@ -23,7 +23,11 @@ export function ProjectLayout() {
   const { data: project } = useProject(id || "", { enabled: !!id });
   const { mutate: updateProject } = useUpdateProject();
   const { saveStatus, lastSavedAt } = useEditorStore();
-  const { isAnalyzing, progress: analysisProgress } = useAnalysisBufferStore();
+  const {
+    isAnalyzing,
+    currentJobType,
+    progress: analysisProgress,
+  } = useAnalysisBufferStore();
 
   // Check Demo Mode
   const isDemo = location.pathname.includes("/demo");
@@ -78,29 +82,31 @@ export function ProjectLayout() {
       {!isDemo && (
         <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm z-20 relative">
           <div className="flex items-center gap-2 flex-1 min-w-0 relative h-full">
-            {/* Analysis Progress Bar (Centered in Nav Area) */}
+            {/* Analysis/Image Progress Bar (Centered in Nav Area) */}
             <AnimatePresence>
-              {isAnalyzing && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="w-48 h-1 bg-primary/10 rounded-full overflow-hidden border border-primary/5 shadow-sm"
-                  >
+              {isAnalyzing &&
+                (currentJobType === "analysis" ||
+                  currentJobType === "image") && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0">
                     <motion.div
-                      className="h-full bg-primary shadow-[0_0_10px_rgba(164,119,100,0.4)]"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${analysisProgress}%` }}
-                      transition={{
-                        type: "spring",
-                        damping: 25,
-                        stiffness: 120,
-                      }}
-                    />
-                  </motion.div>
-                </div>
-              )}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-48 h-1 bg-primary/10 rounded-full overflow-hidden border border-primary/5 shadow-sm"
+                    >
+                      <motion.div
+                        className="h-full bg-primary shadow-[0_0_10px_rgba(164,119,100,0.4)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${analysisProgress}%` }}
+                        transition={{
+                          type: "spring",
+                          damping: 25,
+                          stiffness: 120,
+                        }}
+                      />
+                    </motion.div>
+                  </div>
+                )}
             </AnimatePresence>
 
             {/* Home / Back to Library Button */}

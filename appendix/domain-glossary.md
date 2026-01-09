@@ -13,7 +13,6 @@
 | 설정집     | World           | 캐릭터, 장소, 아이템 등 세계관 요소 관리 페이지                    | `/projects/:id/world`                       |
 | 관계도     | Character Graph | React Flow 기반 캐릭터 관계 시각화                                 | `CharacterRelationship`, `useRelationships` |
 | 스크리브닝 | Scrivenings     | 여러 문서를 하나로 통합하여 편집하는 모드                          | EditorPage 뷰 모드                          |
-| 콕보드     | Corkboard       | 카드 기반 시놉시스 뷰 (예정)                                       | EditorPage 뷰 모드                          |
 
 ---
 
@@ -157,40 +156,6 @@ interface ForeshadowingAppearance {
 - `#복선:비밀금고` 형태로 작성
 - 에디터에서 세이지(Sage) 톤으로 하이라이트
 - 자동으로 appearances 배열에 추가
-
----
-
-### Place (장소)
-
-```typescript
-interface Place {
-  id: string;
-  projectId: string;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  extras: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
----
-
-### Item (아이템)
-
-```typescript
-interface Item {
-  id: string;
-  projectId: string;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  extras: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-}
-```
 
 ---
 

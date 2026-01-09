@@ -5,8 +5,7 @@ export * from "./documentService";
 export * from "./characterService";
 export * from "./relationshipService";
 export * from "./foreshadowingService";
-export * from "./placeService";
-export * from "./itemService";
+
 export * from "./shareService";
 export * from "./settingService";
 export * from "./imageService";

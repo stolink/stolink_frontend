@@ -1,24 +1,14 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { RelationType } from "@/types/character";
 
 /**
  * 관계 타입 (callback_result.json 기반 확장)
  */
-export type RelationshipType =
-  // 🆕 callback_result.json에서 사용하는 대문자 타입
-  | "ALLY"
-  | "RIVAL"
-  | "NEUTRAL"
-  | "ROMANTIC"
-  | "ENEMY"
-  | "MENTOR"
-  | "FAMILY"
-  // Legacy lowercase values
-  | "friendly"
-  | "hostile"
-  | "neutral"
-  | "romantic"
-  | "family";
+/**
+ * 관계 타입 (src/types/character.ts 참조)
+ */
+export type RelationshipType = RelationType;
 
 export interface Relationship {
   id: string;
@@ -26,7 +16,8 @@ export interface Relationship {
   targetId: string;
   source?: { id: string; name?: string; [key: string]: unknown };
   target?: { id: string; name?: string; [key: string]: unknown };
-  type: RelationshipType;
+  types: RelationshipType[]; // Updated
+  type?: RelationshipType; // Deprecated
   strength: number; // 1-10
   description?: string;
   bidirectional?: boolean;
@@ -56,11 +47,13 @@ export function transformBackendRelationship(
   rel: BackendRelationship,
   index: number,
 ): Relationship {
+  const type = rel.relation_type as RelationshipType;
   return {
     id: `rel-${rel.source}-${rel.target}-${index}`,
     sourceId: rel.source,
     targetId: rel.target,
-    type: rel.relation_type as RelationshipType,
+    type,
+    types: [type],
     strength: rel.strength,
     description: rel.description,
     bidirectional: rel.bidirectional,
@@ -70,8 +63,10 @@ export function transformBackendRelationship(
 export interface CreateRelationshipInput {
   sourceId: string;
   targetId: string;
-  type: RelationshipType;
+  types: RelationshipType[]; // Updated: List of types
   strength: number;
+  bidirectional?: boolean; // Added
+  description?: string; // Added
   extras?: Record<string, unknown>;
 }
 

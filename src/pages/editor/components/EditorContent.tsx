@@ -11,12 +11,11 @@ import ScriveningsEditor, {
   type ScriveningsEditorHandle,
 } from "@/components/editor/ScriveningsEditor";
 import OutlineView from "@/components/editor/OutlineView";
-import CorkboardView from "@/components/editor/CorkboardView";
 import EmptyState from "@/components/editor/EmptyState";
 import type { Document } from "@/types/document";
 
 interface EditorContentProps {
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   selectedFolderId: string | null;
   selectedSectionId: string | null; // 섹션 전환 시 에디터 재생성용 key
   projectId: string;
@@ -136,17 +135,6 @@ export const EditorContent = forwardRef<
           projectId={projectId}
           onSelectSection={onSelectSection}
           onSynopsisUpdate={onSynopsisUpdate}
-        />
-      ) : null;
-    }
-
-    // 코르크보드 뷰: 폴더의 자식들을 인덱스 카드로 표시
-    if (viewMode === "corkboard") {
-      return selectedFolderId ? (
-        <CorkboardView
-          folderId={selectedFolderId}
-          projectId={projectId}
-          onSelectSection={onSelectSection}
         />
       ) : null;
     }

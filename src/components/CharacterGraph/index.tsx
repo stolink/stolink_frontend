@@ -11,21 +11,25 @@ import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import { cn } from "@/lib/utils";
 import type { Character, CharacterNode, RelationshipLink } from "@/types";
+import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
 import { useDrag } from "@/hooks/useCharacterGraphDrag";
 import { useResize } from "@/hooks/useCharacterGraphResize";
-import { GROUP_COLORS, type UIRelationType } from "./constants";
+import { type UIRelationType, toUIRelationType } from "./constants";
 import { calculateRelationCounts } from "./utils";
 import { NodeRenderer } from "./NodeRenderer";
 import { LinkRenderer } from "./LinkRenderer";
 import { TiledBackground } from "./TiledBackground";
-import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 import { NetworkControls } from "./NetworkControls";
 import { CharacterSearchOverlay } from "./CharacterSearchOverlay";
 import { TimelineSlider } from "./TimelineSlider";
-export { RelationshipEditDialog } from "./RelationshipEditDialog";
-export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
+import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
+import { generateMockAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
+import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
+
+export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
+export { GROUP_COLORS } from "./constants";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -76,7 +80,6 @@ export const CharacterGraph = forwardRef<
     const gRef = useRef<SVGGElement>(null);
 
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [enableGrouping, setEnableGrouping] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
     const [hoveredRelationType, setHoveredRelationType] =
@@ -87,6 +90,11 @@ export const CharacterGraph = forwardRef<
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension, setShowTension] = useState(false);
     const [showLogicCheck, setShowLogicCheck] = useState(false);
+    const [enableGrouping, setEnableGrouping] = useState(false);
+
+    // --- Deep Analysis Modal State ---
+    const [deepAnalysisData, setDeepAnalysisData] =
+      useState<RelationshipDeepAnalysisData | null>(null);
 
     // --- Timeline State (4D Visualization) ---
     const [currentChapter, setCurrentChapter] = useState(1);
@@ -98,6 +106,8 @@ export const CharacterGraph = forwardRef<
       );
       return max;
     }, [initialLinks]);
+
+    // --- Hover Tooltip State ---
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -142,6 +152,17 @@ export const CharacterGraph = forwardRef<
 
     // Tooltip close timer for smooth interaction
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Group Selection Cache (Optimized D3)
+    const groupSelectionCache = useRef<
+      Map<
+        string,
+        {
+          cloud: d3.Selection<d3.BaseType, unknown, null, undefined>;
+          label: d3.Selection<d3.BaseType, unknown, null, undefined>;
+        }
+      >
+    >(new Map());
 
     // Map to store node ID -> original Character for reliable lookup
     const nodeCharacterMapRef = useRef<Map<string, Character>>(new Map());
@@ -349,7 +370,7 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping },
+      { width, height },
     );
 
     /**
@@ -358,6 +379,12 @@ export const CharacterGraph = forwardRef<
      * - 빈 그룹 숨기기는 tick 핸들러에서 visibility로 제어
      */
     const groupConfig = useMemo(() => {
+      const GROUP_COLORS_LIST = [
+        "rgba(164, 119, 100, 0.15)", // Mocha
+        "rgba(91, 123, 75, 0.15)", // Success/Green
+        "rgba(184, 134, 11, 0.15)", // Gold/Warning
+        "rgba(163, 58, 58, 0.15)", // Error/Red
+      ];
       // 1. 각 그룹별 멤버 수를 카운트합니다.
       const groupCounts = initialNodes.reduce(
         (acc, node) => {
@@ -375,11 +402,10 @@ export const CharacterGraph = forwardRef<
 
       return activeGroups.map((group, index) => ({
         name: group,
-        color: GROUP_COLORS[index % GROUP_COLORS.length],
+        color: GROUP_COLORS_LIST[index % GROUP_COLORS_LIST.length],
         id: `group-gradient-${index}`,
       }));
     }, [initialNodes]);
-
     // 주요 캐릭터만 보기 필터 적용
     const filteredNodeIds = useMemo(() => {
       if (!showMainOnly) return null; // null = 필터 비활성화 (모든 노드 표시)
@@ -398,50 +424,13 @@ export const CharacterGraph = forwardRef<
       return mainNodeIds;
     }, [nodes, showMainOnly]);
 
-    // Cache for D3 selections to avoid DOM querying in every tick
-    const groupSelectionCache = useRef<
-      Map<
-        string,
-        {
-          cloud: d3.Selection<d3.BaseType, unknown, null, undefined>;
-          label: d3.Selection<d3.BaseType, unknown, null, undefined>;
-        }
-      >
-    >(new Map());
-
-    // Cleanup cache on unmount
-    useEffect(() => {
-      const cache = groupSelectionCache.current;
-      return () => {
-        cache.clear();
-      };
-    }, []);
-
-    // Clear cache when group config OR enableGrouping changes
-    // This fixes the bug where clouds don't show on second toggle
-    useEffect(() => {
-      groupSelectionCache.current.clear();
-
-      // When grouping is disabled, ensure all clouds/labels are hidden
-      if (!enableGrouping && gRef.current) {
-        const g = d3.select(gRef.current);
-        g.selectAll('[id^="cloud-"]')
-          .attr("visibility", "hidden")
-          .attr("d", "");
-        g.selectAll('[id^="label-"]').attr("visibility", "hidden");
-      }
-    }, [groupConfig, enableGrouping]);
-
     useEffect(() => {
       if (!simulation || !gRef.current) return;
 
       const g = d3.select(gRef.current);
 
       // Tick Handler: Update DOM directly for 60fps performance w/o React re-renders
-      let frameCount = 0;
       simulation.on("tick", () => {
-        frameCount++;
-
         // 매 tick마다 새로운 선택자 사용 (Hitbox 포함)
         // [Optimized] Select GROUPS instead of individual paths to reduce DOM operations and recalculations
         const linkGroupSel = g.selectAll<SVGGElement, RelationshipLink>(
@@ -501,12 +490,11 @@ export const CharacterGraph = forwardRef<
           d ? `translate(${d.x}, ${d.y})` : "",
         );
 
-        // 2. 부가 연산 업데이트 (스로틀링 심화 - 12fps 정도)
-        // 그룹 클라우드 위치 및 크기 업데이트 (노드 분포 범위 기반)
-        if (enableGrouping && frameCount % 5 === 0) {
-          // tick마다 최신 노드 위치 기반으로 그룹별 노드 재계산
+        // 3. 그룹 클라우드 업데이트 (활성화된 경우)
+        if (enableGrouping && groupConfig.length > 0) {
+          // 현재 활성화된 노드들을 그룹별로 수집
           const currentNodesByGroup: Record<string, CharacterNode[]> = {};
-          simulation.nodes().forEach((node) => {
+          nodes.forEach((node) => {
             if (node.group) {
               if (!currentNodesByGroup[node.group])
                 currentNodesByGroup[node.group] = [];
@@ -514,7 +502,6 @@ export const CharacterGraph = forwardRef<
             }
           });
 
-          // 라벨 위치 정보 저장 (충돌 감지용)
           const labelPositions: Array<{
             x: number;
             y: number;
@@ -637,7 +624,7 @@ export const CharacterGraph = forwardRef<
       return () => {
         simulation.on("tick", null); // Cleanup
       };
-    }, [simulation, enableGrouping, groupConfig]);
+    }, [simulation, enableGrouping, groupConfig, nodes]);
 
     const { zoomState, centerAt, zoomIn, zoomOut, resetZoom } = useZoom(
       svgRef,
@@ -719,14 +706,49 @@ export const CharacterGraph = forwardRef<
       relationTypeFilter,
     ]);
 
-    // Handle Link Hover with Delay
+    // Handle opening deep analysis modal
+    const handleOpenDeepAnalysis = useCallback(
+      (link: RelationshipLink) => {
+        onLinkClick?.(link);
+
+        const sourceNode =
+          typeof link.source === "object"
+            ? (link.source as CharacterNode)
+            : null;
+        const targetNode =
+          typeof link.target === "object"
+            ? (link.target as CharacterNode)
+            : null;
+
+        if (!sourceNode || !targetNode) return;
+
+        // Generate mock data for now (replace with real API call later)
+        const mockData = generateMockAnalysisData(
+          {
+            id: sourceNode.id,
+            name: sourceNode.name,
+            imageUrl: sourceNode.imageUrl,
+          },
+          {
+            id: targetNode.id,
+            name: targetNode.name,
+            imageUrl: targetNode.imageUrl,
+          },
+          link.type as string,
+          link.strength,
+        );
+
+        setDeepAnalysisData(mockData);
+        setHoveredLinkData(null); // Close tooltip
+      },
+      [onLinkClick],
+    );
+
+    // Handle Link Hover for Tooltip
+
     const handleLinkHover = useCallback(
       (link: RelationshipLink | null, coords?: { x: number; y: number }) => {
-        // Clear any pending close timer
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = null;
-        }
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
 
         if (link && coords) {
           // Open immediately
@@ -978,18 +1000,10 @@ export const CharacterGraph = forwardRef<
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="rgba(0,0,0,0.7)"
-                    fontSize="48"
-                    fontWeight="700"
+                    className="font-heading pointer-events-none select-none font-bold italic mix-blend-multiply opacity-30"
                     visibility="hidden"
-                    className="pointer-events-none select-none tracking-tight"
                     style={{
-                      fontFamily: "'Nanum Myeongjo', serif",
-                      stroke: "#FFFFFF",
-                      strokeWidth: "10px",
-                      strokeLinejoin: "round",
-                      strokeLinecap: "round",
-                      paintOrder: "stroke fill",
-                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
+                      transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                     }}
                   >
                     {config.name}
@@ -1046,13 +1060,15 @@ export const CharacterGraph = forwardRef<
                         (!highlightedNodeIds?.includes(sId) ||
                           !highlightedNodeIds?.includes(tId)))
                     }
-                    onClick={onLinkClick}
+                    onClick={handleOpenDeepAnalysis}
                     onHover={handleLinkHover}
                     showTension={showTension}
                     showLogicCheck={showLogicCheck}
                   />
                 );
               })}
+
+            {/* Tooltip on Hover */}
 
             {nodes
               .filter(
@@ -1096,47 +1112,35 @@ export const CharacterGraph = forwardRef<
         {/* Relationship Event Tooltip on Hover */}
         {hoveredLinkData && (
           <RelationshipEventTooltip
-            type={hoveredLinkData.link.type as UIRelationType}
-            strength={hoveredLinkData.link.strength}
-            description={hoveredLinkData.link.description}
-            events={
-              (hoveredLinkData.link.history || []) as {
-                eventId: string;
-                title: string;
-                chapter?: string;
-                type: UIRelationType;
-                reason?: string;
-                date?: string;
-              }[]
-            }
+            events={hoveredLinkData.link.history || []}
             sourceName={
-              typeof hoveredLinkData.link.source === "object"
-                ? (hoveredLinkData.link.source as CharacterNode).name
-                : String(hoveredLinkData.link.source)
+              nodeCharacterMapRef.current.get(
+                typeof hoveredLinkData.link.source === "object"
+                  ? (hoveredLinkData.link.source as CharacterNode).id
+                  : hoveredLinkData.link.source,
+              )?.profile?.name || "???"
             }
             targetName={
-              typeof hoveredLinkData.link.target === "object"
-                ? (hoveredLinkData.link.target as CharacterNode).name
-                : String(hoveredLinkData.link.target)
+              nodeCharacterMapRef.current.get(
+                typeof hoveredLinkData.link.target === "object"
+                  ? (hoveredLinkData.link.target as CharacterNode).id
+                  : hoveredLinkData.link.target,
+              )?.profile?.name || "???"
             }
             x={hoveredLinkData.x}
             y={hoveredLinkData.y}
-            onEventClick={() => {
-              // Clicking an event opens the details panel for that link
-              onLinkClick?.(hoveredLinkData.link);
-              setHoveredLinkData(null); // Close tooltip
-            }}
+            type={toUIRelationType(hoveredLinkData.link.type)}
+            strength={hoveredLinkData.link.strength}
+            description={hoveredLinkData.link.description}
+            onEventClick={() => {}} // TODO: Handle event click
             onMouseEnter={() => {
-              // Keep open when entering tooltip
-              if (hoverTimeoutRef.current) {
+              if (hoverTimeoutRef.current)
                 clearTimeout(hoverTimeoutRef.current);
-                hoverTimeoutRef.current = null;
-              }
             }}
-            onMouseLeave={() => {
-              // Close when leaving tooltip
-              setHoveredLinkData(null);
-            }}
+            onMouseLeave={() => handleLinkHover(null)}
+            onOpenDeepAnalysis={() =>
+              handleOpenDeepAnalysis(hoveredLinkData.link)
+            }
           />
         )}
 
@@ -1178,8 +1182,6 @@ export const CharacterGraph = forwardRef<
         <NetworkControls
           relationTypeFilter={internalFilter}
           onFilterChange={handleFilterChange}
-          enableGrouping={enableGrouping}
-          onGroupingChange={setEnableGrouping}
           hoveredType={hoveredRelationType}
           onHoverType={setHoveredRelationType}
           showMainOnly={showMainOnly}
@@ -1188,6 +1190,8 @@ export const CharacterGraph = forwardRef<
           onToggleTension={setShowTension}
           showLogicCheck={showLogicCheck}
           onToggleLogicCheck={setShowLogicCheck}
+          enableGrouping={enableGrouping}
+          onGroupingChange={setEnableGrouping}
         />
 
         {/* 캐릭터 검색 오버레이 */}
@@ -1198,6 +1202,13 @@ export const CharacterGraph = forwardRef<
             onSearch={handleSearchChange}
           />
         )}
+
+        {/* 관계 심층 분석 모달 */}
+        <RelationshipDeepAnalysisModal
+          isOpen={deepAnalysisData !== null}
+          onClose={() => setDeepAnalysisData(null)}
+          data={deepAnalysisData}
+        />
       </div>
     );
   },

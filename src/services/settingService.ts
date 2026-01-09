@@ -8,6 +8,11 @@ export interface ProjectSetting {
   description?: string;
   type?: string;
   imageUrl?: string;
+  visual_background?: string;
+  atmosphere?: string;
+  lighting?: string;
+  time_of_day?: string;
+  art_style?: string;
   // backend SettingResponse may have more fields
 }
 
@@ -18,7 +23,7 @@ export const settingService = {
    */
   getAll: async (projectId: string) => {
     const response = await api.get<ApiResponse<ProjectSetting[]>>(
-      `/projects/${projectId}/settings`,
+      `/projects/${projectId}/settings`
     );
     return response.data;
   },

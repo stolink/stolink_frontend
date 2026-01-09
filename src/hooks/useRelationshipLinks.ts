@@ -8,7 +8,7 @@ import type { UIRelationType } from "@/components/CharacterGraph/utils";
 // Helper: Map biography event type to UI relation type
 function mapEventTypeToRelationType(
   eventType: string | undefined | null,
-  defaultType: UIRelationType
+  defaultType: UIRelationType,
 ): UIRelationType {
   if (!eventType) return defaultType;
   const et = eventType.toLowerCase();
@@ -49,7 +49,7 @@ function getCharJaccardSimilarity(str1: string, str2: string): number {
  */
 export function useRelationshipLinks(
   characters: Character[],
-  events?: BiographyEvent[]
+  events?: BiographyEvent[],
 ): RelationshipLink[] {
   return useMemo(() => {
     const links = extractRelationshipLinks(characters);
@@ -87,7 +87,7 @@ export function useRelationshipLinks(
       const matchingEvents = events.filter(
         (e) =>
           e.participants?.includes(sourceName) &&
-          e.participants?.includes(targetName)
+          e.participants?.includes(targetName),
       );
 
       // Deduplication: Filter out similar events (same time + similar content)
@@ -106,7 +106,7 @@ export function useRelationshipLinks(
           // 2. Check Text Similarity
           const similarity = getCharJaccardSimilarity(
             existing.narrativeSummary,
-            event.narrativeSummary
+            event.narrativeSummary,
           );
           return similarity > 0.6; // Threshold (60% character match)
         });
@@ -127,8 +127,8 @@ export function useRelationshipLinks(
         chapter: e.timestamp || undefined,
         type: mapEventTypeToRelationType(
           e.eventType as string,
-          link.type as UIRelationType
-        ),
+          link.type as UIRelationType,
+        ) as RelationshipLink["type"],
         reason: e.description,
       }));
 

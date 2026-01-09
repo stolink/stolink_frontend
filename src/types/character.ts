@@ -18,10 +18,17 @@ export type RelationType =
   | "ENEMY"
   | "MENTOR"
   | "FAMILY"
-  // Legacy lowercase values for backward compatibility
+  | "MASTER_SERVANT"
+  | "COWORKER"
+  | "CLASSMATE"
+  | "COMPLEX"
+  // Legacy lowercase values for backward compatibility (full UIRelationType support)
   | "friendly"
   | "hostile"
-  | "romantic";
+  | "romantic"
+  | "family"
+  | "neutral"
+  | "complex";
 
 // Legacy aliases for compatibility
 export type BackendRelationshipType = RelationType;
@@ -115,7 +122,8 @@ export interface CharacterPersonality {
  */
 export interface CharacterRelation {
   target: string;
-  type: RelationType | string; // String for flexibility with new types
+  type: RelationType | string; // @deprecated Use relationTypes
+  relationTypes?: string[]; // New: Multiple relation types
   history: string | null;
   strength: number;
   description: string;
@@ -286,50 +294,10 @@ export function getCharacterFaction(char: Character): string {
  * 관계 배열을 가져오는 헬퍼 (레거시 호환)
  */
 export function getCharacterRelationships(
-  char: Character
+  char: Character,
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }
-
-// =====================================================
-// 📍 Place Types (Unchanged)
-// =====================================================
-
-export interface Place {
-  id: string;
-  projectId: string;
-  name: string;
-  type?: PlaceType;
-  imageUrl?: string;
-  extras?: Record<string, string | number | boolean | string[]>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type PlaceType = "region" | "building" | "special" | "other";
-
-// =====================================================
-// ⚔️ Item Types (Unchanged)
-// =====================================================
-
-export interface Item {
-  id: string;
-  projectId: string;
-  name: string;
-  type?: ItemType;
-  currentOwnerId?: string;
-  imageUrl?: string;
-  extras?: Record<string, string | number | boolean | string[]>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type ItemType =
-  | "weapon"
-  | "accessory"
-  | "document"
-  | "consumable"
-  | "other";
 
 // =====================================================
 // 🧪 Simple Character Interface (Integration Test)

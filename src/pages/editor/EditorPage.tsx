@@ -69,7 +69,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -113,7 +113,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[]
+  nodes: DocumentTreeNode[],
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -130,10 +130,14 @@ function mapToChapterNodes(
   }));
 }
 
-export default function EditorPage() {
+interface EditorPageProps {
+  isDemo?: boolean;
+}
+
+export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   const { id: projectId = "" } = useParams();
   const location = useLocation();
-  const isDemo = projectId === DEMO_PROJECT_ID;
+  const isDemo = isDemoProp ?? projectId === DEMO_PROJECT_ID;
 
   // Project Data
   const [characterCount, setCharacterCount] = useState(0);
@@ -141,7 +145,7 @@ export default function EditorPage() {
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -151,13 +155,13 @@ export default function EditorPage() {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null
+    isDemo ? "chapter-demo-1" : null,
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [viewMode, setViewMode] = useState<
-    "editor" | "scrivenings" | "outline" | "corkboard"
+    "editor" | "scrivenings" | "outline"
   >("editor");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -175,11 +179,11 @@ export default function EditorPage() {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode
+    (state) => state.behavior.typewriterMode,
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode
+    (state) => state.behavior.focusMode,
   );
   /* performanceMode removed */
 
@@ -202,16 +206,16 @@ export default function EditorPage() {
   useDocumentTree(isDemo ? "" : projectId);
 
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents
+    (state) => (state as { documents: Record<string, Document> }).documents,
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId
+            (doc) => doc.projectId === projectId,
           ),
-    [allDocuments, projectId, isDemo]
+    [allDocuments, projectId, isDemo],
   );
 
   const previewChapters = useMemo(() => {
@@ -227,7 +231,7 @@ export default function EditorPage() {
 
   const documents = useMemo(
     () => Object.values(localDocuments),
-    [localDocuments]
+    [localDocuments],
   );
 
   const sidebarChapters = useMemo(() => {
@@ -282,7 +286,7 @@ export default function EditorPage() {
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer
+        .addToBuffer,
   );
 
   const handleAnalysisComplete = useCallback(
@@ -290,7 +294,7 @@ export default function EditorPage() {
       const diff = calculateAnalysisDiff(
         characters,
         graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
-        result
+        result,
       );
 
       setAnalysisDiff(diff);
@@ -301,7 +305,7 @@ export default function EditorPage() {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
     },
-    [characters, graphLinks, projectId, queryClient]
+    [characters, graphLinks, projectId, queryClient],
   );
 
   const readerChapters = useMemo(() => {
@@ -359,7 +363,7 @@ export default function EditorPage() {
         console.error("Failed to save content:", error);
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent]
+    [isDemo, selectedSectionId, saveDocumentContent],
   );
 
   const saveWithAnalysis = useCallback(
@@ -369,7 +373,7 @@ export default function EditorPage() {
       addToBuffer(selectedSectionId, content);
       // flushAndAnalyze(); // 저장 시 즉시 분석하지 않고 버퍼링 정책에 따름
     },
-    [saveContent, selectedSectionId, addToBuffer]
+    [saveContent, selectedSectionId, addToBuffer],
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -472,12 +476,12 @@ export default function EditorPage() {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section"
+    type: "chapter" | "section",
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section"
+      type === "chapter" ? "chapter" : "section",
     );
     setCreateSectionModalOpen(false);
   };
@@ -541,7 +545,7 @@ export default function EditorPage() {
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full"
+        isDemo ? "h-screen" : "h-full",
       )}
     >
       {isDemo && (
@@ -572,7 +576,7 @@ export default function EditorPage() {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-cloud-50"
+            isFocusMode && "bg-cloud-50",
           )}
         >
           <EditorToolbar

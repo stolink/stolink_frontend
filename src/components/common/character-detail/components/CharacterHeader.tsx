@@ -72,7 +72,7 @@ export function CharacterHeader({
             <img
               src={displayImageUrl}
               alt={name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-cloud-50/50"
             />
             <div className="magazine-image-overlay" />
           </>

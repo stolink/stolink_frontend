@@ -27,23 +27,26 @@ import {
 import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
-const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
+const RELATION_ICONS: Partial<Record<UIRelationType, React.ReactNode>> = {
   friendly: <Users className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
+  family: <Users className="w-3 h-3" />,
+  neutral: <Users className="w-3 h-3" />,
+  complex: <Users className="w-3 h-3" />,
 };
 
 interface NetworkControlsProps {
   relationTypeFilter: UIRelationType | "all";
   onFilterChange: (value: UIRelationType | "all") => void;
-  enableGrouping?: boolean;
-  onGroupingChange?: (enabled: boolean) => void;
   hoveredType?: UIRelationType | null;
   onHoverType?: (type: UIRelationType | null) => void;
   onSimulateCollapse?: () => void;
   /** 주요 캐릭터만 보기 필터 */
   showMainOnly?: boolean;
   onShowMainOnlyChange?: (enabled: boolean) => void;
+  enableGrouping?: boolean;
+  onGroupingChange?: (enabled: boolean) => void;
   // Timeline Props
   showTimeline?: boolean;
   currentChapter?: number;
@@ -61,18 +64,17 @@ interface NetworkControlsProps {
  * 네트워크 그래프 컨트롤 패널
  * - 관계 타입 필터
  * - 범례 (인터랙티브)
- * - 그룹 토글 (Switch)
  */
 export function NetworkControls({
   relationTypeFilter,
   onFilterChange,
-  enableGrouping = false,
-  onGroupingChange,
   hoveredType,
   onHoverType,
   onSimulateCollapse,
   showMainOnly = false,
   onShowMainOnlyChange,
+  enableGrouping = false,
+  onGroupingChange,
   // Insights
   showTension = false,
   onToggleTension,
@@ -229,7 +231,7 @@ export function NetworkControls({
                       </Label>
                       <Switch
                         checked={showMainOnly}
-                        onChange={onShowMainOnlyChange}
+                        onChange={onShowMainOnlyChange!}
                       />
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
@@ -247,7 +249,7 @@ export function NetworkControls({
                       </Label>
                       <Switch
                         checked={enableGrouping}
-                        onChange={onGroupingChange}
+                        onChange={onGroupingChange!}
                       />
                     </div>
                     <p className="text-[9px] text-espresso-400 leading-tight">
@@ -255,7 +257,6 @@ export function NetworkControls({
                     </p>
                   </div>
                 )}
-
                 {/* Simulation Debug (Temp) */}
                 {onSimulateCollapse && (
                   <div className="pt-2 border-t border-cloud-100 space-y-1.5">

@@ -1,27 +1,29 @@
 // src/palette.ts
 var Palette = {
-  // Brand Colors - Vintage Cardboard Theme
+  // Brand Colors - Vivid Clean Brown Theme (Mocha & Cloud)
   mocha: {
-    400: "#D9BFA0",
-    // Light Sand (cardboard-4)
-    500: "#A69677",
-    // Muted Vintage Tan (cardboard-1)
-    700: "#BF8A49",
-    // Golden Vintage (cardboard-3)
-    900: "#403B33"
-    // Dark Sepia (cardboard-2)
+    400: "#C69F8F",
+    // Soft Vivid Cocoa (Hover)
+    500: "#A6735E",
+    // Vivid Clean Brown (Core Brand)
+    700: "#7D4E3C",
+    // Deep Vivid Cocoa (Dark/Active)
+    900: "#4A332A"
+    // Darkest Brown
   },
   cloud: {
     50: "#F5F1EB",
-    // Warm Ivory
+    // Warm Ivory (Main BG)
     100: "#E8E6E1",
+    // Panel BG
     200: "#D9D7D2",
+    // Borders
     900: "#0D0D0D"
-    // Deep Obsidian (cardboard-5)
+    // Deep Obsidian
   },
   espresso: {
-    900: "#403B33"
-    // Dark Sepia (cardboard-2)
+    900: "#3D302A"
+    // Dark Coffee Text
   },
   // Exact DOECHII Official Wordmarks Palette (Preserved, but could be updated if needed)
   doechii: {
@@ -31,37 +33,40 @@ var Palette = {
     4: "#8C3D20",
     5: "#401309"
   },
-  // Functional Colors - Redefined Sage based on #BF8A49
+  // Functional Colors - Redefined Sage (Clean Warm Grey/Brown)
   sage: {
-    50: "#F8F4EF",
-    100: "#F1E8DC",
-    200: "#E4D1BC",
-    400: "#D2A676",
-    500: "#BF8A49",
-    // Base
-    600: "#A6783F",
-    700: "#8D6636"
+    50: "#F9F8F6",
+    100: "#F0EBE5",
+    200: "#E2D8CF",
+    400: "#C4B2A3",
+    500: "#A47764",
+    // Aligned with Brand
+    600: "#8D6652",
+    700: "#755442"
   },
   // Relationship Colors - Adhering to Vintage Theme
   relationship: {
     friendly: "#7A8C6F",
-    // Muted Olive (Kept for compatibility)
-    hostile: "#9C4A3F",
-    // Rust Red
-    romance: "#B38B82",
-    // Dusty Rose
+    // Muted Olive
+    hostile: "#E11D48",
+    // Rose-600 (Clear Red)
+    romance: "#DB2777",
+    // Pink-600 (Clear Pink)
     family: "#4F5861",
     // Steel Blue-Grey
-    neutral: "#A69677"
-    // Muted Vintage Tan
+    neutral: "#9CA3AF"
+    // Cool Grey (Clean)
   },
   // Status Colors
   status: {
-    success: "#5B7B4B",
-    warning: "#BF8A49",
-    // Golden Vintage
-    error: "#A33A3A",
-    info: "#4B7D7D"
+    success: "#059669",
+    // Emerald-600
+    warning: "#D97706",
+    // Amber-600 (Clean Orange, not Ocher)
+    error: "#DC2626",
+    // Red-600
+    info: "#0284C7"
+    // Sky-600
   },
   // Neutrals / Common
   common: {

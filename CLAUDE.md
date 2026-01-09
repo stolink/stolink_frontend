@@ -234,7 +234,6 @@ hotfix: 긴급 수정
 - **Character**: 캐릭터 (extras로 동적 속성, Neo4j 연동)
 - **Foreshadowing**: 복선 (tag, status, appearances 배열)
 - **CharacterRelationship**: 관계 (sourceId, targetId, type, strength)
-- **Place/Item**: 장소, 아이템
 
 **상세**: [appendix/domain-glossary.md](appendix/domain-glossary.md)
 

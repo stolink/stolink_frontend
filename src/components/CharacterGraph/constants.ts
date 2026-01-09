@@ -5,7 +5,39 @@ import type { CharacterRole } from "@/types";
 // =====================================================
 
 // UI에서 사용하는 관계 타입
-export type UIRelationType = "friendly" | "hostile" | "romantic";
+export type UIRelationType =
+  | "friendly"
+  | "hostile"
+  | "romantic"
+  | "family"
+  | "neutral"
+  | "complex";
+
+/**
+ * RelationType을 UIRelationType으로 변환
+ * 백엔드 타입(ALLY, ENEMY 등)을 UI 타입(friendly, hostile 등)으로 매핑
+ */
+export function toUIRelationType(type: string): UIRelationType {
+  const normalized = type.toLowerCase();
+  const mapping: Record<string, UIRelationType> = {
+    // UI types (direct mapping)
+    friendly: "friendly",
+    hostile: "hostile",
+    romantic: "romantic",
+    family: "family",
+    neutral: "neutral",
+    complex: "complex",
+    // Backend types (uppercase)
+    ally: "friendly",
+    enemy: "hostile",
+    rival: "hostile",
+    mentor: "family",
+    master_servant: "neutral",
+    coworker: "neutral",
+    classmate: "friendly",
+  };
+  return mapping[normalized] || "neutral";
+}
 
 export const MOCHA_COLORS = {
   500: "#A47764", // Primary
@@ -30,17 +62,25 @@ export const META_CATEGORY_COLORS = {
 export const RELATION_TO_META_CATEGORY: Record<UIRelationType, MetaCategory> = {
   friendly: "positive",
   romantic: "positive",
+  family: "positive",
   hostile: "negative",
+  neutral: "neutral",
+  complex: "neutral",
 };
 
 // 관계 타입별 HEX 색상 (메타 카테고리 기반 재정의)
 export const RELATION_COLORS_HEX = {
   // Positive Group (Green/Blue)
   friendly: "#15803D", // Standard Green
-  romantic: "#059669", // Emerald (Deep Green/Blueish) - 사랑은 헌신의 색
+  romantic: "#DB2777", // Pink via Tokens (Updated from Emerald)
+  family: "#4F5861", // Blue/Gray via Tokens
 
   // Negative Group (Red/Orange)
-  hostile: "#F44336", // Standard Red
+  hostile: "#E11D48", // Red via Tokens
+
+  // Neutral/Complex
+  neutral: "#9CA3AF", // Gray
+  complex: "#7C3AED", // Violet (Super Edge)
 } as const;
 
 // 관계 타입별 색상 팔레트 (Meta-Category 색조 준수)
@@ -54,14 +94,29 @@ export const RELATION_PALETTE: Record<
     deep: "#14532D", // Green 900
   },
   romantic: {
-    weak: "#6EE7B7", // Emerald 300
+    weak: "#F472B6", // Pink 400
     standard: RELATION_COLORS_HEX.romantic,
-    deep: "#064E3B", // Emerald 900
+    deep: "#831843", // Pink 900
+  },
+  family: {
+    weak: "#94A3B8", // Slate 400
+    standard: RELATION_COLORS_HEX.family,
+    deep: "#1E293B", // Slate 800
   },
   hostile: {
     weak: "#FCA5A5", // Red 300
     standard: RELATION_COLORS_HEX.hostile,
     deep: "#7F1D1D", // Red 900
+  },
+  neutral: {
+    weak: "#D1D5DB", // Gray 300
+    standard: RELATION_COLORS_HEX.neutral,
+    deep: "#374151", // Gray 700
+  },
+  complex: {
+    weak: "#A78BFA", // Violet 400
+    standard: RELATION_COLORS_HEX.complex,
+    deep: "#4C1D95", // Violet 900
   },
 };
 
@@ -70,14 +125,21 @@ export const RELATION_COLORS: Record<UIRelationType, string> = {
   friendly: RELATION_COLORS_HEX.friendly,
   hostile: RELATION_COLORS_HEX.hostile,
   romantic: RELATION_COLORS_HEX.romantic,
+  family: RELATION_COLORS_HEX.family,
+  neutral: RELATION_COLORS_HEX.neutral,
+  complex: RELATION_COLORS_HEX.complex,
 };
 
+// 관계 타입별 라벨 (한글)
 // 관계 타입별 라벨 (한글)
 // 관계 타입별 라벨 (한글)
 export const RELATION_LABELS: Record<UIRelationType, string> = {
   friendly: "우호",
   hostile: "적대",
   romantic: "로맨스",
+  family: "가족",
+  neutral: "중립",
+  complex: "복합",
 };
 
 // 역할별 라벨
@@ -207,7 +269,7 @@ export const GLOW_CONFIG = {
 } as const;
 
 // =====================================================
-// 🌫️ 그룹 배경 (Fog) 색상 팔레트
+// 🌫️ 그룹 배경 (Fog) 색상 팔레트 (Deprecated - 클라우드 제거됨)
 // =====================================================
 
 export const GROUP_COLORS = [
@@ -220,3 +282,39 @@ export const GROUP_COLORS = [
   "#FCE7F3", // Pink 100
   "#FEF3C7", // Amber 100
 ] as const;
+
+// =====================================================
+// 🏴 Faction 테두리 링 색상 (동적 할당용)
+// =====================================================
+
+/**
+ * Faction별 테두리 링 색상 팔레트
+ * 노드 외곽에 Faction 소속을 표시하는 링에 사용
+ */
+export const FACTION_RING_COLORS = [
+  "#6366F1", // Indigo 500
+  "#EC4899", // Pink 500
+  "#10B981", // Emerald 500
+  "#F97316", // Orange 500
+  "#8B5CF6", // Violet 500
+  "#0EA5E9", // Sky 500
+  "#EF4444", // Red 500
+  "#F59E0B", // Amber 500
+  "#14B8A6", // Teal 500
+  "#A855F7", // Purple 500
+] as const;
+
+/**
+ * Faction 이름에서 색상 인덱스를 결정하는 해시 함수
+ * 동일 Faction 이름은 항상 동일한 색상을 반환
+ */
+export function getFactionColor(factionName: string | undefined): string {
+  if (!factionName || factionName === "무소속") {
+    return "#94A3B8"; // Slate 400 (무소속 기본 색상)
+  }
+  // 간단한 문자열 해시
+  const hash = factionName
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return FACTION_RING_COLORS[hash % FACTION_RING_COLORS.length];
+}
