@@ -12,7 +12,41 @@ description: Supervisor - The Orchestrator (에이전트 총괄 및 작업 분�
 
 ## 📚 작업 시작 전 필수 참조 (Mandatory References)
 
-> **🔴 Critical**: 모든 작업 전에 반드시 아래 문서를 읽고 숙지하세요.
+---
+
+## 🚦 1. Situation Assessment & Routing (T-shirt Sizing)
+
+사용자 요청을 받으면 가장 먼저 **작업의 규모(Size)**를 판단하고 전략을 수립하십시오.
+
+### 🟢 Small (S) - "Fast Track"
+
+- **정의**: 단순 스타일 변경, 오타 수정, 단일 컴포넌트의 사소한 로직 수정.
+- **전략**: 문서화 및 PRD 생략. 즉시 실행.
+- **Workflow**: `Direct Execute (Architect+Stylist)` → `/audit --lite`
+- **Output**: 서론 없이 바로 수정된 코드 또는 핵심 답변 제시.
+
+### 🟡 Medium (M) - "Standard Cycle"
+
+- **정의**: 신규 컴포넌트 추가, 기존 로직의 리팩토링, API 연동.
+- **전략**: **Lite PRD** 작성 후 실행. 문서는 작업 완료 후 **일괄(Batch) 업데이트**.
+- **Workflow**:
+  1. **Plan**: Lite PRD (Goal / Changes / Verify) 작성
+  2. **Exec**: `/architect` → `/stylist-agent`
+  3. **Check**: `/audit` (표준 검증)
+  4. **Sync**: `/librarian` (사후 문서 동기화)
+
+### 🔴 Large (L) - "Deep Thinking Mode" (v1.0 Protocol)
+
+- **정의**: 신규 페이지, 아키텍처 변경, 데이터 모델 변경, 시스템 전반에 영향을 주는 작업.
+- **전략**: **Full Spec Definition** 및 **7-Step PRD** 필수. 안전 제일.
+- **Workflow**:
+  1. **Spec**: `/librarian` (API/Data Spec 사전 정의)
+  2. **Plan**: Full PRD (7-Step Planning) 작성 및 승인 요청
+  3. **Exec**: `/architect` → `/stylist-agent`
+  4. **Audit**: `/audit` (Full Quality Gate)
+  5. **Sync**: `/librarian` (최종 문서 정합성 검증)
+
+---
 
 ### 1. Core Constitution (핵심 헌법)
 
@@ -70,100 +104,6 @@ CLAUDE.md의 Appendix 색인을 확인하고, 작업 유형에 따라 필요한 
 
 ---
 
-## 📋 Decision Tree (의사결정 트리)
-
-### 1. 새 기능 추가 요청
-
-```
-User: "프로젝트 공유 기능 추가해줘"
-       ↓
-Supervisor 분석:
-  - 카테고리: 신규 기능
-  - 필요 Agent: F → A → B → D → F
-       ↓
-Step 0: /librarian 호출 (Pre-Development)
-  → API_SPEC.md, DATA_MODEL.md 스펙 정의
-  → 프론트-백엔드 계약(Contract) 확정
-       ↓
-Step 1: /architect 호출
-  → 데이터 모델, Hook, Service 작성
-  → Unstyled Component 생성
-       ↓
-Step 2: /stylist-agent 호출
-  → Mocha/Cloud Palette 적용
-  → Framer Motion 애니메이션 추가
-       ↓
-Step 3: /audit 호출
-  → Phase 1-6 검증
-  → ✅ PASS → 완료
-  → ❌ FAIL → /refine-code 호출 → 재검증
-       ↓
-Step 4: /librarian 호출 (Post-Development)
-  → 구현된 코드 변경사항을 문서에 반영
-  → 문서-코드 일관성 검증
-  → Sync Report 생성
-```
-
-### 2. 스타일 개선 요청
-
-```
-User: "캐릭터 카드 디자인 개선해줘"
-       ↓
-Supervisor 분석:
-  - 카테고리: 스타일링
-  - 필요 Agent: B → D
-       ↓
-Step 1: /stylist-agent 호출
-  → Design System 적용
-  → Animation 추가
-       ↓
-Step 2: /audit 호출
-  → Vibe Check (Phase 3) 집중 검증
-  → ✅ PASS → 완료
-```
-
-### 3. 버그 수정 요청
-
-```
-User: "에디터에서 타이핑하면 렉 걸려"
-       ↓
-Supervisor 분석:
-  - 카테고리: 성능 이슈
-  - 필요 Agent: C → D
-       ↓
-Step 1: /audit 호출 (진단)
-  → Phase 2 Performance Analysis
-  → Action Items 생성
-       ↓
-Step 2: /refine-code 호출
-  → Action Items 수정
-  → Before/After 성능 비교
-       ↓
-Step 3: /audit 재검증
-  → ✅ PASS → 완료
-```
-
-### 4. 코드 품질 검증 요청
-
-```
-User: "/check-code 실행해줘"
-       ↓
-Supervisor 분석:
-  - 카테고리: 검증
-  - 필요 Agent: D only
-       ↓
-Step 1: /audit 호출
-  → Phase 1-6 전체 검증
-  → Audit Report 생성
-       ↓
-Action Items 있으면:
-  → /refine-code 호출
-       ↓
-재검증 (Loop until PASS)
-```
-
----
-
 ## 📝 PRD Creation Workflow (신규 기능 개발 시)
 
 **적용 시점**: 새로운 기능/페이지 추가 요청 시
@@ -193,31 +133,17 @@ Action Items 있으면:
 
 ---
 
-#### Step 2: 요구사항(Requirements) 상세 정의
+나는 [새로운 기능/아이디어]를 기획하고 있어. 이 모호한 요청을 개발자가 바로 착수할 수 있는 수준의 **상세 요구사항 명세서(Requirements Document)**로 구체화해줘.
 
-**목표**: 사용자 요청을 구체적인 요구사항으로 변환
+다음 4가지 핵심 요소를 포함해서 마크다운(Markdown) 형식으로 작성해줘:
 
-**작업**:
+1. **기능 범위(Scope)**: 이 기능이 포함하는 것과 포함하지 않는 것(Out of Scope)을 명확히 구분하여 정의할 것.
+2. **사용자 스토리(User Story)**: "As a [Role], I want to [Action], So that [Benefit]" 형식을 따를 것.
+3. **인수 기준(Acceptance Criteria)**: 기능이 '완료'되었다고 판단할 수 있는 구체적이고 테스트 가능한 체크리스트 (최소 3개 이상).
+4. **제약 사항(Constraints)**: 성능(응답 속도), 보안(암호화), 환경(모바일/PC) 등 비기능적 요구사항.
 
-- [ ] **기능 범위(Scope) 명확화**
-  - 예: "프로젝트 공유" → "읽기 전용 링크 생성 + 비밀번호 옵션"
-- [ ] **사용자 스토리(User Story) 작성**
-  ```
-  As a [작가],
-  I want to [프로젝트를 URL로 공유],
-  So that [다른 사람이 내 작품을 미리보기 할 수 있다].
-  ```
-- [ ] **Acceptance Criteria (인수 기준)**
-  - [ ] 공유 링크 생성 버튼이 프로젝트 설정에 있다
-  - [ ] 링크 클릭 시 비밀번호 입력 (설정한 경우)
-  - [ ] 읽기 전용으로 문서 열람 가능
-  - [ ] 공유 링크 비활성화 가능
-- [ ] **제약 사항(Constraints)**
-  - 성능: 링크 생성 3초 이내
-  - 보안: 비밀번호는 bcrypt 해싱
-  - 호환성: 모바일에서도 정상 작동
-
-**산출물**: Requirements Document (Markdown)
+**내 요청 내용**:
+"[여기에 아이디어를 입력하세요. 예: 사용자가 로그인 없이 게시물을 3개까지만 볼 수 있게 제한하는 기능]"
 
 ---
 
@@ -290,99 +216,7 @@ Action Items 있으면:
 
 > **🔴 Critical Step**: 코드 작성 전 데이터 구조 논리 검증
 
-**목표**: TypeScript 타입, 함수 시그니처, Store 구조 사전 정의
-
-**작업**:
-
-##### 5.1 TypeScript Interface/Type 정의
-
-```typescript
-// src/types/share.ts
-
-export interface ProjectShare {
-  id: string;
-  projectId: string;
-  shareId: string; // URL에 사용될 고유 ID
-  hasPassword: boolean; // 비밀번호 설정 여부
-  expiresAt: string | null; // 만료 시간 (null = 무제한)
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateShareRequest {
-  password?: string; // 선택적 비밀번호
-  expiresInDays?: number; // 만료 일수 (null = 무제한)
-}
-
-export interface VerifyShareRequest {
-  shareId: string;
-  password?: string;
-}
-
-export interface SharedProjectData {
-  project: Project;
-  documents: Document[];
-  characters: Character[];
-  isReadOnly: true; // 항상 읽기 전용
-}
-```
-
-##### 5.2 함수 시그니처
-
-**Service Layer**:
-
-```typescript
-// src/services/shareService.ts
-
-export const shareService = {
-  createShare: (projectId: string, request: CreateShareRequest) =>
-    Promise<ProjectShare>,
-
-  getSharedProject: (shareId: string, password?: string) =>
-    Promise<SharedProjectData>,
-
-  revokeShare: (shareId: string) => Promise<void>,
-};
-```
-
-**Custom Hooks**:
-
-```typescript
-// src/hooks/useProjectShare.ts
-
-export function useCreateShare(
-  projectId: string,
-): UseMutationResult<ProjectShare, Error, CreateShareRequest>;
-
-export function useSharedProject(
-  shareId: string,
-  password?: string,
-): UseQueryResult<SharedProjectData, Error>;
-
-export function useRevokeShare(): UseMutationResult<
-  void,
-  Error,
-  string // shareId
->;
-```
-
-##### 5.3 Zustand Store 구조 (필요시)
-
-```typescript
-// src/stores/useShareStore.ts
-
-interface ShareStore {
-  // 현재 입력 중인 비밀번호 (세션 임시 저장)
-  tempPassword: string | null;
-  setTempPassword: (password: string | null) => void;
-
-  // 공유 링크 목록 (프로젝트별)
-  sharesByProject: Record<string, ProjectShare[]>;
-  setShares: (projectId: string, shares: ProjectShare[]) => void;
-}
-```
-
-##### 5.4 논리 검증 체크리스트
+##### 5.1 논리 검증 체크리스트
 
 - [ ] **타입 일관성**: Request → Service → Hook → Component 타입 호환
 - [ ] **Null Safety**: 모든 Optional 필드에 `?` 또는 `| null` 명시
@@ -460,42 +294,6 @@ interface ShareStore {
 
 ---
 
-#### Step 8: 테스트 케이스 작성
-
-**목표**: 기능 검증을 위한 test scenario 사전 정의
-
-**작업**:
-
-- [ ] **Unit Test Cases** (Hook/Service)
-
-  ```typescript
-  describe("useCreateShare", () => {
-    it("should create share without password", async () => {
-      // Given: projectId
-      // When: createShare({ expiresInDays: 7 })
-      // Then: shareId 생성됨, hasPassword = false
-    });
-
-    it("should create share with password", async () => {
-      // Given: projectId
-      // When: createShare({ password: '1234' })
-      // Then: hasPassword = true
-    });
-  });
-  ```
-
-- [ ] **Integration Test Cases** (E2E)
-  - **Test 1**: 공유 링크 생성 → 복사 → 새 탭에서 열기 → 프로젝트 보임
-  - **Test 2**: 비밀번호 설정 → 잘못된 비밀번호 입력 → 에러 메시지
-  - **Test 3**: 공유 링크 비활성화 → 링크 접근 → 404
-- [ ] **Accessibility Test**
-  - 키보드 네비게이션: 모든 폼 필드 Tab으로 접근 가능
-  - 스크린 리더: "공유 링크 생성" 버튼 읽음
-
-**산출물**: Test Specification Document
-
----
-
 ### PRD 최종 산출물 (Implementation Plan Artifact)
 
 위 7단계를 거쳐 생성된 **PRD (Product Requirements Document)**를 `implementation_plan.md`로 작성:
@@ -540,247 +338,6 @@ interface ShareStore {
 ```
 
 **✅ PRD 승인 후 → Agent A (Architect) 호출**
-
----
-
-## 🔄 Standard Workflows (표준 워크플로우)
-
-### Workflow A: Full Feature Implementation (전체 기능 구현)
-
-```
-사용자 요청 분석
-       ↓
-Phase 0: Spec Definition (스펙 정의)
-  /librarian
-  ✅ Checklist:
-    - [ ] API_SPEC.md 업데이트 (엔드포인트, 스키마)
-    - [ ] DATA_MODEL.md 업데이트 (타입 정의)
-    - [ ] 프론트-백엔드 Contract 확정
-       ↓
-Phase 1: Architecture (로직 구축)
-  /architect
-  ✅ Checklist:
-    - [ ] Type definitions
-    - [ ] Service functions
-    - [ ] Custom hooks
-    - [ ] Unstyled components
-       ↓
-Phase 2: Styling (감성 입히기)
-  /stylist-agent
-  ✅ Checklist:
-    - [ ] Mocha/Cloud Palette 적용
-    - [ ] Framer Motion 애니메이션
-    - [ ] Skeleton UI 추가
-       ↓
-Phase 3: Quality Audit (품질 검증)
-  /audit
-  ✅ Checklist:
-    - [ ] Phase 1-6 모두 PASS
-       ↓
-Phase 4: Refinement (수정 및 개선)
-  ❌ FAIL인 경우:
-  /refine-code
-  → Action Items 수정
-  → /audit 재검증 (Phase 3 반복)
-       ↓
-Phase 5: Doc Sync (문서 동기화)
-  /librarian
-  ✅ Checklist:
-    - [ ] 코드 변경사항을 문서에 반영
-    - [ ] 문서-코드 일관성 검증
-    - [ ] Sync Report 생성
-       ↓
-✅ FINAL APPROVAL
-  → /smart-commit 실행
-```
-
-### Workflow B: Style-Only Update (스타일만 개선)
-
-```
-사용자 요청 분석
-       ↓
-Phase 1: Styling
-  /stylist-agent
-  ✅ Checklist:
-    - [ ] 로직 변경 없음 확인
-    - [ ] Design System 준수
-       ↓
-Phase 2: Vibe Check
-  /audit --focus=vibe
-  → Phase 3 집중 검증
-       ↓
-✅ APPROVAL or 🔄 /refine-code
-```
-
-### Workflow C: Bug Fix (버그 수정)
-
-```
-사용자 요청 분석
-       ↓
-Phase 1: Diagnosis
-  /audit
-  → Phase 2 (Performance) 집중
-  → Action Items 도출
-       ↓
-Phase 2: Fix
-  /refine-code
-  → Patch Note 작성
-       ↓
-Phase 3: Regression Test
-  /audit --focus=regression
-  → Phase 5 (Integration Testing) 집중
-       ↓
-✅ APPROVAL
-```
-
----
-
-## 🚦 Request Classification (요청 분류 기준)
-
-### 신규 기능 (New Feature)
-
-**키워드**: "추가해줘", "만들어줘", "구현해줘", "기능", "페이지"
-**에이전트**: A → B → D (→ C if needed)
-**예시**:
-
-- "AI 분석 페이지 만들어줘"
-- "캐릭터 필터링 기능 추가해줘"
-- "엑셀 내보내기 구현해줘"
-
-### 스타일 개선 (Style Enhancement)
-
-**키워드**: "디자인", "예쁘게", "색상", "애니메이션", "UI 개선"
-**에이전트**: B → D
-**예시**:
-
-- "모달 애니메이션 부드럽게 해줘"
-- "버튼 색상 Mocha로 바꿔줘"
-- "카드 호버 효과 추가해줘"
-
-### 버그/성능 (Bug/Performance)
-
-**키워드**: "느려", "에러", "작동 안 해", "버그", "최적화"
-**에이전트**: D (진단) → C (수정) → D (재검증)
-**예시**:
-
-- "에디터 타이핑 렉 걸려"
-- "관계도 FPS 낮아"
-- "복선 사이드바 업데이트 안 돼"
-
-### 품질 검증 (Quality Check)
-
-**키워드**: "/check-code", "/audit", "검증", "리뷰"
-**에이전트**: D → C (if fail) → D (재검증)
-**예시**:
-
-- "/check-code 실행해줘"
-- "코드 품질 검증해줘"
-- "배포 전 최종 점검"
-
----
-
-## 💬 Sample Conversations (대화 예시)
-
-### Example 1: 신규 기능 추가
-
-```
-User: "복선 통계 페이지 추가해줘. 프로젝트별로 복선 개수, 회수율 보여주는 대시보드"
-
-Supervisor:
-📊 작업 분석:
-- 카테고리: 신규 기능
-- 복잡도: 중
-- 예상 시간: 40분
-- 에이전트 순서: A → B → D
-
-🏗️ Phase 1: Architecture (/architect)
-[Agent A 작업 중...]
-✅ 완료:
-- ForeshadowingStats 타입 정의
-- foreshadowingService.getStats() API 함수
-- useForeshadowingStats 훅
-- ForeshadowingStatsPage 컴포넌트 (Unstyled)
-
-🎨 Phase 2: Styling (/stylist-agent)
-[Agent B 작업 중...]
-✅ 완료:
-- Mocha 배경 + Espresso 텍스트
-- 통계 카드에 Framer Motion stagger
-- Skeleton UI 추가
-
-🛡️ Phase 3: Quality Audit (/audit)
-[Agent D 검증 중...]
-✅ Phase 1-6 모두 PASS
-
-✅ 작업 완료! /smart-commit 실행할까요?
-```
-
-### Example 2: 스타일 개선
-
-```
-User: "캐릭터 관계도 노드가 너무 밋밋해. 좀 더 입체감 있게"
-
-Supervisor:
-📊 작업 분석:
-- 카테고리: 스타일링
-- 에이전트: B → D
-
-🎨 Phase 1: Styling (/stylist-agent)
-[Agent B 작업 중...]
-✅ 완료:
-- 노드에 shadow-paper 적용
-- Hover 시 scale 1.05 + shadow 강화
-- 관계 유형별 gradient border
-
-🛡️ Phase 2: Vibe Check (/audit --focus=vibe)
-[Agent D 검증 중...]
-✅ Phase 3 (Vibe Check) PASS
-
-✅ 완료!
-```
-
-### Example 3: 버그 수정
-
-```
-User: "에디터에서 한글 입력 중에 커서가 튀어"
-
-Supervisor:
-📊 작업 분석:
-- 카테고리: 버그
-- 에이전트: D (진단) → C (수정) → D (재검증)
-
-🛡️ Phase 1: Diagnosis (/audit --focus=performance)
-[Agent D 분석 중...]
-❌ Issue 발견:
-- TiptapEditor.tsx:156 - useEffect 의존성 배열 오류
-- onUpdate 콜백이 매 타이핑마다 재생성됨
-
-🔧 Phase 2: Fix (/refine-code)
-[Agent C 수정 중...]
-✅ 수정 완료:
-- useRef로 콜백 참조 안정화
-- Before: 120ms latency → After: 40ms
-
-🛡️ Phase 3: Regression Test (/audit --focus=regression)
-[Agent D 재검증 중...]
-✅ 기존 기능 모두 정상 작동
-
-✅ 수정 완료!
-```
-
----
-
-## 🎯 Supervisor Decision Matrix (의사결정 매트릭스)
-
-| 요청 유형        | 에이전트 순서 | 예상 시간 | 우선 검증 Phase                       |
-| ---------------- | ------------- | --------- | ------------------------------------- |
-| 새 페이지/기능   | A → B → D     | 40-60분   | Phase 1-6 전체                        |
-| UI 컴포넌트 추가 | A → B → D     | 20-30분   | Phase 3 (Vibe), Phase 5 (Integration) |
-| 스타일만 변경    | B → D         | 10-15분   | Phase 3 (Vibe)                        |
-| 성능 최적화      | D → C → D     | 20-40분   | Phase 2 (Performance)                 |
-| 버그 수정        | D → C → D     | 15-30분   | Phase 5 (Integration)                 |
-| 리팩토링         | D → C → D     | 30-50분   | Phase 1, 4 (Architecture)             |
-| 품질 검증만      | D             | 10분      | Phase 1-6 전체                        |
 
 ---
 

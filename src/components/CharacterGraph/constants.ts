@@ -201,26 +201,55 @@ export const MAX_CURVE_OFFSET = 60; // 곡선 제어점 최대 오프셋 (px)
 
 export const FORCE_CONFIG = {
   // 노드 간 반발력 (최적화: 거리 제한으로 연산 감소)
-  charge: -600,
-  chargeDistanceMin: 60,
-  chargeDistanceMax: 1000, // 줄여서 먼 거리 연산 감소
+  // Balanced repulsion (enough to separate, but not explode)
+  charge: -2500,
+  chargeDistanceMin: 100,
+  chargeDistanceMax: 4000,
 
   // 링크 설정 (소프트 스프링)
-  linkDistance: 220,
+  // Default breathing room
+  linkDistance: 150,
   linkStrength: 0.3,
 
   // 센터링 (부드럽게)
-  centerStrength: 0.03,
-  positionStrength: 0.01, // X/Y 포지셔닝
+  centerStrength: 0.05, // Stronger centering to form a round shape (User Feedback)
+  positionStrength: 0.01,
 
   // 충돌
-  collisionPadding: 35,
-  collisionStrength: 0.7,
+  collisionPadding: 60,
+  collisionStrength: 0.85,
+
+  // Dynamic Link Forces (Relationship-based)
+  // STRATEGY:
+  // Friendly = Short & Rigid (Clump together)
+  // Hostile = Long & Strong (Force apart)
+  dynamic: {
+    friendly: {
+      distance: 80, // Very Short (Tight cluster)
+      strength: 0.9, // Almost rigid
+    },
+    hostile: {
+      distance: 1000, // Long separation
+      strength: 0.6, // Strong enough to fight triangle inequality
+    },
+    neutral: {
+      distance: 200,
+      strength: 0.3,
+    },
+    family: {
+      distance: 60, // Extremely close
+      strength: 0.95,
+    },
+    romantic: {
+      distance: 50, // Intimate
+      strength: 0.95,
+    },
+  },
 
   // 수렴 (더 빠른 안정화)
-  alphaDecay: 0.03, // 더 빠른 수렴 (기존 0.02)
-  alphaMin: 0.008, // 조기 정지 (기존 0.005)
-  velocityDecay: 0.35, // 약간 높인 마찰 = 더 빠른 안정화
+  alphaDecay: 0.022,
+  alphaMin: 0.001,
+  velocityDecay: 0.6,
 } as const;
 
 // =====================================================

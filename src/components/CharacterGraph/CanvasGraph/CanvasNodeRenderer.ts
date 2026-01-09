@@ -167,12 +167,19 @@ export function drawNode(options: NodeRenderOptions): void {
     ctx.fill();
     ctx.restore();
 
-    // 이니셜 텍스트 (shadowBlur 제거 - 성능 최적화)
+    // 이니셜 텍스트
     ctx.save();
-    ctx.fillStyle = "white";
-    ctx.font = `bold ${isImportant ? radius * 0.8 : radius * 0.7}px Pretendard`;
+    ctx.font = `bold ${isImportant ? radius * 0.8 : radius * 0.7}px "Playfair Display", serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+
+    // Halo Effect for Initials (Optional, but good for consistency)
+    ctx.strokeStyle = "#FDFDFB";
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.strokeText(initial, node.x, node.y);
+
+    ctx.fillStyle = "white";
     ctx.fillText(initial, node.x, node.y);
     ctx.restore();
   }
@@ -188,16 +195,36 @@ export function drawNode(options: NodeRenderOptions): void {
 
     ctx.save();
     ctx.globalAlpha = labelOpacity * opacity;
-    ctx.fillStyle = "#3D302A";
-    ctx.font = `${isImportant ? 700 : 500} ${Math.max(16, radius * 0.38 + 4)}px "Pretendard"`;
+
+    // Typography: Serif with Premium Feel (User Feedback: Bold 900, +20px Size)
+    // Switched to Playfair Display for true 900 weight support
+    const fontSize = Math.max(16, radius * 0.38 + 5);
+    ctx.font = `900 ${fontSize + 20}px "Playfair Display", "DM Serif Display", serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    // shadowBlur 제거 - 성능 최적화
-    ctx.fillText(
-      displayName,
-      node.x,
-      node.y + radius + (isImportant ? 20 : 12),
-    );
+
+    const textX = node.x;
+    const textY = node.y + radius + (isImportant ? 20 : 12);
+
+    // 1. Halo Effect (Warm White Stroke for separation)
+    ctx.strokeStyle = "#FDFDFB";
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round"; // Smooth corners
+    ctx.miterLimit = 2;
+    ctx.strokeText(displayName, textX, textY);
+
+    // 2. Drop Shadow (Floating Effect)
+    ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowOffsetX = 0;
+
+    // 3. Solid Color Fill (Max Contrast, no gradient)
+    ctx.fillStyle = "#2A211D"; // Espresso 950 (Very Dark) for max readability
+    // ctx.fillStyle = gradient; // Replaced with solid color per user request
+
+    ctx.fillText(displayName, textX, textY);
+    ctx.restore();
     ctx.restore();
   }
 
