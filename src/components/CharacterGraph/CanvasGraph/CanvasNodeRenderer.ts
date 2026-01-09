@@ -190,16 +190,19 @@ export function drawNode(options: NodeRenderOptions): void {
   // 10. 이름 라벨 - 줌 반응형
   const showLabel = globalScale > 0.35;
   if (showLabel) {
-    const labelOpacity = Math.max(0, Math.min(1, (globalScale - 0.35) * 3));
+    // const labelOpacity = Math.max(0, Math.min(1, (globalScale - 0.35) * 3));
     const displayName = truncateName(node.name, isImportant ? 12 : 8);
 
     ctx.save();
-    ctx.globalAlpha = labelOpacity * opacity;
+    // Dimming removed for text (User Feedback): Always clear visibility
+    // Force 100% opacity regardless of zoom level
+    ctx.globalAlpha = 1;
 
-    // Typography: Serif with Premium Feel (User Feedback: Bold 900, +20px Size)
+    // Typography: Serif with Premium Feel
     // Switched to Playfair Display for true 900 weight support
+    // Increased size by +4px per request (was +20, now +24)
     const fontSize = Math.max(16, radius * 0.38 + 5);
-    ctx.font = `900 ${fontSize + 20}px "Playfair Display", "DM Serif Display", serif`;
+    ctx.font = `900 ${fontSize + 24}px "Playfair Display", "DM Serif Display", serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 

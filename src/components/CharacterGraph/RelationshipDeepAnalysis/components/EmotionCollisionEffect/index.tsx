@@ -129,16 +129,18 @@ function CollisionMesh({
   const { viewport } = useThree();
 
   // 색상 데이터 추출 (Memoized to prevent recalc)
+  // ESLint fix: Complex expression in dependency array
   const serializedFactorsA = JSON.stringify(factorsA);
-  const serializedFactorsB = JSON.stringify(factorsB);
-
   const colorDataA = useMemo(
     () => extractColorData(factorsA),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [serializedFactorsA],
   );
 
+  const serializedFactorsB = JSON.stringify(factorsB);
   const colorDataB = useMemo(
     () => extractColorData(factorsB),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [serializedFactorsB],
   );
 
@@ -169,8 +171,7 @@ function CollisionMesh({
         value: new THREE.Vector2(viewport.width, viewport.height),
       },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // Empty intentionally
+    [], // Empty dependency array intentionally (only init once)
   );
 
   // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)

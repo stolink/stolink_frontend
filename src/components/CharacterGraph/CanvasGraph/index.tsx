@@ -619,8 +619,8 @@ export const CharacterGraphCanvas = forwardRef<
       // Wait for graph to settle slightly
       const timer = setTimeout(() => {
         if (graphRef.current) {
-          // Slower, dramatic zoom (2s)
-          graphRef.current.zoomToFit(2000, 120);
+          // Faster zoom (0.8s) for snappier entry
+          graphRef.current.zoomToFit(800, 120);
           // Fade in
           setTimeout(() => setIsLoaded(true), 100);
         }

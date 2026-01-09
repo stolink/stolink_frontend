@@ -1,4 +1,4 @@
-import { PanelRightClose, Bot, Info, Sparkles, Lightbulb } from "lucide-react";
+import { Bot, Info, Sparkles, Lightbulb } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import AIAssistantPanel from "@/components/editor/AIAssistantPanel";
@@ -12,6 +12,8 @@ export type RightSidebarTab =
   | "foreshadowing"
   | "ai"
   | "consistency";
+
+import { useResizable } from "@/hooks/useResizable";
 
 interface EditorRightSidebarProps {
   isOpen: boolean;
@@ -36,7 +38,7 @@ interface EditorRightSidebarProps {
 
 export default function EditorRightSidebar({
   isOpen,
-  onClose,
+  onClose: _onClose,
   activeTab,
   onTabChange,
   documentId = null,
@@ -48,18 +50,32 @@ export default function EditorRightSidebar({
   isAnalyzing,
   onRefreshAnalysis,
 }: EditorRightSidebarProps) {
+  // Resizable Logic
+  const { width, startResizing, isResizing } = useResizable({
+    initialWidth: 320,
+    minWidth: 260,
+    maxWidth: 600,
+    direction: "left", // Right sidebar expands to the left
+  });
+
   if (!isOpen) return null;
 
   return (
-    <aside className="w-72 border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-hidden animate-in slide-in-from-right duration-300">
-      {/* Toggle Button - Left Edge Strip */}
-      <button
-        onClick={onClose}
-        className="w-5 h-full border-r border-mocha-100/50 bg-mocha-50/30 hover:bg-mocha-100/50 flex items-center justify-center text-mocha-400 hover:text-mocha-600 transition-colors shrink-0"
-        title="사이드바 닫기"
-      >
-        <PanelRightClose className="h-3.5 w-3.5" />
-      </button>
+    <aside
+      className={cn(
+        "border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-visible relative",
+        isResizing && "transition-none", // Disable transitions while dragging
+      )}
+      style={{ width }}
+    >
+      {/* Resize Handle - Left Edge */}
+      <div
+        onMouseDown={startResizing}
+        className="absolute left-[-4px] top-0 w-[8px] h-full cursor-col-resize z-50 hover:bg-mocha-400/20 active:bg-mocha-400/40 transition-colors"
+        title="드래그하여 크기 조절"
+      />
+
+      {/* No Edge Buttons Here */}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">

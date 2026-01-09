@@ -541,6 +541,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     initialStateFromRedirect,
   ]);
 
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [rightSidebarTab, setRightSidebarTab] =
+    useState<import("@/components/editor/EditorRightSidebar").RightSidebarTab>(
+      "ai",
+    );
+
   return (
     <div
       className={cn(
@@ -601,8 +607,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             onToggleFocusMode={() => {}}
             isTypewriterMode={isTypewriterMode}
             onToggleTypewriterMode={() => {}}
-            rightSidebarOpen={false}
-            onToggleRightSidebar={() => {}}
+            rightSidebarOpen={isRightSidebarOpen}
+            onToggleRightSidebar={() =>
+              setIsRightSidebarOpen(!isRightSidebarOpen)
+            }
             onExport={() => setShowExport(true)}
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
@@ -635,10 +643,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         </main>
 
         <EditorRightSidebar
-          isOpen={true} // Simplified, always open on larger screens
-          onClose={() => {}} // Placeholder
-          activeTab="ai" // Default tab
-          onTabChange={() => {}} // Placeholder
+          isOpen={isRightSidebarOpen}
+          onClose={() => setIsRightSidebarOpen(false)}
+          activeTab={rightSidebarTab}
+          onTabChange={setRightSidebarTab}
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={
