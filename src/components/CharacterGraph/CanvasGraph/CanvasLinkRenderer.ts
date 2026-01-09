@@ -356,10 +356,7 @@ export function drawLink(options: LinkRenderOptions): void {
     // Or just draw a triangle at the "Center" of the curve pointing to Target?
 
     // Unidirectional: Arrow at 60%
-    // Bidirectional: Arrows at 30% (<) and 70% (>) ?
-
-    const t_arrow1 = link.bidirectional ? 0.3 : 0.6;
-    const t_arrow2 = 0.7; // For bidirectional second arrow
+    // Bidirectional: Arrows at 30% (<) and 70% (>)// _t_arrow1 and _t_arrow2 removed as they were unused // For bidirectional second arrow
 
     const drawChevron = (t: number, isReverse: boolean) => {
       const mt = 1 - t;
@@ -388,14 +385,7 @@ export function drawLink(options: LinkRenderOptions): void {
     };
 
     // Draw
-    // If bi, we want: Source <---(30%)--- ... ---(70%)---> Target
-    // 30% tangent points S->T. We want arrow pointing to S (Reverse).
-    // 70% tangent points S->T. We want arrow pointing to T (Normal).
-
-    if (link.bidirectional) {
-      drawChevron(t_arrow1, true); // Point to Source
-      drawChevron(t_arrow2, false); // Point to Target
-    } else {
+    if (!link.bidirectional) {
       // Unidirectional: Just one at 60% pointing to Target
       drawChevron(0.6, false);
     }

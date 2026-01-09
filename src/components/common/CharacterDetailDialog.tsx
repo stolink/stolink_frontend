@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ElementType } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -896,7 +896,7 @@ function TabItem({
   label,
 }: {
   value: string;
-  icon: ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
 }) {
   return (
@@ -923,7 +923,7 @@ function ProfileItem({
 }: {
   label: string;
   value?: string | number | null;
-  icon: ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
     <div className="flex flex-col gap-1">

@@ -438,7 +438,7 @@ export const CharacterGraphCanvas = forwardRef<
             name: targetChar.profile?.name || "Unknown",
             imageUrl: targetChar.imageUrl,
           },
-          relLink.type,
+          relLink.relationTypes || [relLink.type],
           relLink.strength,
         );
         setDeepAnalysisData(analysisData);
@@ -956,7 +956,7 @@ export const CharacterGraphCanvas = forwardRef<
                     name: targetChar.profile?.name || "Unknown",
                     imageUrl: targetChar.imageUrl,
                   },
-                  hoveredLink.link.type as UIRelationType, // Correct type assertion
+                  [hoveredLink.link.type as string], // Correct type assertion
                   hoveredLink.link.strength,
                 );
                 setDeepAnalysisData(analysisData);

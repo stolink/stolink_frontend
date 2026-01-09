@@ -117,6 +117,36 @@ export interface ActiveIssue {
 }
 
 /**
+ * 관계 강도 구성 요소 (계산 근거)
+ */
+export interface StrengthFactor {
+  /** 관계 유형 (멘토, 친구 등) */
+  type: string;
+  /** 해당 유형의 점수 (0-10) */
+  score: number;
+  /** 가중치 (0.0 - 1.0) */
+  weight: number;
+  /** 분류 (friendly | hostile) */
+  category: "friendly" | "hostile";
+}
+
+/**
+ * 비대칭 관계 강도 정보
+ */
+export interface AsymmetricStrength {
+  /** Source → Target 관계 강도 및 산출 근거 */
+  sourceToTarget: {
+    total: number;
+    factors: StrengthFactor[];
+  };
+  /** Target → Source 관계 강도 및 산출 근거 */
+  targetToSource: {
+    total: number;
+    factors: StrengthFactor[];
+  };
+}
+
+/**
  * 캐릭터 기본 정보 (모달 표시용)
  */
 export interface AnalysisCharacterInfo {
@@ -139,14 +169,17 @@ export interface RelationshipDeepAnalysisData {
   /** Target → Source 관점에서의 관계 속성 */
   targetToSourceAttributes: RelationshipAttributes;
 
+  // 비대칭 관계 강도 및 계산 근거 (NEW)
+  asymmetricStrength: AsymmetricStrength;
+
   // 타임라인 데이터
   timeline: RelationshipTimelinePoint[];
 
   // 인사이트
   insights: RelationshipInsights;
 
-  // 기본 관계 정보
-  relationshipType: string;
+  // 기본 관계 정보 (LEGACY - 호환성 위해 유지)
+  relationshipTypes: string[];
   currentStrength: number;
   since?: string;
 

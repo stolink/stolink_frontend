@@ -256,11 +256,19 @@ export const FORCE_CONFIG = {
 // 🔍 줌 설정
 // =====================================================
 
+export type ZoomLevel = "macro" | "meso" | "micro";
+
 export const ZOOM_CONFIG = {
   min: 0.2,
   max: 4,
   initial: 1,
   transitionDuration: 300,
+} as const;
+
+export const SEMANTIC_ZOOM_CONFIG = {
+  macro: 0.4,
+  meso: 1.2,
+  majorCharacterThreshold: 3, // 주요 캐릭터 판단 관계 수
 } as const;
 
 // =====================================================
@@ -287,6 +295,36 @@ export const ANIMATION = {
   // 시뮬레이션
   reheatStrength: 0.3,
 } as const;
+
+// =====================================================
+// 🌟 Semantic Force 상수
+// =====================================================
+
+export const RELATION_ANGLES: Record<string, number> = {
+  friendly: 90, // 위 (Emerald)
+  romantic: 150, // 10시 (Pink)
+  family: 210, // 7시 (Blue)
+  hostile: 0, // 오른쪽 (Red)
+  neutral: 270, // 아래 (Gray)
+  complex: 45, // 1시 (Violet)
+};
+
+export const SEMANTIC_FORCE_CONFIG = {
+  // 관계별 가중치 (양수: 인력, 음수: 척력)
+  relationWeights: {
+    friendly: 1.5,
+    romantic: 2.0,
+    family: 1.2,
+    hostile: -2.0,
+    neutral: 0.5,
+    complex: 0.3,
+  } as Record<string, number>,
+  defaultRepulsion: -1.0,
+  strengthMultiplier: 0.2,
+  attractionDistance: 40,
+  repulsionDistance: 100,
+  interGroupDistance: 1200, // 그룹 간 기본 거리
+};
 
 // =====================================================
 // 🌟 글로우/그라디언트 설정

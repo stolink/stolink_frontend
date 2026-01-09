@@ -10,7 +10,7 @@ interface ActivityBarProps {
 
 interface ActivityBarItemProps {
   to: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick?: () => void;
 }
