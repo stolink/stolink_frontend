@@ -190,19 +190,16 @@ export function drawNode(options: NodeRenderOptions): void {
   // 10. 이름 라벨 - 줌 반응형
   const showLabel = globalScale > 0.35;
   if (showLabel) {
-    // const labelOpacity = Math.max(0, Math.min(1, (globalScale - 0.35) * 3));
+    const labelOpacity = Math.max(0, Math.min(1, (globalScale - 0.35) * 3));
     const displayName = truncateName(node.name, isImportant ? 12 : 8);
 
     ctx.save();
-    // Dimming removed for text (User Feedback): Always clear visibility
-    // Force 100% opacity regardless of zoom level
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = labelOpacity * opacity;
 
-    // Typography: Serif with Premium Feel
+    // Typography: Serif with Premium Feel (User Feedback: Bold 900, +20px Size)
     // Switched to Playfair Display for true 900 weight support
-    // Increased size by +4px per request (was +20, now +24)
     const fontSize = Math.max(16, radius * 0.38 + 5);
-    ctx.font = `900 ${fontSize + 24}px "Playfair Display", "DM Serif Display", serif`;
+    ctx.font = `900 ${fontSize + 20}px "Playfair Display", "DM Serif Display", serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
@@ -367,14 +364,14 @@ function drawBadges(
     const badgeY = node.y - radius * 0.65;
 
     ctx.fillStyle = "white";
-    ctx.strokeStyle = "#C49545";
+    ctx.strokeStyle = "#F59E0B";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(badgeX, badgeY, badgeRadius + 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = "#C49545";
+    ctx.fillStyle = "#F59E0B";
     ctx.beginPath();
     ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
     ctx.fill();

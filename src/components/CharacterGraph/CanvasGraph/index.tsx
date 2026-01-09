@@ -18,7 +18,6 @@ import type {
   RelationshipLink,
   RelationType,
 } from "@/types";
-import type { Event } from "@/types/event";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { FORCE_CONFIG, ZOOM_CONFIG, type UIRelationType } from "../constants";
 import { calculateRelationCounts } from "../utils";
@@ -26,10 +25,10 @@ import { drawNode } from "./CanvasNodeRenderer";
 import { drawLink } from "./CanvasLinkRenderer";
 import { useImageCache } from "./useImageCache";
 import { NetworkControls } from "../NetworkControls";
-
+import { TimelineSlider } from "../TimelineSlider";
 import { CharacterSearchOverlay } from "../CharacterSearchOverlay";
 import { RelationshipDeepAnalysisModal } from "../RelationshipDeepAnalysis";
-import { generateAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
+import { generateMockAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "../RelationshipEventTooltip";
 import { TiledBackground } from "../TiledBackground";
 import { EventDetailPanel } from "@/components/common/character-detail/components/biography/EventDetailPanel";
@@ -40,7 +39,6 @@ import { NODE_SIZES } from "../constants";
 interface CharacterGraphCanvasProps {
   characters: Character[];
   links: RelationshipLink[];
-  events?: Event[];
   onNodeClick?: (character: Character | null) => void;
   onLinkClick?: (link: RelationshipLink | null) => void;
   selectedNodeId?: string | null;
@@ -51,7 +49,6 @@ interface CharacterGraphCanvasProps {
   className?: string;
   showSearch?: boolean;
   onNodeDragEnd?: (node: CharacterNode) => void;
-  nodeChanges?: Record<string, "new" | "updated" | null>;
 }
 
 export interface CharacterGraphCanvasRef {
@@ -70,7 +67,6 @@ export const CharacterGraphCanvas = forwardRef<
     {
       characters,
       links: initialLinks,
-      events = [],
       onNodeClick,
       onLinkClick,
       selectedNodeId,
@@ -81,9 +77,8 @@ export const CharacterGraphCanvas = forwardRef<
       className,
       showSearch = true,
       onNodeDragEnd,
-      nodeChanges,
     },
-    ref
+    ref,
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
     // Animation Phase State (Triggers re-render for flow effect)
@@ -101,9 +96,9 @@ export const CharacterGraphCanvas = forwardRef<
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension] = useState(false);
     const [showLogicCheck] = useState(false);
-
+    const [currentChapter, setCurrentChapter] = useState(1);
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
-      null
+      null,
     );
 
     // Zoom State for TiledBackground
@@ -170,13 +165,21 @@ export const CharacterGraphCanvas = forwardRef<
           }
         },
       }),
-      [initialNodes]
+      [initialNodes],
     );
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
-      // 1. 4D Timeline Filtering (Removed - User Request)
+      // 1. 4D Timeline Filtering
       let filtered = initialLinks;
+      const computedTotalChapters = Math.max(
+        ...initialLinks.map((l) => l.revealedInChapter || 1),
+      );
+      if (computedTotalChapters > 1) {
+        filtered = initialLinks.filter(
+          (l) => (l.revealedInChapter || 0) <= currentChapter,
+        );
+      }
 
       // Relationship Type Filtering
       if (internalFilter !== "all") {
@@ -320,8 +323,8 @@ export const CharacterGraphCanvas = forwardRef<
           group.map((l) =>
             typeof l.source === "object"
               ? (l.source as CharacterNode).id
-              : l.source
-          )
+              : l.source,
+          ),
         );
         const isReciprocal = groupSources.size > 1;
         const isExplicitBidirectional = group.some((l) => l.bidirectional);
@@ -354,7 +357,7 @@ export const CharacterGraphCanvas = forwardRef<
       });
 
       return finalLinks;
-    }, [initialLinks, internalFilter, characters]);
+    }, [initialLinks, currentChapter, internalFilter, characters]);
 
     // GraphData 생성 (Deep Clone 중요!)
     // react-force-graph는 데이터를 직접 변형(mutate)하므로, 원본 데이터를 보호하고
@@ -364,7 +367,7 @@ export const CharacterGraphCanvas = forwardRef<
         nodes: JSON.parse(JSON.stringify(initialNodes)),
         links: JSON.parse(JSON.stringify(processedLinks)),
       }),
-      [initialNodes, processedLinks]
+      [initialNodes, processedLinks],
     ) as ForceGraphData;
 
     // Character ID → Character 매핑
@@ -424,18 +427,7 @@ export const CharacterGraphCanvas = forwardRef<
 
       if (sourceChar && targetChar) {
         // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
-        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
-        const isYubiZhuge =
-          (sourceChar.profile?.name?.includes("유비") &&
-            targetChar.profile?.name?.includes("제갈량")) ||
-          (sourceChar.profile?.name?.includes("제갈량") &&
-            targetChar.profile?.name?.includes("유비"));
-
-        const effectiveTypes = isYubiZhuge
-          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
-          : relLink.relationTypes || [relLink.type];
-
-        const analysisData = generateAnalysisData(
+        const analysisData = generateMockAnalysisData(
           {
             id: sourceId,
             name: sourceChar.profile?.name || "Unknown",
@@ -446,16 +438,14 @@ export const CharacterGraphCanvas = forwardRef<
             name: targetChar.profile?.name || "Unknown",
             imageUrl: targetChar.imageUrl,
           },
-          effectiveTypes,
+          relLink.type,
           relLink.strength,
-          events,
-          relLink.description
         );
         setDeepAnalysisData(analysisData);
       } else {
         console.warn(
           "Could not find source or target character for link",
-          link
+          link,
         );
       }
 
@@ -518,7 +508,7 @@ export const CharacterGraphCanvas = forwardRef<
 
       // Charge Force (Repulsion)
       const chargeForce = fg.d3Force(
-        "charge"
+        "charge",
       ) as d3.ForceManyBody<CharacterNode>;
       if (chargeForce) {
         chargeForce
@@ -565,7 +555,7 @@ export const CharacterGraphCanvas = forwardRef<
               // More love = Closer (Halved effect from 0.1 -> 0.05)
               return Math.max(
                 20,
-                baseDistance * (1 - (strengthVal - 1) * 0.05)
+                baseDistance * (1 - (strengthVal - 1) * 0.05),
               );
             }
             return baseDistance;
@@ -617,7 +607,7 @@ export const CharacterGraphCanvas = forwardRef<
             // Add extra padding for better separation
             return size / 2 + FORCE_CONFIG.collisionPadding;
           })
-          .strength(FORCE_CONFIG.collisionStrength)
+          .strength(FORCE_CONFIG.collisionStrength),
       );
 
       // Re-heat simulation to apply changes
@@ -629,8 +619,8 @@ export const CharacterGraphCanvas = forwardRef<
       // Wait for graph to settle slightly
       const timer = setTimeout(() => {
         if (graphRef.current) {
-          // Faster zoom (0.8s) for snappier entry
-          graphRef.current.zoomToFit(800, 120);
+          // Slower, dramatic zoom (2s)
+          graphRef.current.zoomToFit(2000, 120);
           // Fade in
           setTimeout(() => setIsLoaded(true), 100);
         }
@@ -699,7 +689,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodeCanvasObject={(
               node: NodeObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const isSelected = selectedNodeId === charNode.id;
@@ -723,7 +713,7 @@ export const CharacterGraphCanvas = forwardRef<
                   isHovered: hoveredNodeId === charNode.id,
                 },
                 imageCache,
-                changeType: (nodeChanges && nodeChanges[charNode.id]) || null,
+                changeType: null,
                 showLogicCheck,
               });
             }}
@@ -732,7 +722,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodePointerAreaPaint={(
               node: NodeObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const role = charNode.role || "other";
@@ -751,7 +741,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkCanvasObject={(
               link: LinkObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const sourceId =
@@ -791,7 +781,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkPointerAreaPaint={(
               link: LinkObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const source = relLink.source as CharacterNode;
@@ -827,7 +817,7 @@ export const CharacterGraphCanvas = forwardRef<
             }
             onNodeHover={(node: NodeObject | null) =>
               setHoveredNodeId(
-                node ? (node as unknown as CharacterNode).id : null
+                node ? (node as unknown as CharacterNode).id : null,
               )
             }
             onLinkClick={handleLinkClick}
@@ -846,13 +836,10 @@ export const CharacterGraphCanvas = forwardRef<
             enablePanInteraction={true}
             enableZoomInteraction={true}
             onZoom={(transform: { x: number; y: number; k: number }) => {
-              // [State Conflict Fix] Wrap with requestAnimationFrame to avoid "update during render"
-              requestAnimationFrame(() => {
-                setZoomState({
-                  x: transform.x,
-                  y: transform.y,
-                  scale: transform.k,
-                });
+              setZoomState({
+                x: transform.x,
+                y: transform.y,
+                scale: transform.k,
               });
             }}
           />
@@ -864,6 +851,15 @@ export const CharacterGraphCanvas = forwardRef<
           onFilterChange={handleFilterChange}
           showMainOnly={showMainOnly}
           onShowMainOnlyChange={setShowMainOnly}
+        />
+
+        {/* 4D Timeline Slider */}
+        <TimelineSlider
+          currentChapter={currentChapter}
+          totalChapters={Math.max(
+            ...initialLinks.map((l) => l.revealedInChapter || 1),
+          )}
+          onChange={setCurrentChapter}
         />
 
         {/* Search Overlay */}
@@ -949,7 +945,7 @@ export const CharacterGraphCanvas = forwardRef<
               const targetChar = characterMap.get(targetId);
 
               if (sourceChar && targetChar) {
-                const analysisData = generateAnalysisData(
+                const analysisData = generateMockAnalysisData(
                   {
                     id: sourceId,
                     name: sourceChar.profile?.name || "Unknown",
@@ -960,12 +956,8 @@ export const CharacterGraphCanvas = forwardRef<
                     name: targetChar.profile?.name || "Unknown",
                     imageUrl: targetChar.imageUrl,
                   },
-                  hoveredLink.link.relationTypes || [
-                    hoveredLink.link.type as string,
-                  ], // Use relationTypes if available
+                  hoveredLink.link.type as UIRelationType, // Correct type assertion
                   hoveredLink.link.strength,
-                  events,
-                  hoveredLink.link.description
                 );
                 setDeepAnalysisData(analysisData);
               }
@@ -986,7 +978,7 @@ export const CharacterGraphCanvas = forwardRef<
         />
       </div>
     );
-  }
+  },
 );
 
 CharacterGraphCanvas.displayName = "CharacterGraphCanvas";

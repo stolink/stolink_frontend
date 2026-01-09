@@ -31,10 +31,9 @@ interface RelationshipEventTooltipProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   type: UIRelationType;
-  types?: UIRelationType[]; // Multi-type support
+  types?: UIRelationType[];
   strength: number;
   description?: string;
-  /** 전체 카드 클릭 시 심층 분석 모달 열기 */
   onOpenDeepAnalysis?: () => void;
 }
 
@@ -53,35 +52,14 @@ export function RelationshipEventTooltip({
   onMouseEnter,
   onMouseLeave,
   type,
-  types,
   strength,
   description,
   onOpenDeepAnalysis,
 }: RelationshipEventTooltipProps) {
-  // Determine Primary Color based on Relationship Type (Passing types array for complex check)
-  const primaryColor = getRelationshipColor(type, strength, types as string[]);
+  if (!events && !description) return null;
 
-  // Determine Badge Label
-  const badgeLabel = types && types.length >= 2 ? "복합" : type;
-
-  // Smart Positioning to prevent overflow
-  const tooltipWidth = 360; // Increased width
-  const tooltipHeight = 400; // Estimated max height
-  const padding = 20;
-
-  let leftPos = x + 20;
-  let topPos = y + 20;
-
-  // Check right edge
-  if (typeof window !== "undefined") {
-    if (leftPos + tooltipWidth + padding > window.innerWidth) {
-      leftPos = x - tooltipWidth - 20;
-    }
-    // Check bottom edge
-    if (topPos + tooltipHeight + padding > window.innerHeight) {
-      topPos = y - tooltipHeight - 10;
-    }
-  }
+  // Determine Primary Color based on Relationship Type
+  const primaryColor = getRelationshipColor(type, strength);
 
   return createPortal(
     <AnimatePresence>
@@ -92,16 +70,16 @@ export function RelationshipEventTooltip({
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="fixed z-50 pointer-events-auto"
         style={{
-          left: leftPos,
-          top: topPos,
+          left: x + 15, // Offset to not cover cursor
+          top: y + 15,
         }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         <Card
           className={cn(
-            "w-[360px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
-            "ring-1 ring-black/5"
+            "w-[320px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
+            "ring-1 ring-black/5",
           )}
         >
           {/* Header: Narrative Thread (Avatars + Tension) */}
@@ -138,7 +116,7 @@ export function RelationshipEventTooltip({
                     backgroundColor: primaryColor,
                   }}
                 >
-                  {badgeLabel}
+                  {type}
                 </Badge>
                 {/* Strength Dots */}
                 <div className="flex gap-1 mt-2">
@@ -146,10 +124,10 @@ export function RelationshipEventTooltip({
                     <div
                       key={i}
                       className={cn(
-                        "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                        "w-1 h-1 rounded-full transition-all duration-300",
                         i < Math.round(strength / 2)
-                          ? "scale-110 shadow-[0_0_8px_rgba(0,0,0,0.2)]"
-                          : "bg-cloud-300 scale-90"
+                          ? "bg-espresso-800 scale-110"
+                          : "bg-cloud-300 scale-90",
                       )}
                       style={{
                         backgroundColor:
@@ -191,7 +169,7 @@ export function RelationshipEventTooltip({
                 transition={{ delay: 0.2 }}
                 className="mt-4 text-center"
               >
-                <p className="text-sm text-espresso-600 italic font-serif leading-relaxed px-2">
+                <p className="text-xs text-espresso-600 italic font-serif leading-relaxed px-2">
                   "{description}"
                 </p>
               </motion.div>
@@ -227,8 +205,8 @@ export function RelationshipEventTooltip({
                         className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-white"
                         style={{
                           backgroundColor: getRelationshipColor(
-                            toUIRelationType(String(event.type)),
-                            4
+                            toUIRelationType(event.type),
+                            4,
                           ),
                         }}
                       />
@@ -241,14 +219,12 @@ export function RelationshipEventTooltip({
                             {event.chapter || event.date || "Unknown Date"}
                           </span>
                         </div>
-                        {event.type && (
-                          <Badge
-                            variant="outline"
-                            className="text-[9px] px-1.5 py-0 h-4 border-cloud-200 text-espresso-500"
-                          >
-                            {String(event.type)}
-                          </Badge>
-                        )}
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1.5 py-0 h-4 border-cloud-200 text-espresso-500"
+                        >
+                          {event.type}
+                        </Badge>
                       </div>
                     </motion.div>
                   ))}
@@ -293,6 +269,6 @@ export function RelationshipEventTooltip({
         </Card>
       </motion.div>
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }

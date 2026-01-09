@@ -36,8 +36,6 @@ export function shouldShowNodeLabel(
     case "micro":
       // Micro: 모두 표시 (기존 로직 유지)
       return globalScale > 0.35;
-    default:
-      return false;
   }
 }
 
