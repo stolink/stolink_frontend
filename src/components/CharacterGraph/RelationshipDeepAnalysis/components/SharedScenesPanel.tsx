@@ -122,7 +122,7 @@ export function SharedScenesPanel({
                       <ExternalLink className="w-4 h-4 text-cloud-300 group-hover:text-mocha-400 transition-all opacity-0 group-hover:opacity-100 group-hover:translate-x-1" />
                     )}
                   </div>
-                  <p className="text-sm text-espresso-600/90 leading-relaxed font-sans line-clamp-2">
+                  <p className="text-sm text-espresso-600/90 leading-relaxed font-sans">
                     {scene.description || (
                       <span className="italic text-espresso-300">
                         이 챕터에서 두 캐릭터의 중요한 상호작용이

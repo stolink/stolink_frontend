@@ -211,6 +211,13 @@ export default function CharacterDetailDialog({
     }
   );
 
+  console.log(
+    "CharacterDetailDialog Rendered. ActiveTab:",
+    activeTab,
+    "CharacterEvents:",
+    characterEvents?.length,
+  );
+
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
   const [manualPrompt, setManualPrompt] = useState("");
