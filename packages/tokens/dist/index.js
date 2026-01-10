@@ -30,107 +30,95 @@ module.exports = __toCommonJS(index_exports);
 // src/palette.ts
 var Palette = {
   /**
-   * StoLink Design System v2.0 - Vivid Warm Palette
+   * StoLink Design System v3.1 - Mocha & Cloud Dancer (Warm & Soft)
    *
-   * Color Theory Applied:
-   * - Analogous Warm Harmony (Terracotta → Golden → Amber)
-   * - High Saturation & Brightness for clarity on displays
-   * - Strong contrast for readability
-   *
-   * Brand Concept: Literary IDE - "Warm Immersion for Authors"
+   * Design Philosophy:
+   * - Warm, soft, and premium literary aesthetic
+   * - High readability (Cloud Dancer background + Espresso text)
+   * - Muted brand colors (Mocha) avoiding aggressive saturation
    */
-  // Primary Brand - Vivid Terracotta/Coral
+  // Primary Brand - Mocha (Warm Brown)
   mocha: {
-    400: "#E89D7A",
-    // Bright Coral (Hover) - HSL: 18, 72%, 69%
-    500: "#D4785A",
-    // Vivid Terracotta (Core) - HSL: 15, 60%, 59%
-    600: "#C4623F",
-    // Rich Terracotta (Active)
-    700: "#B85A3E",
-    // Deep Terracotta (Dark)
-    900: "#5C3020"
-    // Espresso Dark
+    50: "#FAF8F6",
+    100: "#F5F0EE",
+    200: "#EBE2DE",
+    300: "#D6C4BC",
+    400: "#BD9B8D",
+    // Hover (High brightness)
+    500: "#A47764",
+    // Core Brand
+    600: "#8E6656",
+    700: "#7D5A4B",
+    // Dark/Active
+    800: "#5C4237",
+    900: "#3D302A"
+    // Espresso base
   },
-  // Surface - Clean Warm Cream
+  // Surface - Cloud Dancer (Clean Warm Cream)
   cloud: {
-    50: "#FDFBF7",
-    // Pure Cream White (Main BG)
-    100: "#F8F4ED",
-    // Warm Panel BG
-    200: "#EDE7DD",
-    // Soft Borders
-    300: "#DDD4C6",
-    // Stronger Borders
-    900: "#1A1612"
-    // Rich Black
+    25: "#FBFBF9",
+    // Ultra light for depth
+    50: "#F1F0EC",
+    // Main BG (Cloud Dancer)
+    100: "#E8E6E0",
+    // Secondary Panel
+    200: "#DAD7CE",
+    // Borders (Soft)
+    300: "#C6C1B4",
+    // Borders (Strong)
+    400: "#ABA596",
+    900: "#1A1816"
   },
-  // Text Color
+  // Text Color - Espresso
   espresso: {
-    700: "#5C4033",
-    // Medium Brown Text
-    900: "#3D2B1F"
-    // Rich Coffee Text
+    500: "#8B736B",
+    // Muted text
+    700: "#60524D",
+    // Secondary text
+    900: "#3D302A"
+    // Primary text (Mocha 900)
   },
-  // Accent - Vivid Golden/Amber (Inspiration & Warmth)
-  doechii: {
-    1: "#1E4620",
-    // Forest Green (Accent)
-    2: "#E5A33D",
-    // Vivid Golden (Primary Accent) - HSL: 40, 78%, 57%
-    3: "#F5D4A8",
-    // Bright Peach (Secondary)
-    4: "#C95D32",
-    // Burnt Sienna (Emphasis)
-    5: "#6B2D15"
-    // Deep Chocolate
-  },
-  // Functional - Soft Olive/Sage (Focus & Growth)
+  // Accent - Sage & Earth
   sage: {
-    50: "#FBFAF7",
-    // Near White
-    100: "#F3F0E8",
-    // Light Cream
-    200: "#E5DFD2",
-    // Warm Grey
-    400: "#C7B99F",
-    // Muted Tan
-    500: "#9AAF7C",
-    // Fresh Olive (Focus Color)
-    600: "#7D9360",
-    // Deeper Olive
-    700: "#5E7345"
-    // Forest Sage
+    50: "#F2F4F0",
+    100: "#E3E8DE",
+    200: "#CCD6C5",
+    400: "#9FB38E",
+    500: "#7D9668",
+    // Sage (Success/Growth)
+    600: "#647A53",
+    700: "#4D5E40"
   },
-  // Relationship Colors - Clear & Vivid for Graph Visualization
+  // Relationship Colors (Muted Narrative Palette)
   relationship: {
-    friendly: "#4CAF50",
-    // Vivid Green (Trust)
-    hostile: "#F44336",
-    // Clear Red (Conflict)
-    romance: "#E91E63",
-    // Vivid Pink (Passion)
-    family: "#5C6BC0",
-    // Indigo (Connection)
-    neutral: "#90A4AE"
+    friendly: "#5B7B4B",
+    // Dark Green (신뢰, 협력)
+    hostile: "#A33A3A",
+    // Red (갈등, 적대)
+    romantic: "#D67A8C",
+    // Vivid Blossom (Muted)
+    family: "#688DB6",
+    // Muted Blue
+    neutral: "#8C96A0"
     // Blue Grey
   },
-  // Status Colors - High Visibility
+  // Status Colors (Softened for better readability)
   status: {
-    success: "#10B981",
-    // Emerald-500 (Brighter)
-    warning: "#F59E0B",
-    // Amber-500 (Vivid)
-    error: "#EF4444",
-    // Red-500 (Clear)
-    info: "#3B82F6"
-    // Blue-500 (Bright)
+    success: "#5B7B4B",
+    // Same as friendly (Sage-ish)
+    warning: "#B8860B",
+    // Gold (Readable)
+    error: "#A33A3A",
+    // Engineering Red (Muted)
+    info: "#4B7B9F"
+    // Muted Blue
   },
-  // Neutrals / Common
   common: {
     white: "#FFFFFF",
-    black: "#1A1612",
-    transparent: "transparent"
+    black: "#1A1816",
+    transparent: "transparent",
+    overlay: "rgba(61, 48, 42, 0.05)"
+    // Soft espresso overlay
   }
 };
 

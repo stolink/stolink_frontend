@@ -44,6 +44,11 @@ const KEYWORD_COLORS: Record<string, string> = {
   적대: "bg-red-50 border-red-200 text-red-700",
   애정: "bg-pink-50 border-pink-200 text-pink-700",
   우호: "bg-green-50 border-green-200 text-green-700",
+  ALLY: "bg-cyan-50 border-cyan-200 text-cyan-700",
+  MENTOR: "bg-blue-50 border-blue-200 text-blue-700",
+  RIVAL: "bg-orange-50 border-orange-200 text-orange-700",
+  FAMILY: "bg-indigo-50 border-indigo-200 text-indigo-700",
+  ROMANTIC: "bg-pink-50 border-pink-200 text-pink-700",
 };
 
 const DEFAULT_KEYWORD_COLOR = "bg-cloud-50 border-cloud-200 text-espresso-700";
@@ -56,8 +61,10 @@ const simplifyTerm = (term: string) => {
   if (t.includes("mentor")) return "멘토";
   if (t.includes("friend")) return "친구";
   if (t.includes("romantic") || t.includes("lover")) return "연인";
-  if (t.includes("hostile") || t.includes("enemy")) return "적대";
+  if (t.includes("hostile") || t.includes("enemy") || t.includes("rival"))
+    return "라이벌";
   if (t.includes("coworker") || t.includes("ally")) return "동료";
+  if (t.includes("family") || t.includes("집안")) return "가족";
   if (t.includes("complex")) return "복합적";
   return term;
 };

@@ -183,6 +183,7 @@ export interface RelationshipDeepAnalysisData {
   // 기본 관계 정보 (LEGACY - 호환성 위해 유지)
   relationshipTypes: string[];
   currentStrength: number;
+  description?: string; // Added for composite description
   since?: string;
 
   // === NEW: 추가 분석 정보 ===

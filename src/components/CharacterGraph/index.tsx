@@ -739,6 +739,7 @@ export const CharacterGraph = forwardRef<
           link.relationTypes || [link.type as string],
           link.strength,
           events,
+          link.description,
         );
 
         setDeepAnalysisData(mockData);
@@ -1133,6 +1134,7 @@ export const CharacterGraph = forwardRef<
             x={hoveredLinkData.x}
             y={hoveredLinkData.y}
             type={toUIRelationType(hoveredLinkData.link.type)}
+            types={hoveredLinkData.link.relationTypes}
             strength={hoveredLinkData.link.strength}
             description={hoveredLinkData.link.description}
             onEventClick={() => {}} // TODO: Handle event click

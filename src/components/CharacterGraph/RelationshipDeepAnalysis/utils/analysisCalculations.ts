@@ -24,7 +24,7 @@ import { DEFAULT_TIMELINE_CONFIG } from "@/types/relationshipAnalysis";
  */
 export function calculateCumulativeScores(
   events: Array<{ importance: number; emotionalPolarity: number }>,
-  decayFactor: number = 0.95,
+  decayFactor: number = 0.99,
 ): {
   friendlyScores: number[];
   hostileScores: number[];
@@ -39,13 +39,26 @@ export function calculateCumulativeScores(
   let cumulativeNet = 0;
 
   events.forEach((event) => {
-    // 이전 누적값에 감쇠 적용
+    // 이전 누적값에 미세한 감쇠 적용 (역사의 기화)
     cumulativeFriendly *= decayFactor;
     cumulativeHostile *= decayFactor;
     cumulativeNet *= decayFactor;
 
-    // 새 이벤트 영향 추가 (선격 가치 적용)
-    const impact = event.importance * event.emotionalPolarity;
+    // 새 이벤트 영향 추가
+    let impact = event.importance * event.emotionalPolarity;
+
+    // [Resilience Logic] "Strong Trust Filter"
+    // If established trust exists, negative shocks are filtered through the "Goodwill" lens.
+    if (impact < 0 && cumulativeFriendly > 10) {
+      // Shield grows with trust (max 95% protection at trust score 100)
+      const shield = Math.min(cumulativeFriendly / 100, 0.95);
+      const filteredImpact = impact * (1 - shield);
+
+      // [Velocity Cap] Even with filtered impact, prevent single-step "Emotional Shock"
+      // Unless the event is absolutely catastrophic (Importance > 9), cap the drop to -10.
+      const cap = event.importance > 9 ? -20 : -10;
+      impact = Math.max(filteredImpact, cap);
+    }
 
     if (event.emotionalPolarity > 0) {
       cumulativeFriendly += impact;
@@ -53,7 +66,7 @@ export function calculateCumulativeScores(
       cumulativeHostile += Math.abs(impact);
     }
 
-    // 통합 지수: 누적 정서 합산
+    // 통합 지수 합산 (Clamping은 마지막 정규화 단계에서 처리)
     cumulativeNet += impact;
 
     friendlyScores.push(cumulativeFriendly);
@@ -61,13 +74,23 @@ export function calculateCumulativeScores(
     netSentimentScores.push(cumulativeNet);
   });
 
-  // 정규화 (100 기준 스케일링)
-  const maxAbsNet = Math.max(...netSentimentScores.map(Math.abs), 10);
-  const maxAbsComp = Math.max(...friendlyScores, ...hostileScores, 10);
+  // [Normalization: Dynamic Scaling]
+  const maxAbsNet = Math.max(...netSentimentScores.map(Math.abs), 20);
+  const maxAbsComp = Math.max(...friendlyScores, ...hostileScores, 20);
 
-  const normalizedNet = netSentimentScores.map((s) => (s / maxAbsNet) * 100);
-  const normalizedFriendly = friendlyScores.map((s) => (s / maxAbsComp) * 100);
-  const normalizedHostile = hostileScores.map((s) => (s / maxAbsComp) * 100);
+  // Prepend explicit 0 to ensure the graph starts from a neutral base [0, ...]
+  const normalizedNet = [
+    0,
+    ...netSentimentScores.map((s) => (s / maxAbsNet) * 100),
+  ];
+  const normalizedFriendly = [
+    0,
+    ...friendlyScores.map((s) => (s / maxAbsComp) * 100),
+  ];
+  const normalizedHostile = [
+    0,
+    ...hostileScores.map((s) => (s / maxAbsComp) * 100),
+  ];
 
   return {
     friendlyScores: normalizedFriendly,
@@ -87,28 +110,44 @@ export function transformEventsToTimeline(
   targetCharacterId: string,
   sourceName: string,
   targetName: string,
-  config: TimelineCalculationConfig = DEFAULT_TIMELINE_CONFIG,
+  _config: TimelineCalculationConfig = DEFAULT_TIMELINE_CONFIG,
 ): RelationshipTimelinePoint[] {
+  // Note: _config is reserved for future customization of decay rates and thresholds
   // 두 캐릭터가 모두 참여한 이벤트만 필터링 (ID or Name matching)
   // participants usually contains names if IDs are not mapped, or mixed.
   // We check if (sourceId OR sourceName) AND (targetId OR targetName) are in participants.
   const relevantEvents = events.filter((e) => {
-    const p = e.participants;
-    const hasSource = p.includes(sourceCharacterId) || p.includes(sourceName);
-    const hasTarget = p.includes(targetCharacterId) || p.includes(targetName);
+    const p = e.participants.map((name) => name.toLowerCase().trim());
+    const sourceIdLower = sourceCharacterId.toLowerCase();
+    const sourceNameLower = sourceName.toLowerCase();
+    const targetIdLower = targetCharacterId.toLowerCase();
+    const targetNameLower = targetName.toLowerCase();
+
+    const hasSource =
+      p.includes(sourceIdLower) ||
+      p.includes(sourceNameLower) ||
+      p.some((n) => sourceNameLower.includes(n) || n.includes(sourceNameLower));
+    const hasTarget =
+      p.includes(targetIdLower) ||
+      p.includes(targetNameLower) ||
+      p.some((n) => targetNameLower.includes(n) || n.includes(targetNameLower));
+
     return hasSource && hasTarget;
   });
 
-  // 챕터/시간순 정렬 (placeholder - 실제 구현 시 chapter 필드 필요)
+  // 챕터 -> 시간 -> ID 순으로 정교하게 정렬
   const sortedEvents = [...relevantEvents].sort((a, b) => {
-    // timestamp가 있으면 사용, 없으면 eventId로 정렬
+    const chA = extractChapterNumber(a);
+    const chB = extractChapterNumber(b);
+    if (chA !== chB) return chA - chB;
+
     if (a.timestamp && b.timestamp) {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     }
     return a.eventId.localeCompare(b.eventId);
   });
 
-  // 정서 극성 추정 (실제 구현 시 NLP 또는 백엔드 데이터 사용)
+  // 정서 극성 추정 (NLP/문맥 보정 포함)
   const eventsWithPolarity = sortedEvents.map((e) => ({
     ...e,
     emotionalPolarity: estimateEmotionalPolarity(e),
@@ -121,22 +160,48 @@ export function transformEventsToTimeline(
         importance: e.importance,
         emotionalPolarity: e.emotionalPolarity,
       })),
-      config.decayFactor,
+      0.99, // Force 0.99 decay for better history preservation (Lifetime Bond effect)
     );
 
   // 타임라인 데이터 생성
-  return eventsWithPolarity.map((event, index) => ({
-    eventId: event.eventId,
-    chapter: extractChapterNumber(event),
-    timestamp: event.timestamp,
-    title: event.narrativeSummary || event.description.slice(0, 50),
-    description: event.description,
-    importance: event.importance,
-    emotionalPolarity: event.emotionalPolarity,
-    cumulativeFriendly: friendlyScores[index],
-    cumulativeHostile: hostileScores[index],
-    sentimentTrajectory: netSentimentScores[index],
-  }));
+  // friendlyScores[0]은 0점(시작점)이므로, 이를 첫 번째 포인트(Neutral Start)로 삽입
+  const points: RelationshipTimelinePoint[] = [
+    {
+      eventId: "start",
+      chapter:
+        sortedEvents.length > 0 ? extractChapterNumber(sortedEvents[0]) - 1 : 0,
+      timestamp: sortedEvents.length > 0 ? sortedEvents[0].timestamp : "",
+      title: "서사 시작",
+      description: "두 캐릭터의 관계가 시작되는 지점입니다.",
+      importance: 0,
+      emotionalPolarity: 0,
+      cumulativeFriendly:
+        Math.abs(friendlyScores[0]) < 0.01 ? 0 : friendlyScores[0],
+      cumulativeHostile:
+        Math.abs(hostileScores[0]) < 0.01 ? 0 : hostileScores[0],
+      sentimentTrajectory:
+        Math.abs(netSentimentScores[0]) < 0.01 ? 0 : netSentimentScores[0],
+    },
+    ...eventsWithPolarity.map((event, index) => {
+      const f = friendlyScores[index + 1];
+      const h = hostileScores[index + 1];
+      const s = netSentimentScores[index + 1];
+      return {
+        eventId: event.eventId,
+        chapter: extractChapterNumber(event),
+        timestamp: event.timestamp,
+        title: event.narrativeSummary || event.description.slice(0, 50),
+        description: event.description,
+        importance: event.importance,
+        emotionalPolarity: event.emotionalPolarity,
+        cumulativeFriendly: Math.abs(f) < 0.01 ? 0 : f,
+        cumulativeHostile: Math.abs(h) < 0.01 ? 0 : h,
+        sentimentTrajectory: Math.abs(s) < 0.01 ? 0 : s,
+      };
+    }),
+  ];
+
+  return points;
 }
 
 /**
@@ -155,40 +220,84 @@ function extractChapterNumber(event: Event): number {
  */
 function estimateEmotionalPolarity(event: Event): number {
   const type = event.eventType.toLowerCase();
+  const content = (
+    (event.narrativeSummary || "") +
+    " " +
+    (event.description || "")
+  ).toLowerCase();
 
-  // 이벤트 타입에 따른 기본 극성 (-10 ~ 10)
+  // [Deep Think] Generalized Narrative Heuristics
+  // Instead of hardcoding specific events, we use semantic clusters to detect "Relationship Impact".
+
+  // 1. Shared Achievement (Positive impact even if type is 'conflict')
+  const victoryTerms = ["평정", "승리", "성공", "장악", "완성", "획득"];
+  // 2. Proactive Bonding (Social interaction with intent)
+  const bondingTerms = ["합류", "등용", "신뢰", "우정", "동맹", "결합", "충성"];
+  // 3. Significance of Meeting (First contact / Important dialogue)
+  const meetingTerms = ["만남", "방문", "영접", "대화", "설득"];
+
+  const negativeTerms = [
+    "실패",
+    "패배",
+    "사망",
+    "붕괴",
+    "상실",
+    "배신",
+    "갈등",
+  ];
+
+  const hasVictory = victoryTerms.some((term) => content.includes(term));
+  const hasBonding = bondingTerms.some((term) => content.includes(term));
+  const hasMeeting = meetingTerms.some((term) => content.includes(term));
+  const hasNegative = negativeTerms.some((term) => content.includes(term));
+
+  // Base Polarity by Event Type
   const typePolarity: Record<string, number> = {
-    // Negative
-    betrayal: -9,
+    betrayal: -10,
     hostile: -6,
+    enemy: -8,
     conflict: -5,
     confrontation: -4,
-    revelation: -1, // 폭로는 맥락에 따라 다르지만 기본적으로는 약간의 긴장 조성
-
-    // Neutral / Contextual
-    discovery: 2,
-    transformation: 3,
+    revelation: -2,
+    discovery: 1,
+    transformation: 2,
     action: 1,
     chat: 2,
-
-    // Positive
-    dialogue: 3, // 대화는 상호작용의 기본이므로 긍정적 점수 부여
+    dialogue: 3,
     meeting: 4,
     reconciliation: 7,
     alliance: 8,
     support: 6,
-    rescue: 9,
-    romantic: 9,
+    rescue: 10,
+    romantic: 10,
     friendly: 5,
     resolution: 4,
+    bond: 8,
   };
 
-  // 기본 극성값 (정의되지 않은 타입은 0)
-  const basePolarity = typePolarity[type] ?? 0;
+  let polarity = typePolarity[type] ?? 0;
 
-  // 중요도는 calculateCumulativeScores에서 선형적으로 곱해지므로
-  // 여기서는 타입별 기본 정서값만 반환
-  return basePolarity;
+  // [Contextual Heuristics]
+  // Rule A: Victory in Conflict = Shared Success (+score)
+  if (
+    hasVictory &&
+    !hasNegative &&
+    (type === "conflict" || type === "confrontation" || type === "action")
+  ) {
+    polarity = 6;
+  }
+  // Rule B: Important Meetings & Bonding = High Positive (e.g., Sango-choryeo case)
+  if (
+    (hasBonding || hasMeeting) &&
+    !hasNegative &&
+    (type === "meeting" || type === "dialogue" || type === "action")
+  ) {
+    polarity = Math.max(polarity, 5); // Ensure it's treated as a significant positive start
+  }
+  // Rule C: Tragedy as shared pain? (Optional: if they are already close, tragedy might not be negative sentiment between them)
+  // For now, keep negative terms as negative.
+
+  return polarity;
 }
 
 /**
@@ -228,6 +337,12 @@ function formatKeyword(type: string): string {
     romantic: "로맨스",
     alliance: "동맹",
     betrayal: "배신",
+    ally: "동료",
+    mentor: "스승",
+    rival: "라이벌",
+    family: "가족",
+    subordinate: "부하",
+    coworker: "동료",
   };
   return labels[type.toLowerCase()] || type;
 }
@@ -364,7 +479,31 @@ export function generateAnalysisData(
   relationshipTypes: string[] = ["ALLY"],
   strength: number = 7,
   events: Event[] = [], // Real events from project
+  originalDescription?: string, // Added
 ): RelationshipDeepAnalysisData {
+  const types = relationshipTypes || [];
+
+  // 1. 복합 관계 자동 처리 (5개 이상 타입 시 강도 10 고정)
+  let finalStrength = strength;
+  const multiTypeThreshold = 5;
+
+  if (types.length >= multiTypeThreshold) {
+    finalStrength = 10;
+  }
+
+  // 2. 설명문 자동 생성 (복합 관계인 경우)
+  let finalDescription = originalDescription || "";
+  if (types.length >= multiTypeThreshold) {
+    const typeLabel = types
+      .map((t) => formatKeyword(t))
+      .filter((l, i, arr) => arr.indexOf(l) === i) // 중복 제거
+      .join(", ");
+    finalDescription = `복합적 관계 (${typeLabel})`;
+  } else if (types.length > 0 && !finalDescription) {
+    // 타입이 있는데 설명이 없는 경우 첫 번째 타입을 기반으로 기본 설명 생성
+    finalDescription = `${formatKeyword(types[0])} 관계`;
+  }
+
   // 비대칭 관계 속성 (레이더 차트용)
   const sourceToTarget: RelationshipAttributes = {
     emotionalBond: 7,
@@ -440,13 +579,13 @@ export function generateAnalysisData(
 
   const asymmetricStrength: AsymmetricStrength = {
     sourceToTarget: {
-      total: strength, // Use the 'strength' parameter for total
-      factors: generateFactorsFromTypes(relationshipTypes),
+      total: finalStrength, // Use the 'strength' parameter for total
+      factors: generateFactorsFromTypes(types),
     },
     targetToSource: {
-      total: Math.max(0, strength + (Math.random() * 2 - 1)), // 약간의 비대칭성 부여
+      total: Math.max(0, finalStrength + (Math.random() * 2 - 1)), // 약간의 비대칭성 부여
       // 타겟 입장에서는 관계 유형을 반전시켜서 계산
-      factors: generateFactorsFromTypes(relationshipTypes, true),
+      factors: generateFactorsFromTypes(types, true),
     },
   };
 
@@ -540,6 +679,7 @@ export function generateAnalysisData(
         emotionalPolarity: 0,
         cumulativeFriendly: 10,
         cumulativeHostile: 0,
+        sentimentTrajectory: 10, // Net sentiment: friendly - hostile
       },
     ];
 
@@ -560,10 +700,11 @@ export function generateAnalysisData(
     asymmetricStrength,
     timeline,
     insights,
-    relationshipTypes,
-    currentStrength: strength,
+    relationshipTypes: types,
+    currentStrength: finalStrength,
     since: firstEncounter?.chapter || "알 수 없음",
     // NEW fields
+    description: finalDescription,
     firstEncounter,
     lastEncounter,
     sharedScenes,

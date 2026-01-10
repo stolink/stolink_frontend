@@ -31,7 +31,7 @@ interface RelationshipEventTooltipProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   type: UIRelationType;
-  types?: UIRelationType[];
+  types?: string[];
   strength: number;
   description?: string;
   onOpenDeepAnalysis?: () => void;
@@ -52,14 +52,37 @@ export function RelationshipEventTooltip({
   onMouseEnter,
   onMouseLeave,
   type,
+  types,
   strength,
   description,
   onOpenDeepAnalysis,
 }: RelationshipEventTooltipProps) {
   if (!events && !description) return null;
 
-  // Determine Primary Color based on Relationship Type
-  const primaryColor = getRelationshipColor(type, strength);
+  // Determine Primary Color based on Relationship Type (Passing types array for complex check)
+  const primaryColor = getRelationshipColor(type, strength, types);
+
+  // Determine Badge Label
+  const badgeLabel = types && types.length >= 5 ? "복합" : type;
+
+  // Smart Positioning to prevent overflow
+  const tooltipWidth = 360; // Increased width
+  const tooltipHeight = 400; // Estimated max height
+  const padding = 20;
+
+  let leftPos = x + 20;
+  let topPos = y + 20;
+
+  // Check right edge
+  if (typeof window !== "undefined") {
+    if (leftPos + tooltipWidth + padding > window.innerWidth) {
+      leftPos = x - tooltipWidth - 20;
+    }
+    // Check bottom edge
+    if (topPos + tooltipHeight + padding > window.innerHeight) {
+      topPos = y - tooltipHeight - 10;
+    }
+  }
 
   return createPortal(
     <AnimatePresence>
@@ -70,15 +93,15 @@ export function RelationshipEventTooltip({
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="fixed z-50 pointer-events-auto"
         style={{
-          left: x + 15, // Offset to not cover cursor
-          top: y + 15,
+          left: leftPos,
+          top: topPos,
         }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         <Card
           className={cn(
-            "w-[320px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
+            "w-[360px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
             "ring-1 ring-black/5",
           )}
         >
@@ -116,7 +139,7 @@ export function RelationshipEventTooltip({
                     backgroundColor: primaryColor,
                   }}
                 >
-                  {type}
+                  {badgeLabel}
                 </Badge>
                 {/* Strength Dots */}
                 <div className="flex gap-1 mt-2">

@@ -65,8 +65,12 @@ export const LinkRenderer = memo(function LinkRenderer({
     if (changeType === "new") return "#EAB308"; // Yellow-500 (Gold)
     if (changeType === "conflict") return "#C49545"; // Amber-500 (Warning)
     if (changeType === "updated") return "#3B82F6"; // Blue-500 (Updated)
-    return getRelationshipColor(link.type as UIRelationType, link.strength);
-  }, [link.type, link.strength, changeType]);
+    return getRelationshipColor(
+      link.type as UIRelationType,
+      link.strength,
+      link.relationTypes,
+    );
+  }, [link.type, link.strength, link.relationTypes, changeType]);
 
   const secondaryColor = useMemo(() => {
     const hex = primaryColor.replace("#", "");
