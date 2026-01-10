@@ -446,13 +446,13 @@ export const NodeRenderer = memo(function NodeRenderer({
               <circle
                 r={badgeRadius + 2}
                 fill="white"
-                stroke="#F59E0B"
+                stroke="#C49545"
                 strokeWidth={1.5}
                 style={{
                   filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
                 }}
               />
-              <circle r={badgeRadius} fill="#F59E0B" />
+              <circle r={badgeRadius} fill="#C49545" />
               <text
                 textAnchor="middle"
                 dominantBaseline="central"

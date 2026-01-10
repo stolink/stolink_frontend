@@ -1,51 +1,64 @@
 declare const Palette: {
+    /**
+     * StoLink Design System v2.0 - Vivid Warm Palette
+     *
+     * Color Theory Applied:
+     * - Analogous Warm Harmony (Terracotta → Golden → Amber)
+     * - High Saturation & Brightness for clarity on displays
+     * - Strong contrast for readability
+     *
+     * Brand Concept: Literary IDE - "Warm Immersion for Authors"
+     */
     readonly mocha: {
-        readonly 400: "#C69F8F";
-        readonly 500: "#A6735E";
-        readonly 700: "#7D4E3C";
-        readonly 900: "#4A332A";
+        readonly 400: "#E89D7A";
+        readonly 500: "#D4785A";
+        readonly 600: "#C4623F";
+        readonly 700: "#B85A3E";
+        readonly 900: "#5C3020";
     };
     readonly cloud: {
-        readonly 50: "#F5F1EB";
-        readonly 100: "#E8E6E1";
-        readonly 200: "#D9D7D2";
-        readonly 900: "#0D0D0D";
+        readonly 50: "#FDFBF7";
+        readonly 100: "#F8F4ED";
+        readonly 200: "#EDE7DD";
+        readonly 300: "#DDD4C6";
+        readonly 900: "#1A1612";
     };
     readonly espresso: {
-        readonly 900: "#3D302A";
+        readonly 700: "#5C4033";
+        readonly 900: "#3D2B1F";
     };
     readonly doechii: {
-        readonly 1: "#122611";
-        readonly 2: "#BF8A49";
-        readonly 3: "#D9B89C";
-        readonly 4: "#8C3D20";
-        readonly 5: "#401309";
+        readonly 1: "#1E4620";
+        readonly 2: "#E5A33D";
+        readonly 3: "#F5D4A8";
+        readonly 4: "#C95D32";
+        readonly 5: "#6B2D15";
     };
     readonly sage: {
-        readonly 50: "#F9F8F6";
-        readonly 100: "#F0EBE5";
-        readonly 200: "#E2D8CF";
-        readonly 400: "#C4B2A3";
-        readonly 500: "#A47764";
-        readonly 600: "#8D6652";
-        readonly 700: "#755442";
+        readonly 50: "#FBFAF7";
+        readonly 100: "#F3F0E8";
+        readonly 200: "#E5DFD2";
+        readonly 400: "#C7B99F";
+        readonly 500: "#9AAF7C";
+        readonly 600: "#7D9360";
+        readonly 700: "#5E7345";
     };
     readonly relationship: {
-        readonly friendly: "#7A8C6F";
-        readonly hostile: "#E11D48";
-        readonly romance: "#DB2777";
-        readonly family: "#4F5861";
-        readonly neutral: "#9CA3AF";
+        readonly friendly: "#4CAF50";
+        readonly hostile: "#F44336";
+        readonly romance: "#E91E63";
+        readonly family: "#5C6BC0";
+        readonly neutral: "#90A4AE";
     };
     readonly status: {
-        readonly success: "#059669";
-        readonly warning: "#D97706";
-        readonly error: "#DC2626";
-        readonly info: "#0284C7";
+        readonly success: "#10B981";
+        readonly warning: "#F59E0B";
+        readonly error: "#EF4444";
+        readonly info: "#3B82F6";
     };
     readonly common: {
         readonly white: "#FFFFFF";
-        readonly black: "#0D0D0D";
+        readonly black: "#1A1612";
         readonly transparent: "transparent";
     };
 };
@@ -53,129 +66,132 @@ type PaletteType = typeof Palette;
 
 declare const Semantic: {
     readonly brand: {
-        readonly primary: "#A6735E";
-        readonly secondary: "#E8E6E1";
-        readonly accent: "#A47764";
+        readonly primary: "#D4785A";
+        readonly secondary: "#F8F4ED";
+        readonly accent: "#9AAF7C";
     };
     readonly bg: {
-        readonly canvas: "#F5F1EB";
+        readonly canvas: "#FDFBF7";
         readonly card: "#FFFFFF";
         readonly overlay: "rgba(0, 0, 0, 0.4)";
     };
     readonly text: {
-        readonly base: "#3D302A";
-        readonly muted: "#7D4E3C";
-        readonly inverted: "#F5F1EB";
+        readonly base: "#3D2B1F";
+        readonly muted: "#B85A3E";
+        readonly inverted: "#FDFBF7";
     };
     readonly border: {
-        readonly default: "#D9D7D2";
-        readonly focused: "#A6735E";
-        readonly error: "#DC2626";
+        readonly default: "#EDE7DD";
+        readonly focused: "#D4785A";
+        readonly error: "#EF4444";
     };
     readonly status: {
-        readonly success: "#059669";
-        readonly warning: "#D97706";
-        readonly error: "#DC2626";
-        readonly info: "#0284C7";
+        readonly success: "#10B981";
+        readonly warning: "#F59E0B";
+        readonly error: "#EF4444";
+        readonly info: "#3B82F6";
     };
     readonly param: {
-        readonly foreshadowing: "#A47764";
+        readonly foreshadowing: "#9AAF7C";
         readonly relationship: {
-            readonly friendly: "#7A8C6F";
-            readonly hostile: "#E11D48";
-            readonly romance: "#DB2777";
-            readonly family: "#4F5861";
-            readonly neutral: "#9CA3AF";
+            readonly friendly: "#4CAF50";
+            readonly hostile: "#F44336";
+            readonly romance: "#E91E63";
+            readonly family: "#5C6BC0";
+            readonly neutral: "#90A4AE";
         };
     };
 };
 declare const Tokens: {
     palette: {
         readonly mocha: {
-            readonly 400: "#C69F8F";
-            readonly 500: "#A6735E";
-            readonly 700: "#7D4E3C";
-            readonly 900: "#4A332A";
+            readonly 400: "#E89D7A";
+            readonly 500: "#D4785A";
+            readonly 600: "#C4623F";
+            readonly 700: "#B85A3E";
+            readonly 900: "#5C3020";
         };
         readonly cloud: {
-            readonly 50: "#F5F1EB";
-            readonly 100: "#E8E6E1";
-            readonly 200: "#D9D7D2";
-            readonly 900: "#0D0D0D";
+            readonly 50: "#FDFBF7";
+            readonly 100: "#F8F4ED";
+            readonly 200: "#EDE7DD";
+            readonly 300: "#DDD4C6";
+            readonly 900: "#1A1612";
         };
         readonly espresso: {
-            readonly 900: "#3D302A";
+            readonly 700: "#5C4033";
+            readonly 900: "#3D2B1F";
         };
         readonly doechii: {
-            readonly 1: "#122611";
-            readonly 2: "#BF8A49";
-            readonly 3: "#D9B89C";
-            readonly 4: "#8C3D20";
-            readonly 5: "#401309";
+            readonly 1: "#1E4620";
+            readonly 2: "#E5A33D";
+            readonly 3: "#F5D4A8";
+            readonly 4: "#C95D32";
+            readonly 5: "#6B2D15";
         };
         readonly sage: {
-            readonly 50: "#F9F8F6";
-            readonly 100: "#F0EBE5";
-            readonly 200: "#E2D8CF";
-            readonly 400: "#C4B2A3";
-            readonly 500: "#A47764";
-            readonly 600: "#8D6652";
-            readonly 700: "#755442";
+            readonly 50: "#FBFAF7";
+            readonly 100: "#F3F0E8";
+            readonly 200: "#E5DFD2";
+            readonly 400: "#C7B99F";
+            readonly 500: "#9AAF7C";
+            readonly 600: "#7D9360";
+            readonly 700: "#5E7345";
         };
         readonly relationship: {
-            readonly friendly: "#7A8C6F";
-            readonly hostile: "#E11D48";
-            readonly romance: "#DB2777";
-            readonly family: "#4F5861";
-            readonly neutral: "#9CA3AF";
+            readonly friendly: "#4CAF50";
+            readonly hostile: "#F44336";
+            readonly romance: "#E91E63";
+            readonly family: "#5C6BC0";
+            readonly neutral: "#90A4AE";
         };
         readonly status: {
-            readonly success: "#059669";
-            readonly warning: "#D97706";
-            readonly error: "#DC2626";
-            readonly info: "#0284C7";
+            readonly success: "#10B981";
+            readonly warning: "#F59E0B";
+            readonly error: "#EF4444";
+            readonly info: "#3B82F6";
         };
         readonly common: {
             readonly white: "#FFFFFF";
-            readonly black: "#0D0D0D";
+            readonly black: "#1A1612";
             readonly transparent: "transparent";
         };
     };
     semantic: {
         readonly brand: {
-            readonly primary: "#A6735E";
-            readonly secondary: "#E8E6E1";
-            readonly accent: "#A47764";
+            readonly primary: "#D4785A";
+            readonly secondary: "#F8F4ED";
+            readonly accent: "#9AAF7C";
         };
         readonly bg: {
-            readonly canvas: "#F5F1EB";
+            readonly canvas: "#FDFBF7";
             readonly card: "#FFFFFF";
             readonly overlay: "rgba(0, 0, 0, 0.4)";
         };
         readonly text: {
-            readonly base: "#3D302A";
-            readonly muted: "#7D4E3C";
-            readonly inverted: "#F5F1EB";
+            readonly base: "#3D2B1F";
+            readonly muted: "#B85A3E";
+            readonly inverted: "#FDFBF7";
         };
         readonly border: {
-            readonly default: "#D9D7D2";
-            readonly focused: "#A6735E";
-            readonly error: "#DC2626";
+            readonly default: "#EDE7DD";
+            readonly focused: "#D4785A";
+            readonly error: "#EF4444";
         };
         readonly status: {
-            readonly success: "#059669";
-            readonly warning: "#D97706";
-            readonly error: "#DC2626";
-            readonly info: "#0284C7";
+            readonly success: "#10B981";
+            readonly warning: "#F59E0B";
+            readonly error: "#EF4444";
+            readonly info: "#3B82F6";
         };
         readonly param: {
-            readonly foreshadowing: "#A47764";
+            readonly foreshadowing: "#9AAF7C";
             readonly relationship: {
-                readonly friendly: "#7A8C6F";
-                readonly hostile: "#E11D48";
-                readonly romance: "#DB2777";
-                readonly family: "#4F5861";
-                readonly neutral: "#9CA3AF";
+                readonly friendly: "#4CAF50";
+                readonly hostile: "#F44336";
+                readonly romance: "#E91E63";
+                readonly family: "#5C6BC0";
+                readonly neutral: "#90A4AE";
             };
         };
     };

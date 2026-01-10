@@ -10,7 +10,7 @@ interface LinkRendererProps {
   isFiltered: boolean;
   onHover?: (
     link: RelationshipLink | null,
-    coords?: { x: number; y: number }
+    coords?: { x: number; y: number },
   ) => void;
   onClick?: (link: RelationshipLink) => void;
   /** 네트워크 붕괴 시각화를 위한 변경 상태 */
@@ -63,7 +63,7 @@ export const LinkRenderer = memo(function LinkRenderer({
     if (changeType === "inversion") return "#EF4444"; // Red-500 (Hostile)
     if (changeType === "collapse") return "#9CA3AF"; // Gray-400 (Broken)
     if (changeType === "new") return "#EAB308"; // Yellow-500 (Gold)
-    if (changeType === "conflict") return "#F59E0B"; // Amber-500 (Warning)
+    if (changeType === "conflict") return "#C49545"; // Amber-500 (Warning)
     if (changeType === "updated") return "#3B82F6"; // Blue-500 (Updated)
     return getRelationshipColor(link.type as UIRelationType, link.strength);
   }, [link.type, link.strength, changeType]);
@@ -230,7 +230,7 @@ export const LinkRenderer = memo(function LinkRenderer({
             {(() => {
               // Create repeating pattern of colors
               const colors = link.segments.map((s) =>
-                getRelationshipColor(s.type as UIRelationType, link.strength)
+                getRelationshipColor(s.type as UIRelationType, link.strength),
               );
               // Intertwine them: A -> B -> C -> A -> B ...
               const stops = [];
@@ -244,7 +244,7 @@ export const LinkRenderer = memo(function LinkRenderer({
                     key={i}
                     offset={`${(i / totalStops) * 100}%`}
                     stopColor={colors[colorIndex]}
-                  />
+                  />,
                 );
               }
               return stops;
@@ -328,13 +328,13 @@ export const LinkRenderer = memo(function LinkRenderer({
         <path
           className="link-path-contradiction"
           fill="none"
-          stroke="#F59E0B"
+          stroke="#C49545"
           strokeWidth={strokeWidth + 4}
           strokeOpacity={0.9}
           strokeLinecap="round"
           strokeDasharray="4, 4"
           style={{
-            filter: "drop-shadow(0 0 4px #F59E0B)",
+            filter: "drop-shadow(0 0 4px #C49545)",
             ...transitionStyle,
           }}
         />

@@ -40,9 +40,9 @@ export function toUIRelationType(type: string): UIRelationType {
 }
 
 export const MOCHA_COLORS = {
-  500: "#A47764", // Primary
-  400: "#BD9B8D", // Hover (High brightness)
-  700: "#7D5A4B", // Dark/Active
+  500: "#8B7355", // Primary (Warm Brown)
+  400: "#A89080", // Hover (Muted Taupe)
+  700: "#574838", // Dark/Active
 } as const;
 
 // =====================================================
@@ -360,13 +360,13 @@ export const GROUP_COLORS = [
  */
 export const FACTION_RING_COLORS = [
   "#6366F1", // Indigo 500
-  "#EC4899", // Pink 500
-  "#10B981", // Emerald 500
-  "#F97316", // Orange 500
+  "#C4687A", // Muted Pink
+  "#4A9B7F", // Muted Emerald
+  "#9B6B4A", // Muted Sienna
   "#8B5CF6", // Violet 500
-  "#0EA5E9", // Sky 500
-  "#EF4444", // Red 500
-  "#F59E0B", // Amber 500
+  "#5B85C4", // Muted Sky
+  "#C45555", // Muted Red
+  "#C49545", // Muted Amber
   "#14B8A6", // Teal 500
   "#A855F7", // Purple 500
 ] as const;

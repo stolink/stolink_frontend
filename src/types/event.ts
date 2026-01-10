@@ -77,18 +77,26 @@ export interface BackendEvent {
 /**
  * 백엔드 이벤트 → 프론트엔드 이벤트 변환
  */
-export function transformBackendEvent(backendEvent: BackendEvent): Event {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformBackendEvent(backendEvent: BackendEvent | any): Event {
   return {
-    eventId: backendEvent.event_id,
-    eventType: backendEvent.event_type as EventType,
-    narrativeSummary: backendEvent.narrative_summary,
-    description: backendEvent.description,
-    participants: backendEvent.participants,
-    locationRef: backendEvent.location_ref || backendEvent.location || "",
-    prevEventId: backendEvent.prev_event_id,
-    timestamp: backendEvent.timestamp,
-    importance: backendEvent.importance || backendEvent.importance_score || 5,
-    changesMade: backendEvent.changes_made,
+    eventId: backendEvent.event_id || backendEvent.eventId || "",
+    eventType: (
+      (backendEvent.event_type || backendEvent.eventType) as string
+    ).toLowerCase() as EventType,
+    narrativeSummary:
+      backendEvent.narrative_summary || backendEvent.narrativeSummary || "",
+    description: backendEvent.description || "",
+    participants: backendEvent.participants || [],
+    locationRef:
+      backendEvent.location_ref ||
+      backendEvent.locationRef ||
+      backendEvent.location ||
+      "",
+    prevEventId: backendEvent.prev_event_id || backendEvent.prevEventId || null,
+    timestamp: backendEvent.timestamp || null,
+    importance: backendEvent.importance || backendEvent.importance_score || 5, // importance matches both
+    changesMade: backendEvent.changes_made || backendEvent.changesMade || null,
     embedding: backendEvent.embedding,
   };
 }

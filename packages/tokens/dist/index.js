@@ -29,79 +29,107 @@ module.exports = __toCommonJS(index_exports);
 
 // src/palette.ts
 var Palette = {
-  // Brand Colors - Vivid Clean Brown Theme (Mocha & Cloud)
+  /**
+   * StoLink Design System v2.0 - Vivid Warm Palette
+   *
+   * Color Theory Applied:
+   * - Analogous Warm Harmony (Terracotta → Golden → Amber)
+   * - High Saturation & Brightness for clarity on displays
+   * - Strong contrast for readability
+   *
+   * Brand Concept: Literary IDE - "Warm Immersion for Authors"
+   */
+  // Primary Brand - Vivid Terracotta/Coral
   mocha: {
-    400: "#C69F8F",
-    // Soft Vivid Cocoa (Hover)
-    500: "#A6735E",
-    // Vivid Clean Brown (Core Brand)
-    700: "#7D4E3C",
-    // Deep Vivid Cocoa (Dark/Active)
-    900: "#4A332A"
-    // Darkest Brown
+    400: "#E89D7A",
+    // Bright Coral (Hover) - HSL: 18, 72%, 69%
+    500: "#D4785A",
+    // Vivid Terracotta (Core) - HSL: 15, 60%, 59%
+    600: "#C4623F",
+    // Rich Terracotta (Active)
+    700: "#B85A3E",
+    // Deep Terracotta (Dark)
+    900: "#5C3020"
+    // Espresso Dark
   },
+  // Surface - Clean Warm Cream
   cloud: {
-    50: "#F5F1EB",
-    // Warm Ivory (Main BG)
-    100: "#E8E6E1",
-    // Panel BG
-    200: "#D9D7D2",
-    // Borders
-    900: "#0D0D0D"
-    // Deep Obsidian
+    50: "#FDFBF7",
+    // Pure Cream White (Main BG)
+    100: "#F8F4ED",
+    // Warm Panel BG
+    200: "#EDE7DD",
+    // Soft Borders
+    300: "#DDD4C6",
+    // Stronger Borders
+    900: "#1A1612"
+    // Rich Black
   },
+  // Text Color
   espresso: {
-    900: "#3D302A"
-    // Dark Coffee Text
+    700: "#5C4033",
+    // Medium Brown Text
+    900: "#3D2B1F"
+    // Rich Coffee Text
   },
-  // Exact DOECHII Official Wordmarks Palette (Preserved, but could be updated if needed)
+  // Accent - Vivid Golden/Amber (Inspiration & Warmth)
   doechii: {
-    1: "#122611",
-    2: "#BF8A49",
-    3: "#D9B89C",
-    4: "#8C3D20",
-    5: "#401309"
+    1: "#1E4620",
+    // Forest Green (Accent)
+    2: "#E5A33D",
+    // Vivid Golden (Primary Accent) - HSL: 40, 78%, 57%
+    3: "#F5D4A8",
+    // Bright Peach (Secondary)
+    4: "#C95D32",
+    // Burnt Sienna (Emphasis)
+    5: "#6B2D15"
+    // Deep Chocolate
   },
-  // Functional Colors - Redefined Sage (Clean Warm Grey/Brown)
+  // Functional - Soft Olive/Sage (Focus & Growth)
   sage: {
-    50: "#F9F8F6",
-    100: "#F0EBE5",
-    200: "#E2D8CF",
-    400: "#C4B2A3",
-    500: "#A47764",
-    // Aligned with Brand
-    600: "#8D6652",
-    700: "#755442"
+    50: "#FBFAF7",
+    // Near White
+    100: "#F3F0E8",
+    // Light Cream
+    200: "#E5DFD2",
+    // Warm Grey
+    400: "#C7B99F",
+    // Muted Tan
+    500: "#9AAF7C",
+    // Fresh Olive (Focus Color)
+    600: "#7D9360",
+    // Deeper Olive
+    700: "#5E7345"
+    // Forest Sage
   },
-  // Relationship Colors - Adhering to Vintage Theme
+  // Relationship Colors - Clear & Vivid for Graph Visualization
   relationship: {
-    friendly: "#7A8C6F",
-    // Muted Olive
-    hostile: "#E11D48",
-    // Rose-600 (Clear Red)
-    romance: "#DB2777",
-    // Pink-600 (Clear Pink)
-    family: "#4F5861",
-    // Steel Blue-Grey
-    neutral: "#9CA3AF"
-    // Cool Grey (Clean)
+    friendly: "#4CAF50",
+    // Vivid Green (Trust)
+    hostile: "#F44336",
+    // Clear Red (Conflict)
+    romance: "#E91E63",
+    // Vivid Pink (Passion)
+    family: "#5C6BC0",
+    // Indigo (Connection)
+    neutral: "#90A4AE"
+    // Blue Grey
   },
-  // Status Colors
+  // Status Colors - High Visibility
   status: {
-    success: "#059669",
-    // Emerald-600
-    warning: "#D97706",
-    // Amber-600 (Clean Orange, not Ocher)
-    error: "#DC2626",
-    // Red-600
-    info: "#0284C7"
-    // Sky-600
+    success: "#10B981",
+    // Emerald-500 (Brighter)
+    warning: "#F59E0B",
+    // Amber-500 (Vivid)
+    error: "#EF4444",
+    // Red-500 (Clear)
+    info: "#3B82F6"
+    // Blue-500 (Bright)
   },
   // Neutrals / Common
   common: {
     white: "#FFFFFF",
-    black: "#0D0D0D",
-    // Deep Obsidian
+    black: "#1A1612",
     transparent: "transparent"
   }
 };

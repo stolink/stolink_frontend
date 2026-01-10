@@ -367,14 +367,14 @@ function drawBadges(
     const badgeY = node.y - radius * 0.65;
 
     ctx.fillStyle = "white";
-    ctx.strokeStyle = "#F59E0B";
+    ctx.strokeStyle = "#C49545";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(badgeX, badgeY, badgeRadius + 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = "#F59E0B";
+    ctx.fillStyle = "#C49545";
     ctx.beginPath();
     ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
     ctx.fill();

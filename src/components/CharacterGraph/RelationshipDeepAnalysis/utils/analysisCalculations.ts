@@ -25,32 +25,55 @@ import { DEFAULT_TIMELINE_CONFIG } from "@/types/relationshipAnalysis";
 export function calculateCumulativeScores(
   events: Array<{ importance: number; emotionalPolarity: number }>,
   decayFactor: number = 0.95,
-): { friendlyScores: number[]; hostileScores: number[] } {
+): {
+  friendlyScores: number[];
+  hostileScores: number[];
+  netSentimentScores: number[];
+} {
   const friendlyScores: number[] = [];
   const hostileScores: number[] = [];
+  const netSentimentScores: number[] = [];
 
   let cumulativeFriendly = 0;
   let cumulativeHostile = 0;
+  let cumulativeNet = 0;
 
   events.forEach((event) => {
     // 이전 누적값에 감쇠 적용
     cumulativeFriendly *= decayFactor;
     cumulativeHostile *= decayFactor;
+    cumulativeNet *= decayFactor;
 
-    // 새 이벤트 영향 추가
-    const impact = event.importance * Math.abs(event.emotionalPolarity);
+    // 새 이벤트 영향 추가 (선격 가치 적용)
+    const impact = event.importance * event.emotionalPolarity;
 
     if (event.emotionalPolarity > 0) {
       cumulativeFriendly += impact;
     } else if (event.emotionalPolarity < 0) {
-      cumulativeHostile += impact;
+      cumulativeHostile += Math.abs(impact);
     }
+
+    // 통합 지수: 누적 정서 합산
+    cumulativeNet += impact;
 
     friendlyScores.push(cumulativeFriendly);
     hostileScores.push(cumulativeHostile);
+    netSentimentScores.push(cumulativeNet);
   });
 
-  return { friendlyScores, hostileScores };
+  // 정규화 (100 기준 스케일링)
+  const maxAbsNet = Math.max(...netSentimentScores.map(Math.abs), 10);
+  const maxAbsComp = Math.max(...friendlyScores, ...hostileScores, 10);
+
+  const normalizedNet = netSentimentScores.map((s) => (s / maxAbsNet) * 100);
+  const normalizedFriendly = friendlyScores.map((s) => (s / maxAbsComp) * 100);
+  const normalizedHostile = hostileScores.map((s) => (s / maxAbsComp) * 100);
+
+  return {
+    friendlyScores: normalizedFriendly,
+    hostileScores: normalizedHostile,
+    netSentimentScores: normalizedNet,
+  };
 }
 
 /**
@@ -62,14 +85,19 @@ export function transformEventsToTimeline(
   events: Event[],
   sourceCharacterId: string,
   targetCharacterId: string,
+  sourceName: string,
+  targetName: string,
   config: TimelineCalculationConfig = DEFAULT_TIMELINE_CONFIG,
 ): RelationshipTimelinePoint[] {
-  // 두 캐릭터가 모두 참여한 이벤트만 필터링
-  const relevantEvents = events.filter(
-    (e) =>
-      e.participants.includes(sourceCharacterId) &&
-      e.participants.includes(targetCharacterId),
-  );
+  // 두 캐릭터가 모두 참여한 이벤트만 필터링 (ID or Name matching)
+  // participants usually contains names if IDs are not mapped, or mixed.
+  // We check if (sourceId OR sourceName) AND (targetId OR targetName) are in participants.
+  const relevantEvents = events.filter((e) => {
+    const p = e.participants;
+    const hasSource = p.includes(sourceCharacterId) || p.includes(sourceName);
+    const hasTarget = p.includes(targetCharacterId) || p.includes(targetName);
+    return hasSource && hasTarget;
+  });
 
   // 챕터/시간순 정렬 (placeholder - 실제 구현 시 chapter 필드 필요)
   const sortedEvents = [...relevantEvents].sort((a, b) => {
@@ -87,13 +115,14 @@ export function transformEventsToTimeline(
   }));
 
   // 누적 점수 계산
-  const { friendlyScores, hostileScores } = calculateCumulativeScores(
-    eventsWithPolarity.map((e) => ({
-      importance: e.importance,
-      emotionalPolarity: e.emotionalPolarity,
-    })),
-    config.decayFactor,
-  );
+  const { friendlyScores, hostileScores, netSentimentScores } =
+    calculateCumulativeScores(
+      eventsWithPolarity.map((e) => ({
+        importance: e.importance,
+        emotionalPolarity: e.emotionalPolarity,
+      })),
+      config.decayFactor,
+    );
 
   // 타임라인 데이터 생성
   return eventsWithPolarity.map((event, index) => ({
@@ -106,6 +135,7 @@ export function transformEventsToTimeline(
     emotionalPolarity: event.emotionalPolarity,
     cumulativeFriendly: friendlyScores[index],
     cumulativeHostile: hostileScores[index],
+    sentimentTrajectory: netSentimentScores[index],
   }));
 }
 
@@ -126,28 +156,39 @@ function extractChapterNumber(event: Event): number {
 function estimateEmotionalPolarity(event: Event): number {
   const type = event.eventType.toLowerCase();
 
-  // 이벤트 타입에 따른 기본 극성
+  // 이벤트 타입에 따른 기본 극성 (-10 ~ 10)
   const typePolarity: Record<string, number> = {
+    // Negative
+    betrayal: -9,
+    hostile: -6,
     conflict: -5,
     confrontation: -4,
-    betrayal: -8,
-    reconciliation: 6,
-    alliance: 5,
-    dialogue: 0,
+    revelation: -1, // 폭로는 맥락에 따라 다르지만 기본적으로는 약간의 긴장 조성
+
+    // Neutral / Contextual
     discovery: 2,
-    revelation: -1,
     transformation: 3,
-    resolution: 4,
-    romantic: 7,
+    action: 1,
+    chat: 2,
+
+    // Positive
+    dialogue: 3, // 대화는 상호작용의 기본이므로 긍정적 점수 부여
+    meeting: 4,
+    reconciliation: 7,
+    alliance: 8,
+    support: 6,
+    rescue: 9,
+    romantic: 9,
     friendly: 5,
-    hostile: -5,
+    resolution: 4,
   };
 
-  // 중요도에 따른 스케일링
+  // 기본 극성값 (정의되지 않은 타입은 0)
   const basePolarity = typePolarity[type] ?? 0;
-  const scale = event.importance / 10;
 
-  return Math.round(basePolarity * scale * 10) / 10;
+  // 중요도는 calculateCumulativeScores에서 선형적으로 곱해지므로
+  // 여기서는 타입별 기본 정서값만 반환
+  return basePolarity;
 }
 
 /**
@@ -422,15 +463,33 @@ export function generateAnalysisData(
 
   if (events && events.length > 0) {
     // 1. 타임라인 생성
-    timeline = transformEventsToTimeline(events, source.id, target.id);
+    timeline = transformEventsToTimeline(
+      events,
+      source.id,
+      target.id,
+      source.name,
+      target.name,
+    );
 
     // 2. 만남 정보 추출
-    const encounters = extractEncounterInfo(events, source.id, target.id);
+    const encounters = extractEncounterInfo(
+      events,
+      source.id,
+      target.id,
+      source.name,
+      target.name,
+    );
     firstEncounter = encounters.first;
     lastEncounter = encounters.last;
 
     // 3. 공동 등장 씬 추출
-    sharedScenes = extractSharedScenes(events, source.id, target.id);
+    sharedScenes = extractSharedScenes(
+      events,
+      source.id,
+      target.id,
+      source.name,
+      target.name,
+    );
 
     // 4. 인사이트 생성 (결정적 트리거 & 키워드)
     // 결정적 트리거: 중요도(importance) * 감정(emotionalPolarity) 절대값이 가장 큰 이벤트
@@ -448,11 +507,12 @@ export function generateAnalysisData(
 
     // 키워드 추출 (Shared Events 기반)
     // 두 캐릭터가 공유하는 이벤트들만 대상으로 키워드 추출
-    const relevantEvents = events.filter(
-      (e) =>
-        e.participants.includes(source.id) &&
-        e.participants.includes(target.id),
-    );
+    const relevantEvents = events.filter((e) => {
+      const p = e.participants;
+      const hasSource = p.includes(source.id) || p.includes(source.name);
+      const hasTarget = p.includes(target.id) || p.includes(target.name);
+      return hasSource && hasTarget;
+    });
     const keywords = extractKeywords(relevantEvents);
 
     insights = {
@@ -460,15 +520,7 @@ export function generateAnalysisData(
         ? {
             eventId: (decisiveEvent as RelationshipTimelinePoint).eventId,
             title: (decisiveEvent as RelationshipTimelinePoint).title,
-            summary:
-              (decisiveEvent as RelationshipTimelinePoint).description.slice(
-                0,
-                100,
-              ) +
-              ((decisiveEvent as RelationshipTimelinePoint).description.length >
-              100
-                ? "..."
-                : ""),
+            summary: (decisiveEvent as RelationshipTimelinePoint).description,
             impact: (decisiveEvent as RelationshipTimelinePoint).importance,
           }
         : null,
@@ -598,18 +650,22 @@ export function extractSharedScenes(
   events: Event[],
   sourceId: string,
   targetId: string,
+  sourceName: string,
+  targetName: string,
 ): import("@/types/relationshipAnalysis").SharedScene[] {
   return events
-    .filter(
-      (e) =>
-        e.participants.includes(sourceId) && e.participants.includes(targetId),
-    )
+    .filter((e) => {
+      const p = e.participants;
+      const hasSource = p.includes(sourceId) || p.includes(sourceName);
+      const hasTarget = p.includes(targetId) || p.includes(targetName);
+      return hasSource && hasTarget;
+    })
     .sort((a, b) => b.importance - a.importance)
     .map((e) => ({
       eventId: e.eventId,
       chapter: `Chapter ${extractChapterNumber(e)}`,
-      title: e.narrativeSummary || e.description.slice(0, 50),
-      description: e.description.slice(0, 100),
+      title: e.narrativeSummary || e.description,
+      description: e.description,
       importance: e.importance,
     }));
 }
@@ -621,15 +677,19 @@ export function extractEncounterInfo(
   events: Event[],
   sourceId: string,
   targetId: string,
+  sourceName: string,
+  targetName: string,
 ): {
   first: import("@/types/relationshipAnalysis").EncounterInfo | undefined;
   last: import("@/types/relationshipAnalysis").EncounterInfo | undefined;
 } {
   const sharedEvents = events
-    .filter(
-      (e) =>
-        e.participants.includes(sourceId) && e.participants.includes(targetId),
-    )
+    .filter((e) => {
+      const p = e.participants;
+      const hasSource = p.includes(sourceId) || p.includes(sourceName);
+      const hasTarget = p.includes(targetId) || p.includes(targetName);
+      return hasSource && hasTarget;
+    })
     .sort((a, b) => {
       if (a.timestamp && b.timestamp) {
         return (
@@ -650,13 +710,13 @@ export function extractEncounterInfo(
     first: {
       eventId: firstEvent.eventId,
       chapter: `Chapter ${extractChapterNumber(firstEvent)}`,
-      title: firstEvent.narrativeSummary || firstEvent.description.slice(0, 50),
+      title: firstEvent.narrativeSummary || firstEvent.description,
       timestamp: firstEvent.timestamp || undefined,
     },
     last: {
       eventId: lastEvent.eventId,
       chapter: `Chapter ${extractChapterNumber(lastEvent)}`,
-      title: lastEvent.narrativeSummary || lastEvent.description.slice(0, 50),
+      title: lastEvent.narrativeSummary || lastEvent.description,
       timestamp: lastEvent.timestamp || undefined,
     },
   };

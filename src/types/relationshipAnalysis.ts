@@ -65,6 +65,8 @@ export interface RelationshipTimelinePoint {
   cumulativeFriendly: number;
   /** 누적 적대 지수 (시간 감쇠 적용) */
   cumulativeHostile: number;
+  /** 통합 유대 지수 (Net Sentiment, -100 ~ +100) */
+  sentimentTrajectory: number;
 }
 
 /**

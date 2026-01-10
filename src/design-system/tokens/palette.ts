@@ -1,61 +1,84 @@
 export const Palette = {
-  // Brand Colors - Vintage Cardboard Theme
+  /**
+   * StoLink Design System v3.0 - Calm & Readable Palette
+   *
+   * Design Philosophy:
+   * - Muted, sophisticated tones that don't compete with content
+   * - High readability with proper contrast
+   * - Warm but restrained - no aggressive orange/coral
+   *
+   * Brand Concept: Literary IDE - "Calm Focus for Authors"
+   */
+
+  // Primary Brand - Soft Warm Brown (NOT orange)
   mocha: {
-    400: "#D9BFA0", // Light Sand (cardboard-4)
-    500: "#A69677", // Muted Vintage Tan (cardboard-1)
-    700: "#BF8A49", // Golden Vintage (cardboard-3)
-    900: "#403B33", // Dark Sepia (cardboard-2)
+    50: "#FAF8F6", // Very light warm
+    100: "#F0EBE6", // Light warm panel
+    200: "#E0D6CC", // Soft borders
+    400: "#A89080", // Muted taupe (Hover)
+    500: "#8B7355", // Warm brown (Core) - Softer, no orange
+    600: "#6E5A45", // Deep brown (Active)
+    700: "#574838", // Dark brown
+    900: "#3D302A", // Espresso
   },
+
+  // Surface - Clean Warm Cream
   cloud: {
-    50: "#F5F1EB", // Warm Ivory
-    100: "#E8E6E1",
-    200: "#D9D7D2",
-    900: "#0D0D0D", // Deep Obsidian (cardboard-5)
+    50: "#FDFBF8", // Pure Cream White (Main BG)
+    100: "#F8F5F0", // Warm Panel BG
+    200: "#EDE8E1", // Soft Borders
+    300: "#DDD6CC", // Stronger Borders
+    900: "#1A1816", // Rich Black
   },
+
+  // Text Color
   espresso: {
-    900: "#403B33", // Dark Sepia (cardboard-2)
+    500: "#6B5B4F", // Light brown text
+    700: "#4A3F36", // Medium Brown Text
+    900: "#2D241F", // Rich Coffee Text
   },
-  // Exact DOECHII Official Wordmarks Palette (Preserved, but could be updated if needed)
+
+  // Accent - Muted Earth Tones
   doechii: {
-    1: "#122611",
-    2: "#BF8A49",
-    3: "#D9B89C",
-    4: "#8C3D20",
-    5: "#401309",
+    1: "#3D5A40", // Muted Forest Green
+    2: "#B89B6A", // Soft Gold (not vivid)
+    3: "#E5D4BE", // Cream Beige
+    4: "#9B6B4A", // Muted Sienna (soft, not orange)
+    5: "#5C3D2E", // Deep Chocolate
   },
 
-  // Functional Colors - Redefined Sage based on #BF8A49
+  // Functional - Soft Sage (Focus & Growth)
   sage: {
-    50: "#F8F4EF",
-    100: "#F1E8DC",
-    200: "#E4D1BC",
-    400: "#D2A676",
-    500: "#BF8A49", // Base
-    600: "#A6783F",
-    700: "#8D6636",
+    50: "#F8FAF7", // Near White
+    100: "#EEF2EB", // Light Sage BG
+    200: "#DCE3D6", // Soft Sage Border
+    400: "#A8B89A", // Muted Sage
+    500: "#7D9668", // Calm Olive (Focus Color)
+    600: "#647A53", // Deeper Olive
+    700: "#4D5E40", // Forest Sage
   },
 
-  // Relationship Colors - Adhering to Vintage Theme
+  // Relationship Colors - Slightly Muted for Graph
   relationship: {
-    friendly: "#7A8C6F", // Muted Olive (Kept for compatibility)
-    hostile: "#9C4A3F", // Rust Red
-    romance: "#B38B82", // Dusty Rose
-    family: "#4F5861", // Steel Blue-Grey
-    neutral: "#A69677", // Muted Vintage Tan
+    friendly: "#5B9A5E", // Muted Green (Trust)
+    hostile: "#C45B52", // Muted Red (Conflict)
+    romance: "#C4687A", // Muted Pink (Passion)
+    family: "#6B7BB5", // Muted Indigo (Connection)
+    neutral: "#8A9AA5", // Blue Grey
   },
 
-  // Status Colors
+  // Status Colors - Clear but not harsh
   status: {
-    success: "#5B7B4B",
-    warning: "#BF8A49", // Golden Vintage
-    error: "#A33A3A",
-    info: "#4B7D7D",
+    success: "#4A9B7F", // Muted Emerald
+    warning: "#C49545", // Muted Amber
+    error: "#C45555", // Muted Red
+    info: "#5B85C4", // Muted Blue
   },
 
   // Neutrals / Common
   common: {
     white: "#FFFFFF",
-    black: "#0D0D0D", // Deep Obsidian
+    black: "#1A1816",
     transparent: "transparent",
   },
 } as const;

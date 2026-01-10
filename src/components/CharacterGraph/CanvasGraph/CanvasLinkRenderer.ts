@@ -51,7 +51,7 @@ export function drawLink(options: LinkRenderOptions): void {
     if (changeType === "inversion") return "#EF4444";
     if (changeType === "collapse") return "#9CA3AF";
     if (changeType === "new") return "#EAB308";
-    if (changeType === "conflict") return "#F59E0B";
+    if (changeType === "conflict") return "#C49545";
     if (changeType === "updated") return "#3B82F6";
     return getRelationshipColor(link.type as UIRelationType, link.strength);
   })();
@@ -142,12 +142,12 @@ export function drawLink(options: LinkRenderOptions): void {
   // === Logic Check Contradiction Overlay (활성 상태에서만 적용 - 성능 최적화) ===
   if (isContradictory && !isDimmed && isActive) {
     ctx.save();
-    ctx.strokeStyle = "#F59E0B";
+    ctx.strokeStyle = "#C49545";
     ctx.lineWidth = strokeWidth + 4;
     ctx.globalAlpha = 0.9;
     ctx.lineCap = "round";
     ctx.setLineDash([4, 4]);
-    ctx.shadowColor = "#F59E0B";
+    ctx.shadowColor = "#C49545";
     ctx.shadowBlur = 4;
     ctx.beginPath();
     ctx.moveTo(sx, sy);

@@ -212,6 +212,13 @@ export default function CharacterDetailDialog({
     },
   );
 
+  console.log(
+    "CharacterDetailDialog Rendered. ActiveTab:",
+    activeTab,
+    "CharacterEvents:",
+    characterEvents?.length,
+  );
+
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
   const [manualPrompt, setManualPrompt] = useState("");
@@ -443,6 +450,7 @@ export default function CharacterDetailDialog({
             있습니다.
           </DialogDescription>
         </VisuallyHidden>
+
         {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
         <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-paper/95 via-card/90 to-card/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-cloud-200/60 ring-1 ring-espresso-900/5 isolate">
           {/* 🌊 Living Background (Warm Aurora Blobs) */}
@@ -903,7 +911,7 @@ function TabItem({
     <TabsTrigger
       value={value}
       className="group relative h-8 px-5 rounded-full font-medium text-espresso-500 transition-all
-      data-[state=active]:text-primary-foreground data-[state=active]:bg-espresso-800 data-[state=active]:shadow-lg
+      data-[state=active]:text-white data-[state=active]:!bg-espresso-900 data-[state=active]:shadow-lg
       data-[state=active]:ring-2 data-[state=active]:ring-white/50
       hover:text-espresso-900 hover:bg-white/50"
     >
