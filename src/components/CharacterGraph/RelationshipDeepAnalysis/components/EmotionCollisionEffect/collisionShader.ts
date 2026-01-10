@@ -1,9 +1,6 @@
 /**
- * Emotion Collision Shader v3 - "Energy Beam Clash"
- * 두 캐릭터의 감정이 중앙에서 충돌하며 빛나는 효과
- * - 좌우에서 에너지 빔이 흘러들어옴
- * - 중앙 충돌 지점에서 강렬한 발광
- * - Domain Warping으로 유동적인 연기 텍스처
+ * Emotion Collision Shader v3.1 - "Energy Beam Clash with Multi-Color"
+ * 4f8553f 버전의 비주얼 이펙트(Energy Beam)와 현재의 3색 혼합 로직을 통합함.
  */
 
 export const collisionVertexShader = `
@@ -69,12 +66,10 @@ float snoise(vec2 v) {
 }
 
 // Fractal Brownian Motion
-// Performance Note: Reduced octaves from 5 to 4 for better fps
 float fbm(vec2 p) {
   float total = 0.0;
   float amplitude = 0.5;
   float frequency = 1.0;
-  // Loop unrolling or reducing iterations helps performance
   for (int i = 0; i < 4; i++) {
     total += snoise(p * frequency) * amplitude;
     amplitude *= 0.5;
@@ -83,22 +78,10 @@ float fbm(vec2 p) {
   return total;
 }
 
-// 색상 혼합 (강도 기반)
-vec3 blendColors(vec3 c1, vec3 c2, vec3 c3, float i1, float i2, float i3, vec2 uv, float time) {
-  float totalIntensity = i1 + i2 + i3 + 0.001;
-
-  // Reduced trig calculations frequency or pre-calculate if possible
-  // Increased time multiplier for dynamic feel (0.7 -> 1.5, etc)
-  float wave1 = sin(uv.x * 3.0 + time * 1.5) * 0.15;
-  float wave2 = cos(uv.y * 2.5 + time * 1.2) * 0.15;
-  float wave3 = sin((uv.x + uv.y) * 2.0 - time * 1.0) * 0.15;
-
-  float w1 = (i1 / totalIntensity) + wave1 * (i1 / totalIntensity);
-  float w2 = (i2 / totalIntensity) + wave2 * (i2 / totalIntensity);
-  float w3 = (i3 / totalIntensity) + wave3 * (i3 / totalIntensity);
-
-  float totalWeight = w1 + w2 + w3 + 0.001;
-  return (c1 * w1 + c2 * w2 + c3 * w3) / totalWeight;
+// 색상 혼합 (최신 3색 혼합 로직)
+vec3 blendColors(vec3 c1, vec3 c2, vec3 c3, float i1, float i2, float i3) {
+  float total = i1 + i2 + i3 + 0.001;
+  return (c1 * i1 + c2 * i2 + c3 * i3) / total;
 }
 
 void main() {
@@ -110,7 +93,6 @@ void main() {
   float strengthB = clamp(uStrengthB / 10.0, 0.0, 1.0);
 
   // === Domain Warping (유동적 연기 텍스처) ===
-  // Increased speed multipliers (0.1 -> 0.3, etc)
   vec2 q = vec2(0.0);
   q.x = fbm(uv + 0.3 * time);
   q.y = fbm(uv + vec2(1.0));
@@ -130,8 +112,8 @@ void main() {
   float edge = smoothstep(balancePoint - 0.2, balancePoint + 0.2, uv.x + mixNoise * 0.12);
 
   // === 양쪽 색상 계산 ===
-  vec3 colorA = blendColors(uColorA1, uColorA2, uColorA3, uIntensityA1, uIntensityA2, uIntensityA3, uv, time);
-  vec3 colorB = blendColors(uColorB1, uColorB2, uColorB3, uIntensityB1, uIntensityB2, uIntensityB3, uv, time);
+  vec3 colorA = blendColors(uColorA1, uColorA2, uColorA3, uIntensityA1, uIntensityA2, uIntensityA3);
+  vec3 colorB = blendColors(uColorB1, uColorB2, uColorB3, uIntensityB1, uIntensityB2, uIntensityB3);
 
   // 텍스처 깊이감 추가
   colorA *= (1.0 + f * 0.4);
@@ -142,7 +124,7 @@ void main() {
   glow = clamp(glow, 0.0, 1.0);
   glow = pow(glow, 2.5) * 1.2;
 
-  // 시간에 따른 펄스 효과 - Increased speed (2.0 -> 4.0)
+  // 시간에 따른 펄스 효과
   float pulse = 0.8 + 0.2 * sin(time * 4.0 + mixNoise * 3.0);
   glow *= pulse;
 
@@ -155,7 +137,6 @@ void main() {
   mixedColor += glowColor * glow * 0.8;
 
   // === 에너지 스트림 효과 ===
-  // Increased speed (3.0 -> 8.0)
   // 왼쪽에서 오른쪽으로 흐르는 에너지
   float streamA = sin(uv.x * 8.0 - time * 8.0 + uv.y * 2.0) * 0.5 + 0.5;
   streamA *= smoothstep(0.0, balancePoint, uv.x) * smoothstep(balancePoint + 0.1, balancePoint - 0.1, uv.x);
