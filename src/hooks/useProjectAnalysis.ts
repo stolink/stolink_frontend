@@ -34,7 +34,7 @@ interface UseProjectAnalysisReturn {
 
 export function useProjectAnalysis(
   projectId: string | null,
-  options: UseProjectAnalysisOptions = {}
+  options: UseProjectAnalysisOptions = {},
 ): UseProjectAnalysisReturn {
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
 
@@ -47,10 +47,6 @@ export function useProjectAnalysis(
   const onCompleteRef = useRef(onAnalysisComplete);
   const onErrorRef = useRef(onAnalysisError);
 
-  // Stuck detection (for future use)
-  const _stuckCountRef = useRef(0);
-  const _lastProgressRef = useRef(-1);
-
   useEffect(() => {
     onCompleteRef.current = onAnalysisComplete;
     onErrorRef.current = onAnalysisError;
@@ -61,29 +57,29 @@ export function useProjectAnalysis(
   const setProjectId = useAnalysisBufferStore((state) => state.setProjectId);
   const flush = useAnalysisBufferStore((state) => state.flush);
   const shouldAutoFlush = useAnalysisBufferStore(
-    (state) => state.shouldAutoFlush
+    (state) => state.shouldAutoFlush,
   );
   const setBufferAnalyzing = useAnalysisBufferStore(
-    (state) => state.setAnalyzing
+    (state) => state.setAnalyzing,
   );
   const getBufferSummary = useAnalysisBufferStore(
-    (state) => state.getBufferSummary
+    (state) => state.getBufferSummary,
   );
   const currentJobId = useAnalysisBufferStore((state) => state.currentJobId);
   const setJobId = useAnalysisBufferStore((state) => state.setJobId);
   const setGlobalProgress = useAnalysisBufferStore(
-    (state) => state.setProgress
+    (state) => state.setProgress,
   );
   const setLastAnalyzedHashes = useAnalysisBufferStore(
-    (state) => state.setLastAnalyzedHashes
+    (state) => state.setLastAnalyzedHashes,
   );
   const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
   const resetAnalysis = useAnalysisBufferStore((state) => state.resetAnalysis);
   const lastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.lastConsistencyReport
+    (state) => state.lastConsistencyReport,
   );
   const setLastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.setLastConsistencyReport
+    (state) => state.setLastConsistencyReport,
   );
 
   // 프로젝트 ID 설정
@@ -265,11 +261,11 @@ export function useProjectAnalysis(
   const checkJobStatus = useCallback(async () => {
     if (!currentJobId) {
       console.log(
-        "[useProjectAnalysis] checkJobStatus: No currentJobId, checking if stuck..."
+        "[useProjectAnalysis] checkJobStatus: No currentJobId, checking if stuck...",
       );
       if (isAnalyzing) {
         console.log(
-          "[useProjectAnalysis] checkJobStatus: Stuck in isAnalyzing=true without jobId. Resetting."
+          "[useProjectAnalysis] checkJobStatus: Stuck in isAnalyzing=true without jobId. Resetting.",
         );
         setBufferAnalyzing(false);
       }
@@ -277,7 +273,7 @@ export function useProjectAnalysis(
     }
 
     console.log(
-      `[useProjectAnalysis] checkJobStatus: Fetching status for ${currentJobId}`
+      `[useProjectAnalysis] checkJobStatus: Fetching status for ${currentJobId}`,
     );
     try {
       const status =
@@ -285,7 +281,7 @@ export function useProjectAnalysis(
 
       console.log(
         `[useProjectAnalysis] checkJobStatus: Full status object:`,
-        status
+        status,
       );
 
       // Check for implicit completion (if the response IS the result)
@@ -300,7 +296,7 @@ export function useProjectAnalysis(
         normalizedStatus = explicitStatus.toLowerCase().trim();
       } else if (hasResultFields) {
         console.log(
-          "[useProjectAnalysis] Implicit completion detected (Result fields found)"
+          "[useProjectAnalysis] Implicit completion detected (Result fields found)",
         );
         normalizedStatus = "completed";
       }
@@ -319,7 +315,7 @@ export function useProjectAnalysis(
         (typeof statusAny.progress === "number" && statusAny.progress >= 100)
       ) {
         console.log(
-          "[useProjectAnalysis] checkJobStatus: Job COMPLETED (or 100%). Finalizing state."
+          "[useProjectAnalysis] checkJobStatus: Job COMPLETED (or 100%). Finalizing state.",
         );
         setAnalysisProgress(100);
         setGlobalProgress(100);
@@ -343,7 +339,7 @@ export function useProjectAnalysis(
       // Handle Failed status
       if (normalizedStatus === "failed" || normalizedStatus === "error") {
         console.error(
-          `[useProjectAnalysis] checkJobStatus: Job ${normalizedStatus}. Clearing state.`
+          `[useProjectAnalysis] checkJobStatus: Job ${normalizedStatus}. Clearing state.`,
         );
         setAnalysisError("분석 작업이 실패했습니다.");
         setBufferAnalyzing(false);
@@ -357,7 +353,7 @@ export function useProjectAnalysis(
       // Check for other terminal statuses or unexpected strings
       if (normalizedStatus !== "processing" && normalizedStatus !== "pending") {
         console.warn(
-          `[useProjectAnalysis] checkJobStatus: Unknown or terminal status received: ${explicitStatus}. Resetting.`
+          `[useProjectAnalysis] checkJobStatus: Unknown or terminal status received: ${explicitStatus}. Resetting.`,
         );
         setBufferAnalyzing(false);
         setJobId(null);
@@ -367,7 +363,7 @@ export function useProjectAnalysis(
       // Job exists and is running/pending, make sure we are in analyzing state
       if (!isAnalyzing) {
         console.log(
-          `[useProjectAnalysis] checkJobStatus: Job is ${normalizedStatus}, ensuring isAnalyzing is true.`
+          `[useProjectAnalysis] checkJobStatus: Job is ${normalizedStatus}, ensuring isAnalyzing is true.`,
         );
         setBufferAnalyzing(true);
       }
@@ -379,7 +375,7 @@ export function useProjectAnalysis(
       const status = axiosError?.response?.status;
       if (status === 404 || status === 500) {
         console.log(
-          `[useProjectAnalysis] checkJobStatus: Clearing invalid job ID (Error ${status})`
+          `[useProjectAnalysis] checkJobStatus: Clearing invalid job ID (Error ${status})`,
         );
         setBufferAnalyzing(false);
         setJobId(null);
@@ -406,7 +402,7 @@ export function useProjectAnalysis(
     }
 
     console.log(
-      "[useProjectAnalysis] SSE not active (isConnected: false). Starting 5s polling fallback..."
+      "[useProjectAnalysis] SSE not active (isConnected: false). Starting 5s polling fallback...",
     );
     const intervalId = setInterval(() => {
       checkJobStatus();

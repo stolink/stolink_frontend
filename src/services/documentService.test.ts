@@ -20,6 +20,7 @@ describe("mapBackendToFrontend", () => {
       includeInCompile: true,
       createdAt: "2025-01-01T00:00:00Z",
       updatedAt: "2025-01-01T00:00:00Z",
+      isPublished: false,
     };
 
     const frontendDoc = mapBackendToFrontend(backendDoc);
@@ -44,6 +45,7 @@ describe("mapBackendToFrontend", () => {
       includeInCompile: true,
       createdAt: "2025-01-01T00:00:00Z",
       updatedAt: "2025-01-01T00:00:00Z",
+      isPublished: false,
     };
 
     const frontendDoc = mapBackendToFrontend(backendDoc);
@@ -58,8 +60,8 @@ describe("mapBackendToFrontend", () => {
     const backendDoc: BackendDocument = {
       id: "doc-3",
       projectId: "project-1",
-      // @ts-expect-error Testing uppercase type normalization
-      type: "FOLDER",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type: "FOLDER" as any, // Cast to avoid build error while keeping logic test
       title: "Test",
       order: 0,
       status: "draft",
@@ -67,6 +69,7 @@ describe("mapBackendToFrontend", () => {
       includeInCompile: true,
       createdAt: "2025-01-01T00:00:00Z",
       updatedAt: "2025-01-01T00:00:00Z",
+      isPublished: false,
     };
 
     const frontendDoc = mapBackendToFrontend(backendDoc);
@@ -107,7 +110,6 @@ describe("documentService", () => {
       const result = await documentService.create("project-1", {
         type: "text",
         title: "New Document",
-        projectId: "project-1",
       });
 
       expect(result).toBeDefined();
@@ -118,7 +120,6 @@ describe("documentService", () => {
       const result = await documentService.create("project-1", {
         type: "folder",
         title: "New Chapter",
-        projectId: "project-1",
         parentId: "doc-1",
         synopsis: "Chapter synopsis",
         targetWordCount: 5000,
@@ -143,8 +144,7 @@ describe("documentService", () => {
       const result = await documentService.update("doc-1", {
         title: "Updated Title",
         synopsis: "Updated synopsis",
-        targetWordCount: 3000,
-        status: "revised",
+        metadata: { status: "revised" },
       });
 
       expect(result).toBeDefined();

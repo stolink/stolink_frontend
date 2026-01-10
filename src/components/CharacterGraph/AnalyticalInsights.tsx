@@ -27,10 +27,8 @@ export function AnalyticalInsights({
 
     links.forEach((link) => {
       // Check if negative relation
-      const isNegative =
-        link.type === "hostile" ||
-        link.type === "rival" ||
-        link.type === "enemy";
+      // UIRelationType: "friendly" | "hostile" | "romantic" 만 존재
+      const isNegative = link.type === "hostile";
       if (!isNegative) return;
 
       const score = (link.strength || 1) * 2; // Higher strength = more tension

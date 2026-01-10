@@ -118,8 +118,8 @@ export const LinkRenderer = memo(function LinkRenderer({
   const isTense = useMemo(() => {
     if (!showTension) return false;
     // High strength negative relation (MetaCategory = negative)
-    const isNegative =
-      link.type === "hostile" || link.type === "rival" || link.type === "ENEMY";
+    // UIRelationType: "friendly" | "hostile" | "romantic" 만 존재
+    const isNegative = link.type === "hostile";
     return isNegative && link.strength >= 7;
   }, [showTension, link.type, link.strength]);
 

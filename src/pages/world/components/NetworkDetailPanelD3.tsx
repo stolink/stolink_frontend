@@ -11,8 +11,6 @@ import {
   Brain,
   Activity,
   Sparkles,
-  GraduationCap,
-  Swords,
 } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { Badge } from "@stolink/ui";
@@ -25,15 +23,11 @@ import {
 } from "@/components/CharacterGraph/constants";
 import { cn } from "@/lib/utils";
 
-// 관계 타입별 색상 클래스
-// 관계 타입별 색상 클래스
+// 관계 타입별 색상 클래스 (UIRelationType: friendly | hostile | romantic)
 const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   friendly: "bg-emerald-500 text-white border-emerald-500",
   hostile: "bg-rose-500 text-white border-rose-500",
   romantic: "bg-pink-400 text-white border-pink-400",
-  family: "bg-blue-500 text-white border-blue-500",
-  mentor: "bg-purple-500 text-white border-purple-500",
-  rival: "bg-orange-500 text-white border-orange-500",
 };
 
 // 관계 타입별 아이콘
@@ -41,9 +35,6 @@ const RELATION_ICONS: Record<UIRelationType, React.ReactNode> = {
   friendly: <User className="w-3 h-3" />,
   hostile: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
-  family: <Users className="w-3 h-3" />,
-  mentor: <GraduationCap className="w-3 h-3" />,
-  rival: <Swords className="w-3 h-3" />,
 };
 
 // 역할별 색상

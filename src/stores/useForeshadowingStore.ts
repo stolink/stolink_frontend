@@ -88,6 +88,10 @@ interface ForeshadowingAppearanceInput {
   sectionTitle: string;
   isRecovery?: boolean;
   documentId?: string; // 레거시 호환
+  // 레거시 필드 (테스트 코드 호환성용)
+  sceneId?: string;
+  chapterId?: string;
+  chapterTitle?: string;
 }
 
 const generateId = () =>

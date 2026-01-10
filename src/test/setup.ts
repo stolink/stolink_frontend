@@ -3,6 +3,9 @@ import { cleanup } from "@testing-library/react";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { server } from "./mocks/server";
 
+// IndexedDB 모킹 (idb-keyval, Zustand persist 등에서 사용)
+import "fake-indexeddb/auto";
+
 // @testing-library/jest-dom 매처 등록
 expect.extend(matchers);
 
