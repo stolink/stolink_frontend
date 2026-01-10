@@ -314,11 +314,15 @@ export function estimateAttributesFromRelation(
 /**
  * Mock 분석 데이터 생성 (개발/테스트용)
  */
-export function generateMockAnalysisData(
+/**
+ * 관계 분석 데이터 생성 (실제 데이터 + Mock 속성)
+ */
+export function generateAnalysisData(
   source: AnalysisCharacterInfo,
   target: AnalysisCharacterInfo,
   relationshipTypes: string[] = ["ALLY"],
   strength: number = 7,
+  events: Event[] = [], // Real events from project
 ): RelationshipDeepAnalysisData {
   // 비대칭 관계 속성 (레이더 차트용)
   const sourceToTarget: RelationshipAttributes = {
@@ -405,92 +409,96 @@ export function generateMockAnalysisData(
     },
   };
 
-  // Mock 타임라인
-  const timeline: RelationshipTimelinePoint[] = [
-    {
-      eventId: "evt-001",
-      chapter: 1,
-      timestamp: "2024-01-15",
-      title: "첫 만남",
-      description: "두 캐릭터가 처음 마주친 순간",
-      importance: 8,
-      emotionalPolarity: 3,
-      cumulativeFriendly: 24,
-      cumulativeHostile: 0,
-    },
-    {
-      eventId: "evt-002",
-      chapter: 3,
-      timestamp: "2024-02-10",
-      title: "갈등의 시작",
-      description: "의견 충돌로 인한 첫 번째 갈등",
-      importance: 9,
-      emotionalPolarity: -4,
-      cumulativeFriendly: 22.8,
-      cumulativeHostile: 36,
-    },
-    {
-      eventId: "evt-003",
-      chapter: 5,
-      timestamp: "2024-03-20",
-      title: "화해와 이해",
-      description: "서로의 입장을 이해하게 된 계기",
-      importance: 10,
-      emotionalPolarity: 6,
-      cumulativeFriendly: 81.66,
-      cumulativeHostile: 34.2,
-    },
-    {
-      eventId: "evt-004",
-      chapter: 8,
-      timestamp: "2024-05-05",
-      title: "동맹 결성",
-      description: "공동의 목표를 위해 손을 잡다",
-      importance: 9,
-      emotionalPolarity: 5,
-      cumulativeFriendly: 122.58,
-      cumulativeHostile: 32.49,
-    },
-  ];
+  // --- Real Data Processing ---
+  let timeline: RelationshipTimelinePoint[] = [];
+  let insights: RelationshipInsights = { decisiveTrigger: null, keywords: [] };
+  let firstEncounter:
+    | import("@/types/relationshipAnalysis").EncounterInfo
+    | undefined;
+  let lastEncounter:
+    | import("@/types/relationshipAnalysis").EncounterInfo
+    | undefined;
+  let sharedScenes: import("@/types/relationshipAnalysis").SharedScene[] = [];
 
-  // Mock 인사이트
-  const insights: RelationshipInsights = {
-    decisiveTrigger: {
-      eventId: "evt-003",
-      title: "화해와 이해",
-      summary:
-        "서로의 과거를 공유하며 진정한 이해에 도달. 이 순간이 관계의 전환점이 됨.",
-      impact: 10,
-    },
-    keywords: ["신뢰", "갈등", "화해", "동맹"],
-  };
+  if (events && events.length > 0) {
+    // 1. 타임라인 생성
+    timeline = transformEventsToTimeline(events, source.id, target.id);
+
+    // 2. 만남 정보 추출
+    const encounters = extractEncounterInfo(events, source.id, target.id);
+    firstEncounter = encounters.first;
+    lastEncounter = encounters.last;
+
+    // 3. 공동 등장 씬 추출
+    sharedScenes = extractSharedScenes(events, source.id, target.id);
+
+    // 4. 인사이트 생성 (결정적 트리거 & 키워드)
+    // 결정적 트리거: 중요도(importance) * 감정(emotionalPolarity) 절대값이 가장 큰 이벤트
+    let maxImpact = 0;
+    let decisiveEvent: RelationshipTimelinePoint | null = null;
+
+    timeline.forEach((point) => {
+      const impact =
+        point.importance * Math.abs(point.emotionalPolarity || 0.1);
+      if (impact > maxImpact) {
+        maxImpact = impact;
+        decisiveEvent = point;
+      }
+    });
+
+    // 키워드 추출 (Shared Events 기반)
+    // 두 캐릭터가 공유하는 이벤트들만 대상으로 키워드 추출
+    const relevantEvents = events.filter(
+      (e) =>
+        e.participants.includes(source.id) &&
+        e.participants.includes(target.id),
+    );
+    const keywords = extractKeywords(relevantEvents);
+
+    insights = {
+      decisiveTrigger: decisiveEvent
+        ? {
+            eventId: (decisiveEvent as RelationshipTimelinePoint).eventId,
+            title: (decisiveEvent as RelationshipTimelinePoint).title,
+            summary:
+              (decisiveEvent as RelationshipTimelinePoint).description.slice(
+                0,
+                100,
+              ) +
+              ((decisiveEvent as RelationshipTimelinePoint).description.length >
+              100
+                ? "..."
+                : ""),
+            impact: (decisiveEvent as RelationshipTimelinePoint).importance,
+          }
+        : null,
+      keywords,
+    };
+  } else {
+    // Fallback Mock Data (Only if no real events are available)
+    // Mock 타임라인
+    timeline = [
+      {
+        eventId: "mock-001",
+        chapter: 1,
+        timestamp: "2024-01-15",
+        title: "첫 만남 (기록 없음)",
+        description: "데이터가 충분하지 않아 시뮬레이션된 기록입니다.",
+        importance: 5,
+        emotionalPolarity: 0,
+        cumulativeFriendly: 10,
+        cumulativeHostile: 0,
+      },
+    ];
+
+    insights = {
+      decisiveTrigger: null,
+      keywords: relationshipTypes.map((t) => formatKeyword(t)), // 단순히 관계 타입을 키워드로
+    };
+  }
 
   // 경고 감지
   const warnings = detectRelationshipWarnings(sourceToTarget, targetToSource);
-
-  // 첫/마지막 만남
-  const firstEncounter = {
-    eventId: timeline[0].eventId,
-    chapter: `Chapter ${timeline[0].chapter}`,
-    title: timeline[0].title,
-    timestamp: timeline[0].timestamp || undefined,
-  };
-
-  const lastEncounter = {
-    eventId: timeline[timeline.length - 1].eventId,
-    chapter: `Chapter ${timeline[timeline.length - 1].chapter}`,
-    title: timeline[timeline.length - 1].title,
-    timestamp: timeline[timeline.length - 1].timestamp || undefined,
-  };
-
-  // 공동 등장 씬
-  const sharedScenes = timeline.map((t) => ({
-    eventId: t.eventId,
-    chapter: `Chapter ${t.chapter}`,
-    title: t.title,
-    description: t.description,
-    importance: t.importance,
-  }));
 
   return {
     sourceCharacter: source,
@@ -502,7 +510,7 @@ export function generateMockAnalysisData(
     insights,
     relationshipTypes,
     currentStrength: strength,
-    since: "Chapter 1",
+    since: firstEncounter?.chapter || "알 수 없음",
     // NEW fields
     firstEncounter,
     lastEncounter,

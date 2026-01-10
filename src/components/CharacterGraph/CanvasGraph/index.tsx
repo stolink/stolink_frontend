@@ -18,6 +18,7 @@ import type {
   RelationshipLink,
   RelationType,
 } from "@/types";
+import type { Event } from "@/types/event";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { FORCE_CONFIG, ZOOM_CONFIG, type UIRelationType } from "../constants";
 import { calculateRelationCounts } from "../utils";
@@ -28,7 +29,7 @@ import { NetworkControls } from "../NetworkControls";
 import { TimelineSlider } from "../TimelineSlider";
 import { CharacterSearchOverlay } from "../CharacterSearchOverlay";
 import { RelationshipDeepAnalysisModal } from "../RelationshipDeepAnalysis";
-import { generateMockAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
+import { generateAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "../RelationshipEventTooltip";
 import { TiledBackground } from "../TiledBackground";
 import { EventDetailPanel } from "@/components/common/character-detail/components/biography/EventDetailPanel";
@@ -39,6 +40,7 @@ import { NODE_SIZES } from "../constants";
 interface CharacterGraphCanvasProps {
   characters: Character[];
   links: RelationshipLink[];
+  events?: Event[];
   onNodeClick?: (character: Character | null) => void;
   onLinkClick?: (link: RelationshipLink | null) => void;
   selectedNodeId?: string | null;
@@ -67,6 +69,7 @@ export const CharacterGraphCanvas = forwardRef<
     {
       characters,
       links: initialLinks,
+      events = [],
       onNodeClick,
       onLinkClick,
       selectedNodeId,
@@ -427,7 +430,7 @@ export const CharacterGraphCanvas = forwardRef<
 
       if (sourceChar && targetChar) {
         // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
-        const analysisData = generateMockAnalysisData(
+        const analysisData = generateAnalysisData(
           {
             id: sourceId,
             name: sourceChar.profile?.name || "Unknown",
@@ -440,6 +443,7 @@ export const CharacterGraphCanvas = forwardRef<
           },
           relLink.relationTypes || [relLink.type],
           relLink.strength,
+          events,
         );
         setDeepAnalysisData(analysisData);
       } else {
@@ -945,7 +949,7 @@ export const CharacterGraphCanvas = forwardRef<
               const targetChar = characterMap.get(targetId);
 
               if (sourceChar && targetChar) {
-                const analysisData = generateMockAnalysisData(
+                const analysisData = generateAnalysisData(
                   {
                     id: sourceId,
                     name: sourceChar.profile?.name || "Unknown",

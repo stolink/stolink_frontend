@@ -10,7 +10,6 @@ import { CharacterPortraitPanel } from "./components/CharacterPortraitPanel";
 import { InsightsPanel } from "./components/InsightsPanel";
 import { RelationshipTimelineGraph } from "./components/RelationshipTimelineGraph";
 import { RelationshipWarningBanner } from "./components/RelationshipWarningBanner";
-import { EncounterSummary } from "./components/EncounterSummary";
 import { SharedScenesPanel } from "./components/SharedScenesPanel";
 import { DeepAnalysisHero } from "./components/DeepAnalysisHero";
 import { MoodBackground } from "./components/MoodBackground";
@@ -44,8 +43,6 @@ export function RelationshipDeepAnalysisModal({
     asymmetricStrength,
     since,
     warnings,
-    firstEncounter,
-    lastEncounter,
     sharedScenes,
   } = data;
 
@@ -191,36 +188,19 @@ export function RelationshipDeepAnalysisModal({
                             />
                           </motion.div>
 
-                          {/* Encounter Summary & Key Stats - Balanced Vertical Stack */}
-                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                            {(firstEncounter || lastEncounter) && (
-                              <motion.div
-                                className="lg:col-span-2"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.7 }}
-                              >
-                                <EncounterSummary
-                                  firstEncounter={firstEncounter}
-                                  lastEncounter={lastEncounter}
-                                  onNavigate={onNavigateToEvent}
-                                />
-                              </motion.div>
-                            )}
-
-                            <motion.div
-                              className="lg:col-span-3"
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.8 }}
-                            >
-                              <InsightsPanel
-                                insights={insights}
-                                animationDelay={0.8}
-                                className="bg-white/60 backdrop-blur-sm border-white/40 h-full"
-                              />
-                            </motion.div>
-                          </div>
+                          {/* Decisive Events & Keywords Panel */}
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.8 }}
+                          >
+                            <InsightsPanel
+                              insights={insights}
+                              asymmetricStrength={asymmetricStrength}
+                              animationDelay={0.8}
+                              className="bg-white/60 backdrop-blur-sm border-white/40 h-full w-full"
+                            />
+                          </motion.div>
                         </div>
                       </section>
 

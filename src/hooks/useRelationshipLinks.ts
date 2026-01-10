@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Character } from "@/types/character";
 import type { RelationshipLink } from "@/types/characterGraph";
-import type { BiographyEvent } from "@/types/biography";
+import type { Event } from "@/types/event";
 import { extractRelationshipLinks } from "@/utils/relationshipMapper";
 import type { UIRelationType } from "@/components/CharacterGraph/utils";
 
@@ -49,7 +49,7 @@ function getCharJaccardSimilarity(str1: string, str2: string): number {
  */
 export function useRelationshipLinks(
   characters: Character[],
-  events?: BiographyEvent[],
+  events?: Event[],
 ): RelationshipLink[] {
   return useMemo(() => {
     const links = extractRelationshipLinks(characters);

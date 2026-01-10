@@ -5,13 +5,18 @@
 
 import { motion } from "framer-motion";
 import { Sparkles, TrendingUp, Tag } from "lucide-react";
-import type { RelationshipInsights } from "@/types/relationshipAnalysis";
+import {
+  type RelationshipInsights,
+  type AsymmetricStrength,
+} from "@/types/relationshipAnalysis";
 import { Badge } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 interface InsightsPanelProps {
   /** 인사이트 데이터 */
   insights: RelationshipInsights;
+  /** 비대칭 관계 강도 데이터 (키워드 추출용) */
+  asymmetricStrength?: AsymmetricStrength;
   /** 애니메이션 딜레이 (초) */
   animationDelay?: number;
   /** 추가 클래스 */
@@ -32,16 +37,52 @@ const KEYWORD_COLORS: Record<string, string> = {
   변화: "bg-indigo-50 border-indigo-200 text-indigo-700",
   해결: "bg-emerald-50 border-emerald-200 text-emerald-700",
   로맨스: "bg-pink-50 border-pink-200 text-pink-700",
+  멘토: "bg-blue-50 border-blue-200 text-blue-700",
+  동료: "bg-cyan-50 border-cyan-200 text-cyan-700",
+  친구: "bg-lime-50 border-lime-200 text-lime-700",
+  연인: "bg-pink-50 border-pink-200 text-pink-700",
+  적대: "bg-red-50 border-red-200 text-red-700",
+  애정: "bg-pink-50 border-pink-200 text-pink-700",
+  우호: "bg-green-50 border-green-200 text-green-700",
 };
 
 const DEFAULT_KEYWORD_COLOR = "bg-cloud-50 border-cloud-200 text-espresso-700";
 
+/**
+ * 중고등학생 수준의 자연스러운 용어 변환기 (DeepAnalysisHero와 동일 로직)
+ */
+const simplifyTerm = (term: string) => {
+  const t = term.toLowerCase();
+  if (t.includes("mentor")) return "멘토";
+  if (t.includes("friend")) return "친구";
+  if (t.includes("romantic") || t.includes("lover")) return "연인";
+  if (t.includes("hostile") || t.includes("enemy")) return "적대";
+  if (t.includes("coworker") || t.includes("ally")) return "동료";
+  if (t.includes("complex")) return "복합적";
+  return term;
+};
+
 export function InsightsPanel({
   insights,
+  asymmetricStrength,
   animationDelay = 0,
   className,
 }: InsightsPanelProps) {
-  const { decisiveTrigger, keywords } = insights;
+  const { decisiveTrigger } = insights;
+
+  // 관계 데이터에서 키워드 추출 (중복 제거)
+  const keywords = asymmetricStrength
+    ? Array.from(
+        new Set([
+          ...asymmetricStrength.sourceToTarget.factors.map((f) =>
+            simplifyTerm(f.type),
+          ),
+          ...asymmetricStrength.targetToSource.factors.map((f) =>
+            simplifyTerm(f.type),
+          ),
+        ]),
+      ).filter(Boolean)
+    : insights.keywords || [];
 
   return (
     <motion.div
@@ -66,7 +107,7 @@ export function InsightsPanel({
           <Sparkles className="w-4 h-4 text-indigo-500" />
         </div>
         <h4 className="text-base font-semibold text-espresso-800 uppercase tracking-wider">
-          관계 인사이트
+          결정적 사건
         </h4>
       </motion.div>
 

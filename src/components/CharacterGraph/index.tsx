@@ -11,6 +11,7 @@ import * as d3 from "d3";
 import { Delaunay } from "d3-delaunay";
 import { cn } from "@/lib/utils";
 import type { Character, CharacterNode, RelationshipLink } from "@/types";
+import type { Event } from "@/types/event";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { useForceSimulation } from "@/hooks/useCharacterGraphSimulation";
 import { useZoom } from "@/hooks/useCharacterGraphZoom";
@@ -25,7 +26,7 @@ import { NetworkControls } from "./NetworkControls";
 import { CharacterSearchOverlay } from "./CharacterSearchOverlay";
 import { TimelineSlider } from "./TimelineSlider";
 import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
-import { generateMockAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
+import { generateAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
 export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
@@ -33,7 +34,7 @@ export { GROUP_COLORS } from "./constants";
 
 interface CharacterGraphProps {
   characters: Character[];
-
+  events?: Event[];
   links: RelationshipLink[];
   onNodeClick?: (character: Character | null) => void;
   onLinkClick?: (link: RelationshipLink | null) => void;
@@ -62,6 +63,7 @@ export const CharacterGraph = forwardRef<
     {
       characters,
       links: initialLinks,
+      events = [],
       onNodeClick,
       onLinkClick,
       selectedNodeId,
@@ -723,7 +725,7 @@ export const CharacterGraph = forwardRef<
         if (!sourceNode || !targetNode) return;
 
         // Generate mock data for now (replace with real API call later)
-        const mockData = generateMockAnalysisData(
+        const mockData = generateAnalysisData(
           {
             id: sourceNode.id,
             name: sourceNode.name,
@@ -736,6 +738,7 @@ export const CharacterGraph = forwardRef<
           },
           link.relationTypes || [link.type as string],
           link.strength,
+          events,
         );
 
         setDeepAnalysisData(mockData);
