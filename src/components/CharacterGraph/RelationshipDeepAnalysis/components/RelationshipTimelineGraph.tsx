@@ -299,10 +299,11 @@ export function RelationshipTimelineGraph({
 
             {/* Data Points on the path */}
             {keyEvents.map((d, i) => {
+              const val = d.sentimentTrajectory;
               const pointColor =
-                d.sentimentTrajectory > 10
+                val > 0.01
                   ? FRIENDLY_COLOR
-                  : d.sentimentTrajectory < -10
+                  : val < -0.01
                     ? HOSTILE_COLOR
                     : "#64748b"; // Neutral slate-500
 
@@ -310,7 +311,7 @@ export function RelationshipTimelineGraph({
                 <motion.circle
                   key={d.eventId}
                   cx={scales.x(i)}
-                  cy={scales.y(d.sentimentTrajectory)}
+                  cy={scales.y(val)}
                   r={4.5}
                   fill={pointColor}
                   stroke="white"
@@ -357,11 +358,11 @@ export function RelationshipTimelineGraph({
           animate={{ opacity: 1, y: 0 }}
           className="absolute pointer-events-none z-50"
           style={{
-            left: tooltip.x + 15,
+            left: tooltip.x + 340 > width ? tooltip.x - 335 : tooltip.x + 15,
             top: tooltip.y - 10,
           }}
         >
-          <div className="bg-white/98 backdrop-blur-md border border-cloud-200 rounded-lg p-3 shadow-2xl max-w-[220px]">
+          <div className="bg-white/98 backdrop-blur-md border border-cloud-200 rounded-lg p-4 shadow-2xl w-[320px]">
             <div className="flex justify-between items-start mb-1.5">
               <span
                 className="text-espresso-400 text-[10px] uppercase font-bold tracking-tighter"
@@ -380,8 +381,10 @@ export function RelationshipTimelineGraph({
                       : "bg-slate-50 text-slate-600",
                 )}
               >
-                {tooltip.point.sentimentTrajectory > 0 ? "+" : ""}
-                {tooltip.point.sentimentTrajectory.toFixed(0)}
+                {tooltip.point.sentimentTrajectory > 0.01 ? "+" : ""}
+                {Math.abs(tooltip.point.sentimentTrajectory) < 0.01
+                  ? "0"
+                  : tooltip.point.sentimentTrajectory.toFixed(0)}
               </span>
             </div>
 

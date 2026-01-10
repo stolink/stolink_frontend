@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { RelationType } from "@/types";
 
 interface MoodBackgroundProps {
-  type: RelationType | string;
+  type: RelationType | string | string[];
   className?: string;
 }
 
@@ -11,14 +11,17 @@ interface MoodBackgroundProps {
 const MOOD_CONFIGS: Record<string, [string, string, string]> = {
   // Positive
   ALLY: ["from-teal-50", "to-emerald-100", "bg-teal-200"],
+  ALLIANCE: ["from-teal-50", "to-emerald-100", "bg-teal-200"],
   FRIEND: ["from-green-50", "to-teal-100", "bg-green-200"],
+  FRIENDLY: ["from-green-50", "to-teal-100", "bg-green-200"],
   ROMANTIC: ["from-pink-50", "to-rose-100", "bg-pink-200"],
   FAMILY: ["from-indigo-50", "to-purple-100", "bg-purple-200"],
-  MENTOR: ["from-amber-50", "to-orange-100", "bg-amber-200"],
+  MENTOR: ["from-violet-50", "to-fuchsia-100", "bg-violet-200"],
 
   // Negative
   RIVAL: ["from-orange-50", "to-red-100", "bg-orange-200"],
   ENEMY: ["from-red-50", "to-rose-100", "bg-red-200"],
+  HOSTILE: ["from-red-50", "to-rose-100", "bg-red-200"],
 
   // Neutral/Complex
   NEUTRAL: ["from-slate-50", "to-gray-100", "bg-gray-200"],
@@ -31,10 +34,35 @@ const MOOD_CONFIGS: Record<string, [string, string, string]> = {
 };
 
 export function MoodBackground({ type, className }: MoodBackgroundProps) {
-  // Normalize type key
-  const typeKey = typeof type === "string" ? type.toUpperCase() : "NEUTRAL";
-  const [gradientFrom, gradientTo, ambientColor] =
-    MOOD_CONFIGS[typeKey] || MOOD_CONFIGS.DEFAULT;
+  // Normalize to types array and clean strings
+  const rawTypes = Array.isArray(type) ? type : [type];
+  const types = rawTypes.map((t) => (t || "").toString().toUpperCase().trim());
+
+  // Helper to find best config match
+  const getConfig = (typeStr: string) => {
+    if (!typeStr) return MOOD_CONFIGS.DEFAULT;
+    if (MOOD_CONFIGS[typeStr]) return MOOD_CONFIGS[typeStr];
+
+    // Partial matching
+    for (const key in MOOD_CONFIGS) {
+      if (typeStr.includes(key) || key.includes(typeStr)) {
+        return MOOD_CONFIGS[key];
+      }
+    }
+    return MOOD_CONFIGS.DEFAULT;
+  };
+
+  // Determine key for global gradient
+  // Mix gradients: From Color A -> To Color B
+  const configA = getConfig(types[0]);
+  const configB = types[1] ? getConfig(types[1]) : configA;
+
+  const gradientFrom = configA[0]; // e.g. "from-teal-50"
+  const gradientTo = configB[1]; // e.g. "to-rose-100" or same if single type
+
+  // Get ambient colors for individual orbs
+  const ambientA = getConfig(types[0])[2];
+  const ambientB = types[1] ? getConfig(types[1])[2] : ambientA;
 
   return (
     <div className={cn("absolute inset-0 overflow-hidden -z-10", className)}>
@@ -50,15 +78,17 @@ export function MoodBackground({ type, className }: MoodBackgroundProps) {
       {/* 2. Animated Ambient Orbs (Framer Motion) */}
       <motion.div
         className={cn(
-          "absolute -top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[100px] opacity-40",
-          ambientColor,
+          "absolute -top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[80px] opacity-60 transition-colors duration-1000",
+          ambientA,
         )}
         animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
+          x: [0, 30, -20, 0],
+          y: [0, -20, 10, 0],
+          scale: [1, 1.1, 0.95, 1],
+          opacity: [0.6, 0.8, 0.6],
         }}
         transition={{
-          duration: 8,
+          duration: 15,
           repeat: Infinity,
           ease: "easeInOut",
         }}
@@ -66,26 +96,20 @@ export function MoodBackground({ type, className }: MoodBackgroundProps) {
 
       <motion.div
         className={cn(
-          "absolute -bottom-[20%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] opacity-30",
-          ambientColor,
+          "absolute -bottom-[20%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[90px] opacity-50 transition-colors duration-1000",
+          ambientB,
         )}
         animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.2, 0.4, 0.2],
+          x: [0, -30, 20, 0],
+          y: [0, 20, -10, 0],
+          scale: [1.1, 0.9, 1.15, 1.1],
+          opacity: [0.5, 0.7, 0.5],
         }}
         transition={{
-          duration: 10,
+          duration: 18,
           repeat: Infinity,
           ease: "easeInOut",
           delay: 1,
-        }}
-      />
-
-      {/* 3. Noise Texture Overlay (Premium Feel) */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`,
         }}
       />
 

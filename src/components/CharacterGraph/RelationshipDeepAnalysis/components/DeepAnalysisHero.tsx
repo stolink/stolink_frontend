@@ -23,6 +23,8 @@ interface DeepAnalysisHeroProps {
   targetCharacter: AnalysisCharacterInfo;
   asymmetricStrength: AsymmetricStrength;
   onClose: () => void;
+  relationshipTypes: string[]; // Added
+  description?: string; // Added
   since?: string;
   className?: string;
 }
@@ -32,38 +34,67 @@ interface DeepAnalysisHeroProps {
  */
 const simplifyTerm = (term: string) => {
   const t = term.toLowerCase();
-  if (t.includes("mentor")) return "나를 이끌어주는 멘토";
-  if (t.includes("friend")) return "서로 믿고 의지하는 친구";
+  if (
+    t.includes("subordinate") ||
+    t.includes("master_servant") ||
+    t.includes("군신")
+  )
+    return "충성과 헌신의 군신 관계";
+  if (t.includes("trust") || t.includes("신뢰")) return "흔들림 없는 깊은 신뢰";
+  if (t.includes("mentor") || t.includes("스승")) return "나를 이끌어주는 멘토";
+  if (t.includes("admiration") || t.includes("흠모"))
+    return "존경과 흠모의 마음";
+  if (t.includes("friend") || t.includes("친구"))
+    return "서로 믿고 의지하는 친구";
   if (t.includes("romantic") || t.includes("lover"))
     return "설렘 가득한 로맨스";
-  if (t.includes("hostile") || t.includes("enemy"))
-    return "날카로운 적대감과 갈등";
+  if (t.includes("hostile") || t.includes("enemy") || t.includes("rival"))
+    return "서로의 성장을 자극하는 라이벌";
   if (t.includes("coworker") || t.includes("ally"))
     return "목표를 함께하는 든든한 동료";
+  if (t.includes("family") || t.includes("집안"))
+    return "피보다 진한 유대, 가족";
   if (t.includes("complex")) return "많은 감정이 섞인 복잡한 마음";
   return term;
 };
 
-const getRelationColor = (type: string) => {
+const getRelationColor = (type: string | string[]) => {
   if (!type) return "#A47764";
-  const t = type.toLowerCase();
-  if (t.includes("적대") || t.includes("원수") || t.includes("hostile"))
-    return "#F44336";
+
+  // 만약 5개 이상의 복합 관계라면 보라색(Complex) 반환 -> REMOVED to allow primary color to show
+  // if (Array.isArray(type) && type.length >= 5) return "#7C3AED";
+
+  const rawType = Array.isArray(type) ? type[0] : type;
+  if (!rawType) return "#A47764";
+
+  const t = rawType.toLowerCase();
+
+  // Hostile - Premium Darker Tones
+  if (t.includes("원수") || t.includes("enemy")) return "#9F1239"; // Rose 800
+  if (t.includes("적대") || t.includes("hostile")) return "#E11D48"; // Rose 600
+  if (t.includes("rival") || t.includes("라이벌")) return "#D97706"; // Amber 600
+
+  // Romantic - Premium Pink
   if (
     t.includes("연인") ||
     t.includes("사랑") ||
     t.includes("romantic") ||
     t.includes("애정")
   )
-    return "#FF4081";
-  if (
-    t.includes("친구") ||
-    t.includes("동료") ||
-    t.includes("우호") ||
-    t.includes("friendly") ||
-    t.includes("ally")
-  )
-    return "#15803D";
+    return "#DB2777"; // Pink 600
+
+  // Friendly - Premium Green/Teal
+  if (t.includes("ally") || t.includes("alliance")) return "#059669"; // Emerald 600
+  if (t.includes("동료") || t.includes("coworker")) return "#0891B2"; // Cyan 600
+  if (t.includes("친구") || t.includes("우호") || t.includes("friendly"))
+    return "#15803D"; // Green 700
+
+  // Mentor/Family - Premium Purple/Slate
+  if (t.includes("mentor") || t.includes("스승") || t.includes("멘토"))
+    return "#7C3AED"; // Violet 600
+  if (t.includes("family") || t.includes("가족")) return "#4F5861"; // Blue-Gray
+
+  if (t.includes("complex") || t.includes("복합")) return "#7C3AED";
   return "#A47764";
 };
 
@@ -87,7 +118,13 @@ const getRelationIcon = (type: string) => {
     t.includes("ally")
   )
     return <Users className="w-[18px] h-[18px]" />;
-  return <HelpCircle className="w-[16px] h-[16px]" />;
+  if (t.includes("mentor") || t.includes("스승"))
+    return <Star className="w-[18px] h-[18px]" fill="currentColor" />;
+  if (t.includes("family") || t.includes("가족"))
+    return <Users className="w-[18px] h-[18px]" />;
+  if (t.includes("complex") || t.includes("복합"))
+    return <Info className="w-[18px] h-[18px]" />;
+  return <HelpCircle className="w-[18px] h-[18px]" />;
 };
 
 function getInitials(name: string): string {
@@ -185,44 +222,25 @@ const EmotionBlob = ({
   );
 };
 
-const FactorLine = ({ factor }: { factor: StrengthFactor }) => {
+const FactorPill = ({ factor }: { factor: StrengthFactor }) => {
   const isFriendly = factor.category === "friendly";
   const color = isFriendly ? "#15803D" : "#A33A3A";
   const label = simplifyTerm(factor.type);
 
+  // 간결한 알약 형태 디자인
   return (
-    <div className="flex flex-col gap-1 py-3 border-b border-espresso-900/5 last:border-0">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span
-            style={{ color }}
-            className="p-1 rounded bg-white/80 shadow-sm border border-espresso-900/5"
-          >
-            {getRelationIcon(factor.type)}
-          </span>
-          <span className="text-base font-serif font-bold text-espresso-800 tracking-tight">
-            {label}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Star className="w-[13px] h-[13px] text-mocha-400 fill-mocha-400" />
-          <span className="text-[13px] font-black" style={{ color }}>
-            {factor.score}
-          </span>
-        </div>
+    <div className="flex items-center justify-between bg-white/50 rounded-full px-3 py-1.5 border border-espresso-900/5 shadow-sm">
+      <div className="flex items-center gap-2">
+        <span style={{ color }} className="shrink-0">
+          {getRelationIcon(factor.type)}
+        </span>
+        <span className="text-xs font-serif font-bold text-espresso-800 tracking-tight truncate max-w-[120px]">
+          {label}
+        </span>
       </div>
-      <div className="flex items-center gap-3 pl-10">
-        <div className="flex-1 h-1 bg-espresso-900/5 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${factor.weight * 100}%` }}
-            transition={{ duration: 1, delay: 0.5 }}
-          />
-        </div>
-        <span className="text-xs font-bold text-espresso-300 uppercase shrink-0">
-          영향력 {factor.weight}
+      <div className="flex items-center gap-1 pl-2 border-l border-espresso-900/10 ml-2">
+        <span className="text-[10px] font-black" style={{ color }}>
+          {factor.score}
         </span>
       </div>
     </div>
@@ -284,6 +302,21 @@ const CharacterPerspective = ({
           <h2 className="text-[52px] md:text-[68px] font-serif font-black text-espresso-900 tracking-tight leading-none">
             {char.name}
           </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {perspectiveData.factors.slice(0, 3).map((f, i) => (
+              <span
+                key={i}
+                className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-600 backdrop-blur-sm whitespace-nowrap"
+              >
+                # {simplifyTerm(f.type)}
+              </span>
+            ))}
+            {perspectiveData.factors.length > 3 && (
+              <span className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-400 backdrop-blur-sm">
+                + {perspectiveData.factors.length - 3}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -324,19 +357,30 @@ const CharacterPerspective = ({
             </div>
           </div>
 
-          <div className="w-full bg-white/70 rounded-[2rem] p-6 shadow-xl border border-espresso-900/5 backdrop-blur-md">
-            <div className="flex items-center gap-2.5 mb-5">
+          <div className="w-full bg-white/70 rounded-[2rem] p-6 shadow-xl border border-espresso-900/5 backdrop-blur-md min-h-[220px] flex flex-col">
+            <div className="flex items-center gap-2.5 mb-4">
               <div className="w-4 h-4 rounded-full bg-mocha-500/20 flex items-center justify-center">
                 <Info className="w-2.5 h-2.5 text-mocha-500" />
               </div>
               <span className="text-sm font-black text-espresso-400 uppercase tracking-widest">
-                관계 포인트
+                주요 관계 요인
               </span>
             </div>
-            <div className="space-y-1">
-              {perspectiveData.factors.map((f, i) => (
-                <FactorLine key={i} factor={f} />
+
+            {/* Factor Pills Grid */}
+            <div className="flex flex-col gap-2">
+              {perspectiveData.factors.slice(0, 4).map((f, i) => (
+                <FactorPill key={i} factor={f} />
               ))}
+
+              {/* More Indicator */}
+              {perspectiveData.factors.length > 4 && (
+                <div className="flex items-center justify-center p-2 mt-1">
+                  <span className="text-xs font-bold text-mocha-400">
+                    + {perspectiveData.factors.length - 4} more factors
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -350,8 +394,11 @@ export function DeepAnalysisHero({
   targetCharacter,
   asymmetricStrength,
   className,
+  relationshipTypes: _relationshipTypes,
+  description,
   since,
 }: DeepAnalysisHeroProps) {
+  // Note: _relationshipTypes is passed for future use but currently colors are derived from factors
   const sourceColor = getRelationColor(
     asymmetricStrength.sourceToTarget.factors[0]?.type,
   );
@@ -375,6 +422,14 @@ export function DeepAnalysisHero({
               Deep Discovery Analysis
             </span>
           </div>
+          {description && (
+            <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-mocha-500/10 border border-mocha-500/20 shadow-sm backdrop-blur-xl">
+              <Star className="w-4 h-4 text-mocha-500 fill-mocha-500" />
+              <span className="text-sm font-black text-mocha-700">
+                {description}
+              </span>
+            </div>
+          )}
           {since && (
             <div className="flex items-center gap-2.5 text-base text-espresso-400 font-serif italic">
               <span className="text-mocha-300">✦</span>
@@ -399,10 +454,9 @@ export function DeepAnalysisHero({
             />
           </motion.div>
 
-          {/* Central Connecting Divider */}
-          <div className="hidden xl:flex flex-col justify-center items-center gap-8 pt-24 min-h-[600px] relative">
-            {/* Emotion Collision Effect (중앙 영역) */}
-            <div className="absolute inset-0 w-96 left-1/2 -translate-x-1/2 overflow-hidden pointer-events-none">
+          {/* Central Connecting Divider with Shader Effect */}
+          <div className="hidden xl:flex w-[280px] self-stretch flex-col relative pt-[8rem] shrink-0">
+            <div className="absolute inset-0 flex items-center justify-center">
               <EmotionCollisionEffect
                 factorsA={asymmetricStrength.sourceToTarget.factors}
                 factorsB={asymmetricStrength.targetToSource.factors}

@@ -30,6 +30,8 @@ export function RelationshipDeepAnalysisModal({
   data,
   onNavigateToEvent,
 }: RelationshipDeepAnalysisModalProps) {
+  // Add console log for deep analysis data verification
+
   if (!data) return null;
 
   const {
@@ -77,9 +79,14 @@ export function RelationshipDeepAnalysisModal({
               >
                 {/* Dossier Card */}
                 <div className="relative w-full max-w-6xl h-full max-h-[92vh] bg-[#FAFAF8] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
+                  {/* Accessibility: DialogTitle is required by Radix for screen readers */}
+                  <DialogPrimitive.Title className="sr-only">
+                    {sourceCharacter.name}와 {targetCharacter.name}의 관계 심층
+                    분석
+                  </DialogPrimitive.Title>
                   {/* Fixed Close Button for the entire Dossier */}
                   <Button
-                    variant="ghost"
+                    intent="ghost"
                     size="icon"
                     onClick={onClose}
                     className="absolute right-8 top-8 z-[100] rounded-full hover:bg-espresso-50 w-12 h-12 shadow-lg border border-espresso-200/30 bg-white/80 backdrop-blur-md transition-all active:scale-95"
@@ -89,8 +96,8 @@ export function RelationshipDeepAnalysisModal({
 
                   {/* Dynamic Mood Background (Absolute) */}
                   <MoodBackground
-                    type={relationshipTypes[0] || "neutral"}
-                    className="opacity-40"
+                    type={relationshipTypes}
+                    // className="opacity-40" // Removed to allow vivid colors
                   />
 
                   {/* Scrollable Content Area */}
@@ -100,6 +107,8 @@ export function RelationshipDeepAnalysisModal({
                       sourceCharacter={sourceCharacter}
                       targetCharacter={targetCharacter}
                       asymmetricStrength={asymmetricStrength}
+                      relationshipTypes={relationshipTypes}
+                      description={data.description}
                       onClose={onClose}
                       since={since}
                     />
