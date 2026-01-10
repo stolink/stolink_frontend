@@ -398,6 +398,7 @@ export default function WorldPage() {
                 <CharacterGraphCanvas
                   characters={characters}
                   links={links}
+                  events={projectEvents}
                   onNodeDragEnd={async (node) => {
                     if (node.id.startsWith("temp-node") || !node.x || !node.y)
                       return;
@@ -426,6 +427,7 @@ export default function WorldPage() {
                 <CharacterGraph
                   characters={characters}
                   links={links}
+                  events={projectEvents}
                   onNodeDragEnd={async (node) => {
                     if (node.id.startsWith("temp-node") || !node.x || !node.y)
                       return;

@@ -40,7 +40,7 @@ function eventToBiography(event: Event): BiographyEvent {
  */
 export function useCharacterEvents(
   characterId: string | null,
-  options: UseEventsOptions = {}
+  options: UseEventsOptions = {},
 ) {
   const { enabled = true } = options;
 
@@ -71,16 +71,16 @@ export function useCharacterEvents(
  */
 export function useProjectEvents(
   projectId: string | null,
-  options: UseEventsOptions = {}
+  options: UseEventsOptions = {},
 ) {
   const { enabled = true } = options;
 
   return useQuery({
     queryKey: ["events", "project", projectId],
-    queryFn: async (): Promise<BiographyEvent[]> => {
+    queryFn: async (): Promise<Event[]> => {
       if (!projectId) return [];
       const events = await eventService.getByProject(projectId);
-      return events.map(eventToBiography);
+      return events;
     },
     enabled: enabled && !!projectId,
     staleTime: 5 * 60 * 1000,
