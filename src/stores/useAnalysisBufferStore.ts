@@ -101,6 +101,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             if (projectId && state.activeJobs[projectId]) {
               state.currentJobId = state.activeJobs[projectId];
               state.currentJobType = "analysis"; // Persisted jobs are analysis by default
+              // ⚠️ Do NOT set isAnalyzing = true here.
+              // Let useProjectAnalysis validate the job first.
+              state.isAnalyzing = false;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;

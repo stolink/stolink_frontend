@@ -165,7 +165,11 @@ export function useProjectAnalysis(
         }
       }
 
-      if (!isAnalyzing) {
+      // Only set analyzing state if SSE confirms the job is actually running
+      if (
+        !isAnalyzing &&
+        (jobStatus === "processing" || jobStatus === "pending")
+      ) {
         setBufferAnalyzing(true);
       }
     }
@@ -430,12 +434,12 @@ export function useProjectAnalysis(
     } catch (error: unknown) {
       console.warn("[useProjectAnalysis] checkJobStatus: Failed!", error);
 
-      // If 404 (Not Found) or 500 (Server Error - likely invalid ID), clear the state.
+      // If 404 (Not Found), 422 (Invalid ID format), or 500 (Server Error), clear the state.
       const axiosError = error as { response?: { status?: number } };
       const status = axiosError?.response?.status;
-      if (status === 404 || status === 500) {
+      if (status === 404 || status === 422 || status === 500) {
         console.log(
-          `[useProjectAnalysis] checkJobStatus: Clearing invalid job ID (Error ${status})`,
+          `[useProjectAnalysis] checkJobStatus: Invalid job ID (Error ${status}). Clearing state.`,
         );
         setBufferAnalyzing(false);
         setJobId(null);
