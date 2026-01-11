@@ -94,9 +94,6 @@ export function useProjectAnalysis(
   );
   const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
   const resetAnalysis = useAnalysisBufferStore((state) => state.resetAnalysis);
-  const setLastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.setLastConsistencyReport
-  );
   const lastConsistencyReport = useAnalysisBufferStore(
     (state) => state.lastConsistencyReport
   );
@@ -134,7 +131,9 @@ export function useProjectAnalysis(
     // Trigger completion callback
     onCompleteRef.current?.(lastResultRef.current);
     if (lastResultRef.current?.consistencyReport) {
-      setLastConsistencyReport(lastResultRef.current.consistencyReport);
+      useAnalysisBufferStore
+        .getState()
+        .setLastConsistencyReport(lastResultRef.current.consistencyReport);
     }
     lastResultRef.current = null;
 
@@ -167,7 +166,6 @@ export function useProjectAnalysis(
     setGlobalProgress,
     setLastAnalyzedHashes,
     clearStoreJobs,
-    setLastConsistencyReport,
   ]);
 
   // 프로젝트 ID 설정
@@ -389,7 +387,9 @@ export function useProjectAnalysis(
 
     if (currentActiveJobIds.length === 0) {
       if (isAnalyzing) {
-        finalizeAnalysis();
+        startTransition(() => {
+          finalizeAnalysis();
+        });
       }
       return;
     }
@@ -409,13 +409,15 @@ export function useProjectAnalysis(
         console.warn(
           "[useProjectAnalysis] Progress stuck at 100% for 5s. Forcing completion."
         );
-        finalizeAnalysis();
-        setIsStuck(true);
+        startTransition(() => {
+          finalizeAnalysis();
+          setIsStuck(true);
+        });
       }
     } else {
       lastProgressRef.current = averageProgress;
       lastProgressUpdateRef.current = Date.now();
-      if (isStuck) setIsStuck(false);
+      if (isStuck) startTransition(() => setIsStuck(false));
     }
   }, [
     jobProgresses,
@@ -497,7 +499,23 @@ export function useProjectAnalysis(
     triggerReanalysisRef.current = triggerAnalysis;
   }, [triggerAnalysis]);
 
-  // Handle Pollings/Initial Load
+  // 자동 flush 체크 (주기적)
+  useEffect(() => {
+    if (!projectId || !enabled) return;
+
+    const checkAutoFlush = () => {
+      if (shouldAutoFlush()) {
+        triggerAnalysis();
+      }
+    };
+
+    // 1분마다 체크
+    const intervalId = window.setInterval(checkAutoFlush, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [projectId, enabled, shouldAutoFlush, triggerAnalysis]);
+
+  // Handle Initial Load & Job ID Changes
   useEffect(() => {
     if (
       currentJobId &&
@@ -509,10 +527,31 @@ export function useProjectAnalysis(
 
   // Polling Fallback
   useEffect(() => {
-    if (!currentJobId || !isAnalyzing || isConnected) return;
-    const intervalId = window.setInterval(checkJobStatus, 5000);
-    return () => window.clearInterval(intervalId);
-  }, [currentJobId, isAnalyzing, isConnected, checkJobStatus]);
+    if (
+      !currentJobId ||
+      (currentJobType !== "analysis" && currentJobType !== "image") ||
+      !isAnalyzing ||
+      isConnected
+    ) {
+      return;
+    }
+
+    console.log(
+      "[useProjectAnalysis] SSE not active (isConnected: false). Starting 5s polling fallback..."
+    );
+    const intervalId = window.setInterval(() => {
+      startTransition(() => {
+        checkJobStatus();
+      });
+    }, 5000);
+
+    return () => {
+      if (currentJobId && isAnalyzing && !isConnected) {
+        console.log("[useProjectAnalysis] Cleaning up polling interval.");
+      }
+      window.clearInterval(intervalId);
+    };
+  }, [currentJobId, currentJobType, isAnalyzing, isConnected, checkJobStatus]);
 
   return {
     isAnalyzing,
