@@ -13,7 +13,7 @@ interface EditorLeftSidebarProps {
   onAddChapter: (
     title: string,
     parentId?: string,
-    type?: "chapter" | "section"
+    type?: "chapter" | "section",
   ) => Promise<Document | null>;
   onRenameChapter: (id: string, newTitle: string) => void;
   onDeleteChapter: (id: string) => void;

@@ -29,8 +29,8 @@ import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 import { generateAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
+export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 export { GROUP_COLORS } from "./constants";
-export { RelationshipDetailSheet } from "./RelationshipDetailSheet";
 
 interface CharacterGraphProps {
   characters: Character[];
@@ -110,17 +110,6 @@ export const CharacterGraph = forwardRef<
     }, [initialLinks]);
 
     // --- Hover Tooltip State ---
-    const [hoveredLinkData, setHoveredLinkData] = useState<{
-      type: string;
-      strength: number;
-      label?: string | null;
-      description?: string;
-      sourceName: string;
-      targetName: string;
-      x: number;
-      y: number;
-      link: RelationshipLink; // Store link to open modal
-    } | null>(null);
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -156,6 +145,12 @@ export const CharacterGraph = forwardRef<
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNodeClick, onLinkClick]);
+    // State for Link Hover Tooltip
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      link: RelationshipLink;
+      x: number;
+      y: number;
+    } | null>(null);
 
     // Tooltip close timer for smooth interaction
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -377,7 +372,7 @@ export const CharacterGraph = forwardRef<
     const { nodes, links, simulation } = useForceSimulation(
       initialNodes,
       processedLinks,
-      { width, height, enableGrouping },
+      { width, height },
     );
 
     /**
@@ -1078,23 +1073,6 @@ export const CharacterGraph = forwardRef<
               })}
 
             {/* Tooltip on Hover */}
-            {hoveredLinkData && (
-              <RelationshipEventTooltip
-                type={hoveredLinkData.type as UIRelationType}
-                types={hoveredLinkData.relationTypes as UIRelationType[]} // Pass types
-                strength={hoveredLinkData.strength}
-                description={hoveredLinkData.description}
-                sourceName={hoveredLinkData.sourceName}
-                targetName={hoveredLinkData.targetName}
-                x={hoveredLinkData.x + 5} // Close offset
-                y={hoveredLinkData.y + 5}
-                events={[]} // Pass empty events for now or fetch if needed
-                onEventClick={() => {}}
-                onOpenDeepAnalysis={() =>
-                  handleOpenDeepAnalysis(hoveredLinkData.link)
-                }
-              />
-            )}
 
             {nodes
               .filter(

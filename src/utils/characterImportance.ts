@@ -64,9 +64,7 @@ const RELATION_TYPE_WEIGHTS: Partial<Record<UIRelationType, number>> = {
   hostile: 1.2, // 갈등의 중심
   romantic: 1.1, // 서사적 중요도
   friendly: 1.0, // 기본
-  mentor: 1.1,
   family: 1.0,
-  rival: 1.1,
   neutral: 0.8,
   complex: 1.1,
 };
@@ -128,7 +126,7 @@ export function buildLinkIndex(links: RelationshipLink[]): LinkIndex {
  */
 export function calculateNetworkImportanceWithIndex(
   characterId: string,
-  linkIndex: LinkIndex
+  linkIndex: LinkIndex,
 ): number {
   const characterLinks = linkIndex.byCharacter.get(characterId);
   if (!characterLinks || characterLinks.length === 0) return 0;
@@ -163,7 +161,7 @@ export function calculateNetworkImportanceWithIndex(
  */
 export function calculateNetworkImportance(
   characterId: string,
-  links: RelationshipLink[]
+  links: RelationshipLink[],
 ): number {
   if (links.length === 0) return 0;
 
@@ -206,7 +204,7 @@ export function calculateNetworkImportance(
  */
 export function calculateNarrativeExposure(
   characterId: string,
-  scenes: SceneData[]
+  scenes: SceneData[],
 ): number {
   if (scenes.length === 0) return 0;
 
@@ -231,7 +229,7 @@ export function calculateNarrativeExposure(
   // 정규화: 전체 씬의 50%에 등장하면 100점
   const normalizedAppearance = Math.min(
     appearanceCount / (scenes.length * 0.5),
-    1
+    1,
   );
 
   // 평균 비트 가중치
@@ -301,11 +299,11 @@ export function calculateImportanceScoreFast(
   character: Character,
   linkIndex: LinkIndex,
   scenes: SceneData[] = [],
-  weights: ImportanceWeights = DEFAULT_WEIGHTS
+  weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance {
   const networkScore = calculateNetworkImportanceWithIndex(
     character._id,
-    linkIndex
+    linkIndex,
   );
   const narrativeScore = calculateNarrativeExposure(character._id, scenes);
   const attributeScore = calculateAttributeScore(character);
@@ -335,7 +333,7 @@ export function calculateImportanceScore(
   character: Character,
   links: RelationshipLink[],
   scenes: SceneData[] = [],
-  weights: ImportanceWeights = DEFAULT_WEIGHTS
+  weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance {
   const networkScore = calculateNetworkImportance(character._id, links);
   const narrativeScore = calculateNarrativeExposure(character._id, scenes);
@@ -368,7 +366,7 @@ export function calculateAllImportanceScoresBatch(
   characters: Character[],
   links: RelationshipLink[],
   scenes: SceneData[] = [],
-  weights: ImportanceWeights = DEFAULT_WEIGHTS
+  weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance[] {
   // 링크 인덱스 한 번 생성
   const linkIndex = buildLinkIndex(links);
@@ -380,7 +378,7 @@ export function calculateAllImportanceScoresBatch(
       characters[i],
       linkIndex,
       scenes,
-      weights
+      weights,
     );
   }
 
@@ -398,7 +396,7 @@ export function calculateAllImportanceScores(
   characters: Character[],
   links: RelationshipLink[],
   scenes: SceneData[] = [],
-  weights: ImportanceWeights = DEFAULT_WEIGHTS
+  weights: ImportanceWeights = DEFAULT_WEIGHTS,
 ): CharacterImportance[] {
   return characters
     .map((char) => calculateImportanceScore(char, links, scenes, weights))
@@ -414,7 +412,7 @@ export function calculateAllImportanceScores(
 export function importanceToNodeSize(
   score: number,
   minSize: number = 50,
-  maxSize: number = 100
+  maxSize: number = 100,
 ): number {
   // 0-100 점수를 minSize-maxSize 범위로 매핑
   const normalized = Math.max(0, Math.min(score, 100)) / 100;
