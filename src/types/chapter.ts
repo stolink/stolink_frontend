@@ -21,7 +21,7 @@ export interface Chapter {
   updatedAt: string;
 }
 
-export type ChapterType = 'part' | 'chapter' | 'section';
+export type ChapterType = "part" | "chapter" | "section";
 
 export interface ChapterTreeNode extends Chapter {
   children: ChapterTreeNode[];
@@ -39,6 +39,7 @@ export interface UpdateChapterInput {
   title?: string;
   content?: string;
   order?: number;
+  isPlot?: boolean;
   extras?: Record<string, string | number | boolean | string[]>;
 }
 
@@ -50,7 +51,7 @@ export interface ChapterDelta {
 }
 
 export interface DeltaChange {
-  type: 'insert' | 'delete' | 'retain';
+  type: "insert" | "delete" | "retain";
   position: number;
   content?: string;
   length?: number;
