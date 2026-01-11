@@ -88,9 +88,11 @@ interface ForeshadowingAppearanceInput {
   sectionTitle: string;
   isRecovery?: boolean;
   documentId?: string; // 레거시 호환
-  // 레거시 필드 (테스트 코드 호환성용)
+  /** @deprecated Use documentId and sectionTitle instead */
   sceneId?: string;
+  /** @deprecated Use documentId and sectionTitle instead */
   chapterId?: string;
+  /** @deprecated Use documentId and sectionTitle instead */
   chapterTitle?: string;
 }
 

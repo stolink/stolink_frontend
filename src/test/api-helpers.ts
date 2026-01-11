@@ -23,16 +23,17 @@ export const runApiTest = async (tc: ApiTestCase) => {
   // Ensure method is lowercase for msw http[method] access
   const method = tc.method.toLowerCase() as keyof typeof http;
 
-  if (typeof http[method] !== "function") {
+  // 1. Setup Mock
+  const httpMethod = http[method];
+  if (typeof httpMethod !== "function") {
     throw new Error(`Unsupported method: ${tc.method}`);
   }
 
-  // 1. Setup Mock
   // We use a clean handler for each test
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handler = (http[method] as any)(`${API_URL}${tc.url}`, async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return HttpResponse.json(tc.mockResponse.body as any, {
+  const handler = (
+    httpMethod as (url: string, resolver: () => Promise<Response>) => unknown
+  )(`${API_URL}${tc.url}`, async () => {
+    return HttpResponse.json(tc.mockResponse.body as Record<string, unknown>, {
       status: tc.mockResponse.status || 200,
     });
   });
