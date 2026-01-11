@@ -104,7 +104,7 @@ function App() {
               />
 
               {/* Demo Route - No Auth Required */}
-              <Route path="/demo" element={<EditorPage isDemo={true} />} />
+              <Route path="/demo" element={<EditorPage />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedLayout />}>

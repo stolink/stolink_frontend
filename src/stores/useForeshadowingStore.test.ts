@@ -110,7 +110,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선2",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs1.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs1.id, {
+        sectionTitle: "Section 1",
+        sceneId: "scene-1",
+      });
 
       const pending = useForeshadowingStore
         .getState()
@@ -140,10 +143,9 @@ describe("useForeshadowingStore", () => {
 
       useForeshadowingStore.getState().addAppearance(fs1.id, {
         sceneId: "scene-1",
+        sectionTitle: "Section 1",
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
       });
 
       const result = useForeshadowingStore.getState().getByScene("scene-1");
@@ -184,7 +186,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선2",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs1.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs1.id, {
+        sectionTitle: "Section 1",
+        sceneId: "scene-1",
+      });
 
       const result = useForeshadowingStore
         .getState()
@@ -201,7 +206,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs.id, {
+        sectionTitle: "Section 1",
+        sceneId: "scene-1",
+      });
 
       const state = useForeshadowingStore.getState().foreshadowings;
       expect(state[fs.id].status).toBe("recovered");
@@ -215,16 +223,20 @@ describe("useForeshadowingStore", () => {
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
         sceneId: "scene-1",
+        sectionTitle: "Section 1",
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs.id, {
+        sectionTitle: "Recovered Scene",
+        sceneId: "scene-1",
+      });
 
       const state = useForeshadowingStore.getState().foreshadowings;
-      expect(state[fs.id].appearances[0].isRecovery).toBe(true);
+      const lastAppearance =
+        state[fs.id].appearances[state[fs.id].appearances.length - 1];
+      expect(lastAppearance.isRecovery).toBe(true);
     });
   });
 
@@ -251,16 +263,16 @@ describe("useForeshadowingStore", () => {
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
         sceneId: "scene-1",
+        sectionTitle: "Section 1",
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test context",
       });
 
       const state = useForeshadowingStore.getState().foreshadowings;
       expect(state[fs.id].appearances).toHaveLength(1);
       expect(state[fs.id].appearances[0].sceneId).toBe("scene-1");
-      expect(state[fs.id].appearances[0].line).toBe(10);
+      expect(state[fs.id].appearances[0].sceneId).toBe("scene-1");
+      // line is removed from type
     });
 
     it("should set isRecovery to false by default", () => {
@@ -271,10 +283,9 @@ describe("useForeshadowingStore", () => {
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
         sceneId: "scene-1",
+        sectionTitle: "Section 1",
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
       });
 
       const state = useForeshadowingStore.getState().foreshadowings;
@@ -291,18 +302,16 @@ describe("useForeshadowingStore", () => {
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
         sceneId: "scene-1",
+        sectionTitle: "Section 1",
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
         sceneId: "scene-2",
+        sectionTitle: "Section 2",
         chapterId: "chapter-2",
         chapterTitle: "Chapter 2",
-        line: 20,
-        context: "test2",
       });
 
       useForeshadowingStore.getState().removeAppearance(fs.id, "scene-1");
