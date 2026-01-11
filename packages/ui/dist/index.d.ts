@@ -16,6 +16,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, Var
     asChild?: boolean;
     isLoading?: boolean;
     loadingText?: string;
+    variant?: VariantProps<typeof buttonVariants>["intent"];
 }
 declare const Button: React.ForwardRefExoticComponent<ButtonProps & React.RefAttributes<HTMLButtonElement>>;
 

@@ -136,7 +136,7 @@ export function AuthCard({
             {/* Google Login (Primary) */}
             <Button
               type="button"
-              className="w-full h-11 text-sm font-bold relative bg-paper border border-cloud-50 text-ink/80 hover:bg-cloud-50 hover:text-ink hover:border-mocha-400 transition-all duration-200 shadow-sm"
+              className="w-full h-12 text-sm font-bold relative bg-white border border-cloud-200 text-espresso-900 hover:bg-cloud-50 hover:border-mocha-400 transition-all duration-200 shadow-sm rounded-2xl"
               onClick={onGoogleLogin}
             >
               <svg
@@ -183,16 +183,16 @@ export function AuthCard({
               }}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-cloud-50/80 p-1.5 rounded-xl">
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-12 bg-cloud-100 p-1.5 rounded-xl">
                 <TabsTrigger
                   value="login"
-                  className="text-sm font-bold rounded-lg data-[state=active]:bg-paper data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-600 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   로그인
                 </TabsTrigger>
                 <TabsTrigger
                   value="register"
-                  className="text-sm font-bold rounded-lg data-[state=active]:bg-paper data-[state=active]:text-mocha-900 data-[state=active]:shadow-sm transition-all duration-300"
+                  className="text-sm font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:text-mocha-600 data-[state=active]:shadow-sm transition-all duration-300"
                 >
                   회원가입
                 </TabsTrigger>
@@ -214,7 +214,7 @@ export function AuthCard({
                       id="email"
                       type="email"
                       placeholder="name@example.com"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
+                      className="h-10 text-sm border-cloud-200 bg-white focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all font-medium"
                       {...loginForm.register("email")}
                     />
                     {loginForm.formState.errors.email && (
@@ -242,7 +242,7 @@ export function AuthCard({
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                        className="h-10 text-sm border-cloud-200 bg-white focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all"
                         {...loginForm.register("password")}
                       />
                       <button
@@ -265,7 +265,7 @@ export function AuthCard({
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-11 text-sm font-bold bg-mocha-500 hover:bg-mocha-700 text-white transition-all shadow-md hover:shadow-lg mt-4 border-none"
+                    className="w-full h-12 text-sm font-bold bg-mocha-500 hover:bg-mocha-600 text-white transition-all shadow-md hover:shadow-lg mt-4 border-none"
                     disabled={isLoginPending}
                   >
                     {isLoginPending ? "처리 중..." : "로그인"}
@@ -288,7 +288,7 @@ export function AuthCard({
                     <Input
                       id="reg-email"
                       type="email"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
+                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all font-medium"
                       {...registerForm.register("email")}
                     />
                   </div>
@@ -301,7 +301,7 @@ export function AuthCard({
                     </Label>
                     <Input
                       id="reg-nickname"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all font-medium"
+                      className="h-10 text-sm border-cloud-200 bg-white focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all font-medium"
                       {...registerForm.register("nickname")}
                     />
                   </div>
@@ -316,7 +316,7 @@ export function AuthCard({
                       id="reg-pass"
                       type="password"
                       placeholder="8자 이상"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                      className="h-10 text-sm border-cloud-200 bg-white focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all"
                       {...registerForm.register("password")}
                     />
                   </div>
@@ -330,13 +330,13 @@ export function AuthCard({
                     <Input
                       id="reg-confirm"
                       type="password"
-                      className="h-10 text-sm border-cloud-50 bg-cloud-50/20 focus:bg-paper focus:ring-mocha-500/20 focus:border-mocha-500 transition-all"
+                      className="h-10 text-sm border-cloud-200 bg-white focus:bg-white focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-500 transition-all"
                       {...registerForm.register("confirmPassword")}
                     />
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-11 text-sm font-bold bg-mocha-500 hover:bg-mocha-700 text-white transition-all shadow-md mt-4 border-none"
+                    className="w-full h-12 text-sm font-bold bg-mocha-500 hover:bg-mocha-600 text-white transition-all shadow-md hover:shadow-lg mt-4 border-none"
                     disabled={isRegisterPending}
                   >
                     {isRegisterPending ? "처리 중..." : "회원가입 완료"}
@@ -353,39 +353,78 @@ export function AuthCard({
           </div>
         </div>
 
-        {/* Right Column: Brand Visual (Hidden on mobile) */}
-        <div className="hidden md:flex flex-1 bg-gradient-to-br from-mocha-500 to-mocha-700 p-10 text-paper flex-col justify-between relative overflow-hidden">
-          {/* Abstract visual elements */}
-          <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-[-5%] left-[-5%] w-[200px] h-[200px] bg-mocha-400/10 rounded-full blur-2xl" />
+        {/* Right Column: Brand Visual - Calm Sage Glass Design (Hidden on mobile) */}
+        <div className="hidden md:flex flex-1 p-10 text-white flex-col justify-between relative overflow-hidden">
+          {/* Sage Green Gradient Background - Using new muted palette */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(145deg, #647A53 0%, #4D5E40 50%, #3D5A40 100%)",
+            }}
+          />
 
+          {/* Soft Light Overlay */}
+          <div
+            className="absolute inset-0 opacity-25"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 50% at 30% 20%, rgba(255,255,255,0.25) 0%, transparent 60%)",
+            }}
+          />
+
+          {/* Single Decorative Orb */}
+          <div
+            className="absolute w-48 h-48 rounded-full blur-3xl opacity-20"
+            style={{
+              background: "#7D9668",
+              top: "-15%",
+              right: "-10%",
+            }}
+          />
+
+          {/* Content Layer */}
           <div className="relative z-10">
-            <div className="flex items-center space-x-2 mb-10 opacity-90">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-heading font-black text-paper">
+            {/* Logo */}
+            <div className="flex items-center space-x-2.5 mb-10">
+              <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center font-heading font-black text-white border border-white/20">
                 S
               </div>
-              <span className="font-heading font-bold text-xl tracking-tight text-paper">
+              <span className="font-heading font-bold text-xl tracking-tight text-white">
                 StoLink
               </span>
             </div>
 
-            <h3 className="text-3xl font-heading font-bold mb-4 leading-tight text-paper">
+            <h3 className="text-3xl font-heading font-bold mb-4 leading-tight text-white">
               당신의 세계관이
               <br />
               데이터로 피어납니다
             </h3>
-            <p className="text-paper/80 text-sm leading-relaxed max-w-[280px]">
+            <p className="text-white/85 text-sm leading-relaxed max-w-[280px]">
               NLP 기술로 캐릭터 관계와 스토리 복선을 시각화하세요. StoLink가
               작가님의 창작 여정을 함께합니다.
             </p>
           </div>
 
+          {/* Testimonial Card - Glass Effect */}
           <div className="relative z-10">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10 shadow-xl">
+            <div
+              className="backdrop-blur-md rounded-2xl p-5"
+              style={{
+                background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.2)",
+              }}
+            >
               <div className="flex items-center space-x-4 mb-3">
-                <div className="w-10 h-10 rounded-full bg-mocha-400/30 flex items-center justify-center border border-white/20 overflow-hidden">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background: "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                  }}
+                >
                   <svg
-                    className="w-6 h-6 text-paper"
+                    className="w-5 h-5 text-white"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -393,15 +432,15 @@ export function AuthCard({
                   </svg>
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-paper">
+                  <div className="text-sm font-bold text-white">
                     수많은 작가들의 선택
                   </div>
-                  <div className="text-[10px] text-paper/70">
+                  <div className="text-xs text-white/70">
                     데이터 기반 세계관 관리 도구
                   </div>
                 </div>
               </div>
-              <p className="text-xs italic text-paper/90">
+              <p className="text-sm italic text-white/90 leading-relaxed">
                 "인물 관계가 복잡해질 때마다 막막했는데, StoLink의 그래프 덕분에
                 전체 흐름을 놓치지 않게 되었어요."
               </p>

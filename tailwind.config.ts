@@ -13,7 +13,6 @@ export default {
         cloud: Palette.cloud,
         sage: Palette.sage,
         espresso: Palette.espresso,
-        doechii: Palette.doechii,
 
         // Premium/Crafted colors - Mapped to Palette
         paper: Palette.cloud[50],
@@ -72,9 +71,9 @@ export default {
       fontFamily: {
         mono: ['"Pretendard"', "monospace"],
         sans: ['"Pretendard"', "system-ui", "sans-serif"],
-        serif: ['"Pretendard"', "serif"],
-        display: ['"Pretendard"', "serif"],
-        body: ['"Pretendard"', "serif"],
+        serif: ['"Spectral"', "serif"],
+        display: ['"DM Serif Display"', "serif"],
+        body: ['"Spectral"', "serif"],
       },
       fontSize: {
         body: "16px",

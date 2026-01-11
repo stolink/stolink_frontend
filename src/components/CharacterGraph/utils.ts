@@ -128,15 +128,17 @@ export function calculateRelationCounts(
  */
 export function getRelationshipColor(
   type: UIRelationType,
-
   _strength: number,
+  relationTypes?: string[],
 ): string {
+  // 5개 이상의 복합 관계인 경우 무조건 complex 색상 반환
+  if (relationTypes && relationTypes.length >= 5) {
+    return RELATION_PALETTE.complex.standard;
+  }
+
   const palette = RELATION_PALETTE[type];
   if (!palette) return "#9ca3af"; // Default gray
 
-  // Unified color using Meta-Category
-  // Strength is now handled by line weight, not color intensity (per user request)
-  // But we still return a single hex string.
   return palette.standard;
 }
 

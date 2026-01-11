@@ -9,6 +9,7 @@ import {
 } from "./ForeshadowingSuggestList";
 import type { ForeshadowingSuggestListRef } from "./ForeshadowingSuggestList";
 import { useForeshadowingStore } from "@/stores";
+import { toast } from "@/hooks/useToast";
 
 // ForeshadowingSuggest 확장 정의
 // projectId와 documentId는 TiptapEditor에서 configure 시 전달
@@ -75,6 +76,12 @@ export const ForeshadowingSuggest = Mention.extend({
               documentId: documentId || "unknown", // documentId 추가
               sectionTitle,
               isRecovery: true,
+            });
+
+            toast({
+              title: "복선이 회수되었습니다",
+              description: `"${label}" 복선이 현재 위치에서 회수되었습니다.`,
+              variant: "success",
             });
           }
 

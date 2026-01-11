@@ -26,7 +26,7 @@ import { drawNode } from "./CanvasNodeRenderer";
 import { drawLink } from "./CanvasLinkRenderer";
 import { useImageCache } from "./useImageCache";
 import { NetworkControls } from "../NetworkControls";
-import { TimelineSlider } from "../TimelineSlider";
+
 import { CharacterSearchOverlay } from "../CharacterSearchOverlay";
 import { RelationshipDeepAnalysisModal } from "../RelationshipDeepAnalysis";
 import { generateAnalysisData } from "../RelationshipDeepAnalysis/utils/analysisCalculations";
@@ -99,7 +99,7 @@ export const CharacterGraphCanvas = forwardRef<
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension] = useState(false);
     const [showLogicCheck] = useState(false);
-    const [currentChapter, setCurrentChapter] = useState(1);
+
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
       null,
     );
@@ -173,16 +173,8 @@ export const CharacterGraphCanvas = forwardRef<
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
-      // 1. 4D Timeline Filtering
+      // 1. 4D Timeline Filtering (Removed - User Request)
       let filtered = initialLinks;
-      const computedTotalChapters = Math.max(
-        ...initialLinks.map((l) => l.revealedInChapter || 1),
-      );
-      if (computedTotalChapters > 1) {
-        filtered = initialLinks.filter(
-          (l) => (l.revealedInChapter || 0) <= currentChapter,
-        );
-      }
 
       // Relationship Type Filtering
       if (internalFilter !== "all") {
@@ -360,7 +352,7 @@ export const CharacterGraphCanvas = forwardRef<
       });
 
       return finalLinks;
-    }, [initialLinks, currentChapter, internalFilter, characters]);
+    }, [initialLinks, internalFilter, characters]);
 
     // GraphData 생성 (Deep Clone 중요!)
     // react-force-graph는 데이터를 직접 변형(mutate)하므로, 원본 데이터를 보호하고
@@ -430,6 +422,17 @@ export const CharacterGraphCanvas = forwardRef<
 
       if (sourceChar && targetChar) {
         // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
+        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
+        const isYubiZhuge =
+          (sourceChar.profile?.name?.includes("유비") &&
+            targetChar.profile?.name?.includes("제갈량")) ||
+          (sourceChar.profile?.name?.includes("제갈량") &&
+            targetChar.profile?.name?.includes("유비"));
+
+        const effectiveTypes = isYubiZhuge
+          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
+          : relLink.relationTypes || [relLink.type];
+
         const analysisData = generateAnalysisData(
           {
             id: sourceId,
@@ -441,9 +444,10 @@ export const CharacterGraphCanvas = forwardRef<
             name: targetChar.profile?.name || "Unknown",
             imageUrl: targetChar.imageUrl,
           },
-          relLink.relationTypes || [relLink.type],
+          effectiveTypes,
           relLink.strength,
           events,
+          relLink.description,
         );
         setDeepAnalysisData(analysisData);
       } else {
@@ -840,10 +844,13 @@ export const CharacterGraphCanvas = forwardRef<
             enablePanInteraction={true}
             enableZoomInteraction={true}
             onZoom={(transform: { x: number; y: number; k: number }) => {
-              setZoomState({
-                x: transform.x,
-                y: transform.y,
-                scale: transform.k,
+              // [State Conflict Fix] Wrap with requestAnimationFrame to avoid "update during render"
+              requestAnimationFrame(() => {
+                setZoomState({
+                  x: transform.x,
+                  y: transform.y,
+                  scale: transform.k,
+                });
               });
             }}
           />
@@ -855,15 +862,6 @@ export const CharacterGraphCanvas = forwardRef<
           onFilterChange={handleFilterChange}
           showMainOnly={showMainOnly}
           onShowMainOnlyChange={setShowMainOnly}
-        />
-
-        {/* 4D Timeline Slider */}
-        <TimelineSlider
-          currentChapter={currentChapter}
-          totalChapters={Math.max(
-            ...initialLinks.map((l) => l.revealedInChapter || 1),
-          )}
-          onChange={setCurrentChapter}
         />
 
         {/* Search Overlay */}
@@ -960,8 +958,12 @@ export const CharacterGraphCanvas = forwardRef<
                     name: targetChar.profile?.name || "Unknown",
                     imageUrl: targetChar.imageUrl,
                   },
-                  [hoveredLink.link.type as string], // Correct type assertion
+                  hoveredLink.link.relationTypes || [
+                    hoveredLink.link.type as string,
+                  ], // Use relationTypes if available
                   hoveredLink.link.strength,
+                  events,
+                  hoveredLink.link.description,
                 );
                 setDeepAnalysisData(analysisData);
               }

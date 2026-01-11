@@ -83,12 +83,16 @@ export function useRelationshipLinks(
         return link;
       }
 
-      // 두 캐릭터가 모두 참여한 이벤트 필터링
-      const matchingEvents = events.filter(
-        (e) =>
-          e.participants?.includes(sourceName) &&
-          e.participants?.includes(targetName),
-      );
+      // 두 캐릭터가 모두 참여한 이벤트 필터링 (ID 또는 이름으로 매칭)
+      const matchingEvents = events.filter((e) => {
+        const hasSource =
+          e.participants?.includes(sourceId) ||
+          (sourceName && e.participants?.includes(sourceName));
+        const hasTarget =
+          e.participants?.includes(targetId) ||
+          (targetName && e.participants?.includes(targetName));
+        return hasSource && hasTarget;
+      });
 
       // Deduplication: Filter out similar events (same time + similar content)
       // Reverse match to keep the latest ones or first ones?

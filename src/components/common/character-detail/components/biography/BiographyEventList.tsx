@@ -97,7 +97,9 @@ export function BiographyEventList({
                               : "text-espresso-900 group-hover:text-mocha-700",
                           )}
                         >
-                          {event.narrativeSummary}
+                          {event.narrativeSummary.length > 50
+                            ? `${event.narrativeSummary.slice(0, 50)}...`
+                            : event.narrativeSummary}
                         </h5>
                         <p className="text-sm text-espresso-600 mt-1  leading-relaxed opacity-80 break-words whitespace-pre-wrap">
                           {event.description || "상세 설명 없음"}
