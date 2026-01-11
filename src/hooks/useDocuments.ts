@@ -124,8 +124,8 @@ export function useDocumentTree(projectId: string) {
  * Hook to get a single document by ID
  */
 export function useDocument(id: string | null) {
-  const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null,
+  const document = useDocumentStore(
+    (state) => (id && state.documents[id]) || null,
   );
 
   const updateDocument = useCallback(
@@ -235,10 +235,13 @@ export function useDocumentContent(id: string | null) {
 
   // Aggregate content from all pages
   const aggregatedContent = useMemo(() => {
-    if (!infiniteData) {
+    if (!infiniteData || !infiniteData.pages) {
       return storeContent;
     }
-    return infiniteData.pages.map((page) => page?.content || "").join("");
+    const combined = infiniteData.pages
+      .map((page) => page?.content || "")
+      .join("");
+    return combined || storeContent;
   }, [infiniteData, storeContent]);
 
   // Use fetched content if available, otherwise fall back to store content

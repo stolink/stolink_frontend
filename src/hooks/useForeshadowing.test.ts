@@ -29,11 +29,11 @@ describe("foreshadowingKeys", () => {
       "project-1",
       undefined,
     ]);
-    expect(foreshadowingKeys.list("project-1", { status: "active" })).toEqual([
+    expect(foreshadowingKeys.list("project-1", { status: "pending" })).toEqual([
       "foreshadowing",
       "list",
       "project-1",
-      { status: "active" },
+      { status: "pending" },
     ]);
     expect(foreshadowingKeys.unresolved("project-1")).toEqual([
       "foreshadowing",
@@ -66,14 +66,14 @@ describe("useForeshadowing", () => {
     const spy = vi.spyOn(foreshadowingService, "getAll");
 
     const { result } = renderHook(() =>
-      useForeshadowing("project-1", { status: "active" }),
+      useForeshadowing("project-1", { status: "pending" }),
     );
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(spy).toHaveBeenCalledWith("project-1", { status: "active" });
+    expect(spy).toHaveBeenCalledWith("project-1", { status: "pending" });
   });
 
   it("should not fetch when projectId is empty", () => {
@@ -161,8 +161,8 @@ describe("useCreateForeshadowing", () => {
         projectId: "project-1",
         tag: "새로운_복선",
         description: "Test",
-        status: "active",
-        importance: "high",
+        status: "pending",
+        importance: "major",
         appearances: [],
         createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-01T00:00:00Z",
@@ -195,7 +195,11 @@ describe("useUpdateForeshadowing", () => {
     vi.spyOn(foreshadowingService, "update").mockResolvedValueOnce({
       data: {
         id: "foreshadow-1",
+        projectId: "project-1",
         tag: "Updated Tag",
+        status: "pending",
+        appearances: [],
+        createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-02T00:00:00Z",
       },
     });
@@ -220,7 +224,11 @@ describe("useUpdateForeshadowing", () => {
     vi.spyOn(foreshadowingService, "update").mockResolvedValueOnce({
       data: {
         id: "foreshadow-1",
+        projectId: "project-1",
+        tag: "Test Tag",
         status: "recovered",
+        appearances: [],
+        createdAt: "2025-01-01T00:00:00Z",
         updatedAt: "2025-01-02T00:00:00Z",
       },
     });
@@ -245,7 +253,7 @@ describe("useUpdateForeshadowing", () => {
 describe("useDeleteForeshadowing", () => {
   it("should delete foreshadowing", async () => {
     vi.spyOn(foreshadowingService, "delete").mockResolvedValueOnce({
-      data: { id: "foreshadow-1" },
+      data: null,
     });
 
     const { result } = renderHook(() => useDeleteForeshadowing());
@@ -265,12 +273,18 @@ describe("useAddAppearance", () => {
     vi.spyOn(foreshadowingService, "addAppearance").mockResolvedValueOnce({
       data: {
         id: "foreshadow-1",
+        projectId: "project-1",
+        tag: "Test Tag",
+        status: "pending",
+        createdAt: "2025-01-01T00:00:00Z",
+        updatedAt: "2025-01-01T00:00:00Z",
         appearances: [
           {
             chapterId: "chapter-1",
             chapterTitle: "Chapter 1",
-            line: 42,
-            context: "Test context",
+            line: 10,
+            context: "Foreshadowing context",
+            isRecovery: false,
           },
         ],
       },
@@ -283,9 +297,10 @@ describe("useAddAppearance", () => {
       appearance: {
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 42,
-        context: "Test context",
-      },
+        line: 10,
+        context: "Foreshadowing context",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
 
     expect(foreshadowingService.addAppearance).toHaveBeenCalledWith(
@@ -293,8 +308,8 @@ describe("useAddAppearance", () => {
       {
         chapterId: "chapter-1",
         chapterTitle: "Chapter 1",
-        line: 42,
-        context: "Test context",
+        line: 10,
+        context: "Foreshadowing context",
       },
     );
 
@@ -309,7 +324,12 @@ describe("useRecoverForeshadowing", () => {
     vi.spyOn(foreshadowingService, "recover").mockResolvedValueOnce({
       data: {
         id: "foreshadow-1",
+        projectId: "project-1",
+        tag: "Test Tag",
         status: "recovered",
+        appearances: [],
+        createdAt: "2025-01-01T00:00:00Z",
+        updatedAt: "2025-01-01T00:00:00Z",
       },
     });
 
@@ -318,18 +338,19 @@ describe("useRecoverForeshadowing", () => {
     await result.current.mutateAsync({
       id: "foreshadow-1",
       recoveryInfo: {
+        sectionTitle: "Chapter 5",
+        isRecovery: true,
         chapterId: "chapter-5",
         chapterTitle: "Chapter 5",
-        line: 100,
-        context: "Recovery context",
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, // Cast as any because service param might differ from internal Appearance type
     });
 
     expect(foreshadowingService.recover).toHaveBeenCalledWith("foreshadow-1", {
+      sectionTitle: "Chapter 5",
+      isRecovery: true,
       chapterId: "chapter-5",
       chapterTitle: "Chapter 5",
-      line: 100,
-      context: "Recovery context",
     });
 
     await waitFor(() => {
