@@ -27,9 +27,6 @@ export const runApiTest = async (tc: ApiTestCase) => {
 
   // 1. Setup Mock
   const httpMethod = http[method];
-  if (typeof httpMethod !== "function") {
-    throw new Error(`Unsupported method: ${tc.method}`);
-  }
 
   // We use a clean handler for each test
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,8 +38,6 @@ export const runApiTest = async (tc: ApiTestCase) => {
   server.use(handler);
 
   // 2. Perform Request
-  // Remove leading slash if present to avoid double slash with API_URL if not careful,
-  // but here API_URL has no trailing slash and urls usually start with /.
   const endpoint = tc.requestUrl || tc.url;
   const fetchUrl = `${API_URL}${endpoint}`;
 
@@ -60,16 +55,9 @@ export const runApiTest = async (tc: ApiTestCase) => {
   expect(res.status).toBe(tc.expectedStatus || 200);
 
   // 4. Verify Body
-  // Only parse JSON if we expect a body or need verification
-  if (tc.verify || tc.mockResponse.body) {
-    // Some responses might be empty (204 or just success: true)
-    // If content-length is 0, don't parse
-    const text = await res.text();
-    if (text) {
-      const json = JSON.parse(text);
-      if (tc.verify) {
-        tc.verify(json);
-      }
-    }
+  const text = await res.text();
+  if (text && tc.verify) {
+    const json = JSON.parse(text);
+    tc.verify(json);
   }
 };
