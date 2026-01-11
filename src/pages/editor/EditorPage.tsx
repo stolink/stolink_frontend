@@ -290,7 +290,8 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   );
 
   const handleAnalysisComplete = useCallback(
-    (result: AnalysisResultData) => {
+    (result: AnalysisResultData | null) => {
+      if (!result) return;
       const diff = calculateAnalysisDiff(
         characters,
         graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
