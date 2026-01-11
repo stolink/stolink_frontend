@@ -47,8 +47,9 @@ interface AnalysisBufferStore {
   progress: number;
   currentJobId: string | null;
   currentJobType: "analysis" | "image" | null; // Added for isolation
-  activeJobs: Record<string, string>; // projectId -> jobId 매핑
+  activeJobs: Record<string, string[]>; // projectId -> jobIds 배열
   lastAnalyzedHashes: Record<string, string>; // documentId -> contentHash
+  pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 분석 결과 (일관성 리포트)
 
   // 액션
@@ -61,15 +62,27 @@ interface AnalysisBufferStore {
   setAnalyzing: (analyzing: boolean) => void;
   setProgress: (progress: number) => void;
   setJobId: (id: string | null, type?: "analysis" | "image") => void;
+  addJobId: (
+    projectId: string,
+    id: string,
+    type?: "analysis" | "image"
+  ) => void;
+  removeJobId: (projectId: string, id: string) => void;
   setLastAnalyzedHashes: (hashes: Record<string, string>) => void;
   setLastConsistencyReport: (report: ConsistencyReport | null) => void;
-  // Job 완료/실패 시 해당 프로젝트의 Job ID 제거
-  clearJobId: (projectId: string) => void;
+  // 분석 요청된 문서 트래킹
+  setPendingDocuments: (docs: Record<string, string>) => void;
+  clearPendingDocuments: () => void;
+  // 변경된 문서만 추출 (해시 비교)
+  getChangedDocuments: () => BufferChunk[];
+  // Job 완료/실패 시 해당 프로젝트의 모든 Job ID 제거
+  clearJobs: (projectId: string) => void;
   // 강제 초기화
   resetAnalysis: () => void;
 
   // 유틸리티
   getBufferSummary: () => { charCount: number; documentCount: number };
+  hasUnanalyzedChanges: () => boolean; // 버퍼에 분석 안 된 변경이 있는지
 }
 
 export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
@@ -85,6 +98,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       currentJobType: null,
       activeJobs: {}, // 초기화
       lastAnalyzedHashes: {},
+      pendingDocuments: {}, // 분석 요청된 문서 트래킹
       lastConsistencyReport: null,
 
       setProjectId: (projectId) => {
@@ -98,12 +112,11 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.lastConsistencyReport = null; // 프로젝트 변경 시 리포트 초기화
             // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
 
-            if (projectId && state.activeJobs[projectId]) {
-              state.currentJobId = state.activeJobs[projectId];
-              state.currentJobType = "analysis"; // Persisted jobs are analysis by default
-              // ⚠️ Do NOT set isAnalyzing = true here.
-              // Let useProjectAnalysis validate the job first.
-              state.isAnalyzing = false;
+            if (projectId && state.activeJobs[projectId]?.length > 0) {
+              const jobs = state.activeJobs[projectId];
+              state.currentJobId = jobs[jobs.length - 1]; // 가장 최신 Job을 일단 표시
+              state.currentJobType = "analysis";
+              state.isAnalyzing = true;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;
@@ -119,7 +132,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // 같은 문서의 이전 청크가 있으면 교체 (덮어쓰기)
           const existingIndex = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId,
+            (chunk) => chunk.documentId === documentId
           );
 
           if (existingIndex >= 0) {
@@ -149,7 +162,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       removeFromBuffer: (documentId) => {
         set((state) => {
           const index = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId,
+            (chunk) => chunk.documentId === documentId
           );
           if (index >= 0) {
             state.bufferCharCount -= state.buffer[index].charCount;
@@ -200,7 +213,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 
       setJobId: (id, type = "analysis") => {
         console.log(
-          `[useAnalysisBufferStore] setJobId: ID=${id}, Type=${type}`,
+          `[useAnalysisBufferStore] setJobId: ID=${id}, Type=${type}`
         );
         set((state) => {
           state.currentJobId = id;
@@ -208,25 +221,65 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           if (id === null) {
             state.progress = 0;
             state.isAnalyzing = false;
+            if (state.projectId) {
+              delete state.activeJobs[state.projectId];
+            }
           } else {
-            // When a job starts, ensure analyzing state is true
             state.isAnalyzing = true;
-          }
-          if (state.projectId && id) {
-            state.activeJobs[state.projectId] = id;
-          } else if (state.projectId && id === null) {
-            delete state.activeJobs[state.projectId];
+            if (state.projectId) {
+              state.activeJobs[state.projectId] = [id];
+            }
           }
         });
       },
 
-      clearJobId: (projectId) => {
+      addJobId: (projectId, id, type = "analysis") => {
+        set((state) => {
+          if (!state.activeJobs[projectId]) {
+            state.activeJobs[projectId] = [];
+          }
+          if (!state.activeJobs[projectId].includes(id)) {
+            state.activeJobs[projectId].push(id);
+          }
+          state.currentJobId = id;
+          state.currentJobType = type;
+          state.isAnalyzing = true;
+        });
+      },
+
+      removeJobId: (projectId, id) => {
+        set((state) => {
+          if (state.activeJobs[projectId]) {
+            state.activeJobs[projectId] = state.activeJobs[projectId].filter(
+              (jobId) => jobId !== id
+            );
+            if (state.activeJobs[projectId].length === 0) {
+              delete state.activeJobs[projectId];
+              if (state.currentJobId === id) {
+                state.currentJobId = null;
+                state.currentJobType = null;
+                // isAnalyzing과 progress는 finalizeAnalysis에서 처리
+                // (여기서 false로 설정하면 progress effect에서 감지 못함)
+              }
+            } else if (state.currentJobId === id) {
+              // 다른 남은 Job이 있으면 그것으로 전환
+              state.currentJobId =
+                state.activeJobs[projectId][
+                  state.activeJobs[projectId].length - 1
+                ];
+            }
+          }
+        });
+      },
+
+      clearJobs: (projectId) => {
         set((state) => {
           delete state.activeJobs[projectId];
           if (state.projectId === projectId) {
             state.currentJobId = null;
             state.currentJobType = null;
             state.isAnalyzing = false;
+            state.progress = 0;
           }
         });
       },
@@ -243,12 +296,53 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           state.lastConsistencyReport = report;
         });
       },
+
+      setPendingDocuments: (docs) => {
+        set((state) => {
+          state.pendingDocuments = { ...state.pendingDocuments, ...docs };
+        });
+      },
+
+      clearPendingDocuments: () => {
+        set((state) => {
+          state.pendingDocuments = {};
+        });
+      },
+
+      getChangedDocuments: () => {
+        const state = get();
+        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
+
+        // 버퍼에서 변경된 문서만 추출
+        // 1. 이미 분석 요청 중인 문서(pendingDocuments)는 제외
+        // 2. 마지막 분석 해시(lastAnalyzedHashes)와 다른 문서만 포함
+        return buffer.filter((chunk) => {
+          // 이미 분석 요청 중인 문서는 스킵
+          if (pendingDocuments[chunk.documentId]) {
+            return false;
+          }
+
+          // 해시 계산 (간단한 해시)
+          let hash = 0;
+          for (let i = 0; i < chunk.content.length; i++) {
+            const char = chunk.content.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash |= 0;
+          }
+          const contentHash = hash.toString(36);
+
+          // 이전 분석과 다르면 변경된 것
+          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
+        });
+      },
+
       resetAnalysis: () => {
         set((state) => {
           state.currentJobId = null;
           state.currentJobType = null;
           state.isAnalyzing = false;
           state.progress = 0;
+          state.pendingDocuments = {};
           if (state.projectId) {
             delete state.activeJobs[state.projectId];
           }
@@ -261,6 +355,29 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           charCount: state.bufferCharCount,
           documentCount: state.buffer.length,
         };
+      },
+
+      hasUnanalyzedChanges: () => {
+        const state = get();
+        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
+
+        return buffer.some((chunk) => {
+          // 이미 분석 요청 중인 문서는 제외
+          if (pendingDocuments[chunk.documentId]) {
+            return false;
+          }
+
+          // 해시 계산
+          let hash = 0;
+          for (let i = 0; i < chunk.content.length; i++) {
+            const char = chunk.content.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash |= 0;
+          }
+          const contentHash = hash.toString(36);
+
+          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
+        });
       },
     })),
     {
@@ -277,8 +394,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         activeJobs: state.activeJobs, // 추가
         lastAnalyzedHashes: state.lastAnalyzedHashes,
       }),
-    },
-  ),
+    }
+  )
 );
 
 // 설정 상수 export (테스트 및 UI 표시용)
