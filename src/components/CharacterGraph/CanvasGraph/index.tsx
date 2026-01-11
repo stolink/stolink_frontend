@@ -81,6 +81,7 @@ export const CharacterGraphCanvas = forwardRef<
       className,
       showSearch = true,
       onNodeDragEnd,
+      nodeChanges,
     },
     ref,
   ) => {
@@ -722,7 +723,7 @@ export const CharacterGraphCanvas = forwardRef<
                   isHovered: hoveredNodeId === charNode.id,
                 },
                 imageCache,
-                changeType: null,
+                changeType: (nodeChanges && nodeChanges[charNode.id]) || null,
                 showLogicCheck,
               });
             }}
