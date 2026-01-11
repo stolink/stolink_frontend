@@ -64,14 +64,14 @@ function transformBackendCharacter(backendChar: any): Character {
   const aliases = safeParse(backendChar.aliases, backendChar.aliasesJson || []);
   const rawAppearance = safeParse(
     backendChar.appearance,
-    backendChar.appearanceJson || {}
+    backendChar.appearanceJson || {},
   );
 
   // 🆕 callback_result.json 기준: profile.personality는 객체 (core_traits, flaws, values)
   const profilePersonality = backendChar.profile?.personality || {};
   const rawPersonality = safeParse(
     backendChar.personality,
-    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] }
+    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
   // 🆕 callback_result.json 기준: relations.graph에서 직접 매핑
@@ -228,7 +228,7 @@ export const characterService = {
   getAll: async (projectId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
-      `/projects/${projectId}/characters`
+      `/projects/${projectId}/characters`,
     );
 
     // Transform backend response to frontend type
@@ -252,7 +252,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.post<ApiResponse<any>>(
       `/projects/${projectId}/characters`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -264,7 +264,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.patch<ApiResponse<any>>(
       `/characters/${id}`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -279,7 +279,7 @@ export const characterService = {
 
   regenerateImage: async (id: string) => {
     const response = await api.post<ApiResponse<{ jobId: string }>>(
-      `/characters/${id}/regenerate`
+      `/characters/${id}/regenerate`,
     );
     return response.data;
   },

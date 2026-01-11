@@ -12,7 +12,6 @@ interface UseJobSSEOptions<T> {
   onComplete?: (result: T) => void;
   onError?: (error: string) => void;
   onTimeout?: () => void;
-  onMessage?: (data: unknown) => void;
 }
 
 interface UseJobSSEReturn<T> {
@@ -50,7 +49,6 @@ export function useJobSSE<T = unknown>(
     onComplete,
     onError,
     onTimeout,
-    onMessage,
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -68,14 +66,12 @@ export function useJobSSE<T = unknown>(
   const onCompleteRef = useRef(onComplete);
   const onErrorRef = useRef(onError);
   const onTimeoutRef = useRef(onTimeout);
-  const onMessageRef = useRef(onMessage);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
     onErrorRef.current = onError;
     onTimeoutRef.current = onTimeout;
-    onMessageRef.current = onMessage;
-  }, [onComplete, onError, onTimeout, onMessage]);
+  }, [onComplete, onError, onTimeout]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -137,7 +133,6 @@ export function useJobSSE<T = unknown>(
         const data = JSON.parse(e.data) as SSEProgressEvent;
         setProgress(data.percent);
         setJobStatus("processing");
-        onMessageRef.current?.({ ...data, type: "progress" });
       } catch {
         console.warn("[useJobSSE] Failed to parse progress event:", e.data);
       }
@@ -151,7 +146,6 @@ export function useJobSSE<T = unknown>(
         setResult(data.result);
         setJobStatus("completed");
         setProgress(100);
-        onMessageRef.current?.({ ...data, type: "completed" });
         onCompleteRef.current?.(data.result);
         cleanup();
       } catch {
@@ -166,7 +160,6 @@ export function useJobSSE<T = unknown>(
         const data = JSON.parse(e.data) as SSEFailedEvent;
         setError(data.error);
         setJobStatus("failed");
-        onMessageRef.current?.({ ...data, type: "failed" });
         onErrorRef.current?.(data.error);
         cleanup();
       } catch {
@@ -177,10 +170,9 @@ export function useJobSSE<T = unknown>(
     // Generic message update
     eventSource.onmessage = (e) => {
       console.log(`[useJobSSE] Generic message for ${jobId}:`, e.data);
+      // If the backend doesn't use custom event types, it might send everything here
       try {
         const data = JSON.parse(e.data);
-        onMessageRef.current?.(data);
-        // If the backend doesn't use custom event types, it might send everything here
         if (data.type === "progress" || data.percent !== undefined) {
           setProgress(data.percent || 0);
           setJobStatus("processing");

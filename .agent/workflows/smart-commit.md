@@ -90,7 +90,6 @@ git diff --staged --stat
 
 # Conventional Commit 메시지 생성 (diff 분석 기반)
 # Hook 실행을 위해 --no-verify 제거 (Lint/Type Check 수행)
-npm run type-check
 git commit -m "<type>: <설명>"
 
 # 원격에 푸시

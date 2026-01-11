@@ -19,7 +19,7 @@ export const characterKeys = {
  */
 export function useCharacters(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: characterKeys.list(projectId),
@@ -37,6 +37,7 @@ export function useCharacters(
           duplicates: ids.filter((id, index) => ids.indexOf(id) !== index),
         });
       }
+
       // [Fix] Deduplicate by _id to prevent React key warnings
       const seen = new Set<string>();
       return data.filter((c) => {
@@ -106,7 +107,7 @@ export function useUpdateCharacter() {
 
       queryClient.setQueryData(
         characterKeys.detail(id),
-        (old: Character | undefined) => (old ? { ...old, ...payload } : old)
+        (old: Character | undefined) => (old ? { ...old, ...payload } : old),
       );
 
       return { previous, id };
@@ -115,7 +116,7 @@ export function useUpdateCharacter() {
       if (context?.previous) {
         queryClient.setQueryData(
           characterKeys.detail(context.id),
-          context.previous
+          context.previous,
         );
       }
     },

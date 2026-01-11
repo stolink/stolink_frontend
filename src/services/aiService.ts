@@ -1,6 +1,5 @@
 import api from "@/api/client";
 import type { ApiResponse, JobResponse } from "@/types/api";
-import type { AnalysisResultData } from "@/types/analysisResult";
 
 const BASE_URL = "/ai";
 
@@ -8,14 +7,6 @@ interface ChatContext {
   includeCharacters?: boolean;
   includeForeshadowing?: boolean;
   [key: string]: unknown;
-}
-
-// 프로젝트 분석 Job 상태 응답 타입
-export interface ProjectAnalysisJobStatus {
-  jobId: string | null;
-  status: "processing" | "pending" | "completed" | "failed" | null;
-  progress?: number;
-  lastCompletedAt?: string;
 }
 
 export const aiService = {
@@ -49,32 +40,10 @@ export const aiService = {
     documentId?: string;
     content?: string;
     documentIds?: string[];
-    analysisType?: "partial_snippet" | "full";
   }) => {
-    let url = `${BASE_URL}/analyze`;
-    const requestBody: Record<string, unknown> = { ...payload };
-
-    // If documentId is present, use the resource-specific endpoint
-    if (payload.documentId) {
-      url = `/documents/${payload.documentId}/analyze`;
-    }
-
-    // Map analysisType to analysis_type (snake_case)
-    if (payload.analysisType) {
-      requestBody.analysis_type = payload.analysisType;
-    }
-
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
-    >(url, requestBody);
-    return response.data;
-  },
-
-  // 4. Get Analysis Result (Directly by Document ID)
-  getAnalysisResult: async (documentId: string) => {
-    const response = await api.get<ApiResponse<AnalysisResultData>>(
-      `/documents/${documentId}/analysis`
-    );
+    >(`${BASE_URL}/analyze`, payload);
     return response.data;
   },
 
@@ -82,16 +51,6 @@ export const aiService = {
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
       `/ai/jobs/${jobId}`
-    );
-    return response.data.data;
-  },
-
-  // 5. Get Project Analysis Job Status (프로젝트 기준 최신 job 상태 조회)
-  getProjectAnalysisJob: async (
-    projectId: string
-  ): Promise<ProjectAnalysisJobStatus> => {
-    const response = await api.get<ApiResponse<ProjectAnalysisJobStatus>>(
-      `/projects/${projectId}/analysis/job`
     );
     return response.data.data;
   },
