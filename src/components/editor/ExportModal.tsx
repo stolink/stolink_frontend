@@ -591,7 +591,7 @@ export default function ExportModal({
           {mode === "export" ? (
             <div className="flex gap-3">
               <Button
-                variant="outline"
+                intent="outline"
                 onClick={handleCopyText}
                 className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
               >
@@ -603,7 +603,7 @@ export default function ExportModal({
                 {copied ? "복사됨" : "복사"}
               </Button>
               <Button
-                variant="outline"
+                intent="outline"
                 onClick={handleDownloadTXT}
                 className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
               >
@@ -621,7 +621,7 @@ export default function ExportModal({
           ) : (
             <div className="flex gap-3">
               <Button
-                variant="ghost"
+                intent="ghost"
                 onClick={onClose}
                 className="flex-1 h-11 text-espresso-500 hover:text-espresso-700"
               >

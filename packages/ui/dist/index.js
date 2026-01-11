@@ -228,7 +228,7 @@ var buttonVariants = (0, import_class_variance_authority.cva)(
       intent: {
         primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        ghost: "bg-transparent hover:bg-accent hover:text-accent-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground"
       },
@@ -258,6 +258,7 @@ var Button = React3.forwardRef(
   ({
     className,
     intent,
+    variant,
     size,
     shape,
     asChild = false,
@@ -268,10 +269,13 @@ var Button = React3.forwardRef(
     ...props
   }, ref) => {
     const Comp = asChild ? Slot : "button";
+    const finalIntent = intent || variant;
     return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
       Comp,
       {
-        className: cn(buttonVariants({ intent, size, shape, className })),
+        className: cn(
+          buttonVariants({ intent: finalIntent, size, shape, className })
+        ),
         ref,
         disabled: isLoading || disabled,
         ...props,

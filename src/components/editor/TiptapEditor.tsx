@@ -31,6 +31,7 @@ import { SmartPunctuation } from "./extensions/SmartPunctuation";
 import { AutoFormatter } from "./extensions/AutoFormatter";
 import { useForeshadowingStore } from "@/stores";
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
+import { useToast } from "@/hooks/useToast";
 import { getEditorCSSVariables } from "@/lib/editor-styles";
 import { sanitizeEditorContent } from "@/lib/sanitize";
 import "./editor-prose.css";
@@ -89,10 +90,11 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       hasNextPage,
       isFetchingNextPage,
     },
-    ref
+    ref,
   ) => {
     const { id: projectId } = useParams<{ id: string }>();
     const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+    const { toast } = useToast();
 
     // Use refs for callbacks to avoid dependency issues
     const onUpdateRef = useRef(onUpdate);
@@ -245,7 +247,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             // Remove prose class - use direct styling for full width
             "w-full",
             "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80"
+            readOnly && "pointer-events-none opacity-80",
           ),
           spellcheck: "false",
         },
@@ -326,7 +328,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             onContentChangeRef.current(html);
           }
         }, 500),
-      []
+      [],
     );
 
     // Cancel debounce on unmount
@@ -410,7 +412,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
     const handleZoomOut = useCallback(
       () => adjustZoom(-ZOOM_STEP),
-      [adjustZoom]
+      [adjustZoom],
     );
 
     // Hide zoom controls after inactivity
@@ -473,17 +475,15 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       }
     }, [editor, initialContent, documentId]);
 
-    if (!editor) {
-      return null;
-    }
-
     // Effect: 복선 상태 변경 감지 및 하이라이트/태그 스타일 업데이트
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
       if (!editor || !projectId) return;
 
       const unsubscribe = useForeshadowingStore.subscribe((state) => {
         const foreshadowings = state.foreshadowings;
+        let hasChanges = false;
+        let lastTr = editor.state.tr;
+
         // 현재 에디터 내용 스캔
         editor.state.doc.descendants((node, pos) => {
           // 1. Highlight Mark 확인 (복선 원문)
@@ -495,26 +495,25 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 if (!fs || fs.status === "recovered") {
                   const from = pos;
                   const to = pos + node.nodeSize;
-                  // 스케줄링하여 상태 업데이트 충돌 방지
-                  requestAnimationFrame(() => {
-                    // 해당 범위의 highlight 마크 제거
-                    // unsetHighlight는 범위 지정이 안되므로 setTextSelection 후 실행해야 함
-                    // 하지만 이는 사용자 커서를 움직이므로 트랜잭션으로 직접 마크 제거가 좋음
-                    if (!editor.isDestroyed) {
-                      editor.view.dispatch(
-                        editor.state.tr.removeMark(from, to, mark.type)
-                      );
-                    }
-                  });
+                  lastTr = lastTr.removeMark(from, to, mark.type);
+                  hasChanges = true;
+                  console.log(
+                    `[TiptapEditor] Removing highlight for recovered foreshadowing: ${mark.attrs.id}`,
+                  );
                 }
               }
             });
           }
-
-          // 2. Foreshadowing Suggest Node 확인 (#태그)
-          // 태그의 스타일 업데이트 (미회수 -> 회수됨 스타일 변경 등)는 CSS와 React Render로 처리되지만,
-          // 여기서 추가적인 로직이 필요하다면 작성 가능. 현재는 CSS로 data-recovered 속성 처리됨.
         });
+
+        if (hasChanges && !editor.isDestroyed) {
+          // 상태 업데이트 충돌 방지를 위해 다음 틱에 실행
+          requestAnimationFrame(() => {
+            if (!editor.isDestroyed) {
+              editor.view.dispatch(lastTr);
+            }
+          });
+        }
       });
 
       return () => {
@@ -522,11 +521,15 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       };
     }, [editor, projectId]);
 
+    if (!editor) {
+      return null;
+    }
+
     const handleSaveAsForeshadowing = () => {
       const text = editor.state.doc.textBetween(
         editor.state.selection.from,
         editor.state.selection.to,
-        " "
+        " ",
       );
 
       if (!text?.trim() || !projectId) {
@@ -586,13 +589,25 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       // }).run();
 
       // Current implementation update:
-      editor.chain().focus().setHighlight({ color: "#D8B4FE" }).run();
+      editor
+        .chain()
+        .focus()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .setHighlight({ color: "#D8B4FE", id: newFs.id } as any)
+        .run();
 
       // Store the foreshadowing ID as a data attribute on the highlighted range
       // Note: id tracking is handled separately via the extended Highlight mark
 
       // 콜백 호출: 사이드바 포커스 이동
       onForeshadowingCreated?.(newFs.id);
+
+      // 성공 토스트 표시
+      toast({
+        title: "복선이 생성되었습니다",
+        description: `"${newFs.tag}" 항목이 사이드바에 추가되었습니다.`,
+        variant: "success",
+      });
     };
 
     // Apply zoom to the base font size from settings
@@ -617,7 +632,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             className="flex overflow-hidden rounded-xl border border-mocha-200 bg-white/95 backdrop-blur-sm shadow-lg shadow-mocha-900/10 z-50 px-1"
           >
             <Button
-              variant="ghost"
+              intent="ghost"
               size="sm"
               onClick={handleSaveAsForeshadowing}
               aria-label="복선 저장"
@@ -661,27 +676,27 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             <div className="w-px h-8 bg-mocha-200/50" />
 
             <Button
-              variant="ghost"
+              intent="ghost"
               size="sm"
               onClick={() => editor.chain().focus().toggleBold().run()}
               aria-label="굵게"
               aria-pressed={editor.isActive("bold")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("bold") && "bg-mocha-100 text-mocha-700"
+                editor.isActive("bold") && "bg-mocha-100 text-mocha-700",
               )}
             >
               <Bold className="w-3.5 h-3.5" />
             </Button>
             <Button
-              variant="ghost"
+              intent="ghost"
               size="sm"
               onClick={() => editor.chain().focus().toggleItalic().run()}
               aria-label="기울임"
               aria-pressed={editor.isActive("italic")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("italic") && "bg-mocha-100 text-mocha-700"
+                editor.isActive("italic") && "bg-mocha-100 text-mocha-700",
               )}
             >
               <Italic className="w-3.5 h-3.5" />
@@ -730,7 +745,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                 "mx-auto my-4 bg-white shadow-sm border border-mocha-100 rounded-lg", // Paper sheet look for non-full width
               editorSettings.visual.width === "full" && "px-12",
               !readOnly &&
-                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md" // Subtle focus effect
+                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md", // Subtle focus effect
             )}
             style={{
               maxWidth: editorWidth,
@@ -751,7 +766,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               "absolute bottom-3 right-3 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-all duration-200",
               showZoomControls
                 ? "opacity-100 px-2 py-1.5"
-                : "opacity-50 hover:opacity-100 px-2 py-1"
+                : "opacity-50 hover:opacity-100 px-2 py-1",
             )}
             onMouseEnter={() => setShowZoomControls(true)}
             onMouseLeave={() => setShowZoomControls(false)}
@@ -803,7 +818,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 TiptapEditor.displayName = "TiptapEditor";

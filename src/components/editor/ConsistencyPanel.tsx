@@ -70,7 +70,7 @@ export default function ConsistencyPanel() {
           </div>
         </div>
         <Button
-          variant="outline"
+          intent="outline"
           size="sm"
           className="h-7 text-xs bg-white border-mocha-200 hover:bg-mocha-50 hover:text-mocha-700 transition-colors shadow-sm"
         >
@@ -195,7 +195,7 @@ export default function ConsistencyPanel() {
                   위치로 이동
                 </Button>
                 <Button
-                  variant="ghost"
+                  intent="ghost"
                   size="sm"
                   className="h-8 w-8 px-0 text-mocha-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                   title="무시하기"

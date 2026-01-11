@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Badge } from "@stolink/ui";
 import { useForeshadowingStore } from "@/stores";
+import { useShallow } from "zustand/react/shallow";
 import type { Foreshadowing } from "@/types";
 import {
   Sparkles,
@@ -23,12 +24,23 @@ export function ForeshadowingPanel({
   projectId,
   onNavigateToSection,
 }: ForeshadowingPanelProps) {
-  const { getByStatus, getByProject } = useForeshadowingStore();
   const [activeStatus, setActiveStatus] =
     useState<Foreshadowing["status"]>("pending");
 
-  const foreshadowings = getByStatus(projectId, activeStatus);
-  const allForeshadowings = getByProject(projectId);
+  const foreshadowings = useForeshadowingStore(
+    useShallow((state) =>
+      Object.values(state.foreshadowings).filter(
+        (fs) => fs.projectId === projectId && fs.status === activeStatus,
+      ),
+    ),
+  );
+  const allForeshadowings = useForeshadowingStore(
+    useShallow((state) =>
+      Object.values(state.foreshadowings).filter(
+        (fs) => fs.projectId === projectId,
+      ),
+    ),
+  );
 
   const pendingCount = allForeshadowings.filter(
     (f) => f.status === "pending",

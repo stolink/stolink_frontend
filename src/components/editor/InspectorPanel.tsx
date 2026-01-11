@@ -3,17 +3,19 @@ import { useParams } from "react-router-dom";
 import {
   Info,
   Users,
-  MapPin,
-  Sword,
   Loader2,
   ChevronDown,
   ChevronRight,
   BookOpen,
   StickyNote,
   Save,
+  Hash,
+  Activity,
+  Mountain,
 } from "lucide-react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useDocument } from "@/hooks/useDocuments";
+import { useSettings } from "@/hooks/useSettings";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -104,6 +106,11 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
     { enabled: !!projectId },
   );
 
+  // 프로젝트 배경 설정 (장소)
+  const { data: settings = [], isLoading: settingsLoading } = useSettings(
+    projectId || "",
+  );
+
   // 문서 변경 시 메모 로드 (metadata.notes 사용)
   useEffect(() => {
     setNotes(document?.metadata?.notes || "");
@@ -135,7 +142,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
     );
   }
 
-  if (charLoading) {
+  if (charLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
         <Loader2 className="w-6 h-6 animate-spin text-mocha-300" />
@@ -166,7 +173,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
           defaultOpen={true}
         >
           {documentId ? (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <textarea
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
@@ -174,14 +181,15 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                 className="w-full h-32 resize-none bg-cloud-50/50 border border-cloud-200 rounded-lg p-3 text-sm text-espresso-800 placeholder:text-mocha-400 focus:outline-none focus:ring-1 focus:ring-mocha-200 focus:border-mocha-300 transition-all leading-relaxed"
               />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-mocha-400 font-medium">
-                  {notes.length}자
+                <span className="text-[10px] text-mocha-400 font-medium flex items-center gap-1">
+                  <Activity className="w-3 h-3" />
+                  {notes.length.toLocaleString()}자 작성됨
                 </span>
                 {hasChanges && (
                   <button
                     onClick={handleSaveNotes}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 text-xs font-bold text-mocha-600 hover:text-mocha-800 disabled:opacity-50 transition-colors bg-white px-2 py-1 rounded-md border border-mocha-100 shadow-sm"
+                    className="flex items-center gap-1.5 text-xs font-bold text-mocha-600 hover:text-mocha-800 disabled:opacity-50 transition-colors bg-white px-3 py-1.5 rounded-md border border-mocha-100 shadow-sm"
                   >
                     {isSaving ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -196,6 +204,81 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
           ) : (
             <div className="text-xs text-mocha-400 text-center py-4 italic bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
               문서를 선택하면 메모를 작성할 수 있습니다
+            </div>
+          )}
+        </CollapsibleSection>
+
+        {/* 문서 메타 정보 섹션 */}
+        <CollapsibleSection
+          title="문서 정보"
+          icon={Activity}
+          defaultOpen={true}
+        >
+          {document ? (
+            <div className="space-y-3">
+              {/* 상단 상태 태그 */}
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-mocha-500 uppercase tracking-widest">
+                  Status
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                    document.metadata?.status === "final"
+                      ? "bg-green-100 text-green-700"
+                      : document.metadata?.status === "revised"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-amber-100 text-amber-700",
+                  )}
+                >
+                  {document.metadata?.status === "final"
+                    ? "완료"
+                    : document.metadata?.status === "revised"
+                      ? "수정 중"
+                      : "초고"}
+                </span>
+              </div>
+
+              {/* 글자수 진행도 */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-semibold text-espresso-700">분량</span>
+                  <span className="text-mocha-500">
+                    {document.metadata?.wordCount || 0} /{" "}
+                    {document.metadata?.targetWordCount || "?"} 자
+                  </span>
+                </div>
+                {document.metadata?.targetWordCount && (
+                  <div className="h-1.5 w-full bg-cloud-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-mocha-400 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, ((document.metadata?.wordCount || 0) / document.metadata.targetWordCount) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 태그 리스트 */}
+              {document.metadata?.keywords &&
+                document.metadata.keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {document.metadata.keywords.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 text-[10px] bg-mocha-50 text-mocha-600 px-2 py-0.5 rounded border border-mocha-100/50"
+                      >
+                        <Hash className="w-2.5 h-2.5" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          ) : (
+            <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
+              선택된 문서가 없습니다
             </div>
           )}
         </CollapsibleSection>
@@ -279,28 +362,82 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
           )}
         </CollapsibleSection>
 
-        {/* 장소 섹션 */}
+        {/* 배경 및 장소 섹션 */}
         <CollapsibleSection
-          title="장소"
-          icon={MapPin}
-          count={0}
+          title="배경 및 장소"
+          icon={Mountain}
+          count={settings.length}
           defaultOpen={false}
         >
-          <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
-            등록된 장소가 없습니다
-          </div>
-        </CollapsibleSection>
+          {settings.length > 0 ? (
+            <div className="space-y-3">
+              {settings.map((setting) => (
+                <div
+                  key={setting.id}
+                  className="group p-3 rounded-xl border border-mocha-100 bg-white hover:border-mocha-300 hover:shadow-sm transition-all cursor-default"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-espresso-900 group-hover:text-mocha-700 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-mocha-300" />
+                      {setting.name}
+                    </h4>
+                    {setting.type && (
+                      <span className="text-[9px] bg-cloud-100 text-mocha-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                        {setting.type}
+                      </span>
+                    )}
+                  </div>
 
-        {/* 아이템 섹션 */}
-        <CollapsibleSection
-          title="아이템"
-          icon={Sword}
-          count={0}
-          defaultOpen={false}
-        >
-          <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
-            등록된 아이템이 없습니다
-          </div>
+                  {(setting.atmosphere ||
+                    setting.lighting ||
+                    setting.time_of_day) && (
+                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-cloud-50">
+                      {setting.atmosphere && (
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-mocha-400 font-semibold uppercase">
+                            분위기
+                          </span>
+                          <span className="text-[11px] text-espresso-700 font-medium">
+                            {setting.atmosphere}
+                          </span>
+                        </div>
+                      )}
+                      {setting.time_of_day && (
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-mocha-400 font-semibold uppercase">
+                            시간대
+                          </span>
+                          <span className="text-[11px] text-espresso-700 font-medium">
+                            {setting.time_of_day}
+                          </span>
+                        </div>
+                      )}
+                      {setting.lighting && (
+                        <div className="flex flex-col col-span-2">
+                          <span className="text-[9px] text-mocha-400 font-semibold uppercase">
+                            조명
+                          </span>
+                          <span className="text-[11px] text-espresso-700 font-medium">
+                            {setting.lighting}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {setting.description && (
+                    <p className="text-[11px] text-mocha-500 mt-2 line-clamp-2 leading-relaxed italic">
+                      {setting.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-mocha-400 text-center py-4 bg-cloud-50 rounded-lg border border-dashed border-cloud-200">
+              월드 설정에서 배경/장소를 등록하세요
+            </div>
+          )}
         </CollapsibleSection>
       </div>
 
