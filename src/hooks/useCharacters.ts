@@ -19,24 +19,13 @@ export const characterKeys = {
  */
 export function useCharacters(
   projectId: string,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: characterKeys.list(projectId),
     queryFn: async () => {
       const response = await characterService.getAll(projectId);
       const data = response.data;
-
-      // [Diagnostic] Log keys for debugging duplicate key warning
-      const ids = data.map((c) => c._id);
-      const uniqueIds = new Set(ids);
-      if (ids.length !== uniqueIds.size) {
-        console.warn("[useCharacters] Duplicate character IDs detected:", {
-          total: ids.length,
-          unique: uniqueIds.size,
-          duplicates: ids.filter((id, index) => ids.indexOf(id) !== index),
-        });
-      }
 
       // [Fix] Deduplicate by _id to prevent React key warnings
       const seen = new Set<string>();
@@ -107,7 +96,7 @@ export function useUpdateCharacter() {
 
       queryClient.setQueryData(
         characterKeys.detail(id),
-        (old: Character | undefined) => (old ? { ...old, ...payload } : old),
+        (old: Character | undefined) => (old ? { ...old, ...payload } : old)
       );
 
       return { previous, id };
@@ -116,7 +105,7 @@ export function useUpdateCharacter() {
       if (context?.previous) {
         queryClient.setQueryData(
           characterKeys.detail(context.id),
-          context.previous,
+          context.previous
         );
       }
     },

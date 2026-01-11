@@ -68,6 +68,12 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+  const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
+    []
+  );
+  const [analysisChanges, setAnalysisChanges] = useState<
+    Record<string, "new" | "updated" | null>
+  >({});
 
   // Polling for analysis status (Global)
   const {
@@ -78,17 +84,36 @@ export default function WorldPage() {
     currentJobType,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (result) => {
+      console.log("[WorldPage] onAnalysisComplete called, result:", result);
+
+      // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
+      setShowCompletionAnimation(true);
+
       if (result) {
+        // 백엔드가 결과를 직접 반환한 경우 (SSE에 result 포함)
         const diff = calculateAnalysisDiff(characters, links, result);
         setAnalysisDiff(diff);
 
-        // Trigger success animation logic
-        setShowCompletionAnimation(true);
+        // Capture names for highlighting after query invalidation
+        const namesToHighlight = [
+          ...diff.newCharacters.map((c) => c.profile.name),
+          ...diff.updatedCharacters.map((u) => {
+            const char = result.characters.find((c) => c.name === u.id);
+            return char?.name || "";
+          }),
+        ].filter(Boolean);
+        setPendingHighlightNames(namesToHighlight);
 
         // Wait 1.5s for the user to see "Completed" state, then open modal
         setTimeout(() => {
           setShowCompletionAnimation(false);
           setIsAnalysisModalOpen(true);
+        }, 1500);
+      } else {
+        // 백엔드가 결과를 DB에만 저장한 경우 (쿼리 무효화로 데이터 갱신됨)
+        // 완료 애니메이션만 표시하고 모달은 생략
+        setTimeout(() => {
+          setShowCompletionAnimation(false);
         }, 1500);
       }
     },
@@ -114,7 +139,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -129,15 +154,59 @@ export default function WorldPage() {
     () =>
       console.log(
         "Current Graph Mode:",
-        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)",
+        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)"
       ),
-    [],
+    []
   );
 
   const graphRef = useRef<CharacterGraphRef | CharacterGraphCanvasRef>(null);
   const [searchHighlightedIds, setSearchHighlightedIds] = useState<
     string[] | null
   >(null);
+
+  // 분석 완료 후 새 캐릭터 하이라이트 효과
+  useEffect(() => {
+    if (pendingHighlightNames.length > 0 && realCharacters.length > 0) {
+      const idsToHighlight = realCharacters
+        .filter((c) => pendingHighlightNames.includes(c.profile.name))
+        .map((c) => c._id);
+
+      if (idsToHighlight.length > 0) {
+        startTransition(() => {
+          setSearchHighlightedIds(idsToHighlight);
+
+          // Populate analysisChanges based on diff type
+          const newChanges: Record<string, "new" | "updated" | null> = {};
+          realCharacters.forEach((c) => {
+            if (pendingHighlightNames.includes(c.profile.name)) {
+              // Check if it's new or updated (heuristic: if it was in diff.newCharacters)
+              const isNew = analysisDiff?.newCharacters.some(
+                (nc) => nc.profile.name === c.profile.name
+              );
+              newChanges[c._id] = isNew ? "new" : "updated";
+            }
+          });
+          setAnalysisChanges(newChanges);
+          setPendingHighlightNames([]);
+        });
+
+        // 5초 후 하이라이트 및 배지 해제
+        const timer = setTimeout(() => {
+          startTransition(() => {
+            setSearchHighlightedIds(null);
+            setAnalysisChanges({});
+          });
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [
+    pendingHighlightNames,
+    realCharacters,
+    analysisDiff,
+    setAnalysisChanges,
+    setPendingHighlightNames,
+  ]);
 
   // Global Keyboard Shortcuts (ESC only - Cmd+K removed)
   useEffect(() => {
@@ -166,7 +235,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents,
+    projectEvents
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -275,7 +344,7 @@ export default function WorldPage() {
                   <p
                     className={cn(
                       "text-mocha-500",
-                      !showCompletionAnimation && !isStuck && "animate-pulse",
+                      !showCompletionAnimation && !isStuck && "animate-pulse"
                     )}
                   >
                     {showCompletionAnimation
@@ -422,6 +491,7 @@ export default function WorldPage() {
                   onSearchChange={setSearchHighlightedIds}
                   showSearch={true}
                   ref={graphRef as React.RefObject<CharacterGraphCanvasRef>}
+                  nodeChanges={analysisChanges}
                 />
               ) : (
                 <CharacterGraph
