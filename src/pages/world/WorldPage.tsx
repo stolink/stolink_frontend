@@ -69,7 +69,7 @@ export default function WorldPage() {
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
-    []
+    [],
   );
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
@@ -98,7 +98,9 @@ export default function WorldPage() {
         const namesToHighlight = [
           ...diff.newCharacters.map((c) => c.profile.name),
           ...diff.updatedCharacters.map((u) => {
-            const char = result.characters.find((c) => c.name === u.id);
+            const char = result.characters.find(
+              (c: { name: string }) => c.name === u.id,
+            );
             return char?.name || "";
           }),
         ].filter(Boolean);
@@ -139,7 +141,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -154,9 +156,9 @@ export default function WorldPage() {
     () =>
       console.log(
         "Current Graph Mode:",
-        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)"
+        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)",
       ),
-    []
+    [],
   );
 
   const graphRef = useRef<CharacterGraphRef | CharacterGraphCanvasRef>(null);
@@ -181,7 +183,7 @@ export default function WorldPage() {
             if (pendingHighlightNames.includes(c.profile.name)) {
               // Check if it's new or updated (heuristic: if it was in diff.newCharacters)
               const isNew = analysisDiff?.newCharacters.some(
-                (nc) => nc.profile.name === c.profile.name
+                (nc) => nc.profile.name === c.profile.name,
               );
               newChanges[c._id] = isNew ? "new" : "updated";
             }
@@ -235,7 +237,7 @@ export default function WorldPage() {
   // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents
+    projectEvents,
   );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
@@ -344,7 +346,7 @@ export default function WorldPage() {
                   <p
                     className={cn(
                       "text-mocha-500",
-                      !showCompletionAnimation && !isStuck && "animate-pulse"
+                      !showCompletionAnimation && !isStuck && "animate-pulse",
                     )}
                   >
                     {showCompletionAnimation

@@ -50,7 +50,7 @@ interface CharacterGraphCanvasProps {
   onSearchChange?: (matchingIds: string[] | null) => void;
   className?: string;
   showSearch?: boolean;
-  onNodeDragEnd?: (node: CharacterNode) => void;
+  onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
 }
 
@@ -81,9 +81,8 @@ export const CharacterGraphCanvas = forwardRef<
       className,
       showSearch = true,
       onNodeDragEnd,
-      nodeChanges,
     },
-    ref
+    ref,
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
     // Animation Phase State (Triggers re-render for flow effect)
@@ -103,7 +102,7 @@ export const CharacterGraphCanvas = forwardRef<
     const [showLogicCheck] = useState(false);
 
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
-      null
+      null,
     );
 
     // Zoom State for TiledBackground
@@ -170,7 +169,7 @@ export const CharacterGraphCanvas = forwardRef<
           }
         },
       }),
-      [initialNodes]
+      [initialNodes],
     );
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
@@ -320,8 +319,8 @@ export const CharacterGraphCanvas = forwardRef<
           group.map((l) =>
             typeof l.source === "object"
               ? (l.source as CharacterNode).id
-              : l.source
-          )
+              : l.source,
+          ),
         );
         const isReciprocal = groupSources.size > 1;
         const isExplicitBidirectional = group.some((l) => l.bidirectional);
@@ -364,7 +363,7 @@ export const CharacterGraphCanvas = forwardRef<
         nodes: JSON.parse(JSON.stringify(initialNodes)),
         links: JSON.parse(JSON.stringify(processedLinks)),
       }),
-      [initialNodes, processedLinks]
+      [initialNodes, processedLinks],
     ) as ForceGraphData;
 
     // Character ID → Character 매핑
@@ -449,13 +448,13 @@ export const CharacterGraphCanvas = forwardRef<
           effectiveTypes,
           relLink.strength,
           events,
-          relLink.description
+          relLink.description,
         );
         setDeepAnalysisData(analysisData);
       } else {
         console.warn(
           "Could not find source or target character for link",
-          link
+          link,
         );
       }
 
@@ -518,7 +517,7 @@ export const CharacterGraphCanvas = forwardRef<
 
       // Charge Force (Repulsion)
       const chargeForce = fg.d3Force(
-        "charge"
+        "charge",
       ) as d3.ForceManyBody<CharacterNode>;
       if (chargeForce) {
         chargeForce
@@ -565,7 +564,7 @@ export const CharacterGraphCanvas = forwardRef<
               // More love = Closer (Halved effect from 0.1 -> 0.05)
               return Math.max(
                 20,
-                baseDistance * (1 - (strengthVal - 1) * 0.05)
+                baseDistance * (1 - (strengthVal - 1) * 0.05),
               );
             }
             return baseDistance;
@@ -617,7 +616,7 @@ export const CharacterGraphCanvas = forwardRef<
             // Add extra padding for better separation
             return size / 2 + FORCE_CONFIG.collisionPadding;
           })
-          .strength(FORCE_CONFIG.collisionStrength)
+          .strength(FORCE_CONFIG.collisionStrength),
       );
 
       // Re-heat simulation to apply changes
@@ -699,7 +698,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodeCanvasObject={(
               node: NodeObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const isSelected = selectedNodeId === charNode.id;
@@ -723,7 +722,7 @@ export const CharacterGraphCanvas = forwardRef<
                   isHovered: hoveredNodeId === charNode.id,
                 },
                 imageCache,
-                changeType: (nodeChanges && nodeChanges[charNode.id]) || null,
+                changeType: null,
                 showLogicCheck,
               });
             }}
@@ -732,7 +731,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodePointerAreaPaint={(
               node: NodeObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const role = charNode.role || "other";
@@ -751,7 +750,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkCanvasObject={(
               link: LinkObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const sourceId =
@@ -791,7 +790,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkPointerAreaPaint={(
               link: LinkObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const source = relLink.source as CharacterNode;
@@ -827,7 +826,7 @@ export const CharacterGraphCanvas = forwardRef<
             }
             onNodeHover={(node: NodeObject | null) =>
               setHoveredNodeId(
-                node ? (node as unknown as CharacterNode).id : null
+                node ? (node as unknown as CharacterNode).id : null,
               )
             }
             onLinkClick={handleLinkClick}
@@ -965,7 +964,7 @@ export const CharacterGraphCanvas = forwardRef<
                   ], // Use relationTypes if available
                   hoveredLink.link.strength,
                   events,
-                  hoveredLink.link.description
+                  hoveredLink.link.description,
                 );
                 setDeepAnalysisData(analysisData);
               }
@@ -986,7 +985,7 @@ export const CharacterGraphCanvas = forwardRef<
         />
       </div>
     );
-  }
+  },
 );
 
 CharacterGraphCanvas.displayName = "CharacterGraphCanvas";
