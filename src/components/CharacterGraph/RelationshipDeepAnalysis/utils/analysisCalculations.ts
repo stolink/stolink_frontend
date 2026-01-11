@@ -536,7 +536,6 @@ export function generateAnalysisData(
     if (t.includes("protected")) return "PROTECTOR";
     return type; // 친구, 동료 등 대칭 관계는 유지
   };
-  };
 
   // 입력받은 relationshipTypes를 기반으로 세부 요인(factors) 생성
   const generateFactorsFromTypes = (
@@ -700,15 +699,9 @@ export function generateAnalysisData(
     asymmetricStrength,
     timeline,
     insights,
-<<<<<<< HEAD
     relationshipTypes: types,
     currentStrength: finalStrength,
     since: firstEncounter?.chapter || "알 수 없음",
-=======
-    relationshipTypes,
-    currentStrength: strength,
-    since: "Chapter 1",
->>>>>>> 80aeea1 (chore: save work before sync)
     // NEW fields
     description: finalDescription,
     firstEncounter,
