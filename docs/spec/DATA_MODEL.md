@@ -648,12 +648,6 @@ interface AnalysisBufferState {
   bufferCharCount: number; // 현재 버퍼링된 총 글자 수
   lastFlushAt: number; // 마지막 분석 요청 시각
   isAnalyzing: boolean; // 현재 분석 중 여부
-  progress: number; // 분석 진행률 (0-100)
-  currentJobId: string | null; // 현재 추적 중인 메인 작업 ID
-  currentJobType: "analysis" | "image" | null; // 작업 유형
-  activeJobs: Record<string, string[]>; // 프로젝트별 활성 작업 ID 목록
-  lastAnalyzedHashes: Record<string, string>; // 문서별 마지막 분석 해시 (중복 분석 방지)
-  lastConsistencyReport: ConsistencyReport | null; // 마지막 일관성 리포트
 }
 
 // Config Constants

@@ -36,7 +36,7 @@ export function SharedScenesPanel({
       <div
         className={cn(
           "p-8 rounded-2xl bg-cloud-50/50 border border-dashed border-cloud-200 text-center",
-          className
+          className,
         )}
       >
         <Users className="w-10 h-10 text-cloud-300 mx-auto mb-3" />
@@ -54,7 +54,7 @@ export function SharedScenesPanel({
     <motion.div
       className={cn(
         "bg-white/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm overflow-hidden",
-        className
+        className,
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -91,7 +91,7 @@ export function SharedScenesPanel({
               transition={{ delay: index * 0.05 }}
               className={cn(
                 "group relative p-5 rounded-2xl bg-white border border-cloud-100 shadow-sm hover:shadow-md hover:border-mocha-200 transition-all duration-300",
-                onNavigate && "cursor-pointer"
+                onNavigate && "cursor-pointer",
               )}
               onClick={() => onNavigate?.(scene.eventId)}
             >
