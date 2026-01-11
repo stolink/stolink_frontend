@@ -35,7 +35,7 @@ export interface BackendCharacter {
   };
 }
 
-export interface BackendRelationship {
+export interface AnalysisBackendRelationship {
   source: string;
   target: string;
   relation_type: string;
@@ -137,7 +137,7 @@ export interface AnalysisResultData {
   sections: BackendSection[];
   characters: BackendCharacter[];
   events: BackendEvent[];
-  relationships: BackendRelationship[];
+  relationships: AnalysisBackendRelationship[];
   consistencyReport?: ConsistencyReport;
   plot?: PlotData;
   validation?: ValidationResult;
@@ -150,7 +150,7 @@ export interface AnalysisResultData {
 
 export function transformConflict(
   backend: BackendConflict,
-  score?: number
+  score?: number,
 ): Conflict {
   // severity 결정: 명시적 severity가 있으면 사용, 없으면 score 기준
   // "medium" severity는 프론트엔드에서 "warning"으로 매핑
@@ -178,7 +178,7 @@ export function transformConflict(
 }
 
 export function transformConsistencyReport(
-  backend: BackendConsistencyReport
+  backend: BackendConsistencyReport,
 ): ConsistencyReport {
   const score = backend.score ?? backend.overall_score ?? 0;
   return {
@@ -188,7 +188,7 @@ export function transformConsistencyReport(
 }
 
 export function transformForeshadowingItem(
-  backend: BackendForeshadowingItem
+  backend: BackendForeshadowingItem,
 ): ForeshadowingItem {
   return {
     element: backend.element,
@@ -208,7 +208,7 @@ export function transformPlotData(backend: BackendPlotData): PlotData {
 }
 
 export function transformValidation(
-  backend: BackendValidation
+  backend: BackendValidation,
 ): ValidationResult {
   return {
     isValid: backend.is_valid,

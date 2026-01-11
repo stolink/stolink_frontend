@@ -503,7 +503,6 @@ export function generateAnalysisData(
     // 타입이 있는데 설명이 없는 경우 첫 번째 타입을 기반으로 기본 설명 생성
     finalDescription = `${formatKeyword(types[0])} 관계`;
   }
-
   // 비대칭 관계 속성 (레이더 차트용)
   const sourceToTarget: RelationshipAttributes = {
     emotionalBond: 7,

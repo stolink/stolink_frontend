@@ -289,25 +289,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         .addToBuffer,
   );
 
-  const handleAnalysisComplete = useCallback(
-    (result: AnalysisResultData) => {
-      const diff = calculateAnalysisDiff(
-        characters,
-        graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
-        result,
-      );
-
-      setAnalysisDiff(diff);
-      setShowAnalysisSummary(true);
-
-      // setConsistencyReport handled by useProjectAnalysis store update
-
-      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
-    },
-    [characters, graphLinks, projectId, queryClient],
-  );
-
   const readerChapters = useMemo(() => {
     interface FlatChapter {
       id: string;
@@ -341,7 +322,25 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     lastConsistencyReport, // Added
   } = useProjectAnalysis(projectId, {
     enabled: !!projectId,
-    onAnalysisComplete: handleAnalysisComplete,
+    onAnalysisComplete: async (result: AnalysisResultData | null) => {
+      // NOTE: result can be null if analysis was cancelled or failed in a way that didn't produce data
+      // But typically onAnalysisComplete is called with valid data.
+      if (!result) return;
+
+      console.log("Analysis Complete via SSE:", result);
+
+      const diff = calculateAnalysisDiff(
+        characters,
+        graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
+        result,
+      );
+
+      setAnalysisDiff(diff);
+      setShowAnalysisSummary(true);
+
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
   });
 
   const consistencyReport = lastConsistencyReport; // Alias for compatibility

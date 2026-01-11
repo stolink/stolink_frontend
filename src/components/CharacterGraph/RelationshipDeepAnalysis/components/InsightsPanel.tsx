@@ -114,7 +114,7 @@ export function InsightsPanel({
           <Sparkles className="w-4 h-4 text-indigo-500" />
         </div>
         <h4 className="text-base font-semibold text-espresso-800 uppercase tracking-wider">
-          결정적 사건
+          관계 인사이트
         </h4>
       </motion.div>
 
