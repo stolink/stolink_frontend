@@ -2,10 +2,12 @@ import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
 import { expect } from "vitest";
 
+export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
+
 export interface ApiTestCase {
   id: string;
   description: string;
-  method: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
+  method: HttpMethod;
   url: string; // The endpoint path definition (can include params like :id)
   requestUrl?: string; // The actual URL to call (e.g. replacing :id with value). Defaults to url if no params.
   requestBody?: unknown;
@@ -30,9 +32,8 @@ export const runApiTest = async (tc: ApiTestCase) => {
   }
 
   // We use a clean handler for each test
-  const handler = (
-    httpMethod as (url: string, resolver: () => Promise<Response>) => unknown
-  )(`${API_URL}${tc.url}`, async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handler = (httpMethod as any)(`${API_URL}${tc.url}`, async () => {
     return HttpResponse.json(tc.mockResponse.body as Record<string, unknown>, {
       status: tc.mockResponse.status || 200,
     });

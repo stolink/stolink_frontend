@@ -235,7 +235,7 @@ export function useDocumentContent(id: string | null) {
 
   // Aggregate content from all pages
   const aggregatedContent = useMemo(() => {
-    if (!infiniteData || !infiniteData.pages) {
+    if (!infiniteData?.pages) {
       return storeContent;
     }
     const combined = infiniteData.pages
