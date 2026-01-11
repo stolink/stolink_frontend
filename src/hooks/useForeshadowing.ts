@@ -16,7 +16,7 @@ export const foreshadowingKeys = {
     params?: {
       status?: ForeshadowingStatus;
       importance?: ForeshadowingImportance;
-    }
+    },
   ) => [...foreshadowingKeys.lists(), projectId, params] as const,
   unresolved: (projectId: string) =>
     [...foreshadowingKeys.lists(), projectId, "unresolved"] as const,
@@ -33,7 +33,7 @@ export function useForeshadowing(
     status?: ForeshadowingStatus;
     importance?: ForeshadowingImportance;
   },
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: foreshadowingKeys.list(projectId, params),
@@ -50,7 +50,7 @@ export function useForeshadowing(
  */
 export function useUnresolvedForeshadowing(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: foreshadowingKeys.unresolved(projectId),
@@ -67,7 +67,7 @@ export function useUnresolvedForeshadowing(
  */
 export function useForeshadowingDetail(
   id: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: foreshadowingKeys.detail(id),
@@ -173,7 +173,7 @@ export function useRecoverForeshadowing() {
     }: {
       id: string;
       recoveryInfo: {
-        sceneId?: string;
+        documentId?: string;
         chapterId: string;
         chapterTitle: string;
         line: number;
