@@ -467,9 +467,11 @@ export function useProjectAnalysis(
     // pendingDocuments에 추가 (분석 완료 전까지 중복 요청 방지)
     store.setPendingDocuments(newPendingHashes);
 
-    try {
-      // 각 문서에 대해 분석 요청
-      for (const chunk of changedDocuments) {
+    // 각 문서에 대해 분석 요청
+    const errors: string[] = [];
+
+    for (const chunk of changedDocuments) {
+      try {
         const response = await aiService.analyzeStory({
           projectId,
           documentId: chunk.documentId,
@@ -487,27 +489,36 @@ export function useProjectAnalysis(
           addStoreJobId(projectId, jobId);
           setJobProgresses((prev) => ({ ...prev, [jobId]: 0 }));
         }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Analysis request failed";
+        console.error(
+          `Failed to analyze document ${chunk.documentId}:`,
+          errorMsg,
+        );
+        errors.push(errorMsg);
+
+        // 실패 시 해당 문서만 pendingDocuments에서 제거
+        const currentPending =
+          useAnalysisBufferStore.getState().pendingDocuments;
+        const remainingPending = { ...currentPending };
+        delete remainingPending[chunk.documentId];
+        useAnalysisBufferStore.setState({ pendingDocuments: remainingPending });
       }
-    } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Analysis request failed";
-      setAnalysisError(errorMsg);
+    }
 
-      // 실패 시 pendingDocuments에서 제거
-      const currentPending = useAnalysisBufferStore.getState().pendingDocuments;
-      const remainingPending = { ...currentPending };
-      Object.keys(newPendingHashes).forEach((docId) => {
-        delete remainingPending[docId];
-      });
-      useAnalysisBufferStore.setState({ pendingDocuments: remainingPending });
+    if (errors.length > 0) {
+      const combinedError = `Failed to analyze ${errors.length} documents. Last error: ${errors[errors.length - 1]}`;
+      setAnalysisError(combinedError);
+      onErrorRef.current?.(combinedError);
 
-      if (!isAnalyzing) {
+      if (!isAnalyzing && changedDocuments.length === errors.length) {
+        // 모든 요청이 실패했을 경우에만 분석 상태 해제
         setBufferAnalyzing(false);
       }
-      onErrorRef.current?.(errorMsg);
-    } finally {
-      isRequestingRef.current = false;
     }
+
+    isRequestingRef.current = false;
   }, [projectId, isAnalyzing, setBufferAnalyzing, addStoreJobId]);
 
   // Flush and analyze (강제 실행)
