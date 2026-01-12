@@ -24,6 +24,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // MinIO Buckets Proxy
+      "/stolink-test": {
+        target: "http://localhost:9001",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/media": {
+        target: "http://localhost:9001",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   build: {

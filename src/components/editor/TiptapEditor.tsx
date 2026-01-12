@@ -352,8 +352,8 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (editor.commands as any).setTypewriterPosition(typewriterMode);
-        } catch (e) {
-          console.warn("Failed to set typewriter position:", e);
+        } catch (_e) {
+          /* Ignored */
         }
       }
     }, [editor, typewriterMode]);
@@ -497,9 +497,6 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
                   const to = pos + node.nodeSize;
                   lastTr = lastTr.removeMark(from, to, mark.type);
                   hasChanges = true;
-                  console.log(
-                    `[TiptapEditor] Removing highlight for recovered foreshadowing: ${mark.attrs.id}`,
-                  );
                 }
               }
             });

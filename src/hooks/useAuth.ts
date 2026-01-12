@@ -27,8 +27,6 @@ export function useRegister() {
       nickname: string;
     }) => authService.register(payload),
     onSuccess: (response) => {
-      console.log("Register Response:", response);
-
       // Check for success via boolean, string status code, or HTTP numeric code
       const isSuccess =
         response.success || response.status === "OK" || response.code === 200;
@@ -55,8 +53,6 @@ export function useLogin() {
       authService.login(payload),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess: (response: ApiResponse<AuthResponse> | any) => {
-      console.log("Login Response:", response);
-
       // 1. Standard ApiResponse format
       const isStandardSuccess =
         response.success || response.status === "OK" || response.code === 200;

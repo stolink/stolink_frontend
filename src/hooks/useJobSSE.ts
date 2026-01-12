@@ -118,13 +118,14 @@ export function useJobSSE<T = unknown>(
 
     // Connection opened
     eventSource.onopen = () => {
-      console.log(`[useJobSSE] Connection opened for jobId: ${jobId}`);
+      /* Connection opened */
       setIsConnected(true);
       setJobStatus("processing");
     };
 
     // Heartbeat - connection health check
     eventSource.addEventListener("heartbeat", () => {
+      /* Prevent connection timeout */
       setIsConnected(true);
       // Reset timeout timer on heartbeat
       startTimeRef.current = Date.now();
@@ -132,20 +133,18 @@ export function useJobSSE<T = unknown>(
 
     // Progress update
     eventSource.addEventListener("progress", (e) => {
-      console.log(`[useJobSSE] Progress event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSEProgressEvent;
         setProgress(data.percent);
         setJobStatus("processing");
         onMessageRef.current?.({ ...data, type: "progress" });
-      } catch {
-        console.warn("[useJobSSE] Failed to parse progress event:", e.data);
+      } catch (_e) {
+        // Silently fail on malformed data
       }
     });
 
     // Job completed
     eventSource.addEventListener("completed", (e) => {
-      console.log(`[useJobSSE] Completed event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSECompletedEvent<T>;
         setResult(data.result);
@@ -154,14 +153,13 @@ export function useJobSSE<T = unknown>(
         onMessageRef.current?.({ ...data, type: "completed" });
         onCompleteRef.current?.(data.result);
         cleanup();
-      } catch {
-        console.error("[useJobSSE] Failed to parse completed event:", e.data);
+      } catch (_e) {
+        // Silently fail on malformed data
       }
     });
 
     // Job failed
     eventSource.addEventListener("failed", (e) => {
-      console.error(`[useJobSSE] Failed event for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data) as SSEFailedEvent;
         setError(data.error);
@@ -169,14 +167,13 @@ export function useJobSSE<T = unknown>(
         onMessageRef.current?.({ ...data, type: "failed" });
         onErrorRef.current?.(data.error);
         cleanup();
-      } catch {
-        console.error("[useJobSSE] Failed to parse failed event:", e.data);
+      } catch (_e) {
+        // Silently fail on malformed data
       }
     });
 
     // Generic message update
     eventSource.onmessage = (e) => {
-      console.log(`[useJobSSE] Generic message for ${jobId}:`, e.data);
       try {
         const data = JSON.parse(e.data);
         onMessageRef.current?.(data);
@@ -207,18 +204,14 @@ export function useJobSSE<T = unknown>(
           onErrorRef.current?.(data.error || "Job failed");
           cleanup();
         }
-      } catch {
-        // Not JSON or unknown format
+      } catch (_e) {
+        // Silently fail on manual close
       }
     };
 
     // Connection error
-    eventSource.onerror = (e) => {
-      console.error(`[useJobSSE] Error for jobId: ${jobId}`, e);
-      console.log(
-        `[useJobSSE] EventSource readyState: ${eventSource.readyState}`,
-      );
-
+    eventSource.onerror = () => {
+      /* Error handling is done by browser-native reconnection */
       // readyState 0 (CONNECTING) means it's trying to reconnect. Don't cleanup yet.
       // readyState 2 (CLOSED) means it gave up.
       if (eventSource.readyState === 2) {

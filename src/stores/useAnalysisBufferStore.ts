@@ -34,7 +34,7 @@ export interface BufferChunk {
 }
 
 // 설정 상수
-const MIN_CHARS_FOR_AUTO_FLUSH = 10_000; // 10,000자
+const MIN_CHARS_FOR_AUTO_FLUSH = 5_000; // 5,000자
 const MIN_INTERVAL_MS = 30 * 60 * 1000; // 30분
 
 interface AnalysisBufferStore {

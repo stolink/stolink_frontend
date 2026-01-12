@@ -184,7 +184,12 @@ export const CharacterGraph = forwardRef<
       // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
       const relationCounts = calculateRelationCounts(initialLinks);
 
-      const nodes = characters.map((char, index) => {
+      // Deduplicate characters by ID to prevent duplicate keys
+      const uniqueCharacters = Array.from(
+        new Map(characters.map((c, i) => [c._id || `temp-${i}`, c])).values(),
+      );
+
+      const nodes = uniqueCharacters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
 
@@ -805,15 +810,6 @@ export const CharacterGraph = forwardRef<
 
         if (char && onNodeClick) {
           onNodeClick(char);
-        } else {
-          console.warn(
-            "[CharacterGraph] Character not found for node.id:",
-            node.id,
-          );
-          console.warn(
-            "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys()),
-          );
         }
       },
       [onNodeClick],

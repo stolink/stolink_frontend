@@ -35,10 +35,6 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // 디버깅 요청: API 요청 로그
-    console.log(
-      `[API Request] ${config.method?.toUpperCase()} ${config.url}`,
-      config.params || "",
-    );
 
     const { user } = useAuthStore.getState();
 
@@ -50,7 +46,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("[API Request Error]", error);
     return Promise.reject(error);
   },
 );
@@ -59,18 +54,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // 디버깅 응답: API 응답 로그
-    console.log(
-      `[API Response] ${response.status} ${response.config.url}`,
-      response.data,
-    );
+
     return response;
   },
   async (error: AxiosError) => {
-    console.error(
-      `[API Error] ${error.response?.status} ${error.config?.url}`,
-      error.response?.data || error.message,
-    );
-
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
     // 401 에러이고, 재시도가 아닌 경우에만 토큰 재발급 시도
@@ -101,7 +88,7 @@ api.interceptors.response.use(
           }
 
           // 토큰 재발급 시도
-          console.log("[Auth] Token refresh attempt...");
+
           await api.post("/auth/refresh");
           localStorage.setItem("last_refresh_time", now.toString());
         });
@@ -109,11 +96,11 @@ api.interceptors.response.use(
         // 락 해제 후 원래 요청 재시도
         // 락 내에서 refresh가 성공했거나, 다른 탭이 이미 성공했으므로
         // 쿠키가 갱신된 상태에서 요청을 다시 보냄
-        console.log("[Auth] Retrying original request...");
+
         return api(originalRequest);
       } catch (refreshError) {
         // 토큰 재발급 실패 시 로그아웃 및 캐시 정리
-        console.error("[Auth] Token refresh failed", refreshError);
+
         clearCacheAndLogout();
         return Promise.reject(refreshError);
       }

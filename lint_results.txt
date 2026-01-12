@@ -1,0 +1,111 @@
+
+/Users/dongha/jungle/sto-link/src/components/CharacterGraph/CanvasGraph/index.tsx
+  455:14  error  Empty block statement  no-empty
+
+/Users/dongha/jungle/sto-link/src/components/CharacterGraph/CanvasGraph/useSemanticForce.ts
+  188:30  error  Empty block statement  no-empty
+
+/Users/dongha/jungle/sto-link/src/components/CharacterGraph/CharacterSearchOverlay.tsx
+  47:26  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/Users/dongha/jungle/sto-link/src/components/CharacterGraph/CharacterSearchOverlay.tsx:47:26
+  45 |
+  46 |   // Virtualizer 설정 - 화면에 보이는 항목만 렌더링
+> 47 |   const rowVirtualizer = useVirtualizer({
+     |                          ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  48 |     count: matches.length,
+  49 |     getScrollElement: () => parentRef.current,
+  50 |     estimateSize: () => 52, // 각 항목 높이 (px)  react-hooks/incompatible-library
+
+/Users/dongha/jungle/sto-link/src/components/CharacterGraph/RelationshipDeepAnalysis/components/EmotionCollisionEffect/index.tsx
+  194:5  warning  React Hook useMemo has missing dependencies: 'colorDataA.colors', 'colorDataA.intensities', 'colorDataB.colors', 'colorDataB.intensities', 'strengthA', 'strengthB', 'viewport.height', and 'viewport.width'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/dongha/jungle/sto-link/src/components/common/CharacterDetailDialog.tsx
+   85:35  error    'refetch' is assigned a value but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+   98:27  error    Empty block statement                                                                                               no-empty
+  100:27  error    Empty block statement                                                                                               no-empty
+  249:42  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  307:6   warning  React Hook useCallback has a missing dependency: 'sanitizeValue'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  405:16  error    'err' is defined but never used. Allowed unused caught errors must match /^_/u                                      @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/components/common/character-detail/components/CharacterHeader.tsx
+  71:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/dongha/jungle/sto-link/src/components/common/character-detail/components/CharacterHeader.tsx:71:5
+  69 |   // Reset error state when url changes
+  70 |   useEffect(() => {
+> 71 |     setImageError(false);
+     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  72 |     if (displayImageUrl) {
+  73 |       console.log(
+  74 |         "[CharacterHeader] Display Image URL:",  react-hooks/set-state-in-effect
+  92:25  error  'e' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/components/editor/TiptapEditor.tsx
+  355:18  error  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  355:21  error  Empty block statement                                                         no-empty
+
+/Users/dongha/jungle/sto-link/src/hooks/useCharacterGraphSimulation.ts
+  108:21  error  Empty block statement  no-empty
+
+/Users/dongha/jungle/sto-link/src/hooks/useDocuments.ts
+  339:16  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/hooks/useJobSSE.ts
+  139:15  error  Empty block statement                                                no-empty
+  152:15  error  Empty block statement                                                no-empty
+  164:15  error  Empty block statement                                                no-empty
+  205:28  error  'e' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/hooks/useProjectAnalysis.ts
+  237:16  error    'error' is defined but never used. Allowed unused caught errors must match /^_/u                                            @typescript-eslint/no-unused-vars
+  615:6   warning  React Hook useCallback has an unnecessary dependency: 'finalizeAnalysis'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/dongha/jungle/sto-link/src/pages/editor/EditorPage.tsx
+  361:16  error    'error' is defined but never used. Allowed unused caught errors must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  378:44  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `toast`, but the source dependencies were [selectedSectionId, isDemo, addToBuffer, flushAndAnalyze, documentContent]. Inferred different dependency than source.
+
+/Users/dongha/jungle/sto-link/src/pages/editor/EditorPage.tsx:378:44
+  376 |   );
+  377 |
+> 378 |   const handleManualAnalysis = useCallback(() => {
+      |                                            ^^^^^^^
+> 379 |     if (!selectedSectionId || isDemo) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 380 |     const content =
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 400 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 401 |   }, [
+      | ^^^^ Could not preserve existing manual memoization
+  402 |     selectedSectionId,
+  403 |     isDemo,
+  404 |     addToBuffer,  react-hooks/preserve-manual-memoization
+  401:6   warning  React Hook useCallback has a missing dependency: 'toast'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+
+/Users/dongha/jungle/sto-link/src/pages/world/WorldPage.tsx
+  135:14  error  'err' is defined but never used. Allowed unused caught errors must match /^_/u    @typescript-eslint/no-unused-vars
+  479:30  error  'e' is defined but never used. Allowed unused caught errors must match /^_/u      @typescript-eslint/no-unused-vars
+  509:30  error  'e' is defined but never used. Allowed unused caught errors must match /^_/u      @typescript-eslint/no-unused-vars
+  659:20  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/services/eventService.ts
+  30:13  error  'axiosError' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  51:14  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u       @typescript-eslint/no-unused-vars
+
+/Users/dongha/jungle/sto-link/src/services/imageService.ts
+  40:5  error  Unnecessary try/catch wrapper  no-useless-catch
+
+✖ 32 problems (27 errors, 5 warnings)
+

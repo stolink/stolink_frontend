@@ -244,20 +244,17 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
                 <div className="flex justify-between text-[11px]">
                   <span className="font-semibold text-espresso-700">분량</span>
                   <span className="text-mocha-500">
-                    {document.metadata?.wordCount || 0} /{" "}
-                    {document.metadata?.targetWordCount || "?"} 자
+                    {document.metadata?.wordCount || 0} / 5,000 자
                   </span>
                 </div>
-                {document.metadata?.targetWordCount && (
-                  <div className="h-1.5 w-full bg-cloud-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-mocha-400 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, ((document.metadata?.wordCount || 0) / document.metadata.targetWordCount) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                )}
+                <div className="h-1.5 w-full bg-cloud-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-mocha-400 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, ((document.metadata?.wordCount || 0) / 5000) * 100)}%`,
+                    }}
+                  />
+                </div>
               </div>
 
               {/* 태그 리스트 */}

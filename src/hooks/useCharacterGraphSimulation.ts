@@ -106,9 +106,7 @@ export function useForceSimulation(
 
       const isValid = validNodeIds.has(sourceId) && validNodeIds.has(targetId);
       if (!isValid) {
-        console.warn(
-          `[D3 Cleaning] Filtered link with missing node: ${sourceId} -> ${targetId}`,
-        );
+        // Filtered out invalid link
       }
       return isValid;
     });
