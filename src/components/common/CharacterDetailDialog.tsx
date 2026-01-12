@@ -260,7 +260,9 @@ export default function CharacterDetailDialog({
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, projectId, meta, imageUrl, ...basePayload } = editedCharacter;
-    const cleanPayload = sanitizeValue(basePayload) || {};
+    const cleanPayload =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (sanitizeValue(basePayload) as Record<string, any>) || {};
 
     if (!cleanPayload.profile) cleanPayload.profile = {};
 
@@ -383,7 +385,7 @@ export default function CharacterDetailDialog({
           generatedPrompt,
           selectedSetting as unknown as Record<string, string>,
           additionalOptions,
-          characterData || undefined,
+          (characterData as Record<string, unknown>) || undefined,
         );
 
         setImageJobId(jobId);

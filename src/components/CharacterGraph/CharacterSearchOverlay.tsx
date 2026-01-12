@@ -44,6 +44,7 @@ export function CharacterSearchOverlay({
   }, [deferredQuery, characters]);
 
   // Virtualizer 설정 - 화면에 보이는 항목만 렌더링
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: matches.length,
     getScrollElement: () => parentRef.current,
