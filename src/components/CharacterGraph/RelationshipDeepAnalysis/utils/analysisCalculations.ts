@@ -4,7 +4,11 @@
 // =====================================================
 
 import type { Event } from "@/types/event";
-import type { CharacterRelation } from "@/types/character";
+import type {
+  Character,
+  CharacterRelation,
+  RelationType,
+} from "@/types/character";
 import type {
   RelationshipAttributes,
   RelationshipTimelinePoint,
@@ -478,7 +482,15 @@ export function estimateAttributesFromRelation(
     },
   };
 
-  const profile = profiles[type] || profiles.NEUTRAL;
+  // Alias mapping
+  let normalizedType = type;
+  if (["HOSTILE", "OPPONENT"].includes(type)) normalizedType = "ENEMY";
+  if (["COMPETITOR", "ADVERSARY"].includes(type)) normalizedType = "RIVAL";
+  if (["SUBORDINATE", "FOLLOWER", "MINION"].includes(type))
+    normalizedType = "MASTER_SERVANT";
+  if (["PARTNER", "TEAMMATE"].includes(type)) normalizedType = "COWORKER";
+
+  const profile = profiles[normalizedType] || profiles.NEUTRAL;
 
   // 1. 실제 데이터가 있으면 우선 사용 (Clamped to 0-10)
   if (
@@ -525,11 +537,6 @@ export function estimateAttributesFromRelation(
 /**
  * 관계 분석 데이터 생성 (실제 데이터 + Mock 속성)
  */
-import type {
-  Character,
-  CharacterRelation,
-  RelationType,
-} from "@/types/character";
 
 /**
  * 관계 분석 데이터 생성 (실제 데이터 기반)
@@ -550,11 +557,11 @@ export function generateAnalysisData(
   // 1. 양방향 관계 데이터 찾기 (Real Data)
   const sourceToTargetRel = source.relations.graph.find(
     (r) => r.target === targetId,
-  );
+  ) as CharacterRelation | undefined;
   // Target 쪽에서 Source를 향하는 관계 찾기 (없으면 대칭/추정)
   const targetToSourceRel = target.relations.graph.find(
     (r) => r.target === sourceId,
-  );
+  ) as CharacterRelation | undefined;
 
   // 관계 타입 결정 (명시적 데이터 우선)
   const types = sourceToTargetRel?.relationTypes?.length
@@ -620,14 +627,17 @@ export function generateAnalysisData(
     finalStrength,
   );
 
+  const targetStrength = targetToSourceRel?.strength ?? finalStrength;
   const rawTargetToSourceAttrs = estimateAttributesFromRelation(
     targetToSourceRel ||
       ({
         type: targetTypes[0] as RelationType,
         target: sourceId,
-        strength: targetToSourceRel?.strength ?? finalStrength,
+        strength: targetStrength,
+        history: null,
+        description: "",
       } as CharacterRelation),
-    targetToSourceRel?.strength ?? finalStrength,
+    targetStrength,
   );
 
   // 가치관 일치도 주입 (Priority: Neo4j Data > Calculated Personality > Hardcoded Profile)
@@ -805,7 +815,7 @@ export function generateAnalysisData(
 
     insights = {
       decisiveTrigger: null,
-      keywords: relationshipTypes.map((t) => formatKeyword(t)), // 단순히 관계 타입을 키워드로
+      keywords: types.map((t) => formatKeyword(t)), // 단순히 관계 타입을 키워드로
     };
   }
 
