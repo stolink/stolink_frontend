@@ -1,42 +1,42 @@
-import { useState, useEffect, useRef, useMemo, startTransition } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { Users, Sparkles, Network, UserRound, X } from "lucide-react";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { Network, Sparkles, UserRound, Users, X } from "lucide-react";
 
-import type { Character, RelationshipLink } from "@/types";
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
+import type { Character, RelationshipLink } from "@/types";
 import { roleLabels } from "./constants";
 
 import {
+  AnalysisSummaryModal,
   CharacterGraph,
   type CharacterGraphRef,
-  AnalysisSummaryModal,
 } from "@/components/CharacterGraph";
 import {
   CharacterGraphCanvas,
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 import type { AnalysisDiff } from "@/types/analysisTypes";
+import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 
 // Hooks
-import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useAnalyzeStory } from "@/hooks/useAI";
+import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Components
-import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
-import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
-import { EmptyIndicator } from "./components/EmptyIndicator";
 import { Button } from "@stolink/ui";
+import { EmptyIndicator } from "./components/EmptyIndicator";
+import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
+import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 
-import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 import { useProjectEvents } from "@/hooks/useEvents";
+import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
 
 // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
 const USE_CANVAS_GRAPH = true;
@@ -422,6 +422,13 @@ export default function WorldPage() {
               <Sparkles className="h-3.5 w-3.5" />
               복선
             </TabsTrigger>
+
+            <TabsTrigger
+              value="debug"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs border border-transparent data-[state=inactive]:text-mocha-300 data-[state=inactive]:hover:text-mocha-500 transition-all opacity-50"
+            >
+              DEBUG
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -625,6 +632,17 @@ export default function WorldPage() {
               });
             }}
           />
+        </TabsContent>
+        <TabsContent
+          value="debug"
+          className="p-4 bg-paper overflow-auto max-h-[600px]"
+        >
+          <h3 className="text-lg font-bold mb-2">
+            Raw Characters Data (First 3)
+          </h3>
+          <pre className="text-xs bg-slate-100 p-2 rounded">
+            {JSON.stringify(characters.slice(0, 3), null, 2)}
+          </pre>
         </TabsContent>
       </Tabs>
 
