@@ -189,19 +189,3 @@ function transformAnalysisRelationshipToLink(
     curvature: 0.2,
   };
 }
-
-function transformAnalysisRelationshipToLink(
-  rel: import("@/types").AnalysisBackendRelationship,
-  sourceId: string,
-  targetId: string,
-): RelationshipLink {
-  return {
-    id: `new-rel-${Date.now()}-${Math.random()}`,
-    source: sourceId,
-    target: targetId,
-    type: (rel.relation_type.toLowerCase() as RelationType) || "neutral",
-    strength: rel.strength,
-    description: rel.description,
-    curvature: 0.2,
-  };
-}
