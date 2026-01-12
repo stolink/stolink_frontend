@@ -68,8 +68,11 @@ api.interceptors.response.use(
       originalRequest &&
       !originalRequest._retry
     ) {
+      console.log("[Auth] 401 error detected. Attempting to refresh token...");
+
       // /auth/refresh 요청 자체가 실패한 경우는 재시도하지 않음
       if (originalRequest.url?.includes("/auth/refresh")) {
+        console.log("[Auth] Refresh token request failed. Logging out.");
         clearCacheAndLogout();
         return Promise.reject(error);
       }
@@ -77,6 +80,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        console.log("[Auth] Acquiring refresh lock...");
         // Web Locks API를 사용하여 탭 간 동기화
         // 'auth_refresh_lock'을 획득한 탭만 refresh 요청을 수행
         await navigator.locks.request("auth_refresh_lock", async () => {
@@ -85,22 +89,29 @@ api.interceptors.response.use(
           const now = Date.now();
 
           if (lastRefreshTime && now - parseInt(lastRefreshTime) < 2000) {
+            console.log(
+              "[Auth] Token refreshed recently by another tab. Skipping.",
+            );
             // 이미 다른 탭/요청에서 refresh를 완료함 -> 바로 재시도
             return;
           }
 
           // 토큰 재발급 시도
+          console.log("[Auth] Sending refresh request...");
 
           await api.post("/auth/refresh");
+          console.log("[Auth] Refresh successful.");
           localStorage.setItem("last_refresh_time", now.toString());
         });
 
         // 락 해제 후 원래 요청 재시도
+        console.log("[Auth] Retrying original request...");
         // 락 내에서 refresh가 성공했거나, 다른 탭이 이미 성공했으므로
         // 쿠키가 갱신된 상태에서 요청을 다시 보냄
 
         return api(originalRequest);
       } catch (refreshError) {
+        console.error("[Auth] Refresh failed:", refreshError);
         // 토큰 재발급 실패 시 로그아웃 및 캐시 정리
 
         clearCacheAndLogout();
