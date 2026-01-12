@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores";
 
-const CHAT_API_URL = "/ai-api/api";
+const CHAT_API_URL = "/ai-api";
 
 /**
  * RAG 검색 결과 소스 청크
