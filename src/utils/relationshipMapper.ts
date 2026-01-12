@@ -72,8 +72,13 @@ export function extractRelationshipLinks(
       char.relations?.graph ||
       (char as { relationships?: unknown[] }).relationships;
 
+    if (Array.isArray(relationGraph) && relationGraph.length > 0) {
+      console.log(
+        `[relationshipMapper] Found ${relationGraph.length} relations for character: ${char.profile?.name}`,
+      );
+    }
+
     if (!Array.isArray(relationGraph)) {
-      // console.warn(...) // Reduce noise
       return;
     }
 
@@ -103,6 +108,9 @@ export function extractRelationshipLinks(
         const rawTargetId = rel.target;
 
         if (!rawSourceId || !rawTargetId) {
+          console.warn(
+            `[relationshipMapper] Skipping relation due to missing source/target: source=${rawSourceId}, target=${rawTargetId}`,
+          );
           return;
         }
 
@@ -115,7 +123,9 @@ export function extractRelationshipLinks(
           if (nameToIdMap.has(sourceId)) {
             sourceId = nameToIdMap.get(sourceId)!;
           } else {
-            // Source가 유효하지 않으면 스킵 (단, 보통 source는 자기 자신이므로 안전)
+            console.warn(
+              `[relationshipMapper] Source ID mismatch: ${sourceId} not in idSet [${Array.from(idSet).join(",")}]`,
+            );
             return;
           }
         }
@@ -125,9 +135,8 @@ export function extractRelationshipLinks(
           if (nameToIdMap.has(targetId)) {
             targetId = nameToIdMap.get(targetId)!;
           } else {
-            // Target을 찾을 수 없으면 링크 생성 불가 (D3 에러 방지)
             console.warn(
-              `Target node not found for relationship: ${rawSourceId} -> ${rawTargetId}`,
+              `[relationshipMapper] Target ID mismatch: ${targetId} not in idSet [${Array.from(idSet).join(",")}]`,
             );
             return;
           }
@@ -138,6 +147,10 @@ export function extractRelationshipLinks(
           sourceId < targetId
             ? `${sourceId}-${targetId}`
             : `${targetId}-${sourceId}`;
+
+        console.log(
+          `[relationshipMapper] Successfully matched link: ${sourceId} -> ${targetId} (key: ${pairKey})`,
+        );
 
         if (processedPairs.has(pairKey)) return;
         processedPairs.add(pairKey);
