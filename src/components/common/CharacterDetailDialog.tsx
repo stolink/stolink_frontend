@@ -181,10 +181,34 @@ export default function CharacterDetailDialog({
     setPrevCharacterId(character?._id);
     if (character) {
       setEditedCharacter(structuredClone(character));
-      setImageJobId(null);
+      // Try to recover background job for this character if it exists in global store
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      } else {
+        setImageJobId(null);
+      }
       setTempImageUrl(null);
     }
   }
+
+  // Effect to recover background job if dialog reopens with same character
+  useEffect(() => {
+    if (isOpen && character?._id && !imageJobId) {
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      }
+    }
+  }, [isOpen, character?._id, imageJobId]);
 
   const { traits, relationships, appearances } = useCharacterData(
     displayCharacter, // displayCharacter 사용
@@ -389,7 +413,7 @@ export default function CharacterDetailDialog({
         );
 
         setImageJobId(jobId);
-        setGlobalJobId(jobId, "image");
+        setGlobalJobId(jobId, "image", character._id);
         toast({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",

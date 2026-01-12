@@ -111,6 +111,17 @@ export function useProjectAnalysis(
 
   // 재분석 트리거 ref (순환 의존성 방지)
   const triggerReanalysisRef = useRef<(() => Promise<void>) | null>(null);
+  const lastKnownJobTypeRef = useRef<"analysis" | "image" | null>(null);
+  const lastKnownTargetIdRef = useRef<string | null>(null);
+
+  // Sync refs with store state
+  useEffect(() => {
+    if (currentJobType) {
+      lastKnownJobTypeRef.current = currentJobType;
+      lastKnownTargetIdRef.current =
+        useAnalysisBufferStore.getState().currentJobTargetId;
+    }
+  }, [currentJobType]);
 
   // Finalize Analysis (Shared logic for all completion paths)
   const finalizeAnalysis = useCallback(() => {
@@ -123,21 +134,40 @@ export function useProjectAnalysis(
 
     isFinalizingRef.current = true;
 
-    // Sync hashes (분석 완료된 문서들)
+    // Get current state to check job type (fallback to refs if store was just cleared)
     const { pendingDocuments } = useAnalysisBufferStore.getState();
-    setLastAnalyzedHashes(pendingDocuments);
+    const activeType =
+      useAnalysisBufferStore.getState().currentJobType ||
+      lastKnownJobTypeRef.current;
+    const activeTargetId =
+      useAnalysisBufferStore.getState().currentJobTargetId ||
+      lastKnownTargetIdRef.current;
 
-    // pendingDocuments 클리어
-    useAnalysisBufferStore.getState().clearPendingDocuments();
+    // 1. Analysis-specific state sync
+    if (activeType === "analysis") {
+      // Sync hashes (분석 완료된 문서들)
+      setLastAnalyzedHashes(pendingDocuments);
 
-    // Invalidate queries first (so fresh data is available for callback)
+      // pendingDocuments 클리어
+      useAnalysisBufferStore.getState().clearPendingDocuments();
+    }
+
+    // 2. Cache Invalidation (Common or specific)
     if (projectId) {
+      // Always invalidate character list as both jobs might affect it
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
       });
+
+      if (activeType === "image" && activeTargetId) {
+        // Also invalidate detail query for the specific character
+        queryClient.invalidateQueries({
+          queryKey: characterKeys.detail(activeTargetId),
+        });
+      }
     }
 
-    // Trigger completion callback
+    // 3. Trigger completion callback
     onCompleteRef.current?.(lastResultRef.current);
     if (lastResultRef.current?.consistencyReport) {
       useAnalysisBufferStore
@@ -145,6 +175,8 @@ export function useProjectAnalysis(
         .setLastConsistencyReport(lastResultRef.current.consistencyReport);
     }
     lastResultRef.current = null;
+    lastKnownJobTypeRef.current = null;
+    lastKnownTargetIdRef.current = null;
 
     // Clear jobs
     if (projectId) {
@@ -262,14 +294,20 @@ export function useProjectAnalysis(
         // SSE 이벤트 파싱
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const event = data as any;
-        if (!event || !event.jobId) return;
+        if (!event) return;
 
-        const eventType = event.type || event.status?.toLowerCase();
+        // jobId가 직접 있거나 result 내부에 있을 수 있음
+        const eventJobId = event.jobId || event.id;
+        if (!eventJobId) return;
+
+        const rawType = event.type || event.status;
+        const eventType =
+          typeof rawType === "string" ? rawType.toLowerCase() : "";
 
         if (eventType === "progress" || eventType === "processing") {
           setJobProgresses((prev) => ({
             ...prev,
-            [event.jobId]: event.percent || event.progress || 0,
+            [eventJobId]: event.percent || event.progress || 0,
           }));
         } else if (
           eventType === "completed" ||
@@ -279,12 +317,12 @@ export function useProjectAnalysis(
           if (event.result) {
             lastResultRef.current = event.result as AnalysisResultData;
           }
-          setJobProgresses((prev) => ({ ...prev, [event.jobId]: 100 }));
+          setJobProgresses((prev) => ({ ...prev, [eventJobId]: 100 }));
           if (projectId) {
-            removeStoreJobId(projectId, event.jobId);
+            removeStoreJobId(projectId, eventJobId);
           }
         } else if (eventType === "failed" || eventType === "error") {
-          if (projectId) removeStoreJobId(projectId, event.jobId);
+          if (projectId) removeStoreJobId(projectId, eventJobId);
         }
       },
       onError: (err) => {
