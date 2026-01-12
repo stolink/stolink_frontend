@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import type { UIRelationType } from "@/components/CharacterGraph/utils";
 import type { Character } from "@/types/character";
 import type { RelationshipLink } from "@/types/characterGraph";
 import type { Event } from "@/types/event";
 import { extractRelationshipLinks } from "@/utils/relationshipMapper";
-import type { UIRelationType } from "@/components/CharacterGraph/utils";
+import { useMemo } from "react";
 
 // Helper: Map biography event type to UI relation type
 function mapEventTypeToRelationType(
@@ -58,6 +58,7 @@ export function useRelationshipLinks(
     if (!events || events.length === 0) {
       return links;
     }
+    // ... existing enrichment logic ...
 
     // 캐릭터 ID → 이름 매핑 생성
     const idToName = new Map<string, string>();
