@@ -52,8 +52,6 @@ export function useProjectAnalysis(
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isStuck, setIsStuck] = useState(false);
 
-  const pendingHashesRef = useRef<Record<string, string>>({});
-
   // Callbacks refs (to avoid effect re-runs)
   const onCompleteRef = useRef(onAnalysisComplete);
   const onErrorRef = useRef(onAnalysisError);
@@ -126,8 +124,8 @@ export function useProjectAnalysis(
     isFinalizingRef.current = true;
 
     // Sync hashes (분석 완료된 문서들)
-    setLastAnalyzedHashes(pendingHashesRef.current);
-    pendingHashesRef.current = {};
+    const { pendingDocuments } = useAnalysisBufferStore.getState();
+    setLastAnalyzedHashes(pendingDocuments);
 
     // pendingDocuments 클리어
     useAnalysisBufferStore.getState().clearPendingDocuments();
@@ -452,12 +450,6 @@ export function useProjectAnalysis(
           setJobProgresses((prev) => ({ ...prev, [jobId]: 0 }));
         }
       }
-
-      // 성공적으로 요청된 해시를 pendingHashesRef에도 저장 (완료 시 lastAnalyzedHashes로 이동)
-      pendingHashesRef.current = {
-        ...pendingHashesRef.current,
-        ...newPendingHashes,
-      };
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Analysis request failed";

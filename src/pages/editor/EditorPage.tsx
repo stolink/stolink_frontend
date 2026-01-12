@@ -358,11 +358,13 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       try {
         // Use the hook's saveContent which handles backend sync
         await saveDocumentContent(content);
+        // 분석 버퍼에 추가 (자동 분석 트래킹용)
+        addToBuffer(selectedSectionId, content);
       } catch (_error) {
         // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent],
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
   );
 
   const saveWithAnalysis = useCallback(

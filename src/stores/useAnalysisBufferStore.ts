@@ -11,6 +11,7 @@ import { immer } from "zustand/middleware/immer";
 import { get, set as idbSet, del } from "idb-keyval";
 import type { StateStorage } from "zustand/middleware";
 import type { ConsistencyReport } from "@/types/analysisResult";
+import { calculateContentHash } from "@/utils/hashUtils";
 
 // IndexedDB 스토리지 어댑터
 const storage: StateStorage = {
@@ -305,33 +306,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      getChangedDocuments: () => {
-        const state = get();
-        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
-
-        // 버퍼에서 변경된 문서만 추출
-        // 1. 이미 분석 요청 중인 문서(pendingDocuments)는 제외
-        // 2. 마지막 분석 해시(lastAnalyzedHashes)와 다른 문서만 포함
-        return buffer.filter((chunk) => {
-          // 이미 분석 요청 중인 문서는 스킵
-          if (pendingDocuments[chunk.documentId]) {
-            return false;
-          }
-
-          // 해시 계산 (간단한 해시)
-          let hash = 0;
-          for (let i = 0; i < chunk.content.length; i++) {
-            const char = chunk.content.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
-            hash |= 0;
-          }
-          const contentHash = hash.toString(36);
-
-          // 이전 분석과 다르면 변경된 것
-          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
-        });
-      },
-
       resetAnalysis: () => {
         set((state) => {
           state.currentJobId = null;
@@ -353,25 +327,30 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         };
       },
 
+      getChangedDocuments: () => {
+        const state = get();
+        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
+
+        return buffer.filter((chunk) => {
+          if (pendingDocuments[chunk.documentId]) {
+            return false;
+          }
+
+          const contentHash = calculateContentHash(chunk.content);
+          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
+        });
+      },
+
       hasUnanalyzedChanges: () => {
         const state = get();
         const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
 
         return buffer.some((chunk) => {
-          // 이미 분석 요청 중인 문서는 제외
           if (pendingDocuments[chunk.documentId]) {
             return false;
           }
 
-          // 해시 계산
-          let hash = 0;
-          for (let i = 0; i < chunk.content.length; i++) {
-            const char = chunk.content.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
-            hash |= 0;
-          }
-          const contentHash = hash.toString(36);
-
+          const contentHash = calculateContentHash(chunk.content);
           return lastAnalyzedHashes[chunk.documentId] !== contentHash;
         });
       },
@@ -379,7 +358,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
     {
       name: "sto-link-analysis-buffer",
       storage: createJSONStorage(() => storage),
-      // 분석 중 상태는 persist하지 않음
       partialize: (state) => ({
         projectId: state.projectId,
         buffer: state.buffer,
@@ -387,8 +365,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         lastFlushAt: state.lastFlushAt,
         currentJobId: state.currentJobId,
         currentJobType: state.currentJobType,
-        activeJobs: state.activeJobs, // 추가
+        activeJobs: state.activeJobs,
         lastAnalyzedHashes: state.lastAnalyzedHashes,
+        pendingDocuments: state.pendingDocuments, // Persist this!
       }),
     },
   ),

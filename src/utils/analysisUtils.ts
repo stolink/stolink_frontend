@@ -171,19 +171,8 @@ export function calculateAnalysisDiff(
   };
 }
 
-/**
- * Simple string hashing function for change detection.
- * Not cryptographically secure, but enough for idempotency checks.
- */
-export function calculateContentHash(content: string): string {
-  let hash = 0;
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash.toString(36);
-}
+import { calculateContentHash } from "./hashUtils";
+export { calculateContentHash };
 
 function transformAnalysisRelationshipToLink(
   rel: import("@/types").AnalysisBackendRelationship,
