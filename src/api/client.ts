@@ -21,6 +21,8 @@ const clearCacheAndLogout = () => {
   if (queryClientInstance) {
     queryClientInstance.clear();
   }
+  // Force redirect to landing page
+  window.location.href = "/";
 };
 
 export const api = axios.create({
