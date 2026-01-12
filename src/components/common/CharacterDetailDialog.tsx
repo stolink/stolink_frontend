@@ -450,10 +450,9 @@ export default function CharacterDetailDialog({
     }
   }, [character]);
 
-  const handleOpenImageGeneration = useCallback(() => {
-    // Validation: Check if character has enough info (Name + at least 2 traits)
+  const validateImageGeneration = useCallback(() => {
     const targetChar = displayCharacter || character;
-    if (!targetChar) return;
+    if (!targetChar) return false;
 
     let traitCount = 0;
     if (targetChar.appearance?.physique) traitCount++;
@@ -468,13 +467,16 @@ export default function CharacterDetailDialog({
     )
       traitCount++;
     if (targetChar.appearance?.expression) traitCount++;
-    if (targetChar.personality?.coreTraits?.length > 0) traitCount++;
+    if ((targetChar.personality?.coreTraits?.length || 0) > 0) traitCount++;
 
-    // Name is basic, so we need 2 more traits
-    // displayCharacter.profile.name is usually present
-    if (traitCount < 2) {
+    return traitCount >= 2;
+  }, [displayCharacter, character]);
+
+  const handleOpenImageGeneration = useCallback(() => {
+    // Validation: Check if character has enough info (Name + at least 2 traits)
+    if (!validateImageGeneration()) {
       toast({
-        variant: "destructive", // "warning" is not supported by useToast, using destructive for validation error
+        variant: "destructive",
         title: "정보 부족",
         description:
           "이미지를 생성하려면 이름 외에 최소 2가지 이상의 특징(외모, 성격 등)을 입력해주세요.",
@@ -482,8 +484,9 @@ export default function CharacterDetailDialog({
       return;
     }
 
-    handleConfirmImageGeneration("create");
-  }, [handleConfirmImageGeneration, displayCharacter, character, toast]);
+    const mode = character?.imageUrl ? "edit" : "create";
+    handleConfirmImageGeneration(mode);
+  }, [handleConfirmImageGeneration, validateImageGeneration, character, toast]);
 
   const handleSave = useCallback(async () => {
     if (!editedCharacter || !character?._id) return;
@@ -515,19 +518,28 @@ export default function CharacterDetailDialog({
         description: "캐릭터 정보가 저장되었습니다.",
       });
 
-      // 3. Compare appearance to detect changes for image update
-      const hasAppearanceChanged = !isEqual(
-        character?.appearance,
-        editedCharacter.appearance,
-      );
+      // 3. Compare data to detect changes for image update
+      const hasImageRelevantChanges =
+        !isEqual(character?.appearance, editedCharacter.appearance) ||
+        !isEqual(
+          character?.personality?.coreTraits,
+          editedCharacter.personality?.coreTraits,
+        ) ||
+        character?.profile?.name !== editedCharacter.profile?.name;
 
       if (onSave) {
         onSave(editedCharacter);
       }
 
-      // 4. If appearance changed and there's already an image, trigger auto-edit (only if not doing manual gen)
-      if (hasAppearanceChanged && character?.imageUrl) {
-        handleConfirmImageGeneration("edit", "");
+      // 4. Trigger image generation if relevant data changed
+      if (hasImageRelevantChanges) {
+        if (character?.imageUrl) {
+          // Existing image -> update
+          handleConfirmImageGeneration("edit", "");
+        } else if (validateImageGeneration()) {
+          // No image yet -> create (only if sufficient info)
+          handleConfirmImageGeneration("create", "");
+        }
       }
 
       setIsEditMode(false);
@@ -544,6 +556,7 @@ export default function CharacterDetailDialog({
     character,
     onSave,
     handleConfirmImageGeneration,
+    validateImageGeneration,
     updateCharacter,
     toast,
     getCleanPayload,
