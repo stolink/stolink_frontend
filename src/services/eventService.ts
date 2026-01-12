@@ -22,23 +22,11 @@ export const eventService = {
       const data = response.data.data;
 
       if (!Array.isArray(data)) {
-        console.warn("[eventService] Data is not an array:", data);
         return [];
       }
 
       return data.map(transformBackendEvent);
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: unknown; status?: number; headers?: unknown };
-        message?: string;
-      };
-      console.error("[eventService] getByCharacter failed:", {
-        error: axiosError.response?.data || axiosError.message,
-        status: axiosError.response?.status,
-        headers: axiosError.response?.headers,
-        characterId,
-        url: `/characters/${characterId}/events`,
-      });
+    } catch (_error: unknown) {
       return [];
     }
   },
@@ -55,8 +43,7 @@ export const eventService = {
       const data = response.data.data;
       if (!Array.isArray(data)) return [];
       return data.map(transformBackendEvent);
-    } catch (error) {
-      console.warn("[eventService] getByProject failed:", error);
+    } catch (_error) {
       return [];
     }
   },

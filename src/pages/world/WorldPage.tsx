@@ -82,10 +82,9 @@ export default function WorldPage() {
     analysisProgress,
     isStuck,
     currentJobType,
+    flushAndAnalyze,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (result) => {
-      console.log("[WorldPage] onAnalysisComplete called, result:", result);
-
       // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
       setShowCompletionAnimation(true);
 
@@ -125,6 +124,21 @@ export default function WorldPage() {
 
   const handleStartAnalysis = async () => {
     if (!projectId) return;
+
+    // 중복 호출 방지: 이미 분석 중이면 리턴
+    if (isPolling) return;
+
+    // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
+    // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
+    const hasBufferChanges = useAnalysisBufferStore
+      .getState()
+      .hasUnanalyzedChanges();
+
+    if (hasBufferChanges) {
+      await flushAndAnalyze();
+      return;
+    }
+
     try {
       const result = await analyzeMutation.mutateAsync({
         projectId,
@@ -134,8 +148,8 @@ export default function WorldPage() {
         setJobId(result.data.jobId);
         setAnalyzing(true);
       }
-    } catch (err) {
-      console.error("Analysis failed:", err);
+    } catch (_err) {
+      // Analysis failed
     }
   };
 
@@ -152,14 +166,9 @@ export default function WorldPage() {
 
   // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
   // Canvas 그래프 강제 활성화 (디버깅)
-  useEffect(
-    () =>
-      console.log(
-        "Current Graph Mode:",
-        USE_CANVAS_GRAPH ? "Canvas (Optimized)" : "SVG (Legacy)",
-      ),
-    [],
-  );
+  useEffect(() => {
+    // Debug info removed
+  }, []);
 
   const graphRef = useRef<CharacterGraphRef | CharacterGraphCanvasRef>(null);
   const [searchHighlightedIds, setSearchHighlightedIds] = useState<
@@ -280,7 +289,6 @@ export default function WorldPage() {
       return;
     }
     // Link Click logic removed as we use internal Deep Analysis
-    console.log("Link clicked:", link);
   };
 
   return (
@@ -289,112 +297,7 @@ export default function WorldPage() {
           GLOBAL LOADING OVERLAY (Shutter Animation)
           이미지 생성(image 타입)은 백그라운드에서 조용히 진행되므로 오버레이 표시 안 함
       ───────────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {((isPolling && currentJobType !== "image") ||
-          showCompletionAnimation) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-paper/80 backdrop-blur-md flex flex-col items-center justify-center"
-          >
-            {/* Emergency Reset Button (Only show while analyzing, not during completion success) */}
-            {!showCompletionAnimation && (
-              <button
-                onClick={() => resetAnalysis()}
-                className="absolute top-8 right-8 p-2 hover:bg-destructive/10 text-mocha-400 hover:text-destructive rounded-full transition-all group"
-                title="분석 강제 중단 및 상태 초기화"
-              >
-                <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
-              </button>
-            )}
 
-            <div className="flex flex-col items-center gap-6">
-              <div className="relative w-24 h-24">
-                {showCompletionAnimation ? (
-                  // Success Animation State
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="absolute inset-0 bg-green-100 rounded-full flex items-center justify-center"
-                  >
-                    <Sparkles className="w-10 h-10 text-green-600 animate-pulse" />
-                  </motion.div>
-                ) : (
-                  // Analyzing Animation State
-                  <>
-                    <div className="absolute inset-0 border-4 border-mocha-200 rounded-full animate-ping opacity-20" />
-                    <div className="absolute inset-0 border-4 border-t-mocha-500 border-r-transparent border-b-mocha-500 border-l-transparent rounded-full animate-spin" />
-                    <div className="absolute inset-4 bg-mocha-100 rounded-full flex items-center justify-center animate-pulse">
-                      <Sparkles className="w-8 h-8 text-mocha-600" />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold font-heading text-espresso-900">
-                  {showCompletionAnimation
-                    ? "분석 완료!"
-                    : currentJobType === "image"
-                      ? "캐릭터 이미지 생성 중"
-                      : isStuck
-                        ? "분석이 지연되고 있습니다"
-                        : "세계관 분석 중"}
-                </h2>
-                <div className="flex flex-col items-center gap-4">
-                  <p
-                    className={cn(
-                      "text-mocha-500",
-                      !showCompletionAnimation && !isStuck && "animate-pulse",
-                    )}
-                  >
-                    {showCompletionAnimation
-                      ? "분석된 결과를 불러오고 있습니다..."
-                      : currentJobType === "image"
-                        ? "캐릭터의 새로운 모습을 그리고 있습니다..."
-                        : isStuck
-                          ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
-                          : "AI가 스토리의 흐름을 읽고 있습니다..."}
-                  </p>
-
-                  {!showCompletionAnimation && (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-64 h-2 bg-cloud-100 rounded-full overflow-hidden border border-cloud-200 shadow-inner">
-                        <motion.div
-                          className="h-full bg-mocha-500"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${analysisProgress}%` }}
-                          transition={{
-                            type: "spring",
-                            bounce: 0,
-                            duration: 0.5,
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-mocha-400 font-mono font-bold text-sm">
-                          {Math.round(analysisProgress)}%
-                        </span>
-                        {isStuck && (
-                          <Button
-                            onClick={() => resetAnalysis()}
-                            size="sm"
-                            intent="secondary"
-                            className="h-7 px-3 text-xs bg-white/80 hover:bg-white border-mocha-200 text-mocha-600"
-                          >
-                            초기화 및 재시작
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
@@ -437,6 +340,115 @@ export default function WorldPage() {
           value="graph"
           className="flex-1 m-0 overflow-hidden relative bg-paper"
         >
+          {/* Analysis Overlay (Scoped to Graph) */}
+          <AnimatePresence>
+            {((isPolling && currentJobType !== "image") ||
+              showCompletionAnimation) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-paper/80 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto"
+              >
+                {/* Emergency Reset Button (Only show while analyzing, not during completion success) */}
+                {!showCompletionAnimation && (
+                  <button
+                    onClick={() => resetAnalysis()}
+                    className="absolute top-8 right-8 p-2 hover:bg-destructive/10 text-mocha-400 hover:text-destructive rounded-full transition-all group"
+                    title="분석 강제 중단 및 상태 초기화"
+                  >
+                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                  </button>
+                )}
+
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative w-24 h-24">
+                    {showCompletionAnimation ? (
+                      // Success Animation State
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="absolute inset-0 bg-green-100 rounded-full flex items-center justify-center"
+                      >
+                        <Sparkles className="w-10 h-10 text-green-600 animate-pulse" />
+                      </motion.div>
+                    ) : (
+                      // Analyzing Animation State
+                      <>
+                        <div className="absolute inset-0 border-4 border-mocha-200 rounded-full animate-ping opacity-20" />
+                        <div className="absolute inset-0 border-4 border-t-mocha-500 border-r-transparent border-b-mocha-500 border-l-transparent rounded-full animate-spin" />
+                        <div className="absolute inset-4 bg-mocha-100 rounded-full flex items-center justify-center animate-pulse">
+                          <Sparkles className="w-8 h-8 text-mocha-600" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold font-heading text-espresso-900">
+                      {showCompletionAnimation
+                        ? "분석 완료!"
+                        : currentJobType === "image"
+                          ? "캐릭터 이미지 생성 중"
+                          : isStuck
+                            ? "분석이 지연되고 있습니다"
+                            : "세계관 분석 중"}
+                    </h2>
+                    <div className="flex flex-col items-center gap-4">
+                      <p
+                        className={cn(
+                          "text-mocha-500",
+                          !showCompletionAnimation &&
+                            !isStuck &&
+                            "animate-pulse",
+                        )}
+                      >
+                        {showCompletionAnimation
+                          ? "분석된 결과를 불러오고 있습니다..."
+                          : currentJobType === "image"
+                            ? "캐릭터의 새로운 모습을 그리고 있습니다..."
+                            : isStuck
+                              ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
+                              : "AI가 스토리의 흐름을 읽고 있습니다..."}
+                      </p>
+
+                      {!showCompletionAnimation && (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-64 h-2 bg-cloud-100 rounded-full overflow-hidden border border-cloud-200 shadow-inner">
+                            <motion.div
+                              className="h-full bg-mocha-500"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${analysisProgress}%` }}
+                              transition={{
+                                type: "spring",
+                                bounce: 0,
+                                duration: 0.5,
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-mocha-400 font-mono font-bold text-sm">
+                              {Math.round(analysisProgress)}%
+                            </span>
+                            {isStuck && (
+                              <Button
+                                onClick={() => resetAnalysis()}
+                                size="sm"
+                                intent="secondary"
+                                className="h-7 px-3 text-xs bg-white/80 hover:bg-white border-mocha-200 text-mocha-600"
+                              >
+                                초기화 및 재시작
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {characters.length === 0 && !isPolling ? (
             <div className="h-full flex items-center justify-center p-6">
               <EmptyIndicator
@@ -487,8 +499,8 @@ export default function WorldPage() {
                           graphPosition: { x: node.x, y: node.y },
                         },
                       });
-                    } catch (e) {
-                      console.error("Failed to save node position:", e);
+                    } catch (_e) {
+                      // Failed to save node position
                     }
                   }}
                   onNodeClick={handleNodeClick}
@@ -517,8 +529,8 @@ export default function WorldPage() {
                           graphPosition: { x: node.x, y: node.y },
                         },
                       });
-                    } catch (e) {
-                      console.error("Failed to save node position:", e);
+                    } catch (_e) {
+                      // Failed to save node position
                     }
                   }}
                   onNodeClick={handleNodeClick}
@@ -657,7 +669,6 @@ export default function WorldPage() {
 
             // _id is required for update
             if (!updatedChar._id) {
-              console.error("Character ID is missing for update");
               return;
             }
 
@@ -679,8 +690,8 @@ export default function WorldPage() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               payload: payload as any,
             });
-          } catch (error) {
-            console.error("Failed to save character:", error);
+          } catch (_error) {
+            // Failed to save character
           }
         }}
       />

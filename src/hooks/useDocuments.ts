@@ -336,8 +336,7 @@ export function useBulkDocumentContent() {
         );
         // 3. 저장 상태 업데이트 (Zustand)
         setSaveStatus("saved");
-      } catch (error) {
-        console.warn("[bulkSaveContent] Save failed:", error);
+      } catch (_error) {
         // 에러 시 saved로 유지 (unsaved로 두면 무한 저장 시도 발생)
         // 사용자가 수동으로 재시도할 수 있도록 함
         setSaveStatus("saved");

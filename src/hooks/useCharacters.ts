@@ -19,7 +19,7 @@ export const characterKeys = {
  */
 export function useCharacters(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: characterKeys.list(projectId),
@@ -96,23 +96,33 @@ export function useUpdateCharacter() {
 
       queryClient.setQueryData(
         characterKeys.detail(id),
-        (old: Character | undefined) => (old ? { ...old, ...payload } : old)
+        (old: Character | undefined) => (old ? { ...old, ...payload } : old),
       );
 
       return { previous, id };
+    },
+    onSuccess: (data, variables) => {
+      // 1. Update Detail Cache immediately with response data
+      // This prevents "flicker" where UI shows old data waiting for refetch
+      if (data && data.data) {
+        queryClient.setQueryData(characterKeys.detail(variables.id), data.data);
+      }
     },
     onError: (_err, _variables, context) => {
       if (context?.previous) {
         queryClient.setQueryData(
           characterKeys.detail(context.id),
-          context.previous
+          context.previous,
         );
       }
     },
     onSettled: (_data, _error, { id }) => {
-      queryClient.invalidateQueries({ queryKey: characterKeys.detail(id) });
-      // Invalidate all character lists since we don't know which project this belongs to
-      queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
+      // 2. Delayed Invalidation for Eventual Consistency
+      // Wait 1000ms to allow DB replication/indexing to finish before refetching
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: characterKeys.detail(id) });
+        queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
+      }, 1000);
     },
   });
 }

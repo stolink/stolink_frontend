@@ -453,10 +453,7 @@ export const CharacterGraphCanvas = forwardRef<
         );
         setDeepAnalysisData(analysisData);
       } else {
-        console.warn(
-          "Could not find source or target character for link",
-          link,
-        );
+        // Character not found in map
       }
 
       onLinkClick?.(relLink);

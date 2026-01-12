@@ -42,6 +42,7 @@ import {
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
 import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
+import { useToast } from "@/hooks/useToast";
 
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
@@ -142,6 +143,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // Project Data
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
+  const { toast } = useToast();
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
@@ -327,8 +329,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       // But typically onAnalysisComplete is called with valid data.
       if (!result) return;
 
-      console.log("Analysis Complete via SSE:", result);
-
       const diff = calculateAnalysisDiff(
         characters,
         graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
@@ -358,11 +358,13 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       try {
         // Use the hook's saveContent which handles backend sync
         await saveDocumentContent(content);
-      } catch (error) {
-        console.error("Failed to save content:", error);
+        // 분석 버퍼에 추가 (자동 분석 트래킹용)
+        addToBuffer(selectedSectionId, content);
+      } catch (_error) {
+        // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent],
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
   );
 
   const saveWithAnalysis = useCallback(
@@ -380,8 +382,31 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     const content =
       editorContentRef.current?.getContent() || documentContent || "";
     if (content) {
+      // 버퍼에 먼저 추가하여 최신 해시와 비교할 수 있게 함
       addToBuffer(selectedSectionId, content);
-      flushAndAnalyze();
+
+      // 변경 사항이 있는지 확인
+      const hasChanges = useAnalysisBufferStore
+        .getState()
+        .hasUnanalyzedChanges();
+
+      if (hasChanges) {
+        try {
+          flushAndAnalyze();
+        } catch (_error) {
+          toast({
+            variant: "destructive",
+            title: "수동 분석 실패",
+            description: "분석 요청 중 오류가 발생했습니다.",
+          });
+        }
+      } else {
+        toast({
+          title: "분석 완료",
+          description: "이미 최신 상태로 분석되어 있습니다.",
+          variant: "success",
+        });
+      }
     }
   }, [
     selectedSectionId,
@@ -389,6 +414,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     addToBuffer,
     flushAndAnalyze,
     documentContent,
+    toast,
   ]);
 
   // 불필요한 분석 방지를 위해 unload 시 자동 분석 트리거 제거

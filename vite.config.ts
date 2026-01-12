@@ -22,6 +22,18 @@ export default defineConfig({
       "/ai-api": {
         target: "http://localhost:8000",
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ai-api/, "/api"),
+        secure: false,
+      },
+      // MinIO Buckets Proxy
+      "/stolink-test": {
+        target: "http://localhost:9001",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/media": {
+        target: "http://localhost:9001",
+        changeOrigin: true,
         secure: false,
       },
     },

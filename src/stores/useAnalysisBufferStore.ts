@@ -11,6 +11,7 @@ import { immer } from "zustand/middleware/immer";
 import { get, set as idbSet, del } from "idb-keyval";
 import type { StateStorage } from "zustand/middleware";
 import type { ConsistencyReport } from "@/types/analysisResult";
+import { calculateContentHash } from "@/utils/hashUtils";
 
 // IndexedDB 스토리지 어댑터
 const storage: StateStorage = {
@@ -34,7 +35,7 @@ export interface BufferChunk {
 }
 
 // 설정 상수
-const MIN_CHARS_FOR_AUTO_FLUSH = 10_000; // 10,000자
+const MIN_CHARS_FOR_AUTO_FLUSH = 5_000; // 5,000자
 const MIN_INTERVAL_MS = 30 * 60 * 1000; // 30분
 
 interface AnalysisBufferStore {
@@ -46,7 +47,8 @@ interface AnalysisBufferStore {
   isAnalyzing: boolean;
   progress: number;
   currentJobId: string | null;
-  currentJobType: "analysis" | "image" | null; // Added for isolation
+  currentJobType: "analysis" | "image" | null;
+  currentJobTargetId: string | null; // Added to track specific character/document
   activeJobs: Record<string, string[]>; // projectId -> jobIds 배열
   lastAnalyzedHashes: Record<string, string>; // documentId -> contentHash
   pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
@@ -61,11 +63,16 @@ interface AnalysisBufferStore {
   shouldAutoFlush: () => boolean;
   setAnalyzing: (analyzing: boolean) => void;
   setProgress: (progress: number) => void;
-  setJobId: (id: string | null, type?: "analysis" | "image") => void;
+  setJobId: (
+    id: string | null,
+    type?: "analysis" | "image",
+    targetId?: string | null,
+  ) => void;
   addJobId: (
     projectId: string,
     id: string,
     type?: "analysis" | "image",
+    targetId?: string | null,
   ) => void;
   removeJobId: (projectId: string, id: string) => void;
   setLastAnalyzedHashes: (hashes: Record<string, string>) => void;
@@ -96,6 +103,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       progress: 0,
       currentJobId: null,
       currentJobType: null,
+      currentJobTargetId: null,
       activeJobs: {}, // 초기화
       lastAnalyzedHashes: {},
       pendingDocuments: {}, // 분석 요청된 문서 트래킹
@@ -114,11 +122,12 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             if (projectId && state.activeJobs[projectId]?.length > 0) {
               const jobs = state.activeJobs[projectId];
               state.currentJobId = jobs[jobs.length - 1]; // 가장 최신 Job을 일단 표시
-              state.currentJobType = "analysis";
+              state.currentJobType = "analysis"; // Default to analysis on reload if unknown
               state.isAnalyzing = true;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;
+              state.currentJobTargetId = null;
               state.isAnalyzing = false;
             }
           }
@@ -210,10 +219,11 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      setJobId: (id, type) => {
+      setJobId: (id, type, targetId) => {
         set((state) => {
           state.currentJobId = id;
           state.currentJobType = id ? (type ?? null) : null;
+          state.currentJobTargetId = id ? (targetId ?? null) : null;
           if (id === null) {
             state.progress = 0;
             state.isAnalyzing = false;
@@ -229,7 +239,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      addJobId: (projectId, id, type = "analysis") => {
+      addJobId: (projectId, id, type = "analysis", targetId = null) => {
         set((state) => {
           if (!state.activeJobs[projectId]) {
             state.activeJobs[projectId] = [];
@@ -239,6 +249,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           }
           state.currentJobId = id;
           state.currentJobType = type;
+          state.currentJobTargetId = targetId;
           state.isAnalyzing = true;
         });
       },
@@ -254,6 +265,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
               if (state.currentJobId === id) {
                 state.currentJobId = null;
                 state.currentJobType = null;
+                state.currentJobTargetId = null;
                 // isAnalyzing과 progress는 finalizeAnalysis에서 처리
                 // (여기서 false로 설정하면 progress effect에서 감지 못함)
               }
@@ -274,6 +286,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           if (state.projectId === projectId) {
             state.currentJobId = null;
             state.currentJobType = null;
+            state.currentJobTargetId = null;
             state.isAnalyzing = false;
             state.progress = 0;
           }
@@ -305,37 +318,11 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      getChangedDocuments: () => {
-        const state = get();
-        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
-
-        // 버퍼에서 변경된 문서만 추출
-        // 1. 이미 분석 요청 중인 문서(pendingDocuments)는 제외
-        // 2. 마지막 분석 해시(lastAnalyzedHashes)와 다른 문서만 포함
-        return buffer.filter((chunk) => {
-          // 이미 분석 요청 중인 문서는 스킵
-          if (pendingDocuments[chunk.documentId]) {
-            return false;
-          }
-
-          // 해시 계산 (간단한 해시)
-          let hash = 0;
-          for (let i = 0; i < chunk.content.length; i++) {
-            const char = chunk.content.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
-            hash |= 0;
-          }
-          const contentHash = hash.toString(36);
-
-          // 이전 분석과 다르면 변경된 것
-          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
-        });
-      },
-
       resetAnalysis: () => {
         set((state) => {
           state.currentJobId = null;
           state.currentJobType = null;
+          state.currentJobTargetId = null;
           state.isAnalyzing = false;
           state.progress = 0;
           state.pendingDocuments = {};
@@ -353,25 +340,30 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         };
       },
 
+      getChangedDocuments: () => {
+        const state = get();
+        const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
+
+        return buffer.filter((chunk) => {
+          if (pendingDocuments[chunk.documentId]) {
+            return false;
+          }
+
+          const contentHash = calculateContentHash(chunk.content);
+          return lastAnalyzedHashes[chunk.documentId] !== contentHash;
+        });
+      },
+
       hasUnanalyzedChanges: () => {
         const state = get();
         const { buffer, lastAnalyzedHashes, pendingDocuments } = state;
 
         return buffer.some((chunk) => {
-          // 이미 분석 요청 중인 문서는 제외
           if (pendingDocuments[chunk.documentId]) {
             return false;
           }
 
-          // 해시 계산
-          let hash = 0;
-          for (let i = 0; i < chunk.content.length; i++) {
-            const char = chunk.content.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
-            hash |= 0;
-          }
-          const contentHash = hash.toString(36);
-
+          const contentHash = calculateContentHash(chunk.content);
           return lastAnalyzedHashes[chunk.documentId] !== contentHash;
         });
       },
@@ -379,16 +371,18 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
     {
       name: "sto-link-analysis-buffer",
       storage: createJSONStorage(() => storage),
-      // 분석 중 상태는 persist하지 않음
       partialize: (state) => ({
         projectId: state.projectId,
         buffer: state.buffer,
         bufferCharCount: state.bufferCharCount,
         lastFlushAt: state.lastFlushAt,
+        progress: state.progress,
         currentJobId: state.currentJobId,
         currentJobType: state.currentJobType,
-        activeJobs: state.activeJobs, // 추가
+        currentJobTargetId: state.currentJobTargetId, // 추가
+        activeJobs: state.activeJobs,
         lastAnalyzedHashes: state.lastAnalyzedHashes,
+        pendingDocuments: state.pendingDocuments,
       }),
     },
   ),

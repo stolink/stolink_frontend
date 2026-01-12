@@ -31,7 +31,11 @@ export function CharacterBiography({
   // 실제 이벤트 데이터가 없으면 빈 배열 (UI에서 empty state 표시)
   const displayEvents = useMemo(() => {
     const rawEvents = events && events.length > 0 ? events : [];
-    return sortEventsByPrevId(rawEvents);
+    // Deduplicate by eventId to avoid key collisions
+    const uniqueEvents = Array.from(
+      new Map(rawEvents.map((e) => [e.eventId, e])).values(),
+    );
+    return sortEventsByPrevId(uniqueEvents);
   }, [events]);
 
   return (
