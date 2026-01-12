@@ -467,7 +467,8 @@ export default function CharacterDetailDialog({
     )
       traitCount++;
     if (targetChar.appearance?.expression) traitCount++;
-    if ((targetChar.personality?.coreTraits?.length || 0) > 0) traitCount++;
+    const traits = targetChar.personality?.coreTraits;
+    if (traits && traits.length > 0) traitCount++;
 
     return traitCount >= 2;
   }, [displayCharacter, character]);
