@@ -435,17 +435,23 @@ export const CharacterGraphCanvas = forwardRef<
           ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
           : relLink.relationTypes || [relLink.type];
 
+        // [Debug] Check incoming link data for Radar Chart Attributes
+        console.log("Clicked Link Data for Analysis:", {
+          source: sourceChar.profile.name,
+          target: targetChar.profile.name,
+          link: relLink,
+          attributes: {
+            emotionalBond: relLink.emotionalBond,
+            functionalTrust: relLink.functionalTrust,
+            interdependence: relLink.interdependence,
+            latentTension: relLink.latentTension,
+            valueAlignment: relLink.valueAlignment,
+          },
+        });
+
         const analysisData = generateAnalysisData(
-          {
-            id: sourceId,
-            name: sourceChar.profile?.name || "Unknown",
-            imageUrl: sourceChar.imageUrl,
-          },
-          {
-            id: targetId,
-            name: targetChar.profile?.name || "Unknown",
-            imageUrl: targetChar.imageUrl,
-          },
+          sourceChar,
+          targetChar,
           effectiveTypes,
           relLink.strength,
           events,

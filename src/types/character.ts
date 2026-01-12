@@ -133,6 +133,13 @@ export interface CharacterRelation {
   privateFeeling?: string;
   /** revealed_in_chapter for 4D Timeline */
   revealedInChapter?: number;
+
+  // New optional attributes from Neo4j (for Radar Chart)
+  emotionalBond?: number;
+  functionalTrust?: number;
+  valueAlignment?: number;
+  interdependence?: number;
+  latentTension?: number;
 }
 
 /**
