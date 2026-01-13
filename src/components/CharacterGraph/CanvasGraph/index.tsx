@@ -390,11 +390,13 @@ export const CharacterGraphCanvas = forwardRef<
             // 1. 하이라이트 즉시 적용
             onSearchChange?.([nodeId]);
 
-            if (!node || node.x === undefined || node.y === undefined) return;
+            const targetX = node.x;
+            const targetY = node.y;
+            if (targetX === undefined || targetY === undefined) return;
 
             setTimeout(() => {
               // 가독성과 안정성을 위한 1.2배 고정 줌 센터링
-              fg.centerAt(node.x, node.y); // Instant
+              fg.centerAt(targetX, targetY); // Instant
               fg.zoom(1.2, 500); // Animate zoom only
             }, 50);
           }
@@ -830,9 +832,10 @@ export const CharacterGraphCanvas = forwardRef<
                 selectedNodeId === sourceId || selectedNodeId === targetId;
 
               // 인성 검색/필터링 시 하이라이트되지 않은 간선은 흐리게 처리
-              const isSearchActive = highlightedNodeIds !== null;
+              const isSearchActive = !!highlightedNodeIds;
               const isDimmedBySearch =
                 isSearchActive &&
+                highlightedNodeIds &&
                 (!highlightedNodeIds.includes(sourceId) ||
                   !highlightedNodeIds.includes(targetId));
 
@@ -981,10 +984,12 @@ export const CharacterGraphCanvas = forwardRef<
                 );
 
                 if (node && node.x !== undefined && node.y !== undefined) {
+                  const targetX = node.x;
+                  const targetY = node.y;
                   // [Fix] Use instant transition to avoid D3 conflict between centerAt and zoom
                   // When both have duration, the second transition cancels the first.
                   setTimeout(() => {
-                    fg.centerAt(node.x, node.y); // Instant
+                    fg.centerAt(targetX, targetY); // Instant
                     fg.zoom(1.2, 500); // Animate zoom only (optional) or just instant
                   }, 50);
                 }
