@@ -44,6 +44,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     cancelStream,
     resetSession,
     clearAnalysisComplete,
+    loadHistory,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
@@ -51,11 +52,12 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   });
 
   // 페이지 진입 시 히스토리 로드
-  // useEffect(() => {
-  //   if (projectId) {
-  //     loadHistory(projectId);
-  //   }
-  // }, [projectId, loadHistory]);
+  // 페이지 진입 시 히스토리 로드
+  useEffect(() => {
+    if (projectId) {
+      loadHistory(projectId);
+    }
+  }, [projectId, loadHistory]);
 
   // 분석 완료 애니메이션 표시 상태
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
