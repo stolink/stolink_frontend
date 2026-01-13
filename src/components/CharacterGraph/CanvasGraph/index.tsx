@@ -7,6 +7,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+import { throttle } from "lodash-es";
 import ForceGraph2D, {
   type NodeObject,
   type LinkObject,
@@ -467,13 +468,27 @@ export const CharacterGraphCanvas = forwardRef<
       return ids;
     }, [selectedNodeId, processedLinks]);
 
-    // 노드 클릭 핸들러
-    const handleNodeClick = (node: CharacterNode) => {
-      const character = characterMap.get(node.id);
-      if (character && onNodeClick) {
-        onNodeClick(character);
-      }
-    };
+    // [Stability] Ref로 콜백 관리하여 시뮬레이션 드리프트 방지
+    const onNodeClickRef = useRef(onNodeClick);
+    useEffect(() => {
+      onNodeClickRef.current = onNodeClick;
+    }, [onNodeClick]);
+
+    const onSearchChangeRef = useRef(onSearchChange);
+    useEffect(() => {
+      onSearchChangeRef.current = onSearchChange;
+    }, [onSearchChange]);
+
+    // 노드 클릭 핸들러 (Ref 패턴으로 안정화)
+    const handleNodeClick = useCallback(
+      (node: CharacterNode) => {
+        const character = characterMap.get(node.id);
+        if (character && onNodeClickRef.current) {
+          onNodeClickRef.current(character);
+        }
+      },
+      [characterMap],
+    );
 
     // 필터 변경 핸들러
     const handleFilterChange = (filter: UIRelationType | "all") => {
@@ -879,16 +894,17 @@ export const CharacterGraphCanvas = forwardRef<
             enableNodeDrag={true}
             enablePanInteraction={true}
             enableZoomInteraction={true}
-            onZoom={(transform: { x: number; y: number; k: number }) => {
-              // [State Conflict Fix] Wrap with requestAnimationFrame to avoid "update during render"
-              requestAnimationFrame(() => {
-                setZoomState({
-                  x: transform.x,
-                  y: transform.y,
-                  scale: transform.k,
-                });
-              });
-            }}
+            onZoom={useMemo(
+              () =>
+                throttle((transform: { x: number; y: number; k: number }) => {
+                  setZoomState({
+                    x: transform.x,
+                    y: transform.y,
+                    scale: transform.k,
+                  });
+                }, 50), // 50ms 스로틀 - 초당 최대 20회 상태 업데이트
+              [],
+            )}
           />
         </div>
 
