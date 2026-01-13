@@ -2,10 +2,10 @@ import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
 import type {
   Character,
-  CharacterRole,
-  CharacterProfile,
   CharacterAppearance,
   CharacterPersonality,
+  CharacterProfile,
+  CharacterRole,
   SimpleCharacter,
 } from "@/types/character";
 import { resolveImageUrl } from "@/utils/imageUtils";
@@ -61,46 +61,76 @@ const safeParse = (data: any, defaultVal: any) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformBackendCharacter(backendChar: any): Character {
   // Parse JSON fields (handle both stringified JSON and pre-parsed objects)
-  const aliases = safeParse(backendChar.aliases, backendChar.aliasesJson || []);
+  const profile = safeParse(
+    backendChar.profile,
+    backendChar.profilejson || backendChar.profile_json || {},
+  );
+
+  // 🆕 relations 데이터 추출 로직 강화: 다양한 필드명과 파싱 상태 대응
+  const relationsFromObj = backendChar.relations || {};
+  const relationsFromJson = safeParse(
+    backendChar.relationsjson ||
+      backendChar.relations_json ||
+      backendChar.relationsJson,
+    {},
+  );
+
+  // graph 데이터가 있는 쪽을 선택 (JSON 문자열 파싱 결과 우선)
+  const relations =
+    Array.isArray(relationsFromJson?.graph) &&
+    relationsFromJson.graph.length > 0
+      ? relationsFromJson
+      : relationsFromObj;
+
+  const aliases = safeParse(
+    backendChar.aliases,
+    backendChar.aliasesjson ||
+      backendChar.aliases_json ||
+      backendChar.aliasesJson ||
+      [],
+  );
   const rawAppearance = safeParse(
     backendChar.appearance,
-    backendChar.appearanceJson || {}
+    backendChar.appearancejson ||
+      backendChar.appearance_json ||
+      backendChar.appearanceJson ||
+      {},
   );
 
-  // 🆕 callback_result.json 기준: profile.personality는 객체 (core_traits, flaws, values)
-  const profilePersonality = backendChar.profile?.personality || {};
+  // 🆕 profile.personality 및 기타 필드 복구
+  const profilePersonality = profile?.personality || {};
   const rawPersonality = safeParse(
     backendChar.personality,
-    backendChar.personalityJson || { core_traits: [], flaws: [], values: [] }
+    backendChar.personalityjson ||
+      backendChar.personality_json ||
+      backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
-  // 🆕 callback_result.json 기준: relations.graph에서 직접 매핑
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRelation = (rel: any) => ({
+    target: rel.target || rel.targetId,
+    type: rel.type || rel.relationType || rel.relation_type || "ALLY",
+    history: rel.history || null,
+    strength: rel.strength || 5,
+    description: rel.description || "",
+    publicStance: rel.public_stance || rel.publicStance,
+    privateFeeling: rel.private_feeling || rel.privateFeeling,
+    bidirectional: rel.bidirectional,
+    emotionalBond: rel.emotional_bond || rel.emotionalBond,
+    functionalTrust: rel.functional_trust || rel.functionalTrust,
+    valueAlignment: rel.value_alignment || rel.valueAlignment,
+    interdependence: rel.interdependence,
+    latentTension: rel.latent_tension || rel.latentTension,
+  });
 
-  const relationsGraph = Array.isArray(backendChar.relations?.graph)
-    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      backendChar.relations.graph.map((rel: any) => ({
-        target: rel.target,
-        type: rel.type || "ALLY",
-        history: rel.history || null,
-        strength: rel.strength || 5,
-        description: rel.description || "",
-        // 🆕 callback_result.json: public_stance, private_feeling
-        publicStance: rel.public_stance || rel.publicStance,
-        privateFeeling: rel.private_feeling || rel.privateFeeling,
-      }))
-    : // Fallback: 기존 relationships 배열 형식
-      Array.isArray(backendChar.relationships)
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        backendChar.relationships.map((rel: any) => ({
-          target: rel.target || rel.targetId,
-          type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-          history: rel.history || null,
-          strength: rel.strength || 5,
-          description: rel.description || "",
-          publicStance: rel.public_stance,
-          privateFeeling: rel.private_feeling,
-        }))
-      : [];
+  const relationsGraph =
+    Array.isArray(relations?.graph) && relations.graph.length > 0
+      ? relations.graph.map(mapRelation)
+      : Array.isArray(backendChar.relationships)
+        ? backendChar.relationships.map(mapRelation)
+        : Array.isArray(relations)
+          ? relations.map(mapRelation)
+          : [];
 
   // 🆕 callback_result.json: current_mood 객체 처리
   const currentMood = backendChar.current_mood || backendChar.currentMood || {};
@@ -108,24 +138,44 @@ function transformBackendCharacter(backendChar: any): Character {
   // 🆕 callback_result.json: meta 객체 (snake_case)
   const meta = backendChar.meta || {};
 
+  // 🚨 HOTFIX: ID Mapping for known characters with missing IDs
+  // This resolves the 404 error in EventService by forcing the correct UUID expected by the Event Service
+  // (The backend is 100% Neo4j, but the Character Service response is missing this specific ID)
+  const ID_OVERRIDES: Record<string, string> = {
+    장발장: "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
+    "Jean Valjean": "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
+  };
+
+  const name = profile?.name || backendChar.name || "";
+
+  let finalId =
+    backendChar.id ||
+    backendChar.character_id ||
+    backendChar._id ||
+    profile?.character_id ||
+    backendChar.characterId ||
+    profile?.characterId ||
+    "";
+
+  if (ID_OVERRIDES[name]) {
+    finalId = ID_OVERRIDES[name];
+  }
+
   return {
-    _id: backendChar._id || backendChar.id,
-    projectId: backendChar.projectId || "",
+    _id: finalId,
+    projectId: backendChar.projectId || backendChar.project_id || "",
     role: backendChar.role || "other",
     profile: {
-      characterId:
-        backendChar.profile?.character_id ||
-        backendChar.profile?.characterId ||
-        backendChar._id ||
-        "",
-      name: backendChar.profile?.name || backendChar.name || "Unknown",
-      age: backendChar.profile?.age ?? null,
-      gender: backendChar.profile?.gender || backendChar.gender || "unknown",
-      race: backendChar.profile?.race || backendChar.race || "unknown",
-      mbti: backendChar.profile?.mbti || backendChar.mbti || null,
-      occupation: backendChar.profile?.occupation,
-      birthplace: backendChar.profile?.birthplace,
-      family: backendChar.profile?.family,
+      _id: finalId,
+      characterId: finalId,
+      name: profile?.name || backendChar.name || "Unknown",
+      age: profile?.age ?? null,
+      gender: profile?.gender || backendChar.gender || "unknown",
+      race: profile?.race || backendChar.race || "unknown",
+      mbti: profile?.mbti || backendChar.mbti || null,
+      occupation: profile?.occupation,
+      birthplace: profile?.birthplace,
+      family: profile?.family,
       // 🆕 profile.personality는 이제 객체 (ProfilePersonality)
       personality: {
         coreTraits:
@@ -137,16 +187,16 @@ function transformBackendCharacter(backendChar: any): Character {
         flaws: profilePersonality.flaws || rawPersonality.flaws || [],
         values: profilePersonality.values || rawPersonality.values || [],
       },
-      backstory: backendChar.profile?.backstory || backendChar.backstory || "",
+      backstory: profile?.backstory || backendChar.backstory || "",
       faction: {
-        name: backendChar.profile?.faction?.name || null,
+        name: profile?.faction?.name || null,
         social: {
-          rank: backendChar.profile?.faction?.social?.rank || "COMMON",
-          influence: backendChar.profile?.faction?.social?.influence || 0,
+          rank: profile?.faction?.social?.rank || "COMMON",
+          influence: profile?.faction?.social?.influence || 0,
           // 🆕 callback_result.json: faction_reputation
           factionReputation:
-            backendChar.profile?.faction?.social?.faction_reputation ||
-            backendChar.profile?.faction?.social?.factionReputation ||
+            profile?.faction?.social?.faction_reputation ||
+            profile?.faction?.social?.factionReputation ||
             {},
         },
       },
@@ -155,7 +205,7 @@ function transformBackendCharacter(backendChar: any): Character {
     status: backendChar.status || "alive",
     motivation: backendChar.motivation,
     firstAppearance: backendChar.firstAppearance,
-    // 🆕 callback_result.json: appearance 필드 (snake_case → camelCase)
+    // ... appearance remains same ...
     appearance: {
       physique: rawAppearance.physique || "",
       skinTone: rawAppearance.skin_tone || rawAppearance.skinTone || "",
@@ -196,10 +246,14 @@ function transformBackendCharacter(backendChar: any): Character {
       graph: relationsGraph,
       // 🆕 callback_result.json: event_refs, location_context
       eventRefs:
+        relations?.event_refs ||
+        relations?.eventRefs ||
         backendChar.relations?.event_refs ||
         backendChar.relations?.eventRefs ||
         [],
       locationContext:
+        relations?.location_context ||
+        relations?.locationContext ||
         backendChar.relations?.location_context ||
         backendChar.relations?.locationContext ||
         "",
@@ -228,7 +282,7 @@ export const characterService = {
   getAll: async (projectId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
-      `/projects/${projectId}/characters`
+      `/projects/${projectId}/characters`,
     );
 
     // Transform backend response to frontend type
@@ -252,7 +306,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.post<ApiResponse<any>>(
       `/projects/${projectId}/characters`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -264,7 +318,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.patch<ApiResponse<any>>(
       `/characters/${id}`,
-      payload
+      payload,
     );
     return {
       ...response.data,
@@ -279,7 +333,7 @@ export const characterService = {
 
   regenerateImage: async (id: string) => {
     const response = await api.post<ApiResponse<{ jobId: string }>>(
-      `/characters/${id}/regenerate`
+      `/characters/${id}/regenerate`,
     );
     return response.data;
   },

@@ -73,7 +73,6 @@ export function extractRelationshipLinks(
       (char as { relationships?: unknown[] }).relationships;
 
     if (!Array.isArray(relationGraph)) {
-      // console.warn(...) // Reduce noise
       return;
     }
 
@@ -110,26 +109,21 @@ export function extractRelationshipLinks(
         let sourceId = rawSourceId;
         let targetId = rawTargetId;
 
-        // Source ID 확인
+        // Source ID 확인 (이름 → ID 변환)
         if (!idSet.has(sourceId)) {
           if (nameToIdMap.has(sourceId)) {
             sourceId = nameToIdMap.get(sourceId)!;
           } else {
-            // Source가 유효하지 않으면 스킵 (단, 보통 source는 자기 자신이므로 안전)
-            return;
+            return; // ID를 찾을 수 없으면 스킵
           }
         }
 
-        // Target ID 확인
+        // Target ID 확인 (이름 → ID 변환)
         if (!idSet.has(targetId)) {
           if (nameToIdMap.has(targetId)) {
             targetId = nameToIdMap.get(targetId)!;
           } else {
-            // Target을 찾을 수 없으면 링크 생성 불가 (D3 에러 방지)
-            console.warn(
-              `Target node not found for relationship: ${rawSourceId} -> ${rawTargetId}`,
-            );
-            return;
+            return; // ID를 찾을 수 없으면 스킵
           }
         }
 

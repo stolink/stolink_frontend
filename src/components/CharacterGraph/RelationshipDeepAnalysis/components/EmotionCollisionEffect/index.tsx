@@ -191,7 +191,16 @@ function CollisionMesh({
         value: new THREE.Vector2(viewport.width, viewport.height),
       },
     }),
-    [], // Empty dependency array intentionally (only init once)
+    [
+      colorDataA.colors,
+      colorDataA.intensities,
+      colorDataB.colors,
+      colorDataB.intensities,
+      strengthA,
+      strengthB,
+      viewport.width,
+      viewport.height,
+    ],
   );
 
   // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)

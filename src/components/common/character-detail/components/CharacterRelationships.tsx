@@ -1,11 +1,22 @@
 import { useMemo } from "react";
 import { Users, User, Heart, Swords, Handshake, Gem } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RelationshipRadar } from "./RelationshipRadar";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface RelationshipUI {
   name: string;
   relation: string;
   type: string;
+  // Detailed Metrics
+  emotionalBond?: number;
+  functionalTrust?: number;
+  valueAlignment?: number;
+  interdependence?: number;
+  latentTension?: number;
+  publicStance?: string;
+  privateFeeling?: string;
 }
 
 interface CharacterRelationshipsProps {
@@ -137,7 +148,7 @@ export function CharacterRelationships({
               <span
                 className={cn(
                   "p-1.5 rounded-lg bg-cloud-100",
-                  section.color.replace("text-", "bg-").replace("600", "100"), // simple quick hack for bg color, but let's use section.bg if defined better
+                  section.color.replace("text-", "bg-").replace("600", "100"),
                 )}
               >
                 <SectionIcon className={cn("w-4 h-4", section.color)} />
@@ -171,38 +182,124 @@ export function CharacterRelationships({
                     )}
                   />
 
-                  <div className="relative z-10 flex items-start gap-4">
-                    {/* Avatar Placeholder */}
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner",
-                        section.bg,
-                        section.color,
-                      )}
-                    >
-                      <User className="w-6 h-6 opacity-80" />
+                  <div className="relative z-10 flex flex-col gap-4">
+                    <div className="flex items-start gap-4">
+                      {/* Avatar Placeholder */}
+                      <div
+                        className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner",
+                          section.bg,
+                          section.color,
+                        )}
+                      >
+                        <User className="w-6 h-6 opacity-80" />
+                      </div>
+
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-base font-bold text-espresso-800 truncate group-hover:text-primary transition-colors">
+                            {rel.name}
+                          </h4>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {/* Relation Badge */}
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border",
+                              section.bg,
+                              section.color.replace("700", "600"),
+                              section.border,
+                            )}
+                          >
+                            {rel.relation}
+                          </span>
+                          {/* Public/Private Badges */}
+                          {rel.publicStance && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-6 bg-white/50 text-gray-500 border-gray-200"
+                            >
+                              공식: {rel.publicStance}
+                            </Badge>
+                          )}
+                          {rel.privateFeeling && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-6 bg-white/50 text-gray-500 border-gray-200"
+                            >
+                              속마음: {rel.privateFeeling}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0 pt-0.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-base font-bold text-espresso-800 truncate group-hover:text-primary transition-colors">
-                          {rel.name}
-                        </h4>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {/* Relation Badge */}
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border",
-                            section.bg,
-                            section.color.replace("700", "600"),
-                            section.border,
+                    {/* Detailed Metrics - Radar Chart & Stats */}
+                    {(rel.emotionalBond !== undefined ||
+                      rel.functionalTrust !== undefined) && (
+                      <div className="mt-2 pt-4 border-t border-gray-100/50 grid grid-cols-2 gap-4">
+                        {/* Radar Chart */}
+                        <div className="col-span-2 sm:col-span-1">
+                          <RelationshipRadar
+                            data={{
+                              emotionalBond: rel.emotionalBond || 0,
+                              functionalTrust: rel.functionalTrust || 0,
+                              valueAlignment: rel.valueAlignment || 0,
+                              interdependence: rel.interdependence || 0,
+                              latentTension: rel.latentTension || 0,
+                            }}
+                            className="h-[140px]"
+                          />
+                        </div>
+
+                        {/* Key Metrics Bars */}
+                        <div className="col-span-2 sm:col-span-1 space-y-2 text-xs">
+                          {rel.emotionalBond !== undefined && (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-mocha-600">
+                                <span>정서적 유대</span>
+                                <span className="font-semibold">
+                                  {rel.emotionalBond}/10
+                                </span>
+                              </div>
+                              <Progress
+                                value={rel.emotionalBond * 10}
+                                className="h-1.5 bg-mocha-100"
+                              />
+                            </div>
                           )}
-                        >
-                          {rel.relation}
-                        </span>
+                          {rel.functionalTrust !== undefined && (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-mocha-600">
+                                <span>신뢰도</span>
+                                <span className="font-semibold">
+                                  {rel.functionalTrust}/10
+                                </span>
+                              </div>
+                              <Progress
+                                value={rel.functionalTrust * 10}
+                                className="h-1.5 bg-mocha-100"
+                              />
+                            </div>
+                          )}
+                          {rel.latentTension !== undefined &&
+                            rel.latentTension > 3 && (
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-red-600">
+                                  <span>잠재적 갈등</span>
+                                  <span className="font-semibold">
+                                    {rel.latentTension}/10
+                                  </span>
+                                </div>
+                                <Progress
+                                  value={rel.latentTension * 10}
+                                  className="h-1.5 bg-red-100"
+                                />
+                              </div>
+                            )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               ))}

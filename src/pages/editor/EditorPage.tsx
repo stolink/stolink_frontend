@@ -26,7 +26,7 @@ import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal
 // import { RenameSectionModal } from "@/pages/editor/components/modals/RenameSectionModal";
 // import { DeleteSectionModal } from "@/pages/editor/components/modals/DeleteSectionModal";
 // import { DemoTourModal } from "@/pages/editor/components/DemoTourModal";
-import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
+// import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal"; // Removed from Editor
 import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
 import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
 
@@ -42,6 +42,7 @@ import {
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
 import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
+import { useToast } from "@/hooks/useToast";
 
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
@@ -51,12 +52,16 @@ import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
 import type { AnalysisResultData } from "@/types/analysisResult";
-import type { AnalysisDiff } from "@/types/analysisTypes";
-import { type CharacterRelation, type Character } from "@/types/character";
+import {
+  type CharacterRelation,
+  type Character,
+  type RelationType,
+} from "@/types/character";
+import type { RelationshipLink } from "@/types/characterGraph";
 
 // Utils & Data
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+
 import { DEMO_CHAPTERS } from "@/data/demoData";
 import { cn } from "@/lib/utils";
 
@@ -142,6 +147,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // Project Data
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
+  const { toast } = useToast();
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
@@ -255,7 +261,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       id: string;
       source: string;
       target: string;
-      type: string;
+      type: RelationType;
       strength: number;
       description: string;
     }
@@ -266,7 +272,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           id: `${char._id}-${rel.target}`,
           source: char._id,
           target: rel.target,
-          type: rel.type,
+          type: rel.type as RelationType,
           strength: rel.strength,
           description: rel.description,
         });
@@ -278,34 +284,17 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // ============================================================
   // Analysis Integration (Polling & Buffer)
   // ============================================================
+  // Analysis Integration (Polling & Buffer)
+  // ============================================================
   const queryClient = useQueryClient();
-  const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
-  const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
+  // const [showAnalysisSummary, setShowAnalysisSummary] = useState(false); // Moved to World
+  // const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
 
   // consistencyReport state removed in favor of store persistence
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
         .addToBuffer,
-  );
-
-  const handleAnalysisComplete = useCallback(
-    (result: AnalysisResultData) => {
-      const diff = calculateAnalysisDiff(
-        characters,
-        graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
-        result,
-      );
-
-      setAnalysisDiff(diff);
-      setShowAnalysisSummary(true);
-
-      // setConsistencyReport handled by useProjectAnalysis store update
-
-      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
-    },
-    [characters, graphLinks, projectId, queryClient],
   );
 
   const readerChapters = useMemo(() => {
@@ -341,7 +330,30 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     lastConsistencyReport, // Added
   } = useProjectAnalysis(projectId, {
     enabled: !!projectId,
-    onAnalysisComplete: handleAnalysisComplete,
+    onAnalysisComplete: async (result: AnalysisResultData | null) => {
+      if (!result) return;
+
+      // Check if already acknowledged (Viewed) to prevent loop
+      const isAck =
+        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
+      if (isAck) return;
+
+      // Analysis complete.
+      // We DO NOT calculate diff here anymore. We defer it to WorldPage.
+      // Flag that we have a pending view for the user.
+      if (projectId) {
+        sessionStorage.setItem(`analysis_pending_view_${projectId}`, "true");
+      }
+
+      toast({
+        title: "분석 완료",
+        description: "세계관 탭에서 결과를 확인해주세요.",
+        variant: "success",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
   });
 
   const consistencyReport = lastConsistencyReport; // Alias for compatibility
@@ -359,11 +371,13 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       try {
         // Use the hook's saveContent which handles backend sync
         await saveDocumentContent(content);
-      } catch (error) {
-        console.error("Failed to save content:", error);
+        // 분석 버퍼에 추가 (자동 분석 트래킹용)
+        addToBuffer(selectedSectionId, content);
+      } catch (_error) {
+        // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent],
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
   );
 
   const saveWithAnalysis = useCallback(
@@ -371,37 +385,86 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       if (!selectedSectionId) return;
       await saveContent(content);
       addToBuffer(selectedSectionId, content);
-      // flushAndAnalyze(); // 저장 시 즉시 분석하지 않고 버퍼링 정책에 따름
     },
     [saveContent, selectedSectionId, addToBuffer],
   );
 
   const handleManualAnalysis = useCallback(() => {
-    if (!selectedSectionId || isDemo) return;
+    if (!selectedSectionId || isDemo || isAnalyzing) return;
     const content =
       editorContentRef.current?.getContent() || documentContent || "";
     if (content) {
+      // 버퍼에 먼저 추가하여 최신 해시와 비교할 수 있게 함
       addToBuffer(selectedSectionId, content);
-      flushAndAnalyze();
+
+      // 변경 사항이 있는지 확인
+      const hasChanges = useAnalysisBufferStore
+        .getState()
+        .hasUnanalyzedChanges();
+
+      if (hasChanges) {
+        try {
+          flushAndAnalyze();
+        } catch (_error) {
+          toast({
+            variant: "destructive",
+            title: "수동 분석 실패",
+            description: "분석 요청 중 오류가 발생했습니다.",
+          });
+        }
+      } else {
+        toast({
+          title: "분석 완료",
+          description: "이미 최신 상태로 분석되어 있습니다.",
+          variant: "success",
+        });
+      }
     }
   }, [
     selectedSectionId,
     isDemo,
+    isAnalyzing,
     addToBuffer,
     flushAndAnalyze,
     documentContent,
+    toast,
   ]);
 
-  // 불필요한 분석 방지를 위해 unload 시 자동 분석 트리거 제거
-  // useEffect(() => {
-  //   const handleBeforeUnload = () => {
-  //     flushAndAnalyze();
-  //   };
-  //   window.addEventListener("beforeunload", handleBeforeUnload);
-  //   return () => {
-  //     window.removeEventListener("beforeunload", handleBeforeUnload);
-  //   };
-  // }, [flushAndAnalyze]);
+  // ============================================================
+  // Snapshot Diffing Effect (Editor Side)
+  // ============================================================
+  const snapshotRef = useRef<{
+    characters: Character[];
+    links: RelationshipLink[];
+  } | null>(null);
+
+  // Capture Snapshot when starting analysis
+  const handleStartAnalysisWrapper = useCallback(() => {
+    // Capture Snapshot before starting
+    console.log("📸 [Editor] Capturing Snapshot for Diff...");
+    const snapshot = {
+      characters: [...characters],
+      links: [...graphLinks],
+    };
+    snapshotRef.current = snapshot;
+
+    // Persist to sessionStorage to share with WorldPage
+    if (projectId) {
+      try {
+        sessionStorage.setItem(
+          `analysis_snapshot_${projectId}`,
+          JSON.stringify(snapshot),
+        );
+        // Reset flags
+        sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
+        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+      } catch (e) {
+        console.warn("Failed to save snapshot to sessionStorage", e);
+      }
+    }
+
+    handleManualAnalysis();
+  }, [handleManualAnalysis, characters, graphLinks, projectId]);
 
   // ============================================================
   // UI & Modals State
@@ -615,7 +678,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
             analysisProgress={analysisProgress}
-            onTriggerAnalysis={handleManualAnalysis}
+            onTriggerAnalysis={handleStartAnalysisWrapper}
             onResetAnalysis={resetAnalysis}
           />
 
@@ -654,7 +717,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           }
           consistencyReport={consistencyReport}
           isAnalyzing={analysisStatus === "analyzing"}
-          onRefreshAnalysis={handleManualAnalysis}
+          onRefreshAnalysis={handleStartAnalysisWrapper}
         />
       </div>
 
@@ -686,13 +749,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         onClose={() => setShowTourPrompt(false)}
       />
       */}
-      {analysisDiff && (
-        <AnalysisSummaryModal
-          isOpen={showAnalysisSummary}
-          onClose={() => setShowAnalysisSummary(false)}
-          diff={analysisDiff}
-        />
-      )}
+
+      {/*
+         AnalysisSummaryModal Removed from Editor
+       */}
       {showReader && (
         <ReaderModal
           isOpen={showReader}

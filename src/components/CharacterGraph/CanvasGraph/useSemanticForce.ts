@@ -184,21 +184,9 @@ export function useSemanticForce(
     groups.sort();
 
     // [DEBUG] Log faction groups (초기화 시 1회만)
-    if (groups.length > 0) {
-      console.log("=== useSemanticForce: Faction Groups ===");
-      console.log("Groups:", groups);
-      console.log("Total Nodes:", nodes.length);
-      const groupCounts = new Map<string, number>();
-      nodes.forEach((n) => {
-        if (n.group && n.group !== "무소속") {
-          groupCounts.set(n.group, (groupCounts.get(n.group) || 0) + 1);
-        }
-      });
-      console.table(Object.fromEntries(groupCounts));
-    } else {
-      console.warn(
-        "[useSemanticForce] ❌ No faction groups found! All nodes are '무소속'.",
-      );
+
+    if (groups.length === 0) {
+      // No groups to distribute
     }
 
     // Distribute groups in circular pattern (D3 Observable 패턴)

@@ -1,5 +1,6 @@
 import api from "@/api/client";
 import type { JobResponse } from "@/types/api";
+import { resolveImageUrl } from "@/utils/imageUtils";
 
 export interface ImageGenerationResult {
   imageUrl: string;
@@ -33,50 +34,35 @@ export const imageService = {
       lighting?: string;
       time_of_day?: string;
       art_style?: string;
-    }
+    },
+    characterData?: Record<string, unknown>,
   ): Promise<{ jobId: string; status: string }> => {
-    try {
-      const response = await api.post<
-        | { data: { jobId: string; status?: string } }
-        | { jobId: string; status?: string }
-      >(`/projects/${projectId}/characters/${characterId}/image`, {
-        action,
-        description,
-        setting,
-        ...additionalOptions,
-      });
+    const response = await api.post<
+      | { data: { jobId: string; status?: string } }
+      | { jobId: string; status?: string }
+    >(`/projects/${projectId}/characters/${characterId}/image`, {
+      action,
+      description,
+      setting,
+      ...additionalOptions,
+      ...characterData,
+    });
 
-      // Handle both wrapped (response.data.data) and flattened (response.data) formats
-      const responseData = response.data as {
-        data?: { jobId: string; status?: string };
-        jobId: string;
-        status?: string;
-      };
-      const result = responseData.data || responseData;
-      if (!result || !result.jobId) {
-        console.error(
-          "[imageService] Invalid generation response:",
-          response.data
-        );
-        throw new Error("Failed to get jobId from generation response");
-      }
-
-      return {
-        jobId: result.jobId,
-        status: result.status || "pending",
-      };
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: unknown; status?: number };
-        message?: string;
-      };
-      console.error("[imageService] generateCharacterImage failed:", {
-        error: axiosError.response?.data || axiosError.message,
-        status: axiosError.response?.status,
-        payload: { action, description, setting },
-      });
-      throw error;
+    // Handle both wrapped (response.data.data) and flattened (response.data) formats
+    const responseData = response.data as {
+      data?: { jobId: string; status?: string };
+      jobId: string;
+      status?: string;
+    };
+    const result = responseData.data || responseData;
+    if (!result || !result.jobId) {
+      throw new Error("Failed to get jobId from generation response");
     }
+
+    return {
+      jobId: result.jobId,
+      status: result.status || "pending",
+    };
   },
 
   /**
@@ -86,7 +72,7 @@ export const imageService = {
    * @returns Job status with image generation result
    */
   getImageJobStatus: async (
-    jobId: string
+    jobId: string,
   ): Promise<JobResponse<ImageGenerationResult>> => {
     let response;
     let retries = 3;
@@ -104,9 +90,6 @@ export const imageService = {
         lastError = err;
         // If 404, the job might not be indexed yet, retry
         if (axiosError.response?.status === 404 && retries > 1) {
-          console.warn(
-            `[imageService] Job ${jobId} not found (404), retrying... (${retries - 1} left)`
-          );
           await new Promise((resolve) => setTimeout(resolve, 1500));
           retries--;
           continue;
@@ -138,10 +121,6 @@ export const imageService = {
     const rawData = responseData.data || responseData;
 
     if (!rawData || !rawData.status) {
-      console.error(
-        "[imageService] Invalid job status response:",
-        response.data
-      );
       throw new Error("Invalid job status response");
     }
 
@@ -173,6 +152,12 @@ export const imageService = {
         prompt: flattened.prompt,
         modelUsed: flattened.modelUsed,
       };
+    }
+
+    // Apply URL resolution to result
+    if (data.result && data.result.imageUrl) {
+      data.result.imageUrl =
+        resolveImageUrl(data.result.imageUrl) || data.result.imageUrl;
     }
 
     return data;

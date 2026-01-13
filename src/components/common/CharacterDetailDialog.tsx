@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,11 @@ import {
 
 import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
-import { useCharacter } from "@/hooks/useCharacters";
+import {
+  useCharacter,
+  useUpdateCharacter,
+  useCharacters,
+} from "@/hooks/useCharacters";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
@@ -77,31 +81,19 @@ export default function CharacterDetailDialog({
   const [imageJobId, setImageJobId] = useState<string | null>(null);
   const setGlobalJobId = useAnalysisBufferStore((state) => state.setJobId);
 
+  // Data Mutation Hook
+  const updateCharacter = useUpdateCharacter();
+
   // Fetch fresh character data
   // 만약 DB에는 데이터가 있는데 리스트에는 없을 경우를 대비해 상세 조회
-  const { data: fetchedCharacter } = useCharacter(character?._id || "", {
-    enabled: !!character?._id,
+  const { data: fetchedChar } = useCharacter(character?._id ?? "", {
+    enabled: !!character?._id && isOpen,
   });
 
   // 화면에 표시할 최종 캐릭터 데이터 (수정모드 > 페치된 데이터 > props 데이터)
   const displayCharacter = isEditMode
     ? editedCharacter
-    : fetchedCharacter || character; // 페치된 데이터 우선 사용
-
-  useEffect(() => {
-    if (displayCharacter) {
-      console.log(
-        "[CharacterDetailDialog] displayCharacter imageUrl:",
-        displayCharacter.imageUrl,
-      );
-    }
-    if (fetchedCharacter) {
-      console.log(
-        "[CharacterDetailDialog] fetchedCharacter imageUrl:",
-        fetchedCharacter.imageUrl,
-      );
-    }
-  }, [displayCharacter, fetchedCharacter, isOpen, character]);
+    : fetchedChar || character; // 페치된 데이터 우선 사용
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
@@ -124,6 +116,7 @@ export default function CharacterDetailDialog({
           : `${imageUrl}?t=${Date.now()}`;
         setTempImageUrl(cacheBusterUrl);
         setImageJobId(null);
+        setGlobalJobId(null); // Clear global job tracking
       },
       onError: () => {
         setImageJobId(null);
@@ -143,9 +136,6 @@ export default function CharacterDetailDialog({
     if (imageJobId && !isGlobalAnalyzing && currentJobType !== "image") {
       // Job finished - add delay to ensure animation is visible
       const timer = setTimeout(async () => {
-        console.log(
-          "[CharacterDetailDialog] Global image job finished. Refetching character data.",
-        );
         // Use refetchQueries instead of invalidateQueries for immediate data refresh
         await queryClient.refetchQueries({ queryKey: ["characters"] });
         await queryClient.refetchQueries({
@@ -195,12 +185,36 @@ export default function CharacterDetailDialog({
     setPrevCharacterId(character?._id);
     if (character) {
       setEditedCharacter(structuredClone(character));
-      setImageJobId(null);
+      // Try to recover background job for this character if it exists in global store
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      } else {
+        setImageJobId(null);
+      }
       setTempImageUrl(null);
     }
   }
 
-  const { traits, relationships, appearances } = useCharacterData(
+  // Effect to recover background job if dialog reopens with same character
+  useEffect(() => {
+    if (isOpen && character?._id && !imageJobId) {
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      }
+    }
+  }, [isOpen, character?._id, imageJobId]);
+
+  const { traits, relationships } = useCharacterData(
     displayCharacter, // displayCharacter 사용
   );
 
@@ -212,12 +226,34 @@ export default function CharacterDetailDialog({
     },
   );
 
-  console.log(
-    "CharacterDetailDialog Rendered. ActiveTab:",
-    activeTab,
-    "CharacterEvents:",
-    characterEvents?.length,
+  // 프론트엔드 필터링: 백엔드가 모든 이벤트를 반환하는 경우 대비
+  const realAppearances = useMemo(() => {
+    if (!characterEvents || characterEvents.length === 0) return [];
+    const charName = displayCharacter?.profile?.name;
+    if (!charName) return [];
+
+    return characterEvents
+      .filter((e) => e.participants.includes(charName))
+      .map((e) => e.narrativeSummary)
+      .filter(Boolean);
+  }, [characterEvents, displayCharacter?.profile?.name]);
+
+  // 모든 캐릭터 정보 조회 (참여자 ID를 이름으로 변환하기 위함)
+  const { data: allCharacters = [] } = useCharacters(
+    displayCharacter?.projectId ?? "",
+    {
+      enabled: !!displayCharacter?.projectId && isOpen,
+    },
   );
+
+  // ID -> Name 매핑 생성
+  const characterNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allCharacters.forEach((c) => {
+      if (c._id) map[c._id] = c.profile.name;
+    });
+    return map;
+  }, [allCharacters]);
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
@@ -238,11 +274,86 @@ export default function CharacterDetailDialog({
             setSettings(uniqueSettings);
           }
         })
-        .catch(() => {
-          // Error handling
+        .catch((_e) => {
+          /* Ignored */
         });
     }
   }, [isOpen, character?.projectId, character?._id]);
+
+  /* ------------------------------------------------------------------
+   * Payload Processing Helpers
+   * ------------------------------------------------------------------ */
+
+  const sanitizeValue = useCallback((obj: unknown): unknown => {
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) {
+      const sanitizedArray = obj
+        .map((v) => sanitizeValue(v))
+        .filter((v) => v !== undefined && v !== null);
+      return sanitizedArray.length > 0 ? sanitizedArray : [];
+    }
+    if (typeof obj === "object") {
+      const sanitizedObj: Record<string, unknown> = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const sanitizedVal = sanitizeValue(value);
+        if (sanitizedVal !== undefined && sanitizedVal !== null) {
+          sanitizedObj[key] = sanitizedVal;
+        }
+      });
+      return Object.keys(sanitizedObj).length > 0 ? sanitizedObj : undefined;
+    }
+    return obj;
+  }, []);
+
+  /**
+   * 백엔드 전송용 클린 페이로드를 생성합니다.
+   * - 읽기 전용 필드 제거
+   * - 깊은 산출(undefined 제거)
+   * - 하이브리드 키(snake_case) 보강
+   * - JSON 문자열 백업 추가
+   */
+  const getCleanPayload = useCallback(() => {
+    if (!editedCharacter) return null;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, projectId, meta, imageUrl, ...basePayload } = editedCharacter;
+    const cleanPayload =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (sanitizeValue(basePayload) as Record<string, any>) || {};
+
+    if (!cleanPayload.profile) cleanPayload.profile = {};
+
+    if (cleanPayload.appearance) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const app = cleanPayload.appearance as any;
+
+      // Add snake_case aliases
+      if (app.hairStyle) app.hair_style = app.hairStyle;
+      if (app.hairColor) app.hair_color = app.hairColor;
+      if (app.skinTone) app.skin_tone = app.skinTone;
+      if (app.scarsTattoos) app.scars_tattoos = app.scarsTattoos;
+      if (app.styleContext) {
+        app.style_context = {
+          ...app.styleContext,
+          art_style: app.styleContext.artStyle,
+        };
+      }
+
+      // Cleanup undefined
+      Object.keys(app).forEach((key) => {
+        if (app[key] === undefined) delete app[key];
+      });
+
+      // Redundant JSON backups
+      const jsonStr = JSON.stringify(app);
+      app.appearanceJson = jsonStr;
+      app.appearance_json = jsonStr;
+      cleanPayload.appearanceJson = jsonStr;
+      cleanPayload.appearance_json = jsonStr;
+    }
+
+    return cleanPayload;
+  }, [editedCharacter, sanitizeValue]);
 
   const handleConfirmImageGeneration = useCallback(
     async (
@@ -308,12 +419,6 @@ export default function CharacterDetailDialog({
             ? parts.join(", ")
             : "A high quality character portrait";
 
-        console.log("[CharacterDetailDialog] REQUESTING CHARACTER IMAGE:", {
-          projectId: character.projectId,
-          characterId: character._id,
-          action,
-        });
-
         // Extract precise prompt fields from setting if available (for backend to use directly)
         const additionalOptions = selectedSetting
           ? {
@@ -327,6 +432,9 @@ export default function CharacterDetailDialog({
             }
           : undefined;
 
+        // Get character data to sync with backend during generation
+        const characterData = getCleanPayload();
+
         const { jobId } = await imageService.generateCharacterImage(
           character.projectId,
           character._id,
@@ -334,20 +442,17 @@ export default function CharacterDetailDialog({
           generatedPrompt,
           selectedSetting as unknown as Record<string, string>,
           additionalOptions,
+          (characterData as Record<string, unknown>) || undefined,
         );
 
-        console.log(
-          "[CharacterDetailDialog] -> CHARACTER IMAGE JOB STARTED:",
-          jobId,
-        );
         setImageJobId(jobId);
-        setGlobalJobId(jobId, "image");
+        setGlobalJobId(jobId, "image", character._id);
         toast({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch (err: unknown) {
-        console.error("[CharacterDetailDialog] Image generation failed:", err);
+      } catch (_e) {
+        /* Ignored */
         toast({
           variant: "destructive",
           title: "실패",
@@ -363,6 +468,7 @@ export default function CharacterDetailDialog({
       manualPrompt,
       toast,
       setGlobalJobId,
+      getCleanPayload,
     ],
   );
 
@@ -377,30 +483,118 @@ export default function CharacterDetailDialog({
     }
   }, [character]);
 
+  const validateImageGeneration = useCallback(() => {
+    const targetChar = displayCharacter || character;
+    if (!targetChar) return false;
+
+    let traitCount = 0;
+    if (targetChar.appearance?.physique) traitCount++;
+    if (targetChar.appearance?.hairColor || targetChar.appearance?.hairStyle)
+      traitCount++;
+    if (targetChar.appearance?.eyes) traitCount++;
+    if (
+      targetChar.appearance?.attire &&
+      (Array.isArray(targetChar.appearance.attire)
+        ? targetChar.appearance.attire.length > 0
+        : !!targetChar.appearance.attire)
+    )
+      traitCount++;
+    if (targetChar.appearance?.expression) traitCount++;
+    const traits = targetChar.personality?.coreTraits;
+    if (traits && traits.length > 0) traitCount++;
+
+    return traitCount >= 2;
+  }, [displayCharacter, character]);
+
   const handleOpenImageGeneration = useCallback(() => {
-    handleConfirmImageGeneration("create");
-  }, [handleConfirmImageGeneration]);
+    // Validation: Check if character has enough info (Name + at least 2 traits)
+    if (!validateImageGeneration()) {
+      toast({
+        variant: "destructive",
+        title: "정보 부족",
+        description:
+          "이미지를 생성하려면 이름 외에 최소 2가지 이상의 특징(외모, 성격 등)을 입력해주세요.",
+      });
+      return;
+    }
+
+    const mode = character?.imageUrl ? "edit" : "create";
+    handleConfirmImageGeneration(mode);
+  }, [handleConfirmImageGeneration, validateImageGeneration, character, toast]);
 
   const handleSave = useCallback(async () => {
-    if (!editedCharacter) return;
+    if (!editedCharacter || !character?._id) return;
 
-    // Compare appearance to detect changes for image update
-    const hasAppearanceChanged = !isEqual(
-      character?.appearance,
-      editedCharacter.appearance,
-    );
-
-    if (onSave) {
-      onSave(editedCharacter);
+    // 0. Primary Validation
+    if (!editedCharacter.profile?.name?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "입력 오류",
+        description: "캐릭터 이름은 필수입니다.",
+      });
+      return;
     }
 
-    // If appearance changed and there's already an image, trigger auto-edit
-    if (hasAppearanceChanged && character?.imageUrl) {
-      handleConfirmImageGeneration("edit", "");
-    }
+    try {
+      const cleanPayload = getCleanPayload();
+      if (!cleanPayload) return;
 
-    setIsEditMode(false);
-  }, [editedCharacter, character, onSave, handleConfirmImageGeneration]);
+      // 1. Call Backend API to update character
+      // Mutation hook now handles cache update (immediate) and delayed refetch (safe)
+      await updateCharacter.mutateAsync({
+        id: character._id,
+        payload: cleanPayload,
+      });
+
+      toast({
+        variant: "success",
+        title: "저장 성공",
+        description: "캐릭터 정보가 저장되었습니다.",
+      });
+
+      // 3. Compare data to detect changes for image update
+      const hasImageRelevantChanges =
+        !isEqual(character?.appearance, editedCharacter.appearance) ||
+        !isEqual(
+          character?.personality?.coreTraits,
+          editedCharacter.personality?.coreTraits,
+        ) ||
+        character?.profile?.name !== editedCharacter.profile?.name;
+
+      if (onSave) {
+        onSave(editedCharacter);
+      }
+
+      // 4. Trigger image generation if relevant data changed
+      if (hasImageRelevantChanges) {
+        if (character?.imageUrl) {
+          // Existing image -> update
+          handleConfirmImageGeneration("edit", "");
+        } else if (validateImageGeneration()) {
+          // No image yet -> create (only if sufficient info)
+          handleConfirmImageGeneration("create", "");
+        }
+      }
+
+      setIsEditMode(false);
+    } catch (error) {
+      console.error("Failed to save character:", error);
+      toast({
+        variant: "destructive",
+        title: "저장 실패",
+        description: "캐릭터 정보를 저장하는 중 오류가 발생했습니다.",
+      });
+    }
+  }, [
+    editedCharacter,
+    character,
+    onSave,
+    handleConfirmImageGeneration,
+    validateImageGeneration,
+    updateCharacter,
+    toast,
+    getCleanPayload,
+  ]);
 
   const handleFieldChange = useCallback(
     (field: string, value: string | string[]) => {
@@ -700,7 +894,10 @@ export default function CharacterDetailDialog({
                       </div>
                     </div>
                     {/* Quick Story Appearances */}
-                    <CharacterAppearances appearances={appearances} />
+                    <CharacterAppearances
+                      appearances={realAppearances}
+                      biography={displayCharacter.profile.backstory}
+                    />
                   </TabsContent>
 
                   {/* PROFILE TAB (New Detailed Fields) */}
@@ -884,6 +1081,7 @@ export default function CharacterDetailDialog({
                         handleFieldChange("profile.backstory", value)
                       }
                       events={characterEvents}
+                      characterNameMap={characterNameMap}
                       onSave={handleSave}
                       onCancel={handleCancel}
                     />

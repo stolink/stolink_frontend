@@ -125,15 +125,7 @@ export function useClusterData(
     });
 
     // [DEBUG] Faction 클러스터 로그
-    if (nodes.length > 0) {
-      console.log("=== Macro View Clusters ===");
-      console.table(
-        clusterNodes.map((c) => ({
-          name: c.name,
-          count: c.memberCount,
-        })),
-      );
-    }
+
     // 3. 클러스터 간 링크 생성 (Edge Bundling 데이터)
     const linkBundleMap = new Map<
       string,

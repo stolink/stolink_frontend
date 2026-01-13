@@ -21,6 +21,10 @@ const clearCacheAndLogout = () => {
   if (queryClientInstance) {
     queryClientInstance.clear();
   }
+  // Force redirect to landing page (only if not already there to prevent infinite loop)
+  if (window.location.pathname !== "/") {
+    window.location.href = "/";
+  }
 };
 
 export const api = axios.create({
@@ -35,10 +39,6 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // 디버깅 요청: API 요청 로그
-    console.log(
-      `[API Request] ${config.method?.toUpperCase()} ${config.url}`,
-      config.params || "",
-    );
 
     const { user } = useAuthStore.getState();
 
@@ -50,7 +50,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("[API Request Error]", error);
     return Promise.reject(error);
   },
 );
@@ -59,18 +58,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // 디버깅 응답: API 응답 로그
-    console.log(
-      `[API Response] ${response.status} ${response.config.url}`,
-      response.data,
-    );
+
     return response;
   },
   async (error: AxiosError) => {
-    console.error(
-      `[API Error] ${error.response?.status} ${error.config?.url}`,
-      error.response?.data || error.message,
-    );
-
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
     // 401 에러이고, 재시도가 아닌 경우에만 토큰 재발급 시도
@@ -79,8 +70,11 @@ api.interceptors.response.use(
       originalRequest &&
       !originalRequest._retry
     ) {
+      console.log("[Auth] 401 error detected. Attempting to refresh token...");
+
       // /auth/refresh 요청 자체가 실패한 경우는 재시도하지 않음
       if (originalRequest.url?.includes("/auth/refresh")) {
+        console.log("[Auth] Refresh token request failed. Logging out.");
         clearCacheAndLogout();
         return Promise.reject(error);
       }
@@ -88,33 +82,54 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        console.log(
+          `[Auth] Acquiring refresh lock for ${originalRequest.url}...`,
+        );
+
         // Web Locks API를 사용하여 탭 간 동기화
-        // 'auth_refresh_lock'을 획득한 탭만 refresh 요청을 수행
         await navigator.locks.request("auth_refresh_lock", async () => {
-          // 마지막 refresh 시간을 확인하여 중복 요청 방지 (2초 내 재요청이면 스킵)
+          // 마지막 refresh 시간을 확인하여 중복 요청 방지 (3초 내 재요청이면 스킵)
           const lastRefreshTime = localStorage.getItem("last_refresh_time");
           const now = Date.now();
 
-          if (lastRefreshTime && now - parseInt(lastRefreshTime) < 2000) {
-            // 이미 다른 탭/요청에서 refresh를 완료함 -> 바로 재시도
+          if (lastRefreshTime && now - parseInt(lastRefreshTime) < 3000) {
+            console.log(
+              `[Auth] Token refreshed recently (${now - parseInt(lastRefreshTime)}ms ago). Skipping refresh for ${originalRequest.url}.`,
+            );
             return;
           }
 
           // 토큰 재발급 시도
-          console.log("[Auth] Token refresh attempt...");
-          await api.post("/auth/refresh");
-          localStorage.setItem("last_refresh_time", now.toString());
+          console.log("[Auth] Sending refresh request...");
+          const response = await api.post("/auth/refresh");
+
+          // 백엔드가 200 OK를 주더라도 실제로는 실패했을 수 있으므로 응답 확인 (ApiResponse 형태인 경우)
+          const responseData = response.data as Record<string, unknown>;
+          if (responseData && responseData.success === false) {
+            const errorObj = responseData.error as
+              | Record<string, string>
+              | undefined;
+            throw new Error(
+              errorObj?.message || "Refresh returned success: false",
+            );
+          }
+
+          console.log("[Auth] Refresh successful.");
+          localStorage.setItem("last_refresh_time", Date.now().toString());
         });
 
         // 락 해제 후 원래 요청 재시도
-        // 락 내에서 refresh가 성공했거나, 다른 탭이 이미 성공했으므로
-        // 쿠키가 갱신된 상태에서 요청을 다시 보냄
-        console.log("[Auth] Retrying original request...");
+        console.log(`[Auth] Retrying original request: ${originalRequest.url}`);
         return api(originalRequest);
       } catch (refreshError) {
-        // 토큰 재발급 실패 시 로그아웃 및 캐시 정리
-        console.error("[Auth] Token refresh failed", refreshError);
-        clearCacheAndLogout();
+        console.error("[Auth] Refresh process failed:", refreshError);
+
+        // 이미 다른 요청에 의해 로그아웃 처리 중일 수 있으므로 중복 실행 방지
+        const { isAuthenticated } = useAuthStore.getState();
+        if (isAuthenticated) {
+          console.log("[Auth] Logging out due to refresh failure.");
+          clearCacheAndLogout();
+        }
         return Promise.reject(refreshError);
       }
     }

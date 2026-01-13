@@ -29,7 +29,6 @@ import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 import { generateAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
 
-export { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 export { GROUP_COLORS } from "./constants";
 
 interface CharacterGraphProps {
@@ -110,6 +109,18 @@ export const CharacterGraph = forwardRef<
     }, [initialLinks]);
 
     // --- Hover Tooltip State ---
+    const [hoveredLinkData, setHoveredLinkData] = useState<{
+      type: string;
+      strength: number;
+      label?: string | null;
+      description?: string;
+      sourceName: string;
+      targetName: string;
+      x: number;
+      y: number;
+      link: RelationshipLink; // Store link to open modal
+      relationTypes?: string[];
+    } | null>(null);
 
     // 외부에서 필터 변경 시 내부 상태 동기화
     useEffect(() => {
@@ -145,12 +156,6 @@ export const CharacterGraph = forwardRef<
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNodeClick, onLinkClick]);
-    // State for Link Hover Tooltip
-    const [hoveredLinkData, setHoveredLinkData] = useState<{
-      link: RelationshipLink;
-      x: number;
-      y: number;
-    } | null>(null);
 
     // Tooltip close timer for smooth interaction
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,7 +184,12 @@ export const CharacterGraph = forwardRef<
       // 1. 관계 수 계산 (중요도 지표) for Dynamic Sizing
       const relationCounts = calculateRelationCounts(initialLinks);
 
-      const nodes = characters.map((char, index) => {
+      // Deduplicate characters by ID to prevent duplicate keys
+      const uniqueCharacters = Array.from(
+        new Map(characters.map((c, i) => [c._id || `temp-${i}`, c])).values(),
+      );
+
+      const nodes = uniqueCharacters.map((char, index) => {
         // 새 스키마: profile.faction.name 사용
         const factionName = char.profile?.faction?.name || "무소속";
 
@@ -493,7 +503,7 @@ export const CharacterGraph = forwardRef<
         );
 
         // 3. 그룹 클라우드 업데이트 (활성화된 경우)
-        if (enableGrouping && groupConfig.length > 0) {
+        if (groupConfig.length > 0) {
           // 현재 활성화된 노드들을 그룹별로 수집
           const currentNodesByGroup: Record<string, CharacterNode[]> = {};
           nodes.forEach((node) => {
@@ -626,7 +636,7 @@ export const CharacterGraph = forwardRef<
       return () => {
         simulation.on("tick", null); // Cleanup
       };
-    }, [simulation, enableGrouping, groupConfig, nodes]);
+    }, [simulation, groupConfig, nodes]);
 
     const { zoomState, centerAt, zoomIn, zoomOut, resetZoom } = useZoom(
       svgRef,
@@ -724,19 +734,18 @@ export const CharacterGraph = forwardRef<
 
         if (!sourceNode || !targetNode) return;
 
-        // Generate mock data for now (replace with real API call later)
+        const sourceChar = nodeCharacterMapRef.current.get(sourceNode.id);
+        const targetChar = nodeCharacterMapRef.current.get(targetNode.id);
+
+        if (!sourceChar || !targetChar) return;
+
+        // Relation types fallback
+        const relTypes = link.relationTypes || [link.type as string];
+
         const mockData = generateAnalysisData(
-          {
-            id: sourceNode.id,
-            name: sourceNode.name,
-            imageUrl: sourceNode.imageUrl,
-          },
-          {
-            id: targetNode.id,
-            name: targetNode.name,
-            imageUrl: targetNode.imageUrl,
-          },
-          link.relationTypes || [link.type as string],
+          sourceChar,
+          targetChar,
+          relTypes,
           link.strength,
           events,
           link.description,
@@ -745,7 +754,7 @@ export const CharacterGraph = forwardRef<
         setDeepAnalysisData(mockData);
         setHoveredLinkData(null); // Close tooltip
       },
-      [onLinkClick],
+      [onLinkClick, events],
     );
 
     // Handle Link Hover for Tooltip
@@ -755,8 +764,28 @@ export const CharacterGraph = forwardRef<
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
 
         if (link && coords) {
-          // Open immediately
-          setHoveredLinkData({ link, x: coords.x, y: coords.y });
+          // Construct full link data for tooltip
+          const sourceNode =
+            typeof link.source === "string"
+              ? { id: link.source }
+              : (link.source as unknown as CharacterNode);
+          const targetNode =
+            typeof link.target === "string"
+              ? { id: link.target }
+              : (link.target as unknown as CharacterNode);
+
+          setHoveredLinkData({
+            link,
+            x: coords.x,
+            y: coords.y,
+            type: link.type,
+            strength: link.strength,
+            label: link.label,
+            description: link.description,
+            sourceName: sourceNode.id || String(link.source),
+            targetName: targetNode.id || String(link.target),
+            relationTypes: link.relationTypes,
+          });
         } else {
           // Link not active on this tick; delay closing to allow entering tooltip
           hoverTimeoutRef.current = setTimeout(() => {
@@ -780,15 +809,6 @@ export const CharacterGraph = forwardRef<
 
         if (char && onNodeClick) {
           onNodeClick(char);
-        } else {
-          console.warn(
-            "[CharacterGraph] Character not found for node.id:",
-            node.id,
-          );
-          console.warn(
-            "[CharacterGraph] Available keys:",
-            Array.from(nodeCharacterMapRef.current.keys()),
-          );
         }
       },
       [onNodeClick],
@@ -1073,6 +1093,23 @@ export const CharacterGraph = forwardRef<
               })}
 
             {/* Tooltip on Hover */}
+            {hoveredLinkData && (
+              <RelationshipEventTooltip
+                type={hoveredLinkData.type as UIRelationType}
+                types={hoveredLinkData.relationTypes as UIRelationType[]} // Pass types
+                strength={hoveredLinkData.strength}
+                description={hoveredLinkData.description}
+                sourceName={hoveredLinkData.sourceName}
+                targetName={hoveredLinkData.targetName}
+                x={hoveredLinkData.x + 5} // Close offset
+                y={hoveredLinkData.y + 5}
+                events={[]} // Pass empty events for now or fetch if needed
+                onEventClick={() => {}}
+                onOpenDeepAnalysis={() =>
+                  handleOpenDeepAnalysis(hoveredLinkData.link)
+                }
+              />
+            )}
 
             {nodes
               .filter(

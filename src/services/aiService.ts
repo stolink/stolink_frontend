@@ -1,6 +1,7 @@
 import api from "@/api/client";
 import type { ApiResponse, JobResponse } from "@/types/api";
 import type { AnalysisResultData } from "@/types/analysisResult";
+import { calculateContentHash } from "@/utils/hashUtils";
 
 const BASE_URL = "/ai";
 
@@ -73,7 +74,7 @@ export const aiService = {
   // 4. Get Analysis Result (Directly by Document ID)
   getAnalysisResult: async (documentId: string) => {
     const response = await api.get<ApiResponse<AnalysisResultData>>(
-      `/documents/${documentId}/analysis`
+      `/documents/${documentId}/analysis`,
     );
     return response.data;
   },
@@ -81,17 +82,20 @@ export const aiService = {
   // Job Status Polling
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
-      `/ai/jobs/${jobId}`
+      `/ai/jobs/${jobId}`,
     );
-    return response.data.data;
+    // Handle both wrapped (ApiResponse) and unwrapped (direct) responses
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const responseData = response.data as any;
+    return responseData.data || responseData;
   },
 
   // 5. Get Project Analysis Job Status (프로젝트 기준 최신 job 상태 조회)
   getProjectAnalysisJob: async (
-    projectId: string
+    projectId: string,
   ): Promise<ProjectAnalysisJobStatus> => {
     const response = await api.get<ApiResponse<ProjectAnalysisJobStatus>>(
-      `/projects/${projectId}/analysis/job`
+      `/projects/${projectId}/analysis/job`,
     );
     return response.data.data;
   },
@@ -144,15 +148,7 @@ export const aiService = {
     });
   },
 
-  calculateContentHash: (content: string): string => {
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    return hash.toString(36);
-  },
+  calculateContentHash,
 };
 
 // Types for consistency check

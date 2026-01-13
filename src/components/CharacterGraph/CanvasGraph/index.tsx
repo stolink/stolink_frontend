@@ -3,6 +3,7 @@ import {
   useState,
   useEffect,
   useMemo,
+  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -50,7 +51,7 @@ interface CharacterGraphCanvasProps {
   onSearchChange?: (matchingIds: string[] | null) => void;
   className?: string;
   showSearch?: boolean;
-  onNodeDragEnd?: (node: CharacterNode) => void;
+  onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
 }
 
@@ -83,7 +84,7 @@ export const CharacterGraphCanvas = forwardRef<
       onNodeDragEnd,
       nodeChanges,
     },
-    ref
+    ref,
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
     // Animation Phase State (Triggers re-render for flow effect)
@@ -100,10 +101,11 @@ export const CharacterGraphCanvas = forwardRef<
     >(relationTypeFilter);
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension] = useState(false);
+
     const [showLogicCheck] = useState(false);
 
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
-      null
+      null,
     );
 
     // Zoom State for TiledBackground
@@ -170,7 +172,7 @@ export const CharacterGraphCanvas = forwardRef<
           }
         },
       }),
-      [initialNodes]
+      [initialNodes],
     );
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
@@ -320,8 +322,8 @@ export const CharacterGraphCanvas = forwardRef<
           group.map((l) =>
             typeof l.source === "object"
               ? (l.source as CharacterNode).id
-              : l.source
-          )
+              : l.source,
+          ),
         );
         const isReciprocal = groupSources.size > 1;
         const isExplicitBidirectional = group.some((l) => l.bidirectional);
@@ -364,7 +366,7 @@ export const CharacterGraphCanvas = forwardRef<
         nodes: JSON.parse(JSON.stringify(initialNodes)),
         links: JSON.parse(JSON.stringify(processedLinks)),
       }),
-      [initialNodes, processedLinks]
+      [initialNodes, processedLinks],
     ) as ForceGraphData;
 
     // Character ID → Character 매핑
@@ -377,6 +379,78 @@ export const CharacterGraphCanvas = forwardRef<
       });
       return map;
     }, [characters]);
+
+    // [Consolidated] Handle opening deep analysis modal
+    const handleOpenDeepAnalysis = useCallback(
+      (link: RelationshipLink) => {
+        // Find fresh character objects from map (Ensures full data)
+        const sourceId =
+          typeof link.source === "object"
+            ? (link.source as CharacterNode).id
+            : link.source;
+        const targetId =
+          typeof link.target === "object"
+            ? (link.target as CharacterNode).id
+            : link.target;
+
+        const sourceChar = characterMap.get(sourceId);
+        const targetChar = characterMap.get(targetId);
+
+        if (!sourceChar || !targetChar) {
+          console.warn(
+            "[DeepAnalysis] Character lookup failed for:",
+            sourceId,
+            targetId,
+          );
+          return;
+        }
+
+        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
+        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
+        const isYubiZhuge =
+          (sourceChar.profile?.name?.includes("유비") &&
+            targetChar.profile?.name?.includes("제갈량")) ||
+          (sourceChar.profile?.name?.includes("제갈량") &&
+            targetChar.profile?.name?.includes("유비"));
+
+        const effectiveTypes = isYubiZhuge
+          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
+          : link.relationTypes || [link.type as string];
+
+        // [Debug] Check incoming link data for Radar Chart Attributes
+        console.log("Clicked Link Data for Analysis:", {
+          source: sourceChar.profile.name,
+          target: targetChar.profile.name,
+          link: link,
+          attributes: {
+            emotionalBond: link.emotionalBond,
+            functionalTrust: link.functionalTrust,
+            interdependence: link.interdependence,
+            latentTension: link.latentTension,
+            valueAlignment: link.valueAlignment,
+          },
+        });
+
+        try {
+          const analysisData = generateAnalysisData(
+            sourceChar,
+            targetChar,
+            effectiveTypes,
+            link.strength,
+            events,
+            link.description,
+          );
+          console.log("[DeepAnalysis] Data generated:", analysisData);
+          setDeepAnalysisData(analysisData);
+          setHoveredLink(null); // Close tooltip
+        } catch (error) {
+          console.error("[DeepAnalysis] Generation failed:", error);
+        }
+
+        onLinkClick?.(link);
+      },
+      [onLinkClick, events, characterMap],
+    );
 
     // 연결된 노드 계산
     const connectedNodeIds = useMemo(() => {
@@ -410,56 +484,7 @@ export const CharacterGraphCanvas = forwardRef<
     // 링크 클릭 핸들러
     const handleLinkClick = (link: LinkObject) => {
       const relLink = link as unknown as RelationshipLink;
-      const sourceId =
-        typeof relLink.source === "object"
-          ? (relLink.source as CharacterNode).id
-          : relLink.source;
-      const targetId =
-        typeof relLink.target === "object"
-          ? (relLink.target as CharacterNode).id
-          : relLink.target;
-
-      const sourceChar = characterMap.get(sourceId);
-      const targetChar = characterMap.get(targetId);
-
-      if (sourceChar && targetChar) {
-        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
-        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
-        const isYubiZhuge =
-          (sourceChar.profile?.name?.includes("유비") &&
-            targetChar.profile?.name?.includes("제갈량")) ||
-          (sourceChar.profile?.name?.includes("제갈량") &&
-            targetChar.profile?.name?.includes("유비"));
-
-        const effectiveTypes = isYubiZhuge
-          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
-          : relLink.relationTypes || [relLink.type];
-
-        const analysisData = generateAnalysisData(
-          {
-            id: sourceId,
-            name: sourceChar.profile?.name || "Unknown",
-            imageUrl: sourceChar.imageUrl,
-          },
-          {
-            id: targetId,
-            name: targetChar.profile?.name || "Unknown",
-            imageUrl: targetChar.imageUrl,
-          },
-          effectiveTypes,
-          relLink.strength,
-          events,
-          relLink.description
-        );
-        setDeepAnalysisData(analysisData);
-      } else {
-        console.warn(
-          "Could not find source or target character for link",
-          link
-        );
-      }
-
-      onLinkClick?.(relLink);
+      handleOpenDeepAnalysis(relLink);
     };
 
     // 링크 호버 핸들러
@@ -518,7 +543,7 @@ export const CharacterGraphCanvas = forwardRef<
 
       // Charge Force (Repulsion)
       const chargeForce = fg.d3Force(
-        "charge"
+        "charge",
       ) as d3.ForceManyBody<CharacterNode>;
       if (chargeForce) {
         chargeForce
@@ -565,7 +590,7 @@ export const CharacterGraphCanvas = forwardRef<
               // More love = Closer (Halved effect from 0.1 -> 0.05)
               return Math.max(
                 20,
-                baseDistance * (1 - (strengthVal - 1) * 0.05)
+                baseDistance * (1 - (strengthVal - 1) * 0.05),
               );
             }
             return baseDistance;
@@ -617,7 +642,7 @@ export const CharacterGraphCanvas = forwardRef<
             // Add extra padding for better separation
             return size / 2 + FORCE_CONFIG.collisionPadding;
           })
-          .strength(FORCE_CONFIG.collisionStrength)
+          .strength(FORCE_CONFIG.collisionStrength),
       );
 
       // Re-heat simulation to apply changes
@@ -699,7 +724,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodeCanvasObject={(
               node: NodeObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const isSelected = selectedNodeId === charNode.id;
@@ -708,9 +733,13 @@ export const CharacterGraphCanvas = forwardRef<
                 (highlightedNodeIds &&
                   highlightedNodeIds.includes(charNode.id)) ||
                 false;
-              const isDimmed =
+              const isDimmed = Boolean(
                 (connectedNodeIds && !connectedNodeIds.has(charNode.id)) ||
-                (showMainOnly && charNode.role !== "protagonist");
+                (showMainOnly && charNode.role !== "protagonist") ||
+                (highlightedNodeIds &&
+                  highlightedNodeIds.length > 0 &&
+                  !highlightedNodeIds.includes(charNode.id)),
+              );
 
               drawNode({
                 ctx,
@@ -732,7 +761,7 @@ export const CharacterGraphCanvas = forwardRef<
             nodePointerAreaPaint={(
               node: NodeObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const charNode = node as unknown as CharacterNode;
               const role = charNode.role || "other";
@@ -751,7 +780,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkCanvasObject={(
               link: LinkObject,
               ctx: CanvasRenderingContext2D,
-              globalScale: number
+              globalScale: number,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const sourceId =
@@ -768,9 +797,14 @@ export const CharacterGraphCanvas = forwardRef<
               // Fix: Strict Star Topology (User Feedback)
               // Only show links that are DIRECTLY connected to the selected node.
               // Hide links between neighbors (e.g., A->B, A->C selected. Hide B->C).
-              const isDimmed = selectedNodeId
-                ? sourceId !== selectedNodeId && targetId !== selectedNodeId
-                : false;
+              const isDimmed =
+                (selectedNodeId
+                  ? sourceId !== selectedNodeId && targetId !== selectedNodeId
+                  : false) ||
+                (highlightedNodeIds &&
+                  highlightedNodeIds.length > 0 &&
+                  (!highlightedNodeIds.includes(sourceId) ||
+                    !highlightedNodeIds.includes(targetId)));
 
               drawLink({
                 ctx,
@@ -791,7 +825,7 @@ export const CharacterGraphCanvas = forwardRef<
             linkPointerAreaPaint={(
               link: LinkObject,
               color: string,
-              ctx: CanvasRenderingContext2D
+              ctx: CanvasRenderingContext2D,
             ) => {
               const relLink = link as unknown as RelationshipLink;
               const source = relLink.source as CharacterNode;
@@ -827,7 +861,7 @@ export const CharacterGraphCanvas = forwardRef<
             }
             onNodeHover={(node: NodeObject | null) =>
               setHoveredNodeId(
-                node ? (node as unknown as CharacterNode).id : null
+                node ? (node as unknown as CharacterNode).id : null,
               )
             }
             onLinkClick={handleLinkClick}
@@ -931,54 +965,45 @@ export const CharacterGraphCanvas = forwardRef<
                 timestamp: event.date || event.chapter || null,
                 importance: 5,
                 changesMade: null,
+                projectId: (event as unknown as Event).projectId || "",
               };
               setSelectedEvent(bioEvent);
             }}
-            onOpenDeepAnalysis={() => {
-              // Re-use logic from handleLinkClick to open the modal
-              const sourceId =
-                typeof hoveredLink.link.source === "object"
-                  ? (hoveredLink.link.source as CharacterNode).id
-                  : hoveredLink.link.source;
-              const targetId =
-                typeof hoveredLink.link.target === "object"
-                  ? (hoveredLink.link.target as CharacterNode).id
-                  : hoveredLink.link.target;
-
-              const sourceChar = characterMap.get(sourceId);
-              const targetChar = characterMap.get(targetId);
-
-              if (sourceChar && targetChar) {
-                const analysisData = generateAnalysisData(
-                  {
-                    id: sourceId,
-                    name: sourceChar.profile?.name || "Unknown",
-                    imageUrl: sourceChar.imageUrl,
-                  },
-                  {
-                    id: targetId,
-                    name: targetChar.profile?.name || "Unknown",
-                    imageUrl: targetChar.imageUrl,
-                  },
-                  hoveredLink.link.relationTypes || [
-                    hoveredLink.link.type as string,
-                  ], // Use relationTypes if available
-                  hoveredLink.link.strength,
-                  events,
-                  hoveredLink.link.description
-                );
-                setDeepAnalysisData(analysisData);
-              }
-            }}
+            onOpenDeepAnalysis={() => handleOpenDeepAnalysis(hoveredLink.link)}
           />
         )}
 
         {/* Deep Analysis Modal */}
-        <RelationshipDeepAnalysisModal
-          isOpen={!!deepAnalysisData}
-          onClose={() => setDeepAnalysisData(null)}
-          data={deepAnalysisData}
-        />
+        {deepAnalysisData && (
+          <RelationshipDeepAnalysisModal
+            isOpen={true}
+            onClose={() => setDeepAnalysisData(null)}
+            data={deepAnalysisData}
+            onNavigateToEvent={(eventId) => {
+              const event = events.find((e) => e.eventId === eventId);
+              if (event) {
+                // Convert event to BiographyEvent simple structure
+                const bioEvent: BiographyEvent = {
+                  eventId: event.eventId,
+                  eventType: event.eventType.toLowerCase(),
+                  narrativeSummary: event.narrativeSummary,
+                  description: event.description,
+                  participants: event.participants,
+                  timestamp:
+                    event.timestamp ||
+                    (event.chapter ? String(event.chapter) : null),
+                  importance: event.importance,
+                  changesMade: null,
+                  locationRef: null,
+                  prevEventId: null,
+                  visualScene: null,
+                  projectId: event.projectId || "",
+                };
+                setSelectedEvent(bioEvent);
+              }
+            }}
+          />
+        )}
 
         <EventDetailPanel
           event={selectedEvent}
@@ -986,7 +1011,7 @@ export const CharacterGraphCanvas = forwardRef<
         />
       </div>
     );
-  }
+  },
 );
 
 CharacterGraphCanvas.displayName = "CharacterGraphCanvas";

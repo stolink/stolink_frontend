@@ -114,7 +114,7 @@ export function InsightsPanel({
           <Sparkles className="w-4 h-4 text-indigo-500" />
         </div>
         <h4 className="text-base font-semibold text-espresso-800 uppercase tracking-wider">
-          결정적 사건
+          관계 인사이트
         </h4>
       </motion.div>
 
@@ -152,7 +152,7 @@ export function InsightsPanel({
                 <h5 className="text-lg font-bold text-espresso-900 mb-1.5 font-serif">
                   {decisiveTrigger.title}
                 </h5>
-                <p className="text-base text-espresso-600 leading-relaxed line-clamp-3">
+                <p className="text-base text-espresso-600 leading-relaxed">
                   {decisiveTrigger.summary}
                 </p>
               </>

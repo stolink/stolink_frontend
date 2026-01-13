@@ -44,6 +44,7 @@ export function CharacterSearchOverlay({
   }, [deferredQuery, characters]);
 
   // Virtualizer 설정 - 화면에 보이는 항목만 렌더링
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: matches.length,
     getScrollElement: () => parentRef.current,
@@ -209,13 +210,12 @@ export function CharacterSearchOverlay({
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="bg-white/95 backdrop-blur-sm rounded-xl border border-cloud-100 shadow-xl overflow-hidden"
-            style={{ contain: "content" }} // CSS Containment
           >
             {/* Virtualized List Container */}
             <div
               ref={parentRef}
               className="max-h-[280px] overflow-y-auto py-1.5 custom-scrollbar"
-              style={{ contain: "strict" }} // Strict containment
+              // Removed contain: strict because it causes 0 height behavior without explicit height
             >
               <div
                 style={{
