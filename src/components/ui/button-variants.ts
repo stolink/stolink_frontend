@@ -5,14 +5,14 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-mocha-500 text-white shadow hover:bg-mocha-400",
+        default: "bg-mocha-500 text-white shadow-sm hover:bg-mocha-400",
         destructive:
           "bg-status-error text-white shadow-sm hover:bg-status-error/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-cloud-300 bg-transparent text-espresso-700 hover:bg-cloud-50 hover:text-espresso-900",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+          "bg-cloud-100 text-espresso-900 shadow-sm hover:bg-cloud-200",
+        ghost: "text-espresso-700 hover:bg-cloud-100 hover:text-espresso-900",
         link: "text-mocha-500 underline-offset-4 hover:underline",
       },
       size: {

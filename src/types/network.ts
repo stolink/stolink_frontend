@@ -22,5 +22,10 @@ export interface NetworkLink extends d3.SimulationLinkDatum<NetworkNode> {
   value: number; // Weight/Thickness
 
   // NebulaGraph Optimization for Multiple Edges
+  // NebulaGraph Optimization for Multiple Edges
   linkNum?: number; // Index in the group of parallel edges
+
+  // Relationship Data
+  type?: string; // e.g. "ALLY", "ENEMY"
+  isBidirectional?: boolean;
 }

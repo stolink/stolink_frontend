@@ -1,7 +1,13 @@
 import { memo, useRef, useEffect, useMemo } from "react";
 import * as d3 from "d3";
 import type { CharacterNode } from "@/types";
-import { NODE_SIZES, ROLE_COLORS, ANIMATION, STATUS_CONFIG } from "./constants";
+import {
+  NODE_SIZES,
+  ROLE_COLORS,
+  ANIMATION,
+  STATUS_CONFIG,
+  getFactionColor,
+} from "./constants";
 import { getInitial, truncateName, ROLE_GRADIENTS } from "./utils";
 
 interface NodeRendererProps {
@@ -20,6 +26,8 @@ interface NodeRendererProps {
   zoomScale?: number;
   /** 분석 워크플로우: 변경 유형 */
   changeType?: "new" | "updated" | null;
+  /** AI Insights */
+  showLogicCheck?: boolean;
 }
 
 /**
@@ -37,6 +45,7 @@ export const NodeRenderer = memo(function NodeRenderer({
   dragBehavior,
   zoomScale = 1,
   changeType,
+  showLogicCheck = false,
 }: NodeRendererProps) {
   // Ref for D3 Drag Attachment
   const elementRef = useRef<SVGGElement>(null);
@@ -60,6 +69,8 @@ export const NodeRenderer = memo(function NodeRenderer({
   const finalSize = Math.min(baseSize + dynamicBonus, 180);
   const radius = finalSize / 2;
   const roleColor = ROLE_COLORS[node.role || "other"];
+
+  const isIsolated = (node.relationCount || 0) === 0;
 
   // 줌 반응형 라벨 설정
   const showLabel = zoomScale > 0.35;
@@ -144,10 +155,39 @@ export const NodeRenderer = memo(function NodeRenderer({
         fill={isImportant ? "url(#node-gradient-common)" : "#F5F5F4"}
         stroke={roleColor}
         strokeWidth={isProtagonist ? 4 : 2}
+        strokeDasharray={isIsolated ? "4 4" : undefined}
         style={{
           transition: `stroke-width ${ANIMATION.hoverTransition}ms ease`,
         }}
       />
+
+      {/* 고립된 노드 경고 아이콘 */}
+      {isIsolated && (
+        <circle
+          r={radius + 8}
+          fill="none"
+          stroke="#EF4444"
+          strokeWidth={1.5}
+          strokeDasharray="2 2"
+          opacity={0.6}
+        />
+      )}
+
+      {/* Faction 테두리 링 - 진영 식별 */}
+      {node.group && node.group !== "무소속" && (
+        <circle
+          r={radius + 6}
+          fill="none"
+          stroke={getFactionColor(node.group)}
+          strokeWidth={2.5}
+          opacity={isDimmed ? 0.3 : 0.85}
+          strokeDasharray={isProtagonist ? undefined : "6 3"}
+          className="pointer-events-none"
+          style={{
+            transition: `opacity ${ANIMATION.highlightDuration}ms ease-out`,
+          }}
+        />
+      )}
 
       {/* 아바타: 이미지 또는 이니셜 기반 */}
       {node.imageUrl ? (
@@ -390,6 +430,39 @@ export const NodeRenderer = memo(function NodeRenderer({
                 }}
               >
                 {statusConfig.icon}
+              </text>
+            </g>
+          );
+        }
+
+        // 3. Logic Check Warning Badge
+        if (showLogicCheck && node.status === "contradictory") {
+          const badgeRadius = Math.max(13, radius * 0.35);
+          const badgeX = -radius * 0.65; // Left side
+          const badgeY = -radius * 0.65; // Top side
+
+          return (
+            <g transform={`translate(${badgeX}, ${badgeY})`}>
+              <circle
+                r={badgeRadius + 2}
+                fill="white"
+                stroke="#C49545"
+                strokeWidth={1.5}
+                style={{
+                  filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
+                }}
+              />
+              <circle r={badgeRadius} fill="#C49545" />
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={badgeRadius * 1.1 + 3}
+                fill="white"
+                style={{
+                  userSelect: "none",
+                }}
+              >
+                ⚠️
               </text>
             </g>
           );

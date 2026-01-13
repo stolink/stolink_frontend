@@ -6,7 +6,6 @@ import {
   Layout,
   List,
   TableProperties,
-  LayoutGrid,
   Columns,
   Maximize2,
   Settings,
@@ -15,6 +14,7 @@ import {
   History,
   Download,
   Sparkles,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +25,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { EditorSettingsPanel } from "@/components/editor/settings/EditorSettingsPanel";
+
+import { motion } from "framer-motion";
 
 interface EditorToolbarProps {
   // Sidebar
@@ -46,10 +48,10 @@ interface EditorToolbarProps {
   characterCount: number;
 
   // View mode
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   onViewModeChange: (
-    newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
+    newMode: "editor" | "scrivenings" | "outline",
+    currentMode: "editor" | "scrivenings" | "outline",
   ) => void;
 
   // Split view
@@ -78,7 +80,9 @@ interface EditorToolbarProps {
 
   // Analysis Status
   analysisStatus: "idle" | "analyzing" | "completed" | "error";
+  analysisProgress?: number;
   onTriggerAnalysis?: () => void;
+  onResetAnalysis?: () => void;
   // Pagination removed for infinite scroll
 }
 
@@ -114,21 +118,26 @@ export function EditorToolbar({
   onToggleSnapshot,
   onExport,
   analysisStatus,
+  analysisProgress,
   onTriggerAnalysis,
+  onResetAnalysis,
   // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
     <div className="!h-9 min-h-[36px] max-h-[36px] border-b border-border flex items-center justify-between px-3 shrink-0 bg-card overflow-hidden">
       <div className="flex items-center gap-3">
-        {!isSidebarVisible && (
-          <button
-            onClick={onToggleSidebar}
-            className="p-1 hover:bg-accent rounded-lg text-muted-foreground transition-colors mr-2"
-            title="사이드바 열기"
-          >
-            <PanelLeft className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={onToggleSidebar}
+          className={cn(
+            "p-1 rounded-lg transition-colors mr-2",
+            isSidebarVisible
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-accent text-muted-foreground",
+          )}
+          title={isSidebarVisible ? "사이드바 닫기" : "사이드바 열기"}
+        >
+          <PanelLeft className="w-5 h-5" />
+        </button>
 
         {/* Breadcrumb Style Title */}
         <TitleBreadcrumb
@@ -175,9 +184,23 @@ export function EditorToolbar({
 
         {/* Status Indicators (Reduced visibility as button shows status) */}
         {analysisStatus === "analyzing" && (
-          <span className="text-xs text-primary animate-pulse font-medium">
-            분석중...
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-primary animate-pulse font-medium">
+              분석중...
+            </span>
+            {onResetAnalysis && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResetAnalysis();
+                }}
+                className="p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md transition-colors"
+                title="분석 강제 종료 (상태 초기화)"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         )}
         {analysisStatus === "completed" && (
           <span className="text-xs text-green-500 font-medium">분석 완료</span>
@@ -304,6 +327,27 @@ export function EditorToolbar({
         >
           <PanelRight className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Analysis Progress Bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] pointer-events-none z-50">
+        {(analysisStatus === "analyzing" || analysisStatus === "completed") && (
+          <motion.div
+            className={cn(
+              "h-full shadow-[0_0_8px_rgba(var(--primary),0.5)]",
+              analysisStatus === "completed" ? "bg-green-500" : "bg-primary",
+            )}
+            initial={{ width: 0, opacity: 1 }}
+            animate={{
+              width: `${analysisProgress || 0}%`,
+              opacity: analysisStatus === "completed" ? [1, 1, 0] : 1,
+            }}
+            transition={{
+              width: { duration: 0.5, ease: "easeInOut" },
+              opacity: { duration: 0.5, delay: 2 },
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -439,10 +483,10 @@ function TitleBreadcrumb({
 }
 
 interface ViewModeButtonsProps {
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   onViewModeChange: (
-    newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-    currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
+    newMode: "editor" | "scrivenings" | "outline",
+    currentMode: "editor" | "scrivenings" | "outline",
   ) => void;
 }
 
@@ -451,7 +495,6 @@ function ViewModeButtons({ viewMode, onViewModeChange }: ViewModeButtonsProps) {
     { mode: "editor" as const, icon: Layout, label: "단일" },
     { mode: "scrivenings" as const, icon: List, label: "통합" },
     { mode: "outline" as const, icon: TableProperties, label: "개요" },
-    { mode: "corkboard" as const, icon: LayoutGrid, label: "카드" },
   ];
 
   return (

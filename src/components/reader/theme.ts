@@ -37,18 +37,18 @@ export const THEME_STYLES: Record<Theme, ThemeStyle> = {
     inactiveControl: "text-muted-foreground",
   },
   dark: {
-    container: "bg-stone-900 text-stone-100",
-    header: "bg-stone-900 border-stone-700 text-white",
-    sidebar: "bg-stone-800 border-stone-700",
-    sidebarTitle: "text-stone-300",
-    button: "bg-stone-800 border-stone-600",
+    container: "bg-espresso-900 text-cloud-100",
+    header: "bg-espresso-900 border-espresso-700 text-white",
+    sidebar: "bg-espresso-800 border-espresso-700",
+    sidebarTitle: "text-espresso-300",
+    button: "bg-espresso-800 border-espresso-600",
     divider: "#44403c",
-    muted: "text-stone-500",
-    activeItem: "bg-stone-700 text-white",
-    hoverItem: "text-stone-300 hover:bg-stone-700",
-    controlBg: "bg-stone-800",
-    activeControl: "bg-stone-700 text-white",
-    inactiveControl: "text-stone-400",
+    muted: "text-espresso-500",
+    activeItem: "bg-espresso-700 text-white",
+    hoverItem: "text-espresso-300 hover:bg-espresso-700",
+    controlBg: "bg-espresso-800",
+    activeControl: "bg-espresso-700 text-white",
+    inactiveControl: "text-espresso-400",
   },
   sepia: {
     container: "bg-amber-50 text-espresso-900",
@@ -67,8 +67,8 @@ export const THEME_STYLES: Record<Theme, ThemeStyle> = {
 } as const;
 
 export const THEME_BUTTON_STYLES: Record<Theme, string> = {
-  light: "bg-white border-stone-300",
-  dark: "bg-stone-800 border-stone-600",
+  light: "bg-white border-cloud-300",
+  dark: "bg-espresso-800 border-espresso-600",
   sepia: "bg-amber-100 border-amber-300",
 } as const;
 

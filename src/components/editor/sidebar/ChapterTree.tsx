@@ -23,7 +23,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import { Input } from "@/components/ui/input";
 import { TreeItem } from "./TreeItem";
 import { ContextMenu, type MenuItemType } from "./ContextMenu";
@@ -133,6 +133,10 @@ export function ChapterTree({
   onMoveToFolder,
 }: ChapterTreeProps) {
   const chapters = useMemo(() => initialChapters, [initialChapters]);
+  const rootItemIds = useMemo(
+    () => chapters.map((node) => node.id),
+    [chapters],
+  );
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"chapter" | "section">(
     "chapter",
@@ -203,9 +207,6 @@ export function ChapterTree({
     setIsAdding(false);
     setAddingToParent(null);
   };
-
-  // Root level item IDs for SortableContext
-  const rootItemIds = useMemo(() => chapters.map((c) => c.id), [chapters]);
 
   // Drag Start Handler
   const handleDragStart = (event: DragStartEvent) => {
@@ -473,7 +474,7 @@ export function ChapterTree({
           />
           <Button
             size="icon"
-            variant="ghost"
+            intent="ghost"
             className="h-6 w-6 shrink-0"
             onClick={handleAddChapter}
             disabled={!newChapterTitle.trim()}
@@ -482,7 +483,7 @@ export function ChapterTree({
           </Button>
           <Button
             size="icon"
-            variant="ghost"
+            intent="ghost"
             className="h-6 w-6 shrink-0"
             onClick={handleCancel}
           >
@@ -494,7 +495,7 @@ export function ChapterTree({
       {/* Add button - 최상위는 챕터(폴더)만 생성 */}
       {chapters.length > 0 && !isAdding && (
         <Button
-          variant="ghost"
+          intent="ghost"
           size="sm"
           className="w-full justify-start text-muted-foreground mt-2 ml-0 mr-1 hover:text-mocha-700 hover:bg-mocha-400/10"
           onClick={() => {

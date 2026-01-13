@@ -144,7 +144,7 @@ describe("useLogout", () => {
 
   it("should logout successfully", async () => {
     vi.spyOn(authService, "logout").mockResolvedValueOnce({
-      data: { message: "Logged out successfully" },
+      data: null,
     });
 
     const { result } = renderHook(() => useLogout());
@@ -296,7 +296,7 @@ describe("useUpdateProfile", () => {
 describe("useForgotPassword", () => {
   it("should send forgot password request", async () => {
     vi.spyOn(authService, "forgotPassword").mockResolvedValueOnce({
-      data: { message: "Password reset email sent" },
+      data: null,
     });
 
     const { result } = renderHook(() => useForgotPassword());

@@ -70,7 +70,7 @@ export default function ConsistencyPanel() {
           </div>
         </div>
         <Button
-          variant="outline"
+          intent="outline"
           size="sm"
           className="h-7 text-xs bg-white border-mocha-200 hover:bg-mocha-50 hover:text-mocha-700 transition-colors shadow-sm"
         >
@@ -93,7 +93,7 @@ export default function ConsistencyPanel() {
             <AlertTriangle className="w-3.5 h-3.5" />
             오류 {errorCount}
           </div>
-          <div className="w-px h-6 bg-stone-200" />
+          <div className="w-px h-6 bg-cloud-200" />
           <div
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
@@ -105,7 +105,7 @@ export default function ConsistencyPanel() {
             <AlertTriangle className="w-3.5 h-3.5" />
             경고 {warningCount}
           </div>
-          <div className="w-px h-6 bg-stone-200" />
+          <div className="w-px h-6 bg-cloud-200" />
           <div
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
@@ -195,7 +195,7 @@ export default function ConsistencyPanel() {
                   위치로 이동
                 </Button>
                 <Button
-                  variant="ghost"
+                  intent="ghost"
                   size="sm"
                   className="h-8 w-8 px-0 text-mocha-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                   title="무시하기"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ElementType } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,15 +27,12 @@ import {
 
 import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
-import { useCharacter } from "@/hooks/useCharacters";
+import { useCharacter, useUpdateCharacter } from "@/hooks/useCharacters";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
-import {
-  imageService,
-  settingService,
-  eventService,
-  type ProjectSetting,
-} from "@/services";
+import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
+import { useQueryClient } from "@tanstack/react-query"; // Added useQueryClient
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@stolink/ui";
@@ -74,36 +71,40 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
+  const setGlobalJobId = useAnalysisBufferStore((state) => state.setJobId);
+
+  // Data Mutation Hook
+  const updateCharacter = useUpdateCharacter();
 
   // Fetch fresh character data
   // 만약 DB에는 데이터가 있는데 리스트에는 없을 경우를 대비해 상세 조회
-  const { data: fetchedCharacter } = useCharacter(character?._id || "", {
-    enabled: !!character?._id,
+  const { data: fetchedChar } = useCharacter(character?._id ?? "", {
+    enabled: !!character?._id && isOpen,
   });
 
   // 화면에 표시할 최종 캐릭터 데이터 (수정모드 > 페치된 데이터 > props 데이터)
   const displayCharacter = isEditMode
     ? editedCharacter
-    : fetchedCharacter || character; // 페치된 데이터 우선 사용
-
-  useEffect(() => {
-    if (displayCharacter) {
-      // Basic logging for development check can remain if needed, but removing per user request
-    }
-  }, [displayCharacter, isOpen, character]);
+    : fetchedChar || character; // 페치된 데이터 우선 사용
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Watch for global image job completion
+  const isGlobalAnalyzing = useAnalysisBufferStore(
+    (state) => state.isAnalyzing,
+  );
+
   // Image generation polling
-  const { isGenerating, progress } = useImageGenerationPolling(
-    imageJobId,
-    character?._id || "",
-    {
+  const { isGenerating: isPollingImage, progress: pollingProgress } =
+    useImageGenerationPolling(imageJobId, character?._id || "", {
       onComplete: (imageUrl) => {
         // Force refresh by adding a timestamp if not already present or as a safety
         const cacheBusterUrl = imageUrl.includes("?")
@@ -111,6 +112,7 @@ export default function CharacterDetailDialog({
           : `${imageUrl}?t=${Date.now()}`;
         setTempImageUrl(cacheBusterUrl);
         setImageJobId(null);
+        setGlobalJobId(null); // Clear global job tracking
       },
       onError: () => {
         setImageJobId(null);
@@ -118,16 +120,54 @@ export default function CharacterDetailDialog({
       onTimeout: () => {
         setImageJobId(null);
       },
-    }
+    });
+
+  const currentJobType = useAnalysisBufferStore(
+    (state) => state.currentJobType,
   );
+
+  // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
+  // Add minimum display time to ensure animation is visible even for fast jobs
+  useEffect(() => {
+    if (imageJobId && !isGlobalAnalyzing && currentJobType !== "image") {
+      // Job finished - add delay to ensure animation is visible
+      const timer = setTimeout(async () => {
+        // Use refetchQueries instead of invalidateQueries for immediate data refresh
+        await queryClient.refetchQueries({ queryKey: ["characters"] });
+        await queryClient.refetchQueries({
+          queryKey: ["character", character?._id],
+        });
+        setImageJobId(null);
+        setTempImageUrl(null); // Clear temp, let real data take over
+      }, 800); // Minimum 800ms animation display
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    imageJobId,
+    isGlobalAnalyzing,
+    currentJobType,
+    queryClient,
+    character?._id,
+  ]);
+
+  // Use local imageJobId as primary indicator for animation
+  // This ensures animation shows even if global state updates faster than React re-renders
+  const isGenerating = !!imageJobId || isPollingImage;
+  // Use global progress if available, otherwise show indeterminate
+  const progress =
+    isGlobalAnalyzing && currentJobType === "image"
+      ? useAnalysisBufferStore.getState().progress || pollingProgress
+      : pollingProgress;
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
   // Reset edit mode and generation state when modal closes or character changes (without useEffect setState)
+  // 주의: 이미지 생성은 백그라운드에서 계속 진행되므로 글로벌 분석 상태는 정리하지 않음
   if (prevIsOpen && !isOpen) {
     setIsEditMode(false);
     setImageJobId(null);
@@ -141,27 +181,47 @@ export default function CharacterDetailDialog({
     setPrevCharacterId(character?._id);
     if (character) {
       setEditedCharacter(structuredClone(character));
-      setImageJobId(null);
+      // Try to recover background job for this character if it exists in global store
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      } else {
+        setImageJobId(null);
+      }
       setTempImageUrl(null);
     }
   }
 
+  // Effect to recover background job if dialog reopens with same character
+  useEffect(() => {
+    if (isOpen && character?._id && !imageJobId) {
+      const globalState = useAnalysisBufferStore.getState();
+      if (
+        globalState.currentJobType === "image" &&
+        globalState.currentJobTargetId === character._id &&
+        globalState.currentJobId
+      ) {
+        setImageJobId(globalState.currentJobId);
+      }
+    }
+  }, [isOpen, character?._id, imageJobId]);
+
   const { traits, relationships, appearances } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   // 캐릭터의 이벤트(일대기) 조회
-  const {
-    data: characterEvents = [],
-    isLoading: isEventsLoading,
-    isError: isEventsError,
-    error: eventsError,
-    fetchStatus: eventsFetchStatus,
-  } = useCharacterEvents(displayCharacter?._id ?? null, {
-    enabled: !!displayCharacter?._id && isOpen,
-  });
+  const { data: characterEvents = [] } = useCharacterEvents(
+    displayCharacter?._id ?? null,
+    {
+      enabled: !!displayCharacter?._id && isOpen,
+    },
+  );
 
-  const { toast } = useToast();
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
   const [manualPrompt, setManualPrompt] = useState("");
@@ -176,22 +236,97 @@ export default function CharacterDetailDialog({
             // Deduplicate and filter valid settings to prevent key collisions
             const validSettings = res.data.filter((s) => s && s.id);
             const uniqueSettings = Array.from(
-              new Map(validSettings.map((s) => [s.id, s])).values()
+              new Map(validSettings.map((s) => [s.id, s])).values(),
             );
             setSettings(uniqueSettings);
           }
         })
-        .catch(() => {
-          // Error handling
+        .catch((_e) => {
+          /* Ignored */
         });
     }
   }, [isOpen, character?.projectId, character?._id]);
+
+  /* ------------------------------------------------------------------
+   * Payload Processing Helpers
+   * ------------------------------------------------------------------ */
+
+  const sanitizeValue = useCallback((obj: unknown): unknown => {
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) {
+      const sanitizedArray = obj
+        .map((v) => sanitizeValue(v))
+        .filter((v) => v !== undefined && v !== null);
+      return sanitizedArray.length > 0 ? sanitizedArray : [];
+    }
+    if (typeof obj === "object") {
+      const sanitizedObj: Record<string, unknown> = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const sanitizedVal = sanitizeValue(value);
+        if (sanitizedVal !== undefined && sanitizedVal !== null) {
+          sanitizedObj[key] = sanitizedVal;
+        }
+      });
+      return Object.keys(sanitizedObj).length > 0 ? sanitizedObj : undefined;
+    }
+    return obj;
+  }, []);
+
+  /**
+   * 백엔드 전송용 클린 페이로드를 생성합니다.
+   * - 읽기 전용 필드 제거
+   * - 깊은 산출(undefined 제거)
+   * - 하이브리드 키(snake_case) 보강
+   * - JSON 문자열 백업 추가
+   */
+  const getCleanPayload = useCallback(() => {
+    if (!editedCharacter) return null;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, projectId, meta, imageUrl, ...basePayload } = editedCharacter;
+    const cleanPayload =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (sanitizeValue(basePayload) as Record<string, any>) || {};
+
+    if (!cleanPayload.profile) cleanPayload.profile = {};
+
+    if (cleanPayload.appearance) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const app = cleanPayload.appearance as any;
+
+      // Add snake_case aliases
+      if (app.hairStyle) app.hair_style = app.hairStyle;
+      if (app.hairColor) app.hair_color = app.hairColor;
+      if (app.skinTone) app.skin_tone = app.skinTone;
+      if (app.scarsTattoos) app.scars_tattoos = app.scarsTattoos;
+      if (app.styleContext) {
+        app.style_context = {
+          ...app.styleContext,
+          art_style: app.styleContext.artStyle,
+        };
+      }
+
+      // Cleanup undefined
+      Object.keys(app).forEach((key) => {
+        if (app[key] === undefined) delete app[key];
+      });
+
+      // Redundant JSON backups
+      const jsonStr = JSON.stringify(app);
+      app.appearanceJson = jsonStr;
+      app.appearance_json = jsonStr;
+      cleanPayload.appearanceJson = jsonStr;
+      cleanPayload.appearance_json = jsonStr;
+    }
+
+    return cleanPayload;
+  }, [editedCharacter, sanitizeValue]);
 
   const handleConfirmImageGeneration = useCallback(
     async (
       action: "create" | "edit",
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       if (!character?._id || !character?.projectId) return;
 
@@ -208,7 +343,7 @@ export default function CharacterDetailDialog({
         }
         if (sourceChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`
+            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
           );
         }
         if (sourceChar?.appearance?.eyes) {
@@ -251,20 +386,40 @@ export default function CharacterDetailDialog({
             ? parts.join(", ")
             : "A high quality character portrait";
 
+        // Extract precise prompt fields from setting if available (for backend to use directly)
+        const additionalOptions = selectedSetting
+          ? {
+              visual_background: String(
+                selectedSetting.visual_background || "",
+              ),
+              atmosphere: String(selectedSetting.atmosphere || ""),
+              lighting: String(selectedSetting.lighting || ""),
+              time_of_day: String(selectedSetting.time_of_day || ""),
+              art_style: String(selectedSetting.art_style || ""),
+            }
+          : undefined;
+
+        // Get character data to sync with backend during generation
+        const characterData = getCleanPayload();
+
         const { jobId } = await imageService.generateCharacterImage(
           character.projectId,
           character._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, unknown>
+          selectedSetting as unknown as Record<string, string>,
+          additionalOptions,
+          (characterData as Record<string, unknown>) || undefined,
         );
 
         setImageJobId(jobId);
+        setGlobalJobId(jobId, "image", character._id);
         toast({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch {
+      } catch (_e) {
+        /* Ignored */
         toast({
           variant: "destructive",
           title: "실패",
@@ -279,7 +434,9 @@ export default function CharacterDetailDialog({
       selectedSettingId,
       manualPrompt,
       toast,
-    ]
+      setGlobalJobId,
+      getCleanPayload,
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -293,30 +450,118 @@ export default function CharacterDetailDialog({
     }
   }, [character]);
 
+  const validateImageGeneration = useCallback(() => {
+    const targetChar = displayCharacter || character;
+    if (!targetChar) return false;
+
+    let traitCount = 0;
+    if (targetChar.appearance?.physique) traitCount++;
+    if (targetChar.appearance?.hairColor || targetChar.appearance?.hairStyle)
+      traitCount++;
+    if (targetChar.appearance?.eyes) traitCount++;
+    if (
+      targetChar.appearance?.attire &&
+      (Array.isArray(targetChar.appearance.attire)
+        ? targetChar.appearance.attire.length > 0
+        : !!targetChar.appearance.attire)
+    )
+      traitCount++;
+    if (targetChar.appearance?.expression) traitCount++;
+    const traits = targetChar.personality?.coreTraits;
+    if (traits && traits.length > 0) traitCount++;
+
+    return traitCount >= 2;
+  }, [displayCharacter, character]);
+
   const handleOpenImageGeneration = useCallback(() => {
-    handleConfirmImageGeneration("create");
-  }, [handleConfirmImageGeneration]);
+    // Validation: Check if character has enough info (Name + at least 2 traits)
+    if (!validateImageGeneration()) {
+      toast({
+        variant: "destructive",
+        title: "정보 부족",
+        description:
+          "이미지를 생성하려면 이름 외에 최소 2가지 이상의 특징(외모, 성격 등)을 입력해주세요.",
+      });
+      return;
+    }
+
+    const mode = character?.imageUrl ? "edit" : "create";
+    handleConfirmImageGeneration(mode);
+  }, [handleConfirmImageGeneration, validateImageGeneration, character, toast]);
 
   const handleSave = useCallback(async () => {
-    if (!editedCharacter) return;
+    if (!editedCharacter || !character?._id) return;
 
-    // Compare appearance to detect changes for image update
-    const hasAppearanceChanged = !isEqual(
-      character?.appearance,
-      editedCharacter.appearance
-    );
-
-    if (onSave) {
-      onSave(editedCharacter);
+    // 0. Primary Validation
+    if (!editedCharacter.profile?.name?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "입력 오류",
+        description: "캐릭터 이름은 필수입니다.",
+      });
+      return;
     }
 
-    // If appearance changed and there's already an image, trigger auto-edit
-    if (hasAppearanceChanged && character?.imageUrl) {
-      handleConfirmImageGeneration("edit", "");
-    }
+    try {
+      const cleanPayload = getCleanPayload();
+      if (!cleanPayload) return;
 
-    setIsEditMode(false);
-  }, [editedCharacter, character, onSave, handleConfirmImageGeneration]);
+      // 1. Call Backend API to update character
+      // Mutation hook now handles cache update (immediate) and delayed refetch (safe)
+      await updateCharacter.mutateAsync({
+        id: character._id,
+        payload: cleanPayload,
+      });
+
+      toast({
+        variant: "success",
+        title: "저장 성공",
+        description: "캐릭터 정보가 저장되었습니다.",
+      });
+
+      // 3. Compare data to detect changes for image update
+      const hasImageRelevantChanges =
+        !isEqual(character?.appearance, editedCharacter.appearance) ||
+        !isEqual(
+          character?.personality?.coreTraits,
+          editedCharacter.personality?.coreTraits,
+        ) ||
+        character?.profile?.name !== editedCharacter.profile?.name;
+
+      if (onSave) {
+        onSave(editedCharacter);
+      }
+
+      // 4. Trigger image generation if relevant data changed
+      if (hasImageRelevantChanges) {
+        if (character?.imageUrl) {
+          // Existing image -> update
+          handleConfirmImageGeneration("edit", "");
+        } else if (validateImageGeneration()) {
+          // No image yet -> create (only if sufficient info)
+          handleConfirmImageGeneration("create", "");
+        }
+      }
+
+      setIsEditMode(false);
+    } catch (error) {
+      console.error("Failed to save character:", error);
+      toast({
+        variant: "destructive",
+        title: "저장 실패",
+        description: "캐릭터 정보를 저장하는 중 오류가 발생했습니다.",
+      });
+    }
+  }, [
+    editedCharacter,
+    character,
+    onSave,
+    handleConfirmImageGeneration,
+    validateImageGeneration,
+    updateCharacter,
+    toast,
+    getCleanPayload,
+  ]);
 
   const handleFieldChange = useCallback(
     (field: string, value: string | string[]) => {
@@ -325,7 +570,7 @@ export default function CharacterDetailDialog({
         return { ...prev, [field]: value };
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -341,7 +586,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
@@ -366,6 +611,7 @@ export default function CharacterDetailDialog({
             있습니다.
           </DialogDescription>
         </VisuallyHidden>
+
         {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
         <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-paper/95 via-card/90 to-card/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-cloud-200/60 ring-1 ring-espresso-900/5 isolate">
           {/* 🌊 Living Background (Warm Aurora Blobs) */}
@@ -373,7 +619,7 @@ export default function CharacterDetailDialog({
             {/* Primary Tone (Mocha/Warm) */}
             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-b from-primary/10 to-orange-100/20 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
             {/* Neutral Warm Stone */}
-            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-stone-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-cloud-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
             {/* Soft Cloud Highlight */}
             <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-[#F5F5F0]/30 rounded-full blur-[80px] mix-blend-overlay animate-pulse-slow delay-1000" />
           </div>
@@ -476,15 +722,15 @@ export default function CharacterDetailDialog({
                           <Wand2 className="w-6 h-6 animate-pulse-slow" />
                         </div>
                         <div>
-                          <h3 className="editorial-name text-xl text-stone-900">
+                          <h3 className="editorial-name text-xl text-espresso-900">
                             스튜디오
                           </h3>
-                          <p className="magazine-caption text-sm mt-0.5 text-stone-500">
+                          <p className="magazine-caption text-sm mt-0.5 text-espresso-500">
                             AI와 함께 캐릭터의 모습을 이끌어내세요
                           </p>
                         </div>
                       </div>
-                      <Separator className="bg-stone-100" />
+                      <Separator className="bg-cloud-100" />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-2">
                           <Label className="editorial-label">배경 스타일</Label>
@@ -492,7 +738,7 @@ export default function CharacterDetailDialog({
                             value={selectedSettingId}
                             onValueChange={setSelectedSettingId}
                           >
-                            <SelectTrigger className="bg-paper border-stone-200 hover:border-primary/40 transition-colors">
+                            <SelectTrigger className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors">
                               <SelectValue placeholder="배경 선택 (기본)" />
                             </SelectTrigger>
                             <SelectContent
@@ -514,10 +760,10 @@ export default function CharacterDetailDialog({
                           <Label className="editorial-label">추가 묘사</Label>
                           <Input
                             placeholder="예: 비를 맞고 있는, 활짝 웃는..."
-                            className="bg-paper border-stone-200 hover:border-primary/40 transition-colors"
+                            className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) => setManualPrompt(e.target.value)}
                           />
                         </div>
@@ -531,7 +777,7 @@ export default function CharacterDetailDialog({
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 px-1">
                             <UserRound className="h-4 w-4 text-primary/70" />
-                            <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                            <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                               핵심 프로필
                             </h3>
                           </div>
@@ -564,7 +810,7 @@ export default function CharacterDetailDialog({
                               />
                             </div>
                             {/* Decorative Icon Watermark */}
-                            <UserRound className="absolute -bottom-4 -right-4 w-32 h-32 text-stone-900/[0.03] group-hover:scale-110 transition-transform duration-500" />
+                            <UserRound className="absolute -bottom-4 -right-4 w-32 h-32 text-espresso-900/[0.03] group-hover:scale-110 transition-transform duration-500" />
                           </div>
                         </div>
 
@@ -574,7 +820,7 @@ export default function CharacterDetailDialog({
                           <div className="space-y-3">
                             <div className="flex items-center gap-2 px-1">
                               <Heart className="h-4 w-4 text-primary/70" />
-                              <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                              <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                                 성격 키워드
                               </h3>
                             </div>
@@ -583,11 +829,11 @@ export default function CharacterDetailDialog({
                                 (trait, i) => (
                                   <span
                                     key={i}
-                                    className="px-4 py-1.5 rounded-full bg-paper/60 text-stone-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
+                                    className="px-4 py-1.5 rounded-full bg-paper/60 text-espresso-700 text-sm font-semibold border border-white/60 shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-default backdrop-blur-sm"
                                   >
                                     #{trait}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -598,13 +844,13 @@ export default function CharacterDetailDialog({
                       <div className="space-y-4 h-full">
                         <div className="flex items-center gap-2 px-1">
                           <Palette className="h-4 w-4 text-primary/70" />
-                          <h3 className="text-sm font-bold text-stone-500 uppercase tracking-widest">
+                          <h3 className="text-sm font-bold text-espresso-500 uppercase tracking-widest">
                             외모 특징
                           </h3>
                         </div>
                         <div className="editorial-card p-6 space-y-4 h-full bg-gradient-to-br from-paper/70 to-paper/30 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl relative overflow-hidden group">
                           {/* Decorative Icon Watermark */}
-                          <Palette className="absolute -top-6 -right-6 w-32 h-32 text-stone-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
+                          <Palette className="absolute -top-6 -right-6 w-32 h-32 text-espresso-900/[0.03] group-hover:rotate-12 transition-transform duration-500" />
                           <div className="relative z-10">
                             <CharacterVisual
                               appearance={displayCharacter.appearance}
@@ -634,17 +880,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.occupation || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.occupation || "미정"}
                           </p>
                         )}
@@ -659,17 +905,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.birthplace || "미정"}
                           </p>
                         )}
@@ -684,17 +930,17 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.family || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-stone-800">
+                          <p className="text-sm font-semibold text-espresso-800">
                             {displayCharacter.profile.family || "미정"}
                           </p>
                         )}
@@ -705,7 +951,7 @@ export default function CharacterDetailDialog({
                           <Flag className="w-4 h-4 text-primary/70" />
                           <span className="editorial-label">소속 세력</span>
                         </div>
-                        <p className="text-sm font-semibold text-stone-800">
+                        <p className="text-sm font-semibold text-espresso-800">
                           {displayCharacter.profile.faction?.name || "무소속"}
                         </p>
                       </div>
@@ -819,16 +1065,16 @@ function TabItem({
   label,
 }: {
   value: string;
-  icon: ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
 }) {
   return (
     <TabsTrigger
       value={value}
-      className="group relative h-8 px-5 rounded-full font-medium text-stone-500 transition-all
-      data-[state=active]:text-primary-foreground data-[state=active]:bg-stone-800 data-[state=active]:shadow-lg
+      className="group relative h-8 px-5 rounded-full font-medium text-espresso-500 transition-all
+      data-[state=active]:text-white data-[state=active]:!bg-espresso-900 data-[state=active]:shadow-lg
       data-[state=active]:ring-2 data-[state=active]:ring-white/50
-      hover:text-stone-900 hover:bg-white/50"
+      hover:text-espresso-900 hover:bg-white/50"
     >
       <span className="relative z-10 flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
@@ -846,18 +1092,20 @@ function ProfileItem({
 }: {
   label: string;
   value?: string | number | null;
-  icon: ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-stone-400">
+      <div className="flex items-center gap-1.5 text-espresso-400">
         <Icon className="w-3 h-3" />
         <span className="text-xs font-medium uppercase tracking-wider">
           {label}
         </span>
       </div>
-      <span className="text-base font-semibold text-stone-800 pl-0.5">
-        {value || <span className="text-stone-300 font-normal italic">-</span>}
+      <span className="text-base font-semibold text-espresso-800 pl-0.5">
+        {value || (
+          <span className="text-espresso-300 font-normal italic">-</span>
+        )}
       </span>
     </div>
   );

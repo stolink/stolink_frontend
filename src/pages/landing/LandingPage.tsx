@@ -52,7 +52,7 @@ export default function LandingPage() {
       description:
         "마크다운 기반의 쾌적한 집필 환경.\n자동 저장으로 당신의 영감을 놓치지 않습니다.",
       colSpan: "md:col-span-2",
-      bg: "bg-paper",
+      bg: "bg-white",
     },
     {
       icon: GitBranch,
@@ -60,7 +60,7 @@ export default function LandingPage() {
       description:
         "뿌려둔 복선이 어디서 회수되었는지,\n아직 미회수된 떡밥은 무엇인지 한눈에 파악하세요.",
       colSpan: "md:col-span-1",
-      bg: "bg-sage-50",
+      bg: "bg-sage-100",
     },
     {
       icon: Users,
@@ -68,7 +68,7 @@ export default function LandingPage() {
       description:
         "복잡하게 얽힌 캐릭터들의 관계를\n직관적인 그래프로 시각화합니다.",
       colSpan: "md:col-span-1",
-      bg: "bg-mocha-400/20",
+      bg: "bg-doechii-3/30",
     },
     {
       icon: Sparkles,
@@ -76,7 +76,7 @@ export default function LandingPage() {
       description:
         "설정 충돌과 개연성 오류를\nAI가 실시간으로 감지하고 제안합니다.",
       colSpan: "md:col-span-2",
-      bg: "bg-paper",
+      bg: "bg-cloud-100",
     },
     {
       icon: ImageIcon,
@@ -84,14 +84,14 @@ export default function LandingPage() {
       description:
         "글로 쓴 장면을 AI 이미지로 구현하여\n상상력을 더욱 구체화하세요.",
       colSpan: "md:col-span-1",
-      bg: "bg-paper",
+      bg: "bg-mocha-400/15",
     },
     {
       icon: FileText,
       title: "다양한 내보내기",
       description: "PDF, EPUB, 마크다운 등\n원하는 형식으로 작품을 소장하세요.",
       colSpan: "md:col-span-2",
-      bg: "bg-paper",
+      bg: "bg-white",
     },
   ];
 
@@ -133,11 +133,11 @@ export default function LandingPage() {
 
         {/* Editoral Hero Section */}
         <section className="relative min-h-[90vh] flex items-center pt-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-paper via-paper/50 to-paper -z-10" />
+          <div className="absolute inset-0 bg-cloud-50 -z-10" />
 
-          {/* Background Decorative Elements */}
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-mocha-400/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-sage-200/20 rounded-full blur-3xl" />
+          {/* Background Decorative Elements - Subtle Warm Orbs */}
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-doechii-3/25 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-mocha-400/15 rounded-full blur-3xl" />
 
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
             <motion.div
@@ -258,21 +258,21 @@ export default function LandingPage() {
                       <div className="w-2 h-2 rounded-full bg-status-success/80" />
                     </div>
                   </div>
-                  <div className="p-8  leading-loose text-lg text-mocha-900">
-                    <span className="bg-sage-100 text-sage-800 px-1 rounded">
+                  <div className="p-8 leading-loose text-lg text-espresso-900">
+                    <span className="bg-sage-500/20 text-sage-700 px-1 rounded">
                       그날 밤
                     </span>
                     , 숲은 평소보다 더 고요했다. 마치{" "}
-                    <span className="bg-mocha-400/20 px-1 -mx-0.5 rounded-sm text-mocha-900 font-medium decoration-mocha-400 decoration-2 underline underline-offset-4">
+                    <span className="text-mocha-600 font-semibold border-b-2 border-mocha-400">
                       오래된 약속
                     </span>
                     이 깨지기를 기다리는 것처럼...
                   </div>
                 </motion.div>
 
-                {/* Floating Tags */}
+                {/* Floating Tags - More Vivid */}
                 <motion.div
-                  className="absolute -right-4 top-1/3 bg-paper px-4 py-2 rounded-lg shadow-lg border border-cloud-100 text-sm font-bold text-mocha-500 z-20"
+                  className="absolute -right-4 top-1/3 bg-gradient-to-br from-mocha-400/90 to-mocha-500 px-4 py-2 rounded-lg shadow-lg border border-mocha-400/50 text-sm font-bold text-white z-20"
                   animate={{ y: [0, 10, 0] }}
                   transition={{
                     repeat: Infinity,
@@ -283,7 +283,7 @@ export default function LandingPage() {
                   #복선:오래된_약속
                 </motion.div>
                 <motion.div
-                  className="absolute -left-8 bottom-1/3 bg-doechii-2/10 px-4 py-2 rounded-lg shadow-lg border border-doechii-2/20 text-sm font-bold text-doechii-2 z-20"
+                  className="absolute -left-8 bottom-1/3 bg-gradient-to-br from-doechii-2/95 to-doechii-4/80 px-4 py-2 rounded-lg shadow-lg border border-doechii-2/40 text-sm font-bold text-white z-20"
                   animate={{ y: [0, -10, 0] }}
                   transition={{
                     repeat: Infinity,
@@ -302,7 +302,7 @@ export default function LandingPage() {
         <BrushStrokeDivider className="text-cloud-100" height={16} />
 
         {/* Features Bento Grid */}
-        <section className="py-24 px-6 relative bg-paper">
+        <section className="py-24 px-6 relative bg-white">
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -337,32 +337,32 @@ export default function LandingPage() {
                   className={cn(
                     "relative group overflow-hidden rounded-3xl p-8 border border-border shadow-sm hover:shadow-paper-floating transition-all duration-500",
                     feature.colSpan,
-                    feature.bg
+                    feature.bg,
                   )}
                 >
                   <div className="relative z-10 h-full flex flex-col justify-between">
                     <div>
-                      <div className="w-12 h-12 rounded-2xl bg-paper border border-cloud-100 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-cloud-200 flex items-center justify-center mb-6 shadow-md group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg transition-all duration-300">
                         <feature.icon className="w-6 h-6 text-mocha-500" />
                       </div>
-                      <h3 className="text-2xl font-bold font-heading text-ink mb-3 group-hover:text-mocha-700 transition-colors">
+                      <h3 className="text-2xl font-bold font-heading text-espresso-900 mb-3 group-hover:text-mocha-600 transition-colors">
                         {feature.title}
                       </h3>
-                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      <p className="text-espresso-700/80 whitespace-pre-wrap leading-relaxed">
                         {feature.description}
                       </p>
                     </div>
 
                     <div className="flex justify-end opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                      <div className="w-10 h-10 rounded-full bg-cloud-50 flex items-center justify-center">
-                        <ArrowRight className="w-5 h-5 text-mocha-500" />
+                      <div className="w-10 h-10 rounded-full bg-mocha-500 flex items-center justify-center shadow-md">
+                        <ArrowRight className="w-5 h-5 text-white" />
                       </div>
                     </div>
                   </div>
 
                   {/* Decorative Background Icon */}
                   <feature.icon
-                    className="absolute -bottom-8 -right-8 w-64 h-64 text-ink/[0.02] transform rotate-12 group-hover:rotate-6 transition-transform duration-700"
+                    className="absolute -bottom-8 -right-8 w-64 h-64 text-mocha-500/[0.05] transform rotate-12 group-hover:rotate-6 transition-transform duration-700"
                     strokeWidth={1}
                   />
                 </motion.div>
@@ -371,10 +371,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Premium CTA Section */}
-        <section className="py-32 px-6 relative overflow-hidden bg-ink text-paper">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/50 to-transparent" />
+        {/* Premium CTA Section - Warm & Inviting */}
+        <section className="py-32 px-6 relative overflow-hidden bg-mocha-500">
+          <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
 
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <motion.div
@@ -384,15 +383,15 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
             >
               <BookOpen
-                className="w-16 h-16 text-mocha-400 mx-auto mb-8"
+                className="w-16 h-16 text-doechii-3 mx-auto mb-8"
                 strokeWidth={1.5}
               />
-              <h2 className="text-4xl md:text-6xl font-heading font-bold mb-8 leading-tight">
+              <h2 className="text-4xl md:text-6xl font-heading font-bold mb-8 leading-tight text-white">
                 당신의 이야기는
                 <br />
-                <span className="text-mocha-400">여기서 완성됩니다.</span>
+                <span className="text-doechii-3">여기서 완성됩니다.</span>
               </h2>
-              <p className="text-xl text-cloud-200 mb-12 font-light max-w-2xl mx-auto">
+              <p className="text-xl text-white/80 mb-12 font-light max-w-2xl mx-auto">
                 지금 바로 5,000명 이상의 작가들과 함께
                 <br />더 체계적이고 몰입감 있는 집필을 경험해보세요.
               </p>
@@ -400,12 +399,12 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto h-16 px-10 text-xl font-bold bg-mocha-500 hover:bg-mocha-400 text-white shadow-[0_0_40px_theme(colors.mocha.500/30)] hover:shadow-[0_0_60px_theme(colors.mocha.500/50)] transition-all transform hover:-translate-y-1"
+                  className="w-full sm:w-auto h-16 px-10 text-xl font-bold bg-white hover:bg-cloud-50 text-mocha-700 shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.35)] transition-all transform hover:-translate-y-1"
                   onClick={() => setIsAuthModalOpen(true)}
                 >
                   무료로 시작하기
                 </Button>
-                <div className="text-sm text-cloud-200/60">
+                <div className="text-sm text-white/60">
                   * 신용카드 정보 입력 없음
                 </div>
               </div>

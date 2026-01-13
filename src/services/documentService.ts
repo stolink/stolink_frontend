@@ -28,6 +28,7 @@ export interface BackendDocument {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  isPublished: boolean;
   children?: BackendDocument[];
 }
 
@@ -62,6 +63,7 @@ export function mapBackendToFrontend(doc: BackendDocument): FrontendDocument {
     foreshadowingIds: [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    isPublished: doc.isPublished,
   };
 }
 

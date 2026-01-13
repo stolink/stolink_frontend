@@ -1,6 +1,6 @@
 import { ArrowLeft, Play, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 interface DemoHeaderProps {
   isTourCompleted: boolean;

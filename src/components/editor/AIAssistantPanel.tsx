@@ -46,6 +46,13 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     },
   });
 
+  // 페이지 진입 시 히스토리 로드
+  // useEffect(() => {
+  //   if (projectId) {
+  //     loadHistory(projectId);
+  //   }
+  // }, [projectId, loadHistory]);
+
   // 분석 완료 애니메이션 표시 상태
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
 
@@ -104,9 +111,9 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
           <div className="mt-1.5 h-[3px] w-6 bg-mocha-200 group-hover:w-10 transition-all duration-500 rounded-full" />
         </div>
         <Button
-          variant="ghost"
+          intent="ghost"
           size="icon"
-          onClick={resetSession}
+          onClick={() => resetSession(projectId ?? undefined)}
           className="h-9 w-9 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-xl"
           title="새 대화 시작"
         >
@@ -219,23 +226,6 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                       }}
                       className="relative z-10"
                     >
-                      {/* 메인 아이콘 */}
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 280,
-                          damping: 16,
-                        }}
-                        className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-sage-50 via-sage-100 to-sage-200 flex items-center justify-center shadow-xl border border-sage-200/60"
-                      >
-                        <CheckCircle2
-                          className="w-9 h-9 text-sage-600"
-                          strokeWidth={2.5}
-                        />
-                      </motion.div>
-
                       {/* 외곽 링 펄스 1 */}
                       <motion.div
                         initial={{ scale: 1, opacity: 0 }}
@@ -258,6 +248,23 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                         }}
                         className="absolute inset-0 rounded-full border border-sage-200"
                       />
+
+                      {/* 메인 아이콘 */}
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 280,
+                          damping: 16,
+                        }}
+                        className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-sage-50 via-sage-100 to-sage-200 flex items-center justify-center shadow-xl border border-sage-200/60"
+                      >
+                        <CheckCircle2
+                          className="w-9 h-9 text-sage-600"
+                          strokeWidth={2.5}
+                        />
+                      </motion.div>
                     </motion.div>
 
                     <motion.span
@@ -333,6 +340,26 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
 
                   {/* 메인 로딩 오브 */}
                   <div className="relative w-20 h-20">
+                    {/* 중심 오브 */}
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.08, 1],
+                        boxShadow: [
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                          "0 0 30px rgba(0, 0, 0, 0.1)",
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-4 rounded-full bg-gradient-to-br from-mocha-50 via-white to-mocha-100 flex items-center justify-center shadow-lg border border-mocha-100/50"
+                    >
+                      <Network className="w-5 h-5 text-mocha-500" />
+                    </motion.div>
+
                     {/* 외곽 회전 링 */}
                     <motion.div
                       animate={{ rotate: 360 }}
@@ -354,26 +381,6 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                       }}
                       className="absolute inset-2 rounded-full border border-mocha-300/40"
                     />
-
-                    {/* 중심 오브 */}
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.08, 1],
-                        boxShadow: [
-                          "0 0 20px rgba(0, 0, 0, 0.05)",
-                          "0 0 30px rgba(0, 0, 0, 0.1)",
-                          "0 0 20px rgba(0, 0, 0, 0.05)",
-                        ],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      className="absolute inset-4 rounded-full bg-gradient-to-br from-mocha-50 via-white to-mocha-100 flex items-center justify-center shadow-lg border border-mocha-100/50"
-                    >
-                      <Network className="w-5 h-5 text-mocha-500" />
-                    </motion.div>
 
                     {/* 궤도 위 도트들 */}
                     {[...Array(3)].map((_, i) => (
@@ -473,7 +480,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
               <Button
                 type="button"
                 size="icon"
-                variant="ghost"
+                intent="ghost"
                 onClick={cancelStream}
                 className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300"
               >
@@ -488,13 +495,13 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                   "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
                   input.trim()
                     ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
-                    : "bg-white border-mocha-100 text-mocha-200",
+                    : "bg-white border-mocha-100 text-mocha-200"
                 )}
               >
                 <Send
                   className={cn(
                     "h-4.5 w-4.5 transition-transform duration-300",
-                    input.trim() && "translate-x-0.5 -translate-y-0.5",
+                    input.trim() && "translate-x-0.5 -translate-y-0.5"
                   )}
                 />
               </Button>
@@ -518,14 +525,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "flex flex-col gap-3 w-full",
-        isUser ? "items-end" : "items-start",
+        isUser ? "items-end" : "items-start"
       )}
     >
       {/* Label */}
       <div
         className={cn(
           "flex items-center gap-2 mb-1",
-          isUser ? "flex-row-reverse" : "flex-row",
+          isUser ? "flex-row-reverse" : "flex-row"
         )}
       >
         <div className="h-px w-4 bg-mocha-100" />
@@ -539,7 +546,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           "max-w-[95%] p-5 transition-all duration-300 relative",
           isUser
             ? "text-espresso-800 font-serif italic text-lg leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
-            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
+            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper"
         )}
       >
         {!isUser && (

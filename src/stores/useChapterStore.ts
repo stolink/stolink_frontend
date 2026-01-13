@@ -31,7 +31,7 @@ export const useChapterStore = create<ChapterState>()(
 
         const existingChapters = Object.values(get().chapters).filter(
           (c) =>
-            c.projectId === input.projectId && c.parentId === input.parentId,
+            c.projectId === input.projectId && c.parentId === input.parentId
         );
         const order = existingChapters.length;
 
@@ -78,13 +78,13 @@ export const useChapterStore = create<ChapterState>()(
       deleteChapter: (id) => {
         set((state) => {
           const newChapters = Object.fromEntries(
-            Object.entries(state.chapters).filter(([key]) => key !== id),
+            Object.entries(state.chapters).filter(([key]) => key !== id)
           );
           return { chapters: newChapters };
         });
       },
 
-      reorderChapters: (projectId, newOrderIds) => {
+      reorderChapters: (_projectId, newOrderIds) => {
         set((state) => {
           const updatedChapters = { ...state.chapters };
           newOrderIds.forEach((chapterId, index) => {
@@ -107,6 +107,6 @@ export const useChapterStore = create<ChapterState>()(
     }),
     {
       name: "sto-link-chapter-storage",
-    },
-  ),
+    }
+  )
 );

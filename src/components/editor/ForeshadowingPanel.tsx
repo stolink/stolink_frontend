@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   Trash2,
@@ -15,9 +15,21 @@ import { Button } from "@stolink/ui";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useForeshadowingStore } from "@/stores";
+import { useShallow } from "zustand/react/shallow";
 import { useParams } from "react-router-dom";
 import { DEMO_CHARACTERS, DEMO_ITEMS } from "@/data/demoData";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/useToast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ForeshadowingPanelProps {
   documentId?: string | null;
@@ -35,21 +47,30 @@ const ForeshadowingPanel = ({
   onNavigateToPosition,
 }: ForeshadowingPanelProps) => {
   const { id: projectId } = useParams<{ id: string }>();
-  const {
-    getUnresolved,
-    markAsRecovered,
-    deleteForeshadowing,
-    updateForeshadowing,
-  } = useForeshadowingStore();
-
-  const foreshadowings = useMemo(
-    () => (projectId ? getUnresolved(projectId) : []),
-    [projectId, getUnresolved],
+  const foreshadowings = useForeshadowingStore(
+    useShallow((state) =>
+      projectId
+        ? Object.values(state.foreshadowings).filter(
+            (fs) => fs.projectId === projectId && fs.status === "pending",
+          )
+        : [],
+    ),
   );
+
+  const { markAsRecovered, deleteForeshadowing, updateForeshadowing } =
+    useForeshadowingStore(
+      useShallow((state) => ({
+        markAsRecovered: state.markAsRecovered,
+        deleteForeshadowing: state.deleteForeshadowing,
+        updateForeshadowing: state.updateForeshadowing,
+      })),
+    );
 
   // 제목 편집 상태
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 연관 요소 편집 상태
@@ -89,11 +110,28 @@ const ForeshadowingPanel = ({
       documentId: documentId || appearance?.documentId || "unknown",
       sectionTitle: sectionTitle || appearance?.sectionTitle || "알 수 없음",
     });
+
+    toast({
+      title: "복선이 회수되었습니다",
+      description: `"${fs?.tag}" 복선이 회수 완료 처리되었습니다.`,
+      variant: "success",
+    });
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("이 복선을 삭제하시겠습니까?")) {
-      deleteForeshadowing(id);
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      const fs = foreshadowings.find((f) => f.id === deleteId);
+      deleteForeshadowing(deleteId);
+      toast({
+        title: "복선이 삭제되었습니다",
+        description: `"${fs?.tag}" 복선이 목록에서 삭제되었습니다.`,
+        variant: "destructive",
+      });
+      setDeleteId(null);
     }
   };
 
@@ -105,6 +143,11 @@ const ForeshadowingPanel = ({
   const handleSaveEdit = () => {
     if (editingId && editValue.trim()) {
       updateForeshadowing(editingId, { tag: editValue.trim() });
+      toast({
+        title: "복선이 수정되었습니다",
+        description: `태그 이름이 "${editValue.trim()}"(으)로 변경되었습니다.`,
+        variant: "success",
+      });
     }
     setEditingId(null);
     setEditValue("");
@@ -561,6 +604,26 @@ const ForeshadowingPanel = ({
           ))}
         </AnimatePresence>
       </div>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>복선을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제된 복선 데이터는 복구할 수 없습니다. 정말 삭제하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

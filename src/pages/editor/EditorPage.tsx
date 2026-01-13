@@ -28,7 +28,7 @@ import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal
 // import { DemoTourModal } from "@/pages/editor/components/DemoTourModal";
 import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal";
 import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
-import ExportModal from "@/components/editor/ExportModal";
+import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
 
 // Hooks
 import { useProject } from "@/hooks/useProjects";
@@ -42,6 +42,7 @@ import {
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
 import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
+import { useToast } from "@/hooks/useToast";
 
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
@@ -50,10 +51,7 @@ import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
-import type {
-  AnalysisResultData,
-  ConsistencyReport,
-} from "@/types/analysisResult";
+import type { AnalysisResultData } from "@/types/analysisResult";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import { type CharacterRelation, type Character } from "@/types/character";
 
@@ -72,7 +70,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -91,7 +89,7 @@ function buildDemoChapterTree(
       },
       characterIds: [],
       foreshadowingIds: [],
-    } as DemoChapterTreeNode);
+    } as unknown as DemoChapterTreeNode);
   });
 
   chapters.forEach((chapter) => {
@@ -116,7 +114,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[]
+  nodes: DocumentTreeNode[],
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -133,13 +131,23 @@ function mapToChapterNodes(
   }));
 }
 
-export default function EditorPage({ isDemo = false }) {
+interface EditorPageProps {
+  isDemo?: boolean;
+}
+
+export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
+  const { id: projectId = "" } = useParams();
+  const location = useLocation();
+  const isDemo = isDemoProp ?? projectId === DEMO_PROJECT_ID;
+
+  // Project Data
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
+  const { toast } = useToast();
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -149,13 +157,13 @@ export default function EditorPage({ isDemo = false }) {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null
+    isDemo ? "chapter-demo-1" : null,
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [viewMode, setViewMode] = useState<
-    "editor" | "scrivenings" | "outline" | "corkboard"
+    "editor" | "scrivenings" | "outline"
   >("editor");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -173,20 +181,14 @@ export default function EditorPage({ isDemo = false }) {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode
+    (state) => state.behavior.typewriterMode,
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode
+    (state) => state.behavior.focusMode,
   );
   /* performanceMode removed */
 
-  const { id: projectIdFromParams } = useParams<{ id: string }>();
-  const projectId = isDemo
-    ? DEMO_PROJECT_ID
-    : (projectIdFromParams ?? DEMO_PROJECT_ID);
-
-  const location = useLocation();
   const initialStateFromRedirect = (
     location.state as { selectedSectionId?: string } | null
   )?.selectedSectionId;
@@ -206,16 +208,16 @@ export default function EditorPage({ isDemo = false }) {
   useDocumentTree(isDemo ? "" : projectId);
 
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents
+    (state) => (state as { documents: Record<string, Document> }).documents,
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId
+            (doc) => doc.projectId === projectId,
           ),
-    [allDocuments, projectId, isDemo]
+    [allDocuments, projectId, isDemo],
   );
 
   const previewChapters = useMemo(() => {
@@ -223,19 +225,16 @@ export default function EditorPage({ isDemo = false }) {
     return buildDemoChapterTree(DEMO_CHAPTERS);
   }, [isDemo]);
 
-  // documentTree removed as it was unused and mapToChapterNodes handles it
-
   const projectTitle = useMemo(() => {
     if (isDemo) return DEMO_PROJECT_TITLE;
     if (project?.title) return project.title;
     return "내 작품";
-  }, [project?.title, isDemo]);
+  }, [project, isDemo]);
 
-  const documents = useMemo(() => {
-    return isDemo
-      ? (DEMO_CHAPTERS as unknown as Document[])
-      : Object.values(localDocuments);
-  }, [isDemo, localDocuments]);
+  const documents = useMemo(
+    () => Object.values(localDocuments),
+    [localDocuments],
+  );
 
   const sidebarChapters = useMemo(() => {
     if (isDemo)
@@ -284,29 +283,12 @@ export default function EditorPage({ isDemo = false }) {
   const queryClient = useQueryClient();
   const [showAnalysisSummary, setShowAnalysisSummary] = useState(false);
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
-  const [consistencyReport, setConsistencyReport] =
-    useState<ConsistencyReport | null>(null);
+
+  // consistencyReport state removed in favor of store persistence
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer
-  );
-
-  const handleAnalysisComplete = useCallback(
-    (result: AnalysisResultData) => {
-      const diff = calculateAnalysisDiff(characters, graphLinks, result);
-
-      setAnalysisDiff(diff);
-      setShowAnalysisSummary(true);
-
-      if (result.consistencyReport) {
-        setConsistencyReport(result.consistencyReport);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
-    },
-    [characters, graphLinks, projectId, queryClient]
+        .addToBuffer,
   );
 
   const readerChapters = useMemo(() => {
@@ -332,16 +314,41 @@ export default function EditorPage({ isDemo = false }) {
     return flat;
   }, [documents]);
 
-  const { flushAndAnalyze, isAnalyzing, analysisProgress, analysisError } =
-    useProjectAnalysis(isDemo ? null : projectId, {
-      enabled: !isDemo,
-      onAnalysisComplete: handleAnalysisComplete,
-    });
+  const {
+    flushAndAnalyze,
+    isAnalyzing,
+    analysisProgress,
+    analysisError,
+
+    resetAnalysis,
+    lastConsistencyReport, // Added
+  } = useProjectAnalysis(projectId, {
+    enabled: !!projectId,
+    onAnalysisComplete: async (result: AnalysisResultData | null) => {
+      // NOTE: result can be null if analysis was cancelled or failed in a way that didn't produce data
+      // But typically onAnalysisComplete is called with valid data.
+      if (!result) return;
+
+      const diff = calculateAnalysisDiff(
+        characters,
+        graphLinks as Parameters<typeof calculateAnalysisDiff>[1],
+        result,
+      );
+
+      setAnalysisDiff(diff);
+      setShowAnalysisSummary(true);
+
+      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
+    },
+  });
+
+  const consistencyReport = lastConsistencyReport; // Alias for compatibility
 
   const analysisStatus = useMemo(() => {
+    if (analysisProgress === 100) return "completed";
     if (isAnalyzing) return "analyzing";
     if (analysisError) return "error";
-    if (analysisProgress === 100) return "completed";
     return "idle";
   }, [isAnalyzing, analysisError, analysisProgress]);
 
@@ -351,23 +358,23 @@ export default function EditorPage({ isDemo = false }) {
       try {
         // Use the hook's saveContent which handles backend sync
         await saveDocumentContent(content);
-      } catch (error) {
-        console.error("Failed to save content:", error);
+        // 분석 버퍼에 추가 (자동 분석 트래킹용)
+        addToBuffer(selectedSectionId, content);
+      } catch (_error) {
+        // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent]
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
   );
 
   const saveWithAnalysis = useCallback(
     async (content: string) => {
       if (!selectedSectionId) return;
       await saveContent(content);
-      if (!isDemo) {
-        addToBuffer(selectedSectionId, content);
-        flushAndAnalyze();
-      }
+      addToBuffer(selectedSectionId, content);
+      // flushAndAnalyze(); // 저장 시 즉시 분석하지 않고 버퍼링 정책에 따름
     },
-    [saveContent, selectedSectionId, isDemo, addToBuffer, flushAndAnalyze]
+    [saveContent, selectedSectionId, addToBuffer],
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -375,8 +382,31 @@ export default function EditorPage({ isDemo = false }) {
     const content =
       editorContentRef.current?.getContent() || documentContent || "";
     if (content) {
+      // 버퍼에 먼저 추가하여 최신 해시와 비교할 수 있게 함
       addToBuffer(selectedSectionId, content);
-      flushAndAnalyze();
+
+      // 변경 사항이 있는지 확인
+      const hasChanges = useAnalysisBufferStore
+        .getState()
+        .hasUnanalyzedChanges();
+
+      if (hasChanges) {
+        try {
+          flushAndAnalyze();
+        } catch (_error) {
+          toast({
+            variant: "destructive",
+            title: "수동 분석 실패",
+            description: "분석 요청 중 오류가 발생했습니다.",
+          });
+        }
+      } else {
+        toast({
+          title: "분석 완료",
+          description: "이미 최신 상태로 분석되어 있습니다.",
+          variant: "success",
+        });
+      }
     }
   }, [
     selectedSectionId,
@@ -384,18 +414,19 @@ export default function EditorPage({ isDemo = false }) {
     addToBuffer,
     flushAndAnalyze,
     documentContent,
+    toast,
   ]);
 
-  useEffect(() => {
-    if (isDemo) return;
-    const handleBeforeUnload = () => {
-      flushAndAnalyze();
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isDemo, flushAndAnalyze]);
+  // 불필요한 분석 방지를 위해 unload 시 자동 분석 트리거 제거
+  // useEffect(() => {
+  //   const handleBeforeUnload = () => {
+  //     flushAndAnalyze();
+  //   };
+  //   window.addEventListener("beforeunload", handleBeforeUnload);
+  //   return () => {
+  //     window.removeEventListener("beforeunload", handleBeforeUnload);
+  //   };
+  // }, [flushAndAnalyze]);
 
   // ============================================================
   // UI & Modals State
@@ -444,28 +475,19 @@ export default function EditorPage({ isDemo = false }) {
       useDocumentStore.getState()._update(selectedSectionId, updates);
     },
     updateDocumentMutation: async (id, updates) => {
-      await updateDocumentMutation.mutateAsync({
-        id,
-        payload: updates,
-      });
+      await updateDocumentMutation(id, updates);
     },
     createDocument: async (data) => {
-      return createDocumentMutation.mutateAsync(data);
+      return createDocumentMutation(data);
     },
     deleteDocument: async (id) => {
-      await deleteDocumentMutation.mutateAsync(id);
+      await deleteDocumentMutation(id);
     },
     reorderDocuments: async (parentId, orderedIds) => {
-      await reorderDocumentsMutation.mutateAsync({
-        parentId,
-        orderedIds,
-      });
+      await reorderDocumentsMutation(parentId, orderedIds);
     },
     moveDocument: async (itemId, targetFolderId) => {
-      await moveDocumentMutation.mutateAsync({
-        itemId,
-        targetFolderId,
-      });
+      await moveDocumentMutation(itemId, targetFolderId);
     },
   });
 
@@ -479,12 +501,12 @@ export default function EditorPage({ isDemo = false }) {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section"
+    type: "chapter" | "section",
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section"
+      type === "chapter" ? "chapter" : "section",
     );
     setCreateSectionModalOpen(false);
   };
@@ -522,6 +544,7 @@ export default function EditorPage({ isDemo = false }) {
   }, [queryDocumentId, initialStateFromRedirect, handleSelectSection]);
 
   // Auto-select first text document when documents load and no section is selected
+  // Using requestAnimationFrame to defer the setState call and avoid cascading renders
   useEffect(() => {
     if (isDemo) return;
     if (selectedSectionId) return; // Already have a selection
@@ -530,7 +553,10 @@ export default function EditorPage({ isDemo = false }) {
     // Find first text document (not folder)
     const firstTextDoc = documents.find((doc) => doc.type === "text");
     if (firstTextDoc) {
-      setSelectedSectionId(firstTextDoc.id);
+      // Defer state update to avoid cascading renders
+      requestAnimationFrame(() => {
+        setSelectedSectionId(firstTextDoc.id);
+      });
     }
   }, [
     documents,
@@ -538,14 +564,19 @@ export default function EditorPage({ isDemo = false }) {
     selectedSectionId,
     queryDocumentId,
     initialStateFromRedirect,
-    setSelectedSectionId,
   ]);
+
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [rightSidebarTab, setRightSidebarTab] =
+    useState<import("@/components/editor/EditorRightSidebar").RightSidebarTab>(
+      "ai",
+    );
 
   return (
     <div
       className={cn(
         "flex flex-col bg-background text-foreground",
-        isDemo ? "h-screen" : "h-full"
+        isDemo ? "h-screen" : "h-full",
       )}
     >
       {isDemo && (
@@ -576,7 +607,7 @@ export default function EditorPage({ isDemo = false }) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-stone-50"
+            isFocusMode && "bg-cloud-50",
           )}
         >
           <EditorToolbar
@@ -601,12 +632,16 @@ export default function EditorPage({ isDemo = false }) {
             onToggleFocusMode={() => {}}
             isTypewriterMode={isTypewriterMode}
             onToggleTypewriterMode={() => {}}
-            rightSidebarOpen={false}
-            onToggleRightSidebar={() => {}}
+            rightSidebarOpen={isRightSidebarOpen}
+            onToggleRightSidebar={() =>
+              setIsRightSidebarOpen(!isRightSidebarOpen)
+            }
             onExport={() => setShowExport(true)}
             onShowReader={() => setShowReader(true)}
             analysisStatus={analysisStatus}
+            analysisProgress={analysisProgress}
             onTriggerAnalysis={handleManualAnalysis}
+            onResetAnalysis={resetAnalysis}
           />
 
           <Suspense fallback={<EditorLoadingSkeleton />}>
@@ -633,10 +668,10 @@ export default function EditorPage({ isDemo = false }) {
         </main>
 
         <EditorRightSidebar
-          isOpen={true} // Simplified, always open on larger screens
-          onClose={() => {}} // Placeholder
-          activeTab="ai" // Default tab
-          onTabChange={() => {}} // Placeholder
+          isOpen={isRightSidebarOpen}
+          onClose={() => setIsRightSidebarOpen(false)}
+          activeTab={rightSidebarTab}
+          onTabChange={setRightSidebarTab}
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={
@@ -691,14 +726,18 @@ export default function EditorPage({ isDemo = false }) {
         />
       )}
       {showExport && (
-        <ExportModal
+        <ExportGatewayModal
           isOpen={showExport}
           onClose={() => setShowExport(false)}
-          projectId={projectId}
-          content={documentContent}
-          title={document?.title || ""}
           documents={documents}
+          projectId={projectId}
+          projectTitle={projectTitle}
+          projectDescription={project?.description}
+          projectGenre={project?.genre}
+          projectCoverImage={project?.coverImage}
+          currentId={selectedSectionId ?? undefined}
           characters={characters}
+          links={graphLinks}
         />
       )}
     </div>

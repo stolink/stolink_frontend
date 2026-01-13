@@ -448,7 +448,7 @@ export default function LibraryPage() {
 
               <div className="flex items-center gap-3">
                 <div className="relative hidden lg:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-espresso-400" />
                   <Input
                     placeholder="작품명 검색..."
                     className="pl-9 h-9 w-[240px] bg-cloud-50 border-cloud-200 focus:border-mocha-400 focus:ring-1 focus:ring-mocha-200 hover:bg-cloud-100 transition-all text-sm rounded-lg"
@@ -462,7 +462,7 @@ export default function LibraryPage() {
                     <Button
                       intent="ghost"
                       size="sm"
-                      className="h-9 gap-2 text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
+                      className="h-9 gap-2 text-espresso-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
                     >
                       <Filter className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline text-xs font-medium">
@@ -493,7 +493,7 @@ export default function LibraryPage() {
                     <Button
                       intent="ghost"
                       size="sm"
-                      className="h-9 gap-2 text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
+                      className="h-9 gap-2 text-espresso-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200"
                     >
                       <ArrowUpDown className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline text-xs font-medium">
@@ -538,7 +538,7 @@ export default function LibraryPage() {
                   className={cn(
                     "h-9 gap-2",
                     !isEditMode &&
-                      "text-stone-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200",
+                      "text-espresso-500 hover:text-mocha-700 hover:bg-mocha-50 border border-cloud-200",
                   )}
                   onClick={handleToggleEditMode}
                 >
@@ -565,7 +565,7 @@ export default function LibraryPage() {
                     "rounded-lg p-1.5 transition-all duration-200 outline-none",
                     viewMode === "grid"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-stone-400 hover:text-mocha-600 hover:bg-mocha-50",
+                      : "text-espresso-400 hover:text-mocha-600 hover:bg-mocha-50",
                   )}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -576,42 +576,51 @@ export default function LibraryPage() {
                     "rounded-lg p-1.5 transition-all duration-200 outline-none",
                     viewMode === "list"
                       ? "bg-mocha-500 text-white shadow-sm"
-                      : "text-stone-400 hover:text-mocha-600 hover:bg-mocha-50",
+                      : "text-espresso-400 hover:text-mocha-600 hover:bg-mocha-50",
                   )}
                 >
                   <List className="h-4 w-4" />
                 </button>
 
-                <div className="h-6 w-px bg-stone-200 mx-1 hidden sm:block"></div>
+                <div className="h-6 w-px bg-cloud-200 mx-1 hidden sm:block"></div>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       intent="ghost"
                       size="sm"
-                      className="h-9 w-9 rounded-full bg-mocha-100 hover:bg-mocha-200"
+                      className="h-10 w-10 rounded-full bg-mocha-500 hover:bg-mocha-600 shadow-md hover:shadow-lg transition-all"
                     >
-                      <User className="h-4 w-4 text-mocha-700" />
+                      <User className="h-4.5 w-4.5 text-white" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">내 계정</p>
-                        <p className="text-xs text-muted-foreground">
-                          {user?.email || "user@example.com"}
-                        </p>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 p-2 bg-white border border-cloud-200 shadow-lg rounded-xl"
+                  >
+                    <DropdownMenuLabel className="font-normal px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-mocha-500 flex items-center justify-center">
+                          <User className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-bold text-espresso-900">
+                            내 계정
+                          </p>
+                          <p className="text-xs text-espresso-500 truncate max-w-[140px]">
+                            {user?.email || "user@example.com"}
+                          </p>
+                        </div>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="my-2 bg-cloud-200" />
                     <DropdownMenuItem
                       onClick={() => {
                         performLogout();
-                        // navigate handled by useLogout hook
                       }}
-                      className="text-red-600 focus:text-red-600"
+                      className="px-3 py-2.5 rounded-lg text-status-error hover:bg-red-50 focus:bg-red-50 focus:text-status-error cursor-pointer font-medium"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <LogOut className="mr-2.5 h-4 w-4" />
                       로그아웃
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -620,7 +629,7 @@ export default function LibraryPage() {
             </div>
 
             <div className="relative w-full lg:hidden">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-espresso-400" />
               <Input
                 placeholder="작품명 검색..."
                 className="pl-9 h-10 w-full bg-cloud-50 border-cloud-200 focus:border-mocha-400 focus:ring-1 focus:ring-mocha-200 transition-all text-sm rounded-lg"
@@ -643,7 +652,7 @@ export default function LibraryPage() {
             서재
           </h2>
           {!isLoading && projects.length > 0 && (
-            <p className="mt-2 text-stone-500 text-sm">
+            <p className="mt-2 text-espresso-500 text-sm">
               {projects.length}권의 작품이 당신을 기다리고 있어요
             </p>
           )}
@@ -767,7 +776,7 @@ export default function LibraryPage() {
             <h3 className="text-lg font-semibold text-foreground">
               검색 결과가 없습니다
             </h3>
-            <p className="text-stone-500">다른 검색어로 시도해보세요.</p>
+            <p className="text-espresso-500">다른 검색어로 시도해보세요.</p>
           </div>
         )}
 
@@ -790,7 +799,7 @@ export default function LibraryPage() {
             <h3 className="text-2xl lg:text-3xl font-bold text-espresso-900 mb-3">
               아직 작품이 없어요
             </h3>
-            <p className="text-stone-500 mb-8 max-w-md leading-relaxed">
+            <p className="text-espresso-500 mb-8 max-w-md leading-relaxed">
               첫 작품을 만들어 당신만의 이야기를 시작해보세요.
               <br />
               복선 관리, AI 분석 등 StoLink의 모든 기능을 경험할 수 있습니다.
@@ -822,16 +831,16 @@ export default function LibraryPage() {
             stiffness: 200,
             delay: 0.3,
           }}
-          whileHover={{ scale: 1.05, y: -2 }}
+          whileHover={{ scale: 1.05, y: -3 }}
           whileTap={{ scale: 0.95 }}
           className="fixed bottom-8 right-8 z-40"
         >
           <Button
             size="lg"
-            className="gap-2.5 shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-full px-7 py-6 text-base font-semibold"
+            className="gap-3 bg-mocha-500 hover:bg-mocha-600 text-white shadow-[0_8px_30px_rgba(212,120,90,0.4)] hover:shadow-[0_12px_40px_rgba(212,120,90,0.5)] transition-all duration-300 rounded-full px-8 py-7 text-base font-bold border-none"
             onClick={() => setIsCreateModalOpen(true)}
           >
-            <Plus className="w-5 h-5" />새 작품 만들기
+            <Plus className="w-5 h-5" strokeWidth={2.5} />새 작품 만들기
           </Button>
         </motion.div>
       )}
@@ -845,7 +854,7 @@ export default function LibraryPage() {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
           >
-            <div className="bg-paper border border-cloud-200 text-stone-700 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm flex items-center gap-4">
+            <div className="bg-paper border border-cloud-200 text-espresso-700 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm flex items-center gap-4">
               <span className="text-sm font-medium">
                 {selectedBooks.length}개 선택됨
               </span>

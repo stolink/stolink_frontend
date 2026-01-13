@@ -63,6 +63,11 @@ function App() {
     root.classList.add(`theme-${theme}`);
   }, [theme]);
 
+  // 정상 로드 시 chunk-reload-count 초기화 (다음 에러 대응 가능하도록)
+  useEffect(() => {
+    sessionStorage.removeItem("chunk-reload-count");
+  }, []);
+
   if (isInitializing) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
@@ -99,7 +104,7 @@ function App() {
               />
 
               {/* Demo Route - No Auth Required */}
-              <Route path="/demo" element={<EditorPage isDemo={true} />} />
+              <Route path="/demo" element={<EditorPage />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedLayout />}>

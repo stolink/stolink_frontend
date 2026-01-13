@@ -41,7 +41,6 @@ interface ForeshadowingStore {
     projectId: string,
     status: ForeshadowingStatus,
   ) => Foreshadowing[];
-  getByScene: (sceneId: string) => Foreshadowing[];
   getByCharacter: (characterId: string) => Foreshadowing[];
   getUnresolved: (projectId: string) => Foreshadowing[];
   getNextTagNumber: (projectId: string) => number; // "복선 N" 자동 네이밍
@@ -158,12 +157,6 @@ export const useForeshadowingStore = create<ForeshadowingStore>()(
       getByStatus: (projectId, status) => {
         return Object.values(get().foreshadowings).filter(
           (fs) => fs.projectId === projectId && fs.status === status,
-        );
-      },
-
-      getByScene: (sceneId) => {
-        return Object.values(get().foreshadowings).filter((fs) =>
-          fs.appearances.some((a) => a.sceneId === sceneId),
         );
       },
 

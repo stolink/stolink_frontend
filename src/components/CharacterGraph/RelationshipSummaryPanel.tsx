@@ -64,34 +64,34 @@ export function RelationshipSummaryPanel({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.2 }}
-      className="absolute right-4 top-16 w-[300px] bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-stone-200 z-30 overflow-hidden"
+      className="absolute right-4 top-16 w-[300px] bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-cloud-200 z-30 overflow-hidden"
     >
       {/* 헤더 */}
-      <div className="px-4 py-3 bg-stone-50/80 border-b border-stone-200 flex items-center justify-between">
+      <div className="px-4 py-3 bg-cloud-50/80 border-b border-cloud-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-mocha-500" />
-          <span className="font-bold text-stone-800">
+          <span className="font-bold text-espresso-800">
             {character.profile?.name} 관계
           </span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-stone-200 transition-colors"
+          className="p-1 rounded hover:bg-cloud-200 transition-colors"
         >
-          <X className="w-4 h-4 text-stone-500" />
+          <X className="w-4 h-4 text-espresso-500" />
         </button>
       </div>
 
       {/* 관계 수 요약 */}
-      <div className="px-4 py-3 flex items-center gap-4 border-b border-stone-100 text-sm">
+      <div className="px-4 py-3 flex items-center gap-4 border-b border-cloud-100 text-sm">
         <div className="flex items-center gap-1.5">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: getRelationshipColor("friendly", 5) }}
           />
-          <span className="text-stone-600">
+          <span className="text-espresso-600">
             우호{" "}
-            <strong className="text-stone-800">
+            <strong className="text-espresso-800">
               {relationCounts.friendly}
             </strong>
           </span>
@@ -101,9 +101,11 @@ export function RelationshipSummaryPanel({
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: getRelationshipColor("hostile", 5) }}
           />
-          <span className="text-stone-600">
+          <span className="text-espresso-600">
             적대{" "}
-            <strong className="text-stone-800">{relationCounts.hostile}</strong>
+            <strong className="text-espresso-800">
+              {relationCounts.hostile}
+            </strong>
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -111,9 +113,9 @@ export function RelationshipSummaryPanel({
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: getRelationshipColor("romantic", 5) }}
           />
-          <span className="text-stone-600">
+          <span className="text-espresso-600">
             로맨스{" "}
-            <strong className="text-stone-800">
+            <strong className="text-espresso-800">
               {relationCounts.romantic}
             </strong>
           </span>
@@ -123,7 +125,7 @@ export function RelationshipSummaryPanel({
       {/* 관계 리스트 */}
       <div className="max-h-[400px] overflow-y-auto">
         {relatedLinks.length === 0 ? (
-          <div className="px-4 py-8 text-center text-stone-400 text-sm">
+          <div className="px-4 py-8 text-center text-espresso-400 text-sm">
             관계가 없습니다
           </div>
         ) : (
@@ -137,11 +139,11 @@ export function RelationshipSummaryPanel({
                 <div
                   key={link.id}
                   onClick={() => onNodeClick(getTargetId(link))}
-                  className="px-4 py-3 hover:bg-stone-50 cursor-pointer transition-colors group"
+                  className="px-4 py-3 hover:bg-cloud-50 cursor-pointer transition-colors group"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-stone-800 group-hover:text-mocha-600 transition-colors">
+                      <span className="font-medium text-espresso-800 group-hover:text-mocha-600 transition-colors">
                         {getTargetName(link)}
                       </span>
                       <span
@@ -157,12 +159,12 @@ export function RelationshipSummaryPanel({
                           link.type}
                       </span>
                     </div>
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-espresso-400">
                       {link.strength}/10
                     </span>
                   </div>
                   {/* 강도 게이지 */}
-                  <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-cloud-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300"
                       style={{
@@ -173,7 +175,7 @@ export function RelationshipSummaryPanel({
                   </div>
                   {/* 설명 (있으면) */}
                   {link.description && (
-                    <p className="mt-2 text-xs text-stone-500 line-clamp-2">
+                    <p className="mt-2 text-xs text-espresso-500 line-clamp-2">
                       {link.description}
                     </p>
                   )}

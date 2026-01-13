@@ -35,7 +35,7 @@ export interface BackendCharacter {
   };
 }
 
-export interface BackendRelationship {
+export interface AnalysisBackendRelationship {
   source: string;
   target: string;
   relation_type: string;
@@ -45,7 +45,7 @@ export interface BackendRelationship {
 }
 
 export interface BackendConflict {
-  severity?: "critical" | "warning";
+  severity?: "critical" | "warning" | "medium";
   category: string;
   description: string;
   location?: {
@@ -137,7 +137,7 @@ export interface AnalysisResultData {
   sections: BackendSection[];
   characters: BackendCharacter[];
   events: BackendEvent[];
-  relationships: BackendRelationship[];
+  relationships: AnalysisBackendRelationship[];
   consistencyReport?: ConsistencyReport;
   plot?: PlotData;
   validation?: ValidationResult;
@@ -153,9 +153,11 @@ export function transformConflict(
   score?: number,
 ): Conflict {
   // severity 결정: 명시적 severity가 있으면 사용, 없으면 score 기준
+  // "medium" severity는 프론트엔드에서 "warning"으로 매핑
   let severity: "critical" | "warning" = "warning";
   if (backend.severity) {
-    severity = backend.severity;
+    // medium -> warning 매핑 (프론트엔드는 critical/warning만 표시)
+    severity = backend.severity === "critical" ? "critical" : "warning";
   } else if (score !== undefined) {
     // score 40 이하면 critical로 간주
     severity = score <= 40 ? "critical" : "warning";

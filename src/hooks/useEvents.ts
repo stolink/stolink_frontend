@@ -24,6 +24,7 @@ function eventToBiography(event: Event): BiographyEvent {
     timestamp: event.timestamp,
     importance: event.importance,
     changes_made: event.changesMade,
+    project_id: event.projectId,
   });
 }
 
@@ -40,15 +41,19 @@ function eventToBiography(event: Event): BiographyEvent {
  */
 export function useCharacterEvents(
   characterId: string | null,
-  options: UseEventsOptions = {}
+  options: UseEventsOptions = {},
 ) {
   const { enabled = true } = options;
 
   return useQuery({
     queryKey: ["events", "character", characterId, "debug-force-v1"],
     queryFn: async (): Promise<BiographyEvent[]> => {
+      console.log(`[useCharacterEvents] Query triggered for: ${characterId}`);
       if (!characterId) return [];
       const events = await eventService.getByCharacter(characterId);
+      console.log(
+        `[useCharacterEvents] Service returned ${events.length} events`,
+      );
       return events.map(eventToBiography);
     },
     enabled: enabled && !!characterId,
@@ -71,16 +76,16 @@ export function useCharacterEvents(
  */
 export function useProjectEvents(
   projectId: string | null,
-  options: UseEventsOptions = {}
+  options: UseEventsOptions = {},
 ) {
   const { enabled = true } = options;
 
   return useQuery({
     queryKey: ["events", "project", projectId],
-    queryFn: async (): Promise<BiographyEvent[]> => {
+    queryFn: async (): Promise<Event[]> => {
       if (!projectId) return [];
       const events = await eventService.getByProject(projectId);
-      return events.map(eventToBiography);
+      return events;
     },
     enabled: enabled && !!projectId,
     staleTime: 5 * 60 * 1000,

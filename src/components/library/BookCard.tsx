@@ -237,10 +237,10 @@ export function BookCard({
       <div className="flex flex-col flex-1 p-5 gap-4">
         {/* Title & Author */}
         <div>
-          <h3 className=" font-bold text-lg text-stone-900 leading-snug line-clamp-2 mb-1 group-hover:text-mocha-500 transition-colors">
+          <h3 className=" font-bold text-lg text-espresso-900 leading-snug line-clamp-2 mb-1 group-hover:text-mocha-500 transition-colors">
             {title}
           </h3>
-          <p className="text-xs text-stone-500">{author}</p>
+          <p className="text-xs text-espresso-500">{author}</p>
         </div>
 
         {/* Info Grid */}
@@ -261,7 +261,7 @@ export function BookCard({
                 {genre}
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-cloud-100 text-stone-500 border border-cloud-200 uppercase tracking-wider">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold bg-cloud-100 text-espresso-500 border border-cloud-200 uppercase tracking-wider">
                 No Genre
               </span>
             )}

@@ -35,16 +35,16 @@ export function CreateBookModal({
 }: CreateBookModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] p-0 gap-0 overflow-hidden border-cloud-200 shadow-paper-floating">
+      <DialogContent className="sm:max-w-[640px] p-0 gap-0 overflow-hidden border-cloud-200 shadow-xl rounded-2xl">
         {/* 헤더 */}
-        <DialogHeader className="px-8 py-6 border-b border-cloud-100 bg-cloud-50">
+        <DialogHeader className="px-8 py-6 border-b border-cloud-200 bg-white">
           <DialogTitle className="text-xl font-bold text-espresso-900">
             새 작품 만들기
           </DialogTitle>
         </DialogHeader>
 
         {/* 선택 카드 영역 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-8 bg-paper">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-8 bg-cloud-50">
           {/* 빈 문서로 시작 카드 */}
           <motion.button
             onClick={() => {
@@ -52,42 +52,37 @@ export function CreateBookModal({
               onOpenChange(false);
             }}
             disabled={isCreating}
-            whileHover={{ y: -4, scale: 1.01 }}
+            whileHover={{ y: -4, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className={cn(
               "group relative flex flex-col items-center justify-center gap-5 p-10 rounded-2xl",
-              "border-2 border-dashed border-cloud-200 hover:border-mocha-300",
-              "bg-white hover:bg-mocha-50/30 transition-colors duration-300",
+              "border-2 border-cloud-200 hover:border-mocha-400",
+              "bg-white hover:bg-white transition-all duration-300",
               "focus:outline-none focus:ring-2 focus:ring-mocha-400 focus:ring-offset-2",
-              "shadow-paper hover:shadow-paper-hover",
+              "shadow-md hover:shadow-lg",
               isCreating && "opacity-50 cursor-not-allowed",
             )}
           >
             {/* 아이콘 */}
             <motion.div
               className={cn(
-                "w-18 h-18 rounded-2xl flex items-center justify-center",
-                "bg-mocha-50 group-hover:bg-mocha-100 transition-all duration-300",
-                "shadow-sm",
+                "w-16 h-16 rounded-2xl flex items-center justify-center",
+                "bg-mocha-500 group-hover:bg-mocha-600 transition-all duration-300",
+                "shadow-md",
               )}
               whileHover={{ rotate: [0, -5, 5, 0] }}
               transition={{ duration: 0.4 }}
             >
-              <FileText
-                className={cn(
-                  "w-9 h-9 text-mocha-400",
-                  "group-hover:text-mocha-600 transition-colors duration-300",
-                )}
-              />
+              <FileText className="w-8 h-8 text-white" />
             </motion.div>
 
             {/* 텍스트 */}
             <div className="text-center">
-              <h3 className="text-lg font-bold text-espresso-900 group-hover:text-mocha-700 transition-colors">
+              <h3 className="text-lg font-bold text-espresso-900 group-hover:text-mocha-600 transition-colors">
                 {isCreating ? "생성 중..." : "빈 문서로 시작"}
               </h3>
-              <p className="text-sm text-stone-500 mt-1.5 leading-relaxed">
+              <p className="text-sm text-espresso-500 mt-1.5 leading-relaxed">
                 새로운 이야기를 시작하세요
               </p>
             </div>
@@ -100,42 +95,37 @@ export function CreateBookModal({
               onOpenChange(false);
             }}
             disabled={isCreating}
-            whileHover={{ y: -4, scale: 1.01 }}
+            whileHover={{ y: -4, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className={cn(
               "group relative flex flex-col items-center justify-center gap-5 p-10 rounded-2xl",
-              "border-2 border-dashed border-cloud-200 hover:border-sage-300",
-              "bg-white hover:bg-sage-50/30 transition-colors duration-300",
-              "focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2",
-              "shadow-paper hover:shadow-paper-hover",
+              "border-2 border-cloud-200 hover:border-sage-500",
+              "bg-white hover:bg-white transition-all duration-300",
+              "focus:outline-none focus:ring-2 focus:ring-sage-500 focus:ring-offset-2",
+              "shadow-md hover:shadow-lg",
               isCreating && "opacity-50 cursor-not-allowed",
             )}
           >
             {/* 아이콘 */}
             <motion.div
               className={cn(
-                "w-18 h-18 rounded-2xl flex items-center justify-center",
-                "bg-sage-50 group-hover:bg-sage-100 transition-all duration-300",
-                "shadow-sm",
+                "w-16 h-16 rounded-2xl flex items-center justify-center",
+                "bg-sage-500 group-hover:bg-sage-600 transition-all duration-300",
+                "shadow-md",
               )}
               whileHover={{ rotate: [0, -5, 5, 0] }}
               transition={{ duration: 0.4 }}
             >
-              <Upload
-                className={cn(
-                  "w-9 h-9 text-sage-500",
-                  "group-hover:text-sage-600 transition-colors duration-300",
-                )}
-              />
+              <Upload className="w-8 h-8 text-white" />
             </motion.div>
 
             {/* 텍스트 */}
             <div className="text-center">
-              <h3 className="text-lg font-bold text-espresso-900 group-hover:text-sage-700 transition-colors">
+              <h3 className="text-lg font-bold text-espresso-900 group-hover:text-sage-600 transition-colors">
                 기존 원고 불러오기
               </h3>
-              <p className="text-sm text-stone-500 mt-1.5 leading-relaxed">
+              <p className="text-sm text-espresso-500 mt-1.5 leading-relaxed">
                 TXT, MD 파일 지원
               </p>
             </div>

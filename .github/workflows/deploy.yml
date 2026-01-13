@@ -37,7 +37,7 @@ jobs:
       - name: Build project
         run: npm run build
         env:
-          VITE_API_URL: "https://${{ vars.CLOUDFRONT_URL }}/api"
+          VITE_API_URL: "/api"
           VITE_BACKEND_URL: "https://${{ vars.CLOUDFRONT_URL }}"
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
 
@@ -78,12 +78,24 @@ jobs:
 
       - name: Deploy Frontend to S3
         run: |
-          aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME }} --delete
+          # 1. Assets 업로드 (해시된 파일 - 영구 캐시)
+          aws s3 sync ./dist/assets/ s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/assets/ \
+            --cache-control "max-age=31536000, immutable" \
+            --delete
 
-      - name: CloudFront Invalidation
+          # 2. 기타 정적 파일 (version.json 등)
+          aws s3 cp ./dist/version.json s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
+            --cache-control "no-cache, no-store, must-revalidate" || true
+
+          # 3. index.html (항상 최신 버전 확인)
+          aws s3 cp ./dist/index.html s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: CloudFront Invalidation (index.html only)
         run: |
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL }}'].Id | [0]" --output text)
-          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/index.html"
 
       - name: Health Check
         run: |

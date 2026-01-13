@@ -356,7 +356,7 @@ export default function ExportModal({
 
         {/* 모드 스위치: 프리미엄 세그먼트 컨트롤 */}
         <div className="px-6 py-4 bg-cloud-50">
-          <div className="flex p-1.5 bg-white rounded-xl border border-stone-200/80 shadow-sm">
+          <div className="flex p-1.5 bg-white rounded-xl border border-cloud-200/80 shadow-sm">
             <motion.button
               onClick={() => setMode("export")}
               whileHover={{ scale: 1.01 }}
@@ -365,7 +365,7 @@ export default function ExportModal({
                 "flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200",
                 mode === "export"
                   ? "bg-gradient-to-r from-mocha-500 to-mocha-400 text-white shadow-md"
-                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-50",
+                  : "text-espresso-500 hover:text-espresso-700 hover:bg-cloud-50",
               )}
             >
               <FileDown className="w-4 h-4 inline-block mr-2 -mt-0.5" />
@@ -379,7 +379,7 @@ export default function ExportModal({
                 "flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200",
                 mode === "publish"
                   ? "bg-gradient-to-r from-mocha-500 to-mocha-400 text-white shadow-md"
-                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-50",
+                  : "text-espresso-500 hover:text-espresso-700 hover:bg-cloud-50",
               )}
             >
               <Globe className="w-4 h-4 inline-block mr-2 -mt-0.5" />
@@ -402,11 +402,11 @@ export default function ExportModal({
               >
                 {/* 섹션 선택 */}
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2 block">
+                  <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-2 block">
                     내보낼 섹션
                   </Label>
                   <select
-                    className="w-full px-4 py-3 bg-cloud-50 border border-stone-200 rounded-xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
+                    className="w-full px-4 py-3 bg-cloud-50 border border-cloud-200 rounded-xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
                     value={selectedDocId}
                     onChange={(e) => setSelectedDocId(e.target.value)}
                   >
@@ -421,7 +421,7 @@ export default function ExportModal({
                       <option value="">발행할 내용이 없습니다</option>
                     )}
                   </select>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-stone-400">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-espresso-400">
                     <span>{wordCount.toLocaleString()}자</span>
                     <span>•</span>
                     <span>약 {readTime}분 읽기</span>
@@ -430,7 +430,7 @@ export default function ExportModal({
 
                 {/* 형식 선택: 간결한 라디오 스타일 */}
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2 block">
+                  <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-2 block">
                     출력 형식
                   </Label>
                   <div className="space-y-2">
@@ -443,7 +443,7 @@ export default function ExportModal({
                           "flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-200",
                           selectedPreset === p.id
                             ? "border-mocha-400 bg-gradient-to-r from-mocha-400/10 to-mocha-500/5 ring-1 ring-mocha-400/30 shadow-sm"
-                            : "border-stone-200 hover:border-mocha-400/50 hover:shadow-sm bg-white",
+                            : "border-cloud-200 hover:border-mocha-400/50 hover:shadow-sm bg-white",
                         )}
                       >
                         <input
@@ -459,19 +459,19 @@ export default function ExportModal({
                             "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                             selectedPreset === p.id
                               ? "border-mocha-500 bg-mocha-500"
-                              : "border-stone-300",
+                              : "border-cloud-300",
                           )}
                         >
                           {selectedPreset === p.id && (
                             <Check className="w-3 h-3 text-white" />
                           )}
                         </div>
-                        <p.icon className="w-4 h-4 text-stone-400" />
+                        <p.icon className="w-4 h-4 text-espresso-400" />
                         <div className="flex-1">
                           <span className="text-sm font-semibold text-espresso-900">
                             {p.name}
                           </span>
-                          <span className="text-xs text-stone-400 ml-2">
+                          <span className="text-xs text-espresso-400 ml-2">
                             {p.description}
                           </span>
                         </div>
@@ -491,11 +491,11 @@ export default function ExportModal({
               >
                 {/* 배포 대상 섹션 선택 */}
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2 block">
+                  <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-2 block">
                     배포할 섹션
                   </Label>
                   <select
-                    className="w-full px-4 py-3 bg-cloud-50 border border-stone-200 rounded-xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
+                    className="w-full px-4 py-3 bg-cloud-50 border border-cloud-200 rounded-xl text-sm font-medium text-espresso-900 focus:outline-none focus:ring-2 focus:ring-mocha-400/30 focus:border-mocha-400"
                     value={selectedDocId}
                     onChange={(e) => setSelectedDocId(e.target.value)}
                   >
@@ -514,13 +514,13 @@ export default function ExportModal({
 
                 {/* 포함 옵션: 깔끔한 스위치 리스트 */}
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 uppercase tracking-wide mb-3 block">
+                  <Label className="text-xs font-bold text-espresso-500 uppercase tracking-wide mb-3 block">
                     함께 공개할 항목
                   </Label>
                   <div className="space-y-3">
                     <motion.div
                       whileHover={{ scale: 1.01 }}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-cloud-50 to-white rounded-xl border border-stone-100 hover:border-blue-200 hover:shadow-sm transition-all"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-cloud-50 to-white rounded-xl border border-cloud-100 hover:border-blue-200 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center shadow-sm">
@@ -530,7 +530,7 @@ export default function ExportModal({
                           <p className="text-sm font-semibold text-espresso-900">
                             캐릭터 프로필
                           </p>
-                          <p className="text-xs text-stone-400">
+                          <p className="text-xs text-espresso-400">
                             {characters.length}명의 캐릭터 정보
                           </p>
                         </div>
@@ -543,7 +543,7 @@ export default function ExportModal({
 
                     <motion.div
                       whileHover={{ scale: 1.01 }}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-cloud-50 to-white rounded-xl border border-stone-100 hover:border-purple-200 hover:shadow-sm transition-all"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-cloud-50 to-white rounded-xl border border-cloud-100 hover:border-purple-200 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center shadow-sm">
@@ -553,7 +553,7 @@ export default function ExportModal({
                           <p className="text-sm font-semibold text-espresso-900">
                             인물 관계도
                           </p>
-                          <p className="text-xs text-stone-400">
+                          <p className="text-xs text-espresso-400">
                             인터랙티브 그래프
                           </p>
                         </div>
@@ -587,13 +587,13 @@ export default function ExportModal({
         </div>
 
         {/* 푸터: 명확한 CTA */}
-        <div className="px-6 py-4 border-t border-stone-100 bg-cloud-50/50">
+        <div className="px-6 py-4 border-t border-cloud-100 bg-cloud-50/50">
           {mode === "export" ? (
             <div className="flex gap-3">
               <Button
-                variant="outline"
+                intent="outline"
                 onClick={handleCopyText}
-                className="flex-1 h-11 border-stone-200 text-stone-600 hover:bg-stone-50"
+                className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
               >
                 {copied ? (
                   <Check className="w-4 h-4 mr-2 text-mocha-600" />
@@ -603,9 +603,9 @@ export default function ExportModal({
                 {copied ? "복사됨" : "복사"}
               </Button>
               <Button
-                variant="outline"
+                intent="outline"
                 onClick={handleDownloadTXT}
-                className="flex-1 h-11 border-stone-200 text-stone-600 hover:bg-stone-50"
+                className="flex-1 h-11 border-cloud-200 text-espresso-600 hover:bg-cloud-50"
               >
                 <Download className="w-4 h-4 mr-2" />
                 TXT
@@ -621,9 +621,9 @@ export default function ExportModal({
           ) : (
             <div className="flex gap-3">
               <Button
-                variant="ghost"
+                intent="ghost"
                 onClick={onClose}
-                className="flex-1 h-11 text-stone-500 hover:text-stone-700"
+                className="flex-1 h-11 text-espresso-500 hover:text-espresso-700"
               >
                 취소
               </Button>

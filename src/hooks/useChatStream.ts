@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores";
 
-const API_URL = import.meta.env.VITE_API_URL || "/ai-api";
+const CHAT_API_URL = "/ai-api";
 
 /**
  * RAG 검색 결과 소스 청크
@@ -59,7 +59,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentSources, setCurrentSources] = useState<SourceChunk[]>([]);
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -74,6 +74,12 @@ export function useChatStream(options?: UseChatStreamOptions) {
       if (!userId) {
         options?.onError?.("로그인이 필요합니다.");
         return;
+      }
+
+      // 세션 ID 결정: userId-projectId 조합 (프로젝트 단위 고정)
+      const currentSessionId = sessionId ?? `${userId}-${projectId}`;
+      if (!sessionId) {
+        setSessionId(currentSessionId);
       }
 
       // 사용자 메시지 추가
@@ -102,14 +108,14 @@ export function useChatStream(options?: UseChatStreamOptions) {
         };
 
         // Corrected path from /ai/chat/stream to /chat/stream as per guide
-        const response = await fetch(`${API_URL}/chat/stream`, {
+        const response = await fetch(`${CHAT_API_URL}/chat/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             message,
-            projectId: projectId,
-            userId: userId,
-            sessionId: sessionId,
+            project_id: projectId,
+            user_id: userId,
+            session_id: currentSessionId,
           }),
           signal: abortControllerRef.current.signal,
           credentials: "include", // 쿠키 자동 전송
@@ -226,10 +232,10 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
     // Call stop endpoint as per guide
     try {
-      await fetch(`${API_URL}/chat/stop`, {
+      await fetch(`${CHAT_API_URL}/chat/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ session_id: sessionId }),
       });
     } catch (err) {
       console.error("Failed to stop generation:", err);
@@ -239,11 +245,48 @@ export function useChatStream(options?: UseChatStreamOptions) {
     }
   }, [sessionId]);
 
-  const resetSession = useCallback(() => {
-    setSessionId(crypto.randomUUID());
+  const resetSession = useCallback((projectId?: string) => {
+    const { user } = useAuthStore.getState();
+    if (projectId && user?.id) {
+      // 프로젝트 기반 세션으로 리셋
+      setSessionId(`${user.id}-${projectId}`);
+    } else {
+      setSessionId(null);
+    }
     setMessages([]);
     setAnalyzing(false);
     setAnalysisComplete(false);
+  }, []);
+
+  /**
+   * 히스토리 로드 - 페이지 진입 시 호출
+   */
+  const loadHistory = useCallback(async (projectId: string) => {
+    const { user } = useAuthStore.getState();
+    if (!user?.id) return;
+
+    const sid = `${user.id}-${projectId}`;
+    setSessionId(sid);
+
+    try {
+      const res = await fetch(`${CHAT_API_URL}/chat/history/${sid}?limit=20`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const loadedMessages: ChatMessage[] = data.messages.map(
+          (m: { role: string; content: string }, i: number) => ({
+            id: `loaded-${i}`,
+            role: m.role === "ai" ? "assistant" : "user",
+            content: m.content,
+            timestamp: new Date(),
+          }),
+        );
+        setMessages(loadedMessages);
+      }
+    } catch (err) {
+      console.error("Failed to load chat history:", err);
+    }
   }, []);
 
   const clearAnalysisComplete = useCallback(() => {
@@ -257,9 +300,11 @@ export function useChatStream(options?: UseChatStreamOptions) {
     analysisComplete,
     currentResponse,
     currentSources,
+    sessionId,
     sendMessage,
     cancelStream,
     resetSession,
+    loadHistory,
     clearAnalysisComplete,
   };
 }

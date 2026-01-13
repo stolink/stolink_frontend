@@ -21,7 +21,7 @@ export function CharacterArc({ progress }: CharacterArcProps) {
           <span className="magazine-caption not-italic">
             캐릭터 아크 진행률
           </span>
-          <span className="text-2xl font-semibold text-stone-900 editorial-name">
+          <span className="text-2xl font-semibold text-espresso-900 editorial-name">
             {progress}%
           </span>
         </div>
@@ -42,7 +42,7 @@ export function CharacterArc({ progress }: CharacterArcProps) {
         </div>
 
         {/* Milestone Labels */}
-        <div className="flex justify-between text-[10px] text-stone-400 px-1">
+        <div className="flex justify-between text-[10px] text-espresso-400 px-1">
           <span>시작</span>
           <span>전개</span>
           <span>클라이맥스</span>
@@ -50,7 +50,7 @@ export function CharacterArc({ progress }: CharacterArcProps) {
         </div>
 
         {/* Description */}
-        <p className="text-xs text-stone-500 pt-2 border-t border-stone-100">
+        <p className="text-xs text-espresso-500 pt-2 border-t border-cloud-100">
           캐릭터의 스토리 아크 진행 상황을 시각화합니다. 시작부터 결말까지의
           여정을 추적하세요.
         </p>

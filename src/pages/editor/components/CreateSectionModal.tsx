@@ -71,7 +71,7 @@ export function CreateSectionModal({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" intent="outline" onClick={onClose}>
               취소
             </Button>
             <Button type="submit">만들기</Button>

@@ -59,7 +59,7 @@ function ToolbarButton({
       className={cn(
         "rounded-lg",
         "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
-        isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
+        isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm"
       )}
       title={tooltip}
     >
@@ -73,6 +73,7 @@ interface EditorToolbarProps {
   className?: string;
   characterCount?: number;
   analysisStatus?: "idle" | "analyzing" | "completed" | "error";
+  analysisProgress?: number;
   onToggleFocusMode?: () => void;
   onExport?: () => void;
   onToggleRightSidebar?: () => void;
@@ -84,6 +85,7 @@ export function EditorToolbar({
   className,
   characterCount,
   analysisStatus = "idle",
+  analysisProgress,
   onToggleFocusMode,
   onExport,
   onToggleRightSidebar,
@@ -110,11 +112,31 @@ export function EditorToolbar({
     <div
       className={cn(
         "relative flex items-center gap-1 px-4 py-[9px] border-b-2 border-mocha-400/30 bg-white shadow-sm sticky top-0 z-10 flex-wrap transition-all",
-        className,
+        className
       )}
     >
-      {/* Decorative accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-mocha-400/30 to-transparent" />
+      {/* Progress Bar or Decorative Line */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden">
+        {analysisStatus === "idle" || analysisStatus === "error" ? (
+          <div className="w-full h-full bg-gradient-to-r from-transparent via-mocha-400/30 to-transparent" />
+        ) : (
+          <motion.div
+            className={cn(
+              "h-full",
+              analysisStatus === "completed" ? "bg-green-500" : "bg-mocha-500"
+            )}
+            initial={{ width: 0, opacity: 1 }}
+            animate={{
+              width: `${analysisProgress || 0}%`,
+              opacity: analysisStatus === "completed" ? [1, 1, 0] : 1, // Fade out after completion
+            }}
+            transition={{
+              width: { duration: 0.5, ease: "easeInOut" },
+              opacity: { duration: 0.5, delay: 2 }, // Wait 2s then fade out
+            }}
+          />
+        )}
+      </div>
 
       {/* Undo/Redo */}
       <ToolbarButton
@@ -144,7 +166,7 @@ export function EditorToolbar({
               "px-3 text-small font-bold",
               currentHeadingLevel > 0
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
             )}
           >
             <Type className="h-3.5 w-3.5" />
@@ -220,7 +242,7 @@ export function EditorToolbar({
           "rounded-lg",
           editor.isActive("highlight")
             ? "bg-mocha-400/30 text-mocha-900"
-            : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
+            : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
         )}
         title="하이라이트"
       >

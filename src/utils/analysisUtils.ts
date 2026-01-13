@@ -137,15 +137,13 @@ export function calculateAnalysisDiff(
 
       if (!existingLink) {
         // New Relation
-        newRelations.push({
-          id: `new-rel-${Date.now()}-${Math.random()}`,
-          source: sourceChar._id,
-          target: targetChar._id,
-          type: rel.relation_type as RelationType,
-          strength: rel.strength,
-          description: rel.description,
-          curvature: 0.2,
-        });
+        newRelations.push(
+          transformAnalysisRelationshipToLink(
+            rel,
+            sourceChar._id,
+            targetChar._id,
+          ),
+        );
       } else {
         // Update check
         const changes: string[] = [];
@@ -173,16 +171,21 @@ export function calculateAnalysisDiff(
   };
 }
 
-/**
- * Simple string hashing function for change detection.
- * Not cryptographically secure, but enough for idempotency checks.
- */
-export function calculateContentHash(content: string): string {
-  let hash = 0;
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash.toString(36);
+import { calculateContentHash } from "./hashUtils";
+export { calculateContentHash };
+
+function transformAnalysisRelationshipToLink(
+  rel: import("@/types").AnalysisBackendRelationship,
+  sourceId: string,
+  targetId: string,
+): RelationshipLink {
+  return {
+    id: `new-rel-${Date.now()}-${Math.random()}`,
+    source: sourceId,
+    target: targetId,
+    type: (rel.relation_type.toLowerCase() as RelationType) || "neutral",
+    strength: rel.strength,
+    description: rel.description,
+    curvature: 0.2,
+  };
 }

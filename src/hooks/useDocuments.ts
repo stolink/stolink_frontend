@@ -124,8 +124,8 @@ export function useDocumentTree(projectId: string) {
  * Hook to get a single document by ID
  */
 export function useDocument(id: string | null) {
-  const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null,
+  const document = useDocumentStore(
+    (state) => (id && state.documents[id]) || null,
   );
 
   const updateDocument = useCallback(
@@ -235,10 +235,13 @@ export function useDocumentContent(id: string | null) {
 
   // Aggregate content from all pages
   const aggregatedContent = useMemo(() => {
-    if (!infiniteData) {
+    if (!infiniteData || !infiniteData.pages) {
       return storeContent;
     }
-    return infiniteData.pages.map((page) => page?.content || "").join("");
+    const combined = infiniteData.pages
+      .map((page) => page?.content || "")
+      .join("");
+    return combined || storeContent;
   }, [infiniteData, storeContent]);
 
   // Use fetched content if available, otherwise fall back to store content
@@ -333,8 +336,7 @@ export function useBulkDocumentContent() {
         );
         // 3. 저장 상태 업데이트 (Zustand)
         setSaveStatus("saved");
-      } catch (error) {
-        console.warn("[bulkSaveContent] Save failed:", error);
+      } catch (_error) {
         // 에러 시 saved로 유지 (unsaved로 두면 무한 저장 시도 발생)
         // 사용자가 수동으로 재시도할 수 있도록 함
         setSaveStatus("saved");

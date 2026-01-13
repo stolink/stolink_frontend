@@ -5,7 +5,11 @@
 
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
-import type { CreateDraftRequest, Draft } from "@/types/publish";
+import type {
+  CreateDraftRequest,
+  CreateBulkDraftRequest,
+  Draft,
+} from "@/types/publish";
 
 export const draftService = {
   /**
@@ -15,6 +19,16 @@ export const draftService = {
    */
   create: async (data: CreateDraftRequest) => {
     const response = await api.post<ApiResponse<Draft>>("/drafts", data);
+    return response.data;
+  },
+
+  /**
+   * Bulk Draft 생성 - 다중 섹션을 한 번에 배포하거나 병합하여 배포
+   * @param data Bulk Draft 생성 요청 데이터 (documentIds 배열 포함)
+   * @returns 생성된 Draft 정보 (id 포함)
+   */
+  createBulk: async (data: CreateBulkDraftRequest) => {
+    const response = await api.post<ApiResponse<Draft>>("/drafts/bulk", data);
     return response.data;
   },
 

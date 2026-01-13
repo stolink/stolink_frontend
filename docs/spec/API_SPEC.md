@@ -586,23 +586,54 @@ X-User-Id: {userId}  // 일부 API에서 사용
 | GET    | `/api/sse/connect`          | ✅   | SSE 연결    |
 | POST   | `/api/ai/analyze`           | ✅   | 증분 분석   |
 
-### 11.1 GET /api/sse/connect
+### 11.1 GET /api/project/:id/status/stream (Project Status SSE)
 
-**Query Parameters:**
+**Description**: 프로젝트 전역의 작업 상태(분석, 이미지 생성 등)를 실시간으로 수신합니다.
 
-| 파라미터    | 타입   | 필수 | 설명        |
-| ----------- | ------ | ---- | ----------- |
-| `projectId` | string | ✅   | 프로젝트 ID |
-
-**Response:** `text/event-stream`
+**Response**: `text/event-stream`
 
 - **Events**:
   - `heartbeat`: 연결 유지 확인
-  - `progress`: 작업 진행률 (`{ jobId, progress, message }`)
-  - `completed`: 작업 완료 (`{ jobId, result }`)
-  - `failed`: 작업 실패 (`{ jobId, error }`)
+  - `progress`: 작업 진행률 (`{ "jobId": "uuid", "percent": 50, "type": "progress" }`)
+  - `completed`: 작업 완료 (`{ "jobId": "uuid", "result": { ... }, "type": "completed" }`)
+  - `failed`: 작업 실패 (`{ "jobId": "uuid", "error": "errorMessage", "type": "failed" }`)
 
-### 11.2 POST /api/ai/analyze
+### 11.2 GET /api/projects/:pid/analysis/job
+
+**Description**: 해당 프로젝트에서 현재 진행 중이거나 마지막으로 완료된 분석 작업의 상태를 조회합니다.
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "uuid",
+    "status": "processing",
+    "progress": 45,
+    "lastCompletedAt": "2024-01-04T00:00:00Z"
+  }
+}
+```
+
+### 11.3 GET /api/documents/:id/analysis
+
+**Description**: 특정 문서의 AI 분석 결과를 조회합니다.
+
+**Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "characters": [...],
+    "events": [...],
+    "consistencyReport": { ... }
+  }
+}
+```
+
+### 11.4 POST /api/ai/analyze (Story Analysis)
 
 **Description**: 버퍼링된 문서 변경사항을 전송하여 증분 분석을 요청합니다.
 
@@ -717,12 +748,13 @@ X-User-Id: {userId}  // 일부 API에서 사용
 
 ## 버전 이력
 
-| 버전 | 날짜       | 변경 내용                                                                  |
-| ---- | ---------- | -------------------------------------------------------------------------- |
-| 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의                                              |
-| 1.1  | 2025.12.26 | Job Polling 상태값 문서화, wordCount 백엔드 계산 명시, 응답 형식 대안 추가 |
-| 1.2  | 2026.01.02 | Foreshadowing 타입 동기화 (tag 필드, appearances 배열 구조 반영)           |
-| 1.3  | 2026.01.04 | OAuth 경로 명시(`/api/oauth2`), SSE 및 증분 분석 API 추가                  |
+| 버전 | 날짜       | 변경 내용                                                                            |
+| ---- | ---------- | ------------------------------------------------------------------------------------ |
+| 1.0  | 2024.12.25 | 전체 API 엔드포인트 초기 정의                                                        |
+| 1.1  | 2025.12.26 | Job Polling 상태값 문서화, wordCount 백엔드 계산 명시, 응답 형식 대안 추가           |
+| 1.2  | 2026.01.02 | Foreshadowing 타입 동기화 (tag 필드, appearances 배열 구조 반영)                     |
+| 1.3  | 2026.01.04 | OAuth 경로 명시(`/api/oauth2`), SSE 및 증분 분석 API 추가                            |
+| 1.4  | 2026.01.12 | 프로젝트 전역 SSE 스트림(`/api/project/:id/status/stream`) 및 분석 Job 조회 API 추가 |
 
 ---
 

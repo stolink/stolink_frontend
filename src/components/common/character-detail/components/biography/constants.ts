@@ -18,6 +18,7 @@ import {
   Sparkles, // transformation
   Circle,
   Mic, // confession
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import type { EventTypeConfig } from "@/types/biography";
@@ -39,6 +40,7 @@ export const EVENT_TYPE_ICONS: Record<string, LucideIcon> = {
   birth: Baby,
   death: Skull,
   confession: Mic,
+  narrative: BookOpen, // Use BookOpen for narrative
   other: Circle,
 };
 
@@ -118,6 +120,11 @@ export const EVENT_TYPE_CONFIG: Record<string, EventTypeConfig> = {
     label: "고백",
     color: "#0D9488", // Teal 600
     accentColor: "#2DD4BF", // Teal 400
+  },
+  narrative: {
+    label: "서술",
+    color: "#8D8B88", // Neutral (similar to Other but slightly distinguished if needed)
+    accentColor: "#D6D3D1",
   },
   other: {
     label: "기타",

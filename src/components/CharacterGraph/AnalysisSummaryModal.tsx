@@ -606,7 +606,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                             {diff.newRelations.length > 0 && (
                               <section className="space-y-6">
                                 <div className="flex items-center gap-4">
-                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                  <div className="w-6 h-6 rounded-full bg-mocha-100 flex items-center justify-center">
                                     <Link2 className="w-3 h-3 text-blue-600" />
                                   </div>
                                   <h3 className=" text-xl text-espresso-800 font-semibold">

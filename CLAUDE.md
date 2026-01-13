@@ -118,47 +118,79 @@ docs/
     └── GIT_STRATEGY.md
 ```
 
-<!-- Mocha & Cloud Dancer Design System -->
+<!-- StoLink Design System v2.0 - Vivid Warm Palette -->
 
 ## Target Color Palette
 
-### Primary (Mocha) & Surface (Cloud)
+> **Color Theory**: Muted Earth Tones (Warm Brown → Soft Gold → Sage)
+> **목표**: 차분하고 가독성 높은 색상으로 글씨를 가리지 않음, Warm & Calm 톤앤매너
+
+### Primary (Mocha - Soft Warm Brown)
+
+| 이름 (Token) | HEX     | 용도 및 특징            |
+| ------------ | ------- | ----------------------- |
+| Mocha 50     | #FAF8F6 | Very Light Warm         |
+| Mocha 100    | #F0EBE6 | Light Warm Panel        |
+| Mocha 200    | #E0D6CC | Soft Borders            |
+| Mocha 400    | #A89080 | Muted Taupe (Hover)     |
+| Mocha 500    | #8B7355 | Warm Brown (Core Brand) |
+| Mocha 600    | #6E5A45 | Deep Brown (Active)     |
+| Mocha 700    | #574838 | Dark Brown              |
+| Mocha 900    | #3D302A | Espresso                |
+
+### Surface (Cloud - Clean Warm Cream)
 
 | 이름 (Token) | HEX     | 용도 및 특징               |
 | ------------ | ------- | -------------------------- |
-| Mocha 500    | #A47764 | 핵심 브랜드 색상           |
-| Mocha 400    | #BD9B8D | Hover 상태 (고휘도)        |
-| Mocha 700    | #7D5A4B | Dark/Active 상태           |
-| Cloud 50     | #F1F0EC | 메인 배경색 (Cloud Dancer) |
-| Espresso 900 | #3D302A | 본문 텍스트                |
+| Cloud 50     | #FDFBF8 | Pure Cream White (Main BG) |
+| Cloud 100    | #F8F5F0 | Warm Panel BG              |
+| Cloud 200    | #EDE8E1 | Soft Borders               |
+| Cloud 300    | #DDD6CC | Stronger Borders           |
 
-### DOECHII Official Palette
+### Text (Espresso)
 
-| 이름      | HEX     | 용도                       |
-| --------- | ------- | -------------------------- |
-| Doechii 1 | #122611 | Deep Forest Green (포인트) |
-| Doechii 2 | #BF8A49 | Golden Tan (강조)          |
-| Doechii 3 | #D9B89C | Light Peach (부제목)       |
-| Doechii 4 | #8C3D20 | Burnt Mocha (아이콘/강조)  |
-| Doechii 5 | #401309 | Deep Chocolate (어두운 글) |
+| 이름 (Token) | HEX     | 용도                    |
+| ------------ | ------- | ----------------------- |
+| Espresso 500 | #6B5B4F | Light Brown Text        |
+| Espresso 700 | #4A3F36 | Medium Brown Text       |
+| Espresso 900 | #2D241F | Rich Coffee Text (본문) |
 
-### Status Colors
+### Accent (Doechii - Muted Earth Tones)
 
-| 이름    | HEX     | 용도                    |
-| ------- | ------- | ----------------------- |
-| Success | #5B7B4B | 성공/긍정 피드백        |
-| Warning | #B8860B | 경고 (가독성 확보 골드) |
-| Error   | #A33A3A | 오류 (공학용 레드)      |
+| 이름      | HEX     | 용도                        |
+| --------- | ------- | --------------------------- |
+| Doechii 1 | #3D5A40 | Muted Forest Green (포인트) |
+| Doechii 2 | #B89B6A | Soft Gold (Primary Accent)  |
+| Doechii 3 | #E5D4BE | Cream Beige (Secondary)     |
+| Doechii 4 | #9B6B4A | Muted Sienna (Emphasis)     |
+| Doechii 5 | #5C3D2E | Deep Chocolate (어두운 글)  |
 
-### Relationship Colors (TW3K/CK3 스타일)
+### Sage (Focus & Growth - Calm Olive)
 
-| 관계 유형 | HEX     | 설명                       |
-| --------- | ------- | -------------------------- |
-| Friendly  | #15803D | Dark Green (신뢰, 협력)    |
-| Hostile   | #F44336 | Red (갈등, 적대)           |
-| Romantic  | #FF4081 | Vivid Blossom (애정, 열정) |
+| 이름 (Token) | HEX     | 용도                     |
+| ------------ | ------- | ------------------------ |
+| Sage 500     | #7D9668 | Calm Olive (Focus Color) |
+| Sage 600     | #647A53 | Deeper Olive             |
+| Sage 700     | #4D5E40 | Forest Sage              |
 
-**참고**: 관계 강도(Strength)에 따른 색상 구분은 제거되고 통합되었습니다.
+### Status Colors (Muted but Clear)
+
+| 이름    | HEX     | 용도                      |
+| ------- | ------- | ------------------------- |
+| Success | #4A9B7F | Muted Emerald (성공/긍정) |
+| Warning | #C49545 | Muted Amber (경고)        |
+| Error   | #C45555 | Muted Red (오류)          |
+| Info    | #5B85C4 | Muted Blue (정보)         |
+
+### Relationship Colors (Muted for Graph)
+
+| 관계 유형 | HEX     | 설명                      |
+| --------- | ------- | ------------------------- |
+| Friendly  | #5B9A5E | Muted Green (신뢰, 협력)  |
+| Hostile   | #C45B52 | Muted Red (갈등, 적대)    |
+| Romance   | #C4687A | Muted Pink (애정, 열정)   |
+| Family    | #6B7BB5 | Muted Indigo (가족, 연결) |
+| Neutral   | #8A9AA5 | Blue Grey (중립)          |
 
 ## 디자인 원칙
 
@@ -234,7 +266,6 @@ hotfix: 긴급 수정
 - **Character**: 캐릭터 (extras로 동적 속성, Neo4j 연동)
 - **Foreshadowing**: 복선 (tag, status, appearances 배열)
 - **CharacterRelationship**: 관계 (sourceId, targetId, type, strength)
-- **Place/Item**: 장소, 아이템
 
 **상세**: [appendix/domain-glossary.md](appendix/domain-glossary.md)
 

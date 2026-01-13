@@ -10,10 +10,8 @@ interface UseEditorHandlersOptions {
   selectedSectionId: string | null;
   setSelectedFolderId: (id: string | null) => void;
   setSelectedSectionId: (id: string | null) => void;
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
-  setViewMode: (
-    mode: "editor" | "scrivenings" | "outline" | "corkboard",
-  ) => void;
+  viewMode: "editor" | "scrivenings" | "outline";
+  setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
   saveContent: (content: string) => Promise<void>;
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
@@ -379,8 +377,8 @@ export function useEditorHandlers({
   // View mode change with auto-save and state synchronization
   const handleViewModeChange = useCallback(
     async (
-      newMode: "editor" | "scrivenings" | "outline" | "corkboard",
-      currentMode: "editor" | "scrivenings" | "outline" | "corkboard",
+      newMode: "editor" | "scrivenings" | "outline",
+      currentMode: "editor" | "scrivenings" | "outline",
     ) => {
       // 1. 전환 전 자동 저장
       await forceSave();

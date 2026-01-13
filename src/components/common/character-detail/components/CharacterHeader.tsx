@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Edit,
   Sparkles,
@@ -63,16 +64,35 @@ export function CharacterHeader({
           ? "🧙"
           : "👤";
 
+  const [imageError, setImageError] = useState(false);
+
+  // Reset error state when url changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setImageError(false);
+    if (displayImageUrl) {
+      console.log(
+        "[CharacterHeader] Display Image URL:",
+        displayImageUrl,
+        "Original:",
+        character.imageUrl,
+      );
+    }
+  }, [displayImageUrl, character.imageUrl]);
+
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Magazine-style Image Container */}
       <div className="magazine-image-container group shadow-xl">
-        {displayImageUrl ? (
+        {displayImageUrl && !imageError ? (
           <>
             <img
               src={displayImageUrl}
               alt={name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-cloud-50/50"
+              onError={(_e) => {
+                setImageError(true);
+              }}
             />
             <div className="magazine-image-overlay" />
           </>

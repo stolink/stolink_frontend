@@ -110,7 +110,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선2",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs1.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs1.id, {
+        sectionTitle: "Section 1",
+        documentId: "doc-1",
+      });
 
       const pending = useForeshadowingStore
         .getState()
@@ -123,32 +126,6 @@ describe("useForeshadowingStore", () => {
         .getByStatus("project-1", "recovered");
       expect(recovered).toHaveLength(1);
       expect(recovered[0].id).toBe(fs1.id);
-    });
-  });
-
-  describe("getByScene", () => {
-    it("should return foreshadowings that appear in a scene", () => {
-      const fs1 = useForeshadowingStore.getState().createForeshadowing({
-        projectId: "project-1",
-        tag: "복선1",
-      });
-
-      useForeshadowingStore.getState().createForeshadowing({
-        projectId: "project-1",
-        tag: "복선2",
-      });
-
-      useForeshadowingStore.getState().addAppearance(fs1.id, {
-        sceneId: "scene-1",
-        chapterId: "chapter-1",
-        chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
-      });
-
-      const result = useForeshadowingStore.getState().getByScene("scene-1");
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(fs1.id);
     });
   });
 
@@ -184,7 +161,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선2",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs1.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs1.id, {
+        sectionTitle: "Section 1",
+        documentId: "doc-1",
+      });
 
       const result = useForeshadowingStore
         .getState()
@@ -201,7 +181,10 @@ describe("useForeshadowingStore", () => {
         tag: "복선",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs.id, {
+        sectionTitle: "Section 1",
+        documentId: "doc-1",
+      });
 
       const state = useForeshadowingStore.getState().foreshadowings;
       expect(state[fs.id].status).toBe("recovered");
@@ -214,17 +197,19 @@ describe("useForeshadowingStore", () => {
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
-        sceneId: "scene-1",
-        chapterId: "chapter-1",
-        chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
+        documentId: "doc-1",
+        sectionTitle: "Section 1",
       });
 
-      useForeshadowingStore.getState().markAsRecovered(fs.id, "scene-1");
+      useForeshadowingStore.getState().markAsRecovered(fs.id, {
+        sectionTitle: "Recovered Scene",
+        documentId: "doc-1",
+      });
 
       const state = useForeshadowingStore.getState().foreshadowings;
-      expect(state[fs.id].appearances[0].isRecovery).toBe(true);
+      const lastAppearance =
+        state[fs.id].appearances[state[fs.id].appearances.length - 1];
+      expect(lastAppearance.isRecovery).toBe(true);
     });
   });
 
@@ -250,17 +235,14 @@ describe("useForeshadowingStore", () => {
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
-        sceneId: "scene-1",
-        chapterId: "chapter-1",
-        chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test context",
+        documentId: "doc-1",
+        sectionTitle: "Section 1",
       });
 
       const state = useForeshadowingStore.getState().foreshadowings;
       expect(state[fs.id].appearances).toHaveLength(1);
-      expect(state[fs.id].appearances[0].sceneId).toBe("scene-1");
-      expect(state[fs.id].appearances[0].line).toBe(10);
+      expect(state[fs.id].appearances[0].documentId).toBe("doc-1");
+      expect(state[fs.id].appearances[0].sectionTitle).toBe("Section 1");
     });
 
     it("should set isRecovery to false by default", () => {
@@ -270,11 +252,8 @@ describe("useForeshadowingStore", () => {
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
-        sceneId: "scene-1",
-        chapterId: "chapter-1",
-        chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
+        documentId: "doc-1",
+        sectionTitle: "Section 1",
       });
 
       const state = useForeshadowingStore.getState().foreshadowings;
@@ -290,26 +269,20 @@ describe("useForeshadowingStore", () => {
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
-        sceneId: "scene-1",
-        chapterId: "chapter-1",
-        chapterTitle: "Chapter 1",
-        line: 10,
-        context: "test",
+        documentId: "doc-1",
+        sectionTitle: "Section 1",
       });
 
       useForeshadowingStore.getState().addAppearance(fs.id, {
-        sceneId: "scene-2",
-        chapterId: "chapter-2",
-        chapterTitle: "Chapter 2",
-        line: 20,
-        context: "test2",
+        documentId: "doc-2",
+        sectionTitle: "Section 2",
       });
 
-      useForeshadowingStore.getState().removeAppearance(fs.id, "scene-1");
+      useForeshadowingStore.getState().removeAppearance(fs.id, "doc-1");
 
       const state = useForeshadowingStore.getState().foreshadowings;
       expect(state[fs.id].appearances).toHaveLength(1);
-      expect(state[fs.id].appearances[0].sceneId).toBe("scene-2");
+      expect(state[fs.id].appearances[0].documentId).toBe("doc-2");
     });
   });
 });

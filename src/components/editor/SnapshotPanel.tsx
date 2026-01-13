@@ -12,7 +12,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useDocumentSnapshots } from "@/stores/useSnapshotStore";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 import {
   Dialog,
   DialogContent,
@@ -102,36 +102,38 @@ export default function SnapshotPanel({
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-y-0 right-0 w-[400px] bg-white border-l border-stone-200 shadow-2xl z-50 flex flex-col"
+        className="fixed inset-y-0 right-0 w-[400px] bg-white border-l border-cloud-200 shadow-2xl z-50 flex flex-col"
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-cloud-100 bg-white z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-stone-100 rounded-lg text-stone-600">
+            <div className="p-2 bg-cloud-100 rounded-lg text-espresso-600">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-stone-900">히스토리</h2>
-              <p className="text-xs text-stone-400 font-medium">
+              <h2 className="text-base font-bold text-espresso-900">
+                히스토리
+              </h2>
+              <p className="text-xs text-espresso-400 font-medium">
                 History & Snapshots
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-stone-50 rounded-full transition-colors text-stone-400 hover:text-stone-600"
+            className="p-2 hover:bg-cloud-50 rounded-full transition-colors text-espresso-400 hover:text-espresso-600"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* 현재 문서 정보 & 저장 버튼 */}
-        <div className="px-6 py-4 bg-stone-50 border-b border-stone-100 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 bg-cloud-50 border-b border-cloud-100 flex items-center justify-between shrink-0">
           <div>
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
+            <p className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider mb-0.5">
               CURRENT DOCUMENT
             </p>
-            <p className="text-sm font-bold text-stone-800 truncate max-w-[200px]">
+            <p className="text-sm font-bold text-espresso-800 truncate max-w-[200px]">
               {documentTitle || "제목 없음"}
             </p>
           </div>
@@ -147,21 +149,21 @@ export default function SnapshotPanel({
         </div>
 
         {/* 타임라인 목록 */}
-        <div className="flex-1 overflow-y-auto bg-stone-50/30 p-6">
+        <div className="flex-1 overflow-y-auto bg-cloud-50/30 p-6">
           {!documentId ? (
-            <div className="flex flex-col items-center justify-center h-40 text-stone-400 text-sm">
+            <div className="flex flex-col items-center justify-center h-40 text-espresso-400 text-sm">
               <FileText className="w-8 h-8 mb-2 opacity-20" />
               문서를 선택하세요
             </div>
           ) : snapshots.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4">
-                <History className="w-8 h-8 text-stone-300" />
+              <div className="w-16 h-16 bg-cloud-100 rounded-full flex items-center justify-center mb-4">
+                <History className="w-8 h-8 text-espresso-300" />
               </div>
-              <h3 className="text-sm font-bold text-stone-600 mb-1">
+              <h3 className="text-sm font-bold text-espresso-600 mb-1">
                 저장된 스냅샷이 없습니다
               </h3>
-              <p className="text-xs text-stone-500 max-w-[200px] leading-relaxed">
+              <p className="text-xs text-espresso-500 max-w-[200px] leading-relaxed">
                 작업 중간중간 중요한 순간을 기록해두세요. 언제든지 과거로 돌아갈
                 수 있습니다.
               </p>
@@ -177,7 +179,7 @@ export default function SnapshotPanel({
           ) : (
             <div className="relative pl-4 space-y-6">
               {/* 타임라인 수직선 - Absolute Positioned Line */}
-              <div className="absolute left-[23px] top-2 bottom-0 w-px bg-stone-200" />
+              <div className="absolute left-[23px] top-2 bottom-0 w-px bg-cloud-200" />
 
               <AnimatePresence>
                 {[...snapshots].reverse().map((snapshot) => (
@@ -191,7 +193,7 @@ export default function SnapshotPanel({
                     <div className="absolute left-[19px] top-6 w-2.5 h-2.5 rounded-full bg-white border-2 border-mocha-400 z-10 shadow-[0_0_0_4px_rgba(255,255,255,1)]" />
 
                     <div
-                      className="group bg-white border border-stone-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-mocha-300 transition-all cursor-pointer"
+                      className="group bg-white border border-cloud-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-mocha-300 transition-all cursor-pointer"
                       onClick={() =>
                         setExpandedId(
                           expandedId === snapshot.id ? null : snapshot.id,
@@ -201,17 +203,17 @@ export default function SnapshotPanel({
                       {/* 헤더 정보 */}
                       <div className="flex justify-between items-start mb-1">
                         <div>
-                          <h3 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-espresso-800 flex items-center gap-2">
                             {snapshot.title}
                           </h3>
                           <div className="flex items-center gap-2 mt-1.5">
-                            <span className="flex items-center text-[11px] text-stone-400 font-medium bg-stone-50 px-1.5 py-0.5 rounded-md">
+                            <span className="flex items-center text-[11px] text-espresso-400 font-medium bg-cloud-50 px-1.5 py-0.5 rounded-md">
                               <Calendar className="w-3 h-3 mr-1" />
                               {formatDate(snapshot.createdAt)}
                             </span>
                           </div>
                         </div>
-                        <button className="text-stone-300 hover:text-stone-500 p-0.5 rounded transition-colors group-hover:bg-stone-50">
+                        <button className="text-espresso-300 hover:text-espresso-500 p-0.5 rounded transition-colors group-hover:bg-cloud-50">
                           {expandedId === snapshot.id ? (
                             <ChevronDown className="w-4 h-4" />
                           ) : (
@@ -221,7 +223,7 @@ export default function SnapshotPanel({
                       </div>
 
                       {snapshot.description && (
-                        <p className="text-xs text-stone-500 mt-2 line-clamp-2 border-t border-stone-50 pt-2">
+                        <p className="text-xs text-espresso-500 mt-2 line-clamp-2 border-t border-cloud-50 pt-2">
                           {snapshot.description}
                         </p>
                       )}
@@ -235,7 +237,7 @@ export default function SnapshotPanel({
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="mt-3 bg-stone-50 rounded-lg p-3 border border-stone-100 text-xs text-stone-600 font-serif leading-relaxed line-clamp-4 italic mb-3">
+                            <div className="mt-3 bg-cloud-50 rounded-lg p-3 border border-cloud-100 text-xs text-espresso-600 font-serif leading-relaxed line-clamp-4 italic mb-3">
                               "
                               {snapshot.content
                                 .replace(/<[^>]*>/g, "")
@@ -243,14 +245,14 @@ export default function SnapshotPanel({
                               ..."
                             </div>
 
-                            <div className="flex gap-2 border-t border-stone-100 pt-3">
+                            <div className="flex gap-2 border-t border-cloud-100 pt-3">
                               <Button
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setConfirmRestoreId(snapshot.id);
                                 }}
-                                className="flex-1 h-8 text-xs bg-white border border-stone-200 hover:border-mocha-300 hover:text-mocha-700 text-stone-600 shadow-sm"
+                                className="flex-1 h-8 text-xs bg-white border border-cloud-200 hover:border-mocha-300 hover:text-mocha-700 text-espresso-600 shadow-sm"
                               >
                                 <RotateCcw className="w-3 h-3 mr-1.5" />이
                                 버전으로 복원
@@ -262,7 +264,7 @@ export default function SnapshotPanel({
                                   e.stopPropagation();
                                   deleteSnapshot(snapshot.id);
                                 }}
-                                className="h-8 w-8 p-0 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+                                className="h-8 w-8 p-0 text-espresso-400 hover:bg-rose-50 hover:text-rose-600"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -282,15 +284,15 @@ export default function SnapshotPanel({
       {/* 스냅샷 생성 다이얼로그 */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-md bg-white p-0 gap-0 overflow-hidden shadow-2xl rounded-xl">
-          <DialogHeader className="px-6 py-4 border-b border-stone-100 bg-stone-50/50">
-            <DialogTitle className="text-base font-bold text-stone-800 flex items-center gap-2">
+          <DialogHeader className="px-6 py-4 border-b border-cloud-100 bg-cloud-50/50">
+            <DialogTitle className="text-base font-bold text-espresso-800 flex items-center gap-2">
               <GitCommit className="w-4 h-4 text-mocha-500" />
               현재 상태 스냅샷 저장
             </DialogTitle>
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div>
-              <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 block">
+              <label className="text-xs font-bold text-espresso-500 uppercase tracking-wider mb-1.5 block">
                 스냅샷 이름 *
               </label>
               <input
@@ -298,12 +300,12 @@ export default function SnapshotPanel({
                 value={newSnapshotName}
                 onChange={(e) => setNewSnapshotName(e.target.value)}
                 placeholder="예: 챕터1 완성본, 수정 전 백업..."
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400 transition-all font-medium text-stone-800 placeholder:text-stone-300"
+                className="w-full px-3 py-2 border border-cloud-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400 transition-all font-medium text-espresso-800 placeholder:text-espresso-300"
                 autoFocus
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 block">
+              <label className="text-xs font-bold text-espresso-500 uppercase tracking-wider mb-1.5 block">
                 메모 (선택)
               </label>
               <textarea
@@ -311,15 +313,15 @@ export default function SnapshotPanel({
                 onChange={(e) => setNewSnapshotDesc(e.target.value)}
                 placeholder="주요 변경 사항이나 남기고 싶은 말을 적어주세요."
                 rows={3}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400 transition-all text-stone-700 placeholder:text-stone-300"
+                className="w-full px-3 py-2 border border-cloud-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mocha-500/20 focus:border-mocha-400 transition-all text-espresso-700 placeholder:text-espresso-300"
               />
             </div>
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-stone-100 bg-stone-50/30">
+          <DialogFooter className="px-6 py-4 border-t border-cloud-100 bg-cloud-50/30">
             <Button
               variant="ghost"
               onClick={() => setShowCreateDialog(false)}
-              className="text-stone-500 hover:text-stone-800"
+              className="text-espresso-500 hover:text-espresso-800"
             >
               취소
             </Button>
@@ -345,10 +347,10 @@ export default function SnapshotPanel({
               <RotateCcw className="w-6 h-6 text-amber-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-2">
+              <h3 className="text-lg font-bold text-espresso-900 mb-2">
                 스냅샷을 복원하시겠습니까?
               </h3>
-              <p className="text-sm text-stone-500 leading-relaxed">
+              <p className="text-sm text-espresso-500 leading-relaxed">
                 현재 작성 중인 내용이 덮어씌워지며, <br />이 작업은 되돌릴 수
                 없습니다.
               </p>
@@ -358,7 +360,7 @@ export default function SnapshotPanel({
             <Button
               variant="outline"
               onClick={() => setConfirmRestoreId(null)}
-              className="flex-1 h-11 border-stone-200"
+              className="flex-1 h-11 border-cloud-200"
             >
               취소
             </Button>
@@ -366,7 +368,7 @@ export default function SnapshotPanel({
               onClick={() =>
                 confirmRestoreId && handleRestore(confirmRestoreId)
               }
-              className="flex-1 h-11 bg-stone-900 hover:bg-black text-white"
+              className="flex-1 h-11 bg-espresso-900 hover:bg-black text-white"
             >
               복원하기
             </Button>

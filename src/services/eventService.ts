@@ -16,19 +16,37 @@ export const eventService = {
    */
   getByCharacter: async (characterId: string): Promise<Event[]> => {
     try {
+      console.log(
+        `[eventService] Fetching events for character: ${characterId}`,
+      );
       const response = await api.get<ApiResponse<BackendEvent[]>>(
-        `/characters/${characterId}/events`
+        `/characters/${characterId}/events`,
+      );
+      console.log(
+        `[eventService] Raw response keys:`,
+        Object.keys(response.data),
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawData = response.data as any;
+      if (rawData.events && Array.isArray(rawData.events)) {
+        console.warn(
+          "[eventService] Found 'events' key instead of 'data'. API structure mismatch?",
+        );
+      }
+      console.log(
+        `[eventService] Response data preview:`,
+        JSON.stringify(response.data).slice(0, 200),
       );
       const data = response.data.data;
 
       if (!Array.isArray(data)) {
-        console.warn("[eventService] Data is not an array:", data);
+        console.warn(`[eventService] Data is not an array:`, data);
         return [];
       }
 
       return data.map(transformBackendEvent);
-    } catch (error) {
-      console.error("[eventService] getByCharacter failed:", error);
+    } catch (error: unknown) {
+      console.error(`[eventService] Error fetching events:`, error);
       return [];
     }
   },
@@ -40,13 +58,12 @@ export const eventService = {
   getByProject: async (projectId: string): Promise<Event[]> => {
     try {
       const response = await api.get<ApiResponse<BackendEvent[]>>(
-        `/projects/${projectId}/events`
+        `/projects/${projectId}/events`,
       );
       const data = response.data.data;
       if (!Array.isArray(data)) return [];
       return data.map(transformBackendEvent);
-    } catch (error) {
-      console.warn("[eventService] getByProject failed:", error);
+    } catch (_error) {
       return [];
     }
   },

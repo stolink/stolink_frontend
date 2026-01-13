@@ -52,7 +52,7 @@ function ScoreGauge({ score }: { score: number }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className={cn("w-4 h-4", getScoreTextColor(score))} />
-          <span className="text-sm font-semibold text-stone-700">
+          <span className="text-sm font-semibold text-espresso-700">
             일관성 점수
           </span>
         </div>
@@ -78,7 +78,7 @@ function ScoreGauge({ score }: { score: number }) {
           className={cn(
             "text-xs font-medium px-2 py-0.5 rounded-full",
             getScoreBgColor(score),
-            getScoreTextColor(score)
+            getScoreTextColor(score),
           )}
         >
           {getScoreLabel(score)}
@@ -117,7 +117,7 @@ function ConflictCard({
         "before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-r-full before:transition-all",
         isError
           ? "border-rose-100 hover:border-rose-200 before:bg-rose-400 shadow-rose-900/5"
-          : "border-amber-100 hover:border-amber-200 before:bg-amber-400 shadow-amber-900/5"
+          : "border-amber-100 hover:border-amber-200 before:bg-amber-400 shadow-amber-900/5",
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -127,7 +127,7 @@ function ConflictCard({
               "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
               isError
                 ? "bg-rose-100 text-rose-600"
-                : "bg-amber-100 text-amber-600"
+                : "bg-amber-100 text-amber-600",
             )}
           >
             {isError ? (
@@ -139,7 +139,7 @@ function ConflictCard({
           <span
             className={cn(
               "font-bold text-sm",
-              isError ? "text-rose-900" : "text-amber-900"
+              isError ? "text-rose-900" : "text-amber-900",
             )}
           >
             {conflict.category}
@@ -157,7 +157,9 @@ function ConflictCard({
       </div>
 
       <div className="text-sm mb-4">
-        <p className="text-stone-700 leading-relaxed">{conflict.description}</p>
+        <p className="text-espresso-700 leading-relaxed">
+          {conflict.description}
+        </p>
       </div>
 
       {conflict.location && (
@@ -165,7 +167,7 @@ function ConflictCard({
           <Button
             size="sm"
             onClick={() => onNavigate?.(conflict.location)}
-            className="flex-1 h-8 text-xs font-semibold bg-white border border-cloud-200 text-stone-600 hover:bg-cloud-50 hover:text-espresso-900 hover:border-stone-300 shadow-sm transition-all"
+            className="flex-1 h-8 text-xs font-semibold bg-white border border-cloud-200 text-espresso-600 hover:bg-cloud-50 hover:text-espresso-900 hover:border-cloud-300 shadow-sm transition-all"
           >
             <ArrowRight className="h-3 w-3 mr-1.5 text-mocha-400" />
             위치로 이동
@@ -186,7 +188,7 @@ function EmptyState() {
       <div className="w-16 h-16 rounded-full bg-cloud-100 flex items-center justify-center mb-4">
         <Lightbulb className="w-8 h-8 text-mocha-400" />
       </div>
-      <h4 className="text-sm font-semibold text-stone-700 mb-1">
+      <h4 className="text-sm font-semibold text-espresso-700 mb-1">
         분석 결과가 없습니다
       </h4>
       <p className="text-xs text-mocha-500 text-center max-w-[200px]">
@@ -202,7 +204,9 @@ function LoadingState() {
       <div className="w-16 h-16 rounded-full bg-mocha-50 flex items-center justify-center mb-4">
         <Loader2 className="w-8 h-8 text-mocha-500 animate-spin" />
       </div>
-      <h4 className="text-sm font-semibold text-stone-700 mb-1">분석 중...</h4>
+      <h4 className="text-sm font-semibold text-espresso-700 mb-1">
+        분석 중...
+      </h4>
       <p className="text-xs text-mocha-500 text-center">
         AI가 문서의 일관성을 검사하고 있습니다
       </p>
@@ -222,7 +226,6 @@ export default function InsightsPanel({
     consistencyReport?.conflicts.filter((c) => c.severity === "warning")
       .length ?? 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNavigate = (_location: Conflict["location"]) => {
     // TODO: 에디터에서 해당 위치로 이동하는 로직 구현
   };
@@ -273,31 +276,31 @@ export default function InsightsPanel({
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount > 0
                     ? "bg-rose-100 text-rose-700 shadow-sm"
-                    : "text-mocha-400"
+                    : "text-mocha-400",
                 )}
               >
                 <X className="w-3.5 h-3.5" />
                 치명 {criticalCount}
               </div>
-              <div className="w-px h-6 bg-stone-200" />
+              <div className="w-px h-6 bg-cloud-200" />
               <div
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   warningCount > 0
                     ? "bg-amber-100 text-amber-700 shadow-sm"
-                    : "text-mocha-400"
+                    : "text-mocha-400",
                 )}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 경고 {warningCount}
               </div>
-              <div className="w-px h-6 bg-stone-200" />
+              <div className="w-px h-6 bg-cloud-200" />
               <div
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
                   criticalCount === 0 && warningCount === 0
                     ? "bg-sage-100 text-sage-700 shadow-sm"
-                    : "text-mocha-400"
+                    : "text-mocha-400",
                 )}
               >
                 <CheckCircle className="w-3.5 h-3.5" />

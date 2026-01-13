@@ -70,7 +70,7 @@ export function CharacterAdditionalDetails({
   if (entries.length === 0 && !hasMotivation && !hasMood) return null;
 
   return (
-    <div className="space-y-6 pt-6 border-t border-stone-100">
+    <div className="space-y-6 pt-6 border-t border-cloud-100">
       <h3 className="editorial-section-heading">
         <Sparkles className="h-5 w-5 text-primary/70" />
         추가 정보
@@ -103,13 +103,13 @@ export function CharacterAdditionalDetails({
           </div>
           <div className="space-y-1.5">
             {character.currentMood!.emotion && (
-              <p className="text-lg font-semibold text-stone-900">
+              <p className="text-lg font-semibold text-espresso-900">
                 {character.currentMood!.emotion}
               </p>
             )}
             {character.currentMood!.trigger && (
-              <p className="text-sm text-stone-500">
-                <span className="text-stone-400">원인:</span>{" "}
+              <p className="text-sm text-espresso-500">
+                <span className="text-espresso-400">원인:</span>{" "}
                 {character.currentMood!.trigger}
               </p>
             )}
@@ -126,7 +126,7 @@ export function CharacterAdditionalDetails({
               className={`editorial-card p-4 color-bar-indicator ${colorClass}`}
             >
               <div className="flex items-center gap-2 mb-3">
-                <Icon className="h-4 w-4 text-stone-500" />
+                <Icon className="h-4 w-4 text-espresso-500" />
                 <span className="editorial-label">{label}</span>
               </div>
               {isEditMode ? (
@@ -146,7 +146,7 @@ export function CharacterAdditionalDetails({
                   {value.map((item, idx) => (
                     <span
                       key={idx}
-                      className="text-sm text-stone-700 after:content-[','] last:after:content-[''] after:text-stone-300"
+                      className="text-sm text-espresso-700 after:content-[','] last:after:content-[''] after:text-espresso-300"
                     >
                       {item}
                     </span>

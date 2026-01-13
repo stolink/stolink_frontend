@@ -56,6 +56,39 @@ Sto-Link는 작가의 창의력을 극대화하기 위해 설계된 올인원 �
 
 ---
 
+## 🧪 테스트 (Tests)
+
+프로젝트는 단위/통합 테스트(Vitest)와 E2E 테스트(Playwright)로 구성되어 있습니다.
+
+### Unit & QA Tests (Vitest)
+
+`src/__tests__/qa` 디렉토리에서 주요 기능과 API에 대한 테스트를 관리합니다.
+
+- **API Tests**: `src/__tests__/qa/api` - 백엔드 API와의 연동을 검증합니다.
+- **Scenario Tests**: `src/__tests__/qa/scenarios` - 시나리오 기반의 기능(Auth, Editor 등) 테스트를 수행합니다.
+
+```bash
+# 전체 테스트 실행
+npm test
+
+# 특정 파일 실행
+npm test src/__tests__/qa/api
+```
+
+### E2E Tests (Playwright)
+
+`e2e/tests` 디렉토리에서 실제 브라우저 환경에서의 사용자 시나리오를 검증합니다.
+
+```bash
+# E2E 테스트 실행
+npx playwright test
+
+# UI 모드로 실행
+npx playwright test --ui
+```
+
+---
+
 ## 🚀 시작하기 (Getting Started)
 
 ### Prerequisites

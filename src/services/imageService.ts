@@ -1,5 +1,6 @@
 import api from "@/api/client";
-import type { ApiResponse, JobResponse } from "@/types/api";
+import type { JobResponse } from "@/types/api";
+import { resolveImageUrl } from "@/utils/imageUtils";
 
 export interface ImageGenerationResult {
   imageUrl: string;
@@ -27,15 +28,41 @@ export const imageService = {
     action: "create" | "edit",
     description: string,
     setting?: Record<string, unknown>,
+    additionalOptions?: {
+      visual_background?: string;
+      atmosphere?: string;
+      lighting?: string;
+      time_of_day?: string;
+      art_style?: string;
+    },
+    characterData?: Record<string, unknown>,
   ): Promise<{ jobId: string; status: string }> => {
     const response = await api.post<
-      ApiResponse<{ jobId: string; status: string }>
+      | { data: { jobId: string; status?: string } }
+      | { jobId: string; status?: string }
     >(`/projects/${projectId}/characters/${characterId}/image`, {
       action,
       description,
       setting,
+      ...additionalOptions,
+      ...characterData,
     });
-    return response.data.data;
+
+    // Handle both wrapped (response.data.data) and flattened (response.data) formats
+    const responseData = response.data as {
+      data?: { jobId: string; status?: string };
+      jobId: string;
+      status?: string;
+    };
+    const result = responseData.data || responseData;
+    if (!result || !result.jobId) {
+      throw new Error("Failed to get jobId from generation response");
+    }
+
+    return {
+      jobId: result.jobId,
+      status: result.status || "pending",
+    };
   },
 
   /**
@@ -47,34 +74,92 @@ export const imageService = {
   getImageJobStatus: async (
     jobId: string,
   ): Promise<JobResponse<ImageGenerationResult>> => {
-    const response = await api.get<
-      ApiResponse<JobResponse<ImageGenerationResult>>
-    >(`/ai/image/jobs/${jobId}`);
+    let response;
+    let retries = 3;
+    let lastError;
 
-    // Normalize status to lowercase to match frontend expectations
-    if (response.data.data) {
-      const data = response.data.data;
-      data.status =
-        data.status.toLowerCase() as JobResponse<ImageGenerationResult>["status"];
-
-      // Flattened response handling: if result is missing but imageUrl is present,
-      // move it into result to match JobResponse<T> structure
-      interface FlattenedResponse extends JobResponse<ImageGenerationResult> {
-        imageUrl?: string;
-        prompt?: string;
-        modelUsed?: string;
-      }
-
-      const flattened = data as unknown as FlattenedResponse;
-      if (!data.result && flattened.imageUrl) {
-        data.result = {
-          imageUrl: flattened.imageUrl,
-          prompt: flattened.prompt,
-          modelUsed: flattened.modelUsed,
-        };
+    while (retries > 0) {
+      try {
+        response = await api.get<
+          | { data: { status: string; url?: string } }
+          | { status: string; url?: string }
+        >(`/ai/image/jobs/${jobId}`);
+        break; // Success
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { status?: number } };
+        lastError = err;
+        // If 404, the job might not be indexed yet, retry
+        if (axiosError.response?.status === 404 && retries > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          retries--;
+          continue;
+        }
+        throw err; // For other errors or last attempt
       }
     }
 
-    return response.data.data;
+    if (!response) throw lastError || new Error("Job status check failed");
+
+    // Handle both wrapped (response.data.data) and flattened (response.data) formats
+    interface RawJobResponse {
+      data?: RawJobResponse;
+      jobId?: string;
+      status?: string;
+      progress?: number;
+      message?: string;
+      error?: string;
+      createdAt?: string;
+      created_at?: string;
+      updatedAt?: string;
+      updated_at?: string;
+      result?: ImageGenerationResult;
+      imageUrl?: string;
+      prompt?: string;
+      modelUsed?: string;
+    }
+    const responseData = response.data as RawJobResponse;
+    const rawData = responseData.data || responseData;
+
+    if (!rawData || !rawData.status) {
+      throw new Error("Invalid job status response");
+    }
+
+    // Standardize JobResponse format
+    const data: JobResponse<ImageGenerationResult> = {
+      jobId: rawData.jobId || jobId,
+      status: (rawData.status.toLowerCase() ||
+        "pending") as JobResponse<ImageGenerationResult>["status"],
+      progress: rawData.progress || 0,
+      message: rawData.message,
+      error: rawData.error,
+      createdAt:
+        rawData.createdAt || rawData.created_at || new Date().toISOString(),
+      updatedAt:
+        rawData.updatedAt || rawData.updated_at || new Date().toISOString(),
+      result: rawData.result,
+    };
+
+    // Flattened result handling (legacy/fallback)
+    interface FlattenedFields {
+      imageUrl?: string;
+      prompt?: string;
+      modelUsed?: string;
+    }
+    const flattened = rawData as FlattenedFields;
+    if (!data.result && flattened.imageUrl) {
+      data.result = {
+        imageUrl: flattened.imageUrl,
+        prompt: flattened.prompt,
+        modelUsed: flattened.modelUsed,
+      };
+    }
+
+    // Apply URL resolution to result
+    if (data.result && data.result.imageUrl) {
+      data.result.imageUrl =
+        resolveImageUrl(data.result.imageUrl) || data.result.imageUrl;
+    }
+
+    return data;
   },
 };

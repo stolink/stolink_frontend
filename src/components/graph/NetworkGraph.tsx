@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useRef,
   useImperativeHandle,
@@ -16,6 +16,8 @@ interface NetworkGraphProps {
   width?: number;
   height?: number;
   className?: string;
+  onNodeSelect?: (nodeId: string | null) => void;
+  selectedNodeId?: string | null;
 }
 
 export interface NetworkGraphRef {
@@ -32,6 +34,25 @@ const OBSIDIAN_COLORS = d3.scaleOrdinal([
   "#6b9fb8", // Blue
 ]);
 
+// Relationship Colors
+const RELATION_COLORS: Record<string, string> = {
+  ALLY: "#15803D", // Green
+  FRIENDLY: "#15803D",
+  ENEMY: "#F44336", // Red
+  HOSTILE: "#F44336",
+  ROMANTIC: "#FF4081", // Pink
+  FAMILY: "#2196F3", // Blue
+  MENTOR: "#9C27B0", // Purple
+  RIVAL: "#FF9800", // Orange
+  NEUTRAL: "#9CA3AF", // Gray
+  MASTER_SERVANT: "#7E57C2", // Deep Purple
+  COWORKER: "#0288D1", // Light Blue
+  CLASSMATE: "#AED581", // Light Green
+  COMPLEX: "#78909C", // Blue Grey
+};
+
+const DEFAULT_LINK_COLOR = "#555";
+
 export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
   (
     {
@@ -40,6 +61,8 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       width = 800,
       height = 600,
       className,
+      onNodeSelect,
+      selectedNodeId: propsSelectedNodeId,
     },
     ref,
   ) => {
@@ -57,7 +80,26 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       nodes: initialNodes,
       links: initialLinks,
     });
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+    // Internal state for uncontrolled mode, or sync with props
+    const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<
+      string | null
+    >(null);
+
+    const selectedNodeId =
+      propsSelectedNodeId !== undefined
+        ? propsSelectedNodeId
+        : internalSelectedNodeId;
+
+    const handleNodeClick = useCallback(
+      (id: string | null) => {
+        if (propsSelectedNodeId === undefined) {
+          setInternalSelectedNodeId(id);
+        }
+        onNodeSelect?.(id);
+      },
+      [onNodeSelect, propsSelectedNodeId],
+    );
 
     // Filter Logic (Strict Star Topology)
     const getFilteredData = useCallback(() => {
@@ -151,7 +193,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
           };
         });
         // Reset focus mode to show new node context
-        setSelectedNodeId(null);
+        handleNodeClick(null);
       },
     }));
 
@@ -204,7 +246,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
 
       // Background click to clear selection
       svg.on("click", (e) => {
-        if (e.target === svgRef.current) setSelectedNodeId(null);
+        if (e.target === svgRef.current) handleNodeClick(null);
       });
 
       // Simulation Setup
@@ -239,9 +281,14 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .selectAll("path")
         .data(processedLinks)
         .join("path")
-        .attr("stroke", "#555")
-        .attr("stroke-opacity", 0.4)
-        .attr("stroke-width", (d) => Math.sqrt(d.value || 1))
+        .attr("stroke", (d) => {
+          if (d.type && RELATION_COLORS[d.type.toUpperCase()]) {
+            return RELATION_COLORS[d.type.toUpperCase()];
+          }
+          return DEFAULT_LINK_COLOR;
+        })
+        .attr("stroke-opacity", 0.6)
+        .attr("stroke-width", (d) => Math.sqrt(d.value || 1) + 1)
         .attr("fill", "none");
 
       // Render Nodes
@@ -260,7 +307,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
         .attr("cursor", "pointer")
         .on("click", (e, d) => {
           e.stopPropagation();
-          setSelectedNodeId((prev) => (prev === d.id ? null : d.id));
+          handleNodeClick(selectedNodeId === d.id ? null : d.id);
         });
 
       // Node Labels
@@ -343,6 +390,7 @@ export const NetworkGraph = forwardRef<NetworkGraphRef, NetworkGraphProps>(
       return () => {
         simulation.stop();
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [width, height, getFilteredData, selectedNodeId]); // Re-run when data/filter changes
 
     return (
