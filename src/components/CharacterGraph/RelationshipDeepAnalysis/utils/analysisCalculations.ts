@@ -810,6 +810,7 @@ export function generateAnalysisData(
         cumulativeFriendly: 10,
         cumulativeHostile: 0,
         sentimentTrajectory: 10, // Net sentiment: friendly - hostile
+        projectId: "mock-project",
       },
     ];
 

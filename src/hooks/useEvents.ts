@@ -46,20 +46,15 @@ export function useCharacterEvents(
   const { enabled = true } = options;
 
   return useQuery({
-    queryKey: ["events", "character", characterId, "debug-force-v1"],
+    queryKey: ["events", "character", characterId],
     queryFn: async (): Promise<BiographyEvent[]> => {
-      console.log(`[useCharacterEvents] Query triggered for: ${characterId}`);
       if (!characterId) return [];
       const events = await eventService.getByCharacter(characterId);
-      console.log(
-        `[useCharacterEvents] Service returned ${events.length} events`,
-      );
       return events.map(eventToBiography);
     },
     enabled: enabled && !!characterId,
-    // Debugging: Force fetch every time
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 5 * 60 * 1000, // 5분
+    gcTime: 10 * 60 * 1000, // 10분
   });
 }
 

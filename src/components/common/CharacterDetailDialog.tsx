@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,11 @@ import {
 
 import { isEqual } from "lodash-es";
 import type { Character } from "@/types";
-import { useCharacter, useUpdateCharacter } from "@/hooks/useCharacters";
+import {
+  useCharacter,
+  useUpdateCharacter,
+  useCharacters,
+} from "@/hooks/useCharacters";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
@@ -210,7 +214,7 @@ export default function CharacterDetailDialog({
     }
   }, [isOpen, character?._id, imageJobId]);
 
-  const { traits, relationships, appearances } = useCharacterData(
+  const { traits, relationships } = useCharacterData(
     displayCharacter, // displayCharacter 사용
   );
 
@@ -221,6 +225,35 @@ export default function CharacterDetailDialog({
       enabled: !!displayCharacter?._id && isOpen,
     },
   );
+
+  // 프론트엔드 필터링: 백엔드가 모든 이벤트를 반환하는 경우 대비
+  const realAppearances = useMemo(() => {
+    if (!characterEvents || characterEvents.length === 0) return [];
+    const charName = displayCharacter?.profile?.name;
+    if (!charName) return [];
+
+    return characterEvents
+      .filter((e) => e.participants.includes(charName))
+      .map((e) => e.narrativeSummary)
+      .filter(Boolean);
+  }, [characterEvents, displayCharacter?.profile?.name]);
+
+  // 모든 캐릭터 정보 조회 (참여자 ID를 이름으로 변환하기 위함)
+  const { data: allCharacters = [] } = useCharacters(
+    displayCharacter?.projectId ?? "",
+    {
+      enabled: !!displayCharacter?.projectId && isOpen,
+    },
+  );
+
+  // ID -> Name 매핑 생성
+  const characterNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allCharacters.forEach((c) => {
+      if (c._id) map[c._id] = c.profile.name;
+    });
+    return map;
+  }, [allCharacters]);
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
   const [settings, setSettings] = useState<ProjectSetting[]>([]);
@@ -861,7 +894,10 @@ export default function CharacterDetailDialog({
                       </div>
                     </div>
                     {/* Quick Story Appearances */}
-                    <CharacterAppearances appearances={appearances} />
+                    <CharacterAppearances
+                      appearances={realAppearances}
+                      biography={displayCharacter.profile.backstory}
+                    />
                   </TabsContent>
 
                   {/* PROFILE TAB (New Detailed Fields) */}
@@ -1045,6 +1081,7 @@ export default function CharacterDetailDialog({
                         handleFieldChange("profile.backstory", value)
                       }
                       events={characterEvents}
+                      characterNameMap={characterNameMap}
                       onSave={handleSave}
                       onCancel={handleCancel}
                     />

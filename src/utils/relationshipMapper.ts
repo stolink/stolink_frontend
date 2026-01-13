@@ -72,12 +72,6 @@ export function extractRelationshipLinks(
       char.relations?.graph ||
       (char as { relationships?: unknown[] }).relationships;
 
-    if (Array.isArray(relationGraph) && relationGraph.length > 0) {
-      console.log(
-        `[relationshipMapper] Found ${relationGraph.length} relations for character: ${char.profile?.name}`,
-      );
-    }
-
     if (!Array.isArray(relationGraph)) {
       return;
     }
@@ -108,9 +102,6 @@ export function extractRelationshipLinks(
         const rawTargetId = rel.target;
 
         if (!rawSourceId || !rawTargetId) {
-          console.warn(
-            `[relationshipMapper] Skipping relation due to missing source/target: source=${rawSourceId}, target=${rawTargetId}`,
-          );
           return;
         }
 
@@ -118,27 +109,21 @@ export function extractRelationshipLinks(
         let sourceId = rawSourceId;
         let targetId = rawTargetId;
 
-        // Source ID 확인
+        // Source ID 확인 (이름 → ID 변환)
         if (!idSet.has(sourceId)) {
           if (nameToIdMap.has(sourceId)) {
             sourceId = nameToIdMap.get(sourceId)!;
           } else {
-            console.warn(
-              `[relationshipMapper] Source ID mismatch: ${sourceId} not in idSet [${Array.from(idSet).join(",")}]`,
-            );
-            return;
+            return; // ID를 찾을 수 없으면 스킵
           }
         }
 
-        // Target ID 확인
+        // Target ID 확인 (이름 → ID 변환)
         if (!idSet.has(targetId)) {
           if (nameToIdMap.has(targetId)) {
             targetId = nameToIdMap.get(targetId)!;
           } else {
-            console.warn(
-              `[relationshipMapper] Target ID mismatch: ${targetId} not in idSet [${Array.from(idSet).join(",")}]`,
-            );
-            return;
+            return; // ID를 찾을 수 없으면 스킵
           }
         }
 
@@ -147,10 +132,6 @@ export function extractRelationshipLinks(
           sourceId < targetId
             ? `${sourceId}-${targetId}`
             : `${targetId}-${sourceId}`;
-
-        console.log(
-          `[relationshipMapper] Successfully matched link: ${sourceId} -> ${targetId} (key: ${pairKey})`,
-        );
 
         if (processedPairs.has(pairKey)) return;
         processedPairs.add(pairKey);

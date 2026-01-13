@@ -13,6 +13,8 @@ interface CharacterBiographyProps {
   onBackstoryChange: (value: string) => void;
   /** 인물 일대기 사건 데이터 (향후 구현 예정) */
   events?: BiographyEvent[];
+  /** ID -> Name 매핑 */
+  characterNameMap?: Record<string, string>;
   onSave?: () => void;
   onCancel?: () => void;
 }
@@ -22,6 +24,7 @@ export function CharacterBiography({
   isEditMode,
   onBackstoryChange,
   events,
+  characterNameMap,
   onSave,
   onCancel,
 }: CharacterBiographyProps) {
@@ -30,7 +33,6 @@ export function CharacterBiography({
   // useMemo로 정렬된 데이터 계산
   // 실제 이벤트 데이터가 없으면 빈 배열 (UI에서 empty state 표시)
   const displayEvents = useMemo(() => {
-    console.log("CharacterBiography events prop:", events);
     const rawEvents = events && events.length > 0 ? events : [];
     // Deduplicate by eventId to avoid key collisions
     const uniqueEvents = Array.from(
@@ -103,6 +105,7 @@ export function CharacterBiography({
             backstory={backstory}
             selectedEventId={selectedEventId}
             onEventClick={setSelectedEventId}
+            characterNameMap={characterNameMap}
             className="shadow-sm"
           />
 
@@ -111,6 +114,7 @@ export function CharacterBiography({
             events={displayEvents}
             selectedEventId={selectedEventId}
             onEventClick={setSelectedEventId}
+            characterNameMap={characterNameMap}
           />
         </div>
       )}

@@ -63,6 +63,9 @@ export interface ProfilePersonality {
  * 캐릭터 프로필 정보
  */
 export interface CharacterProfile {
+  /** 캐릭터 고유 식별자 (Character._id와 동일) */
+  _id?: string;
+  /** @deprecated _id를 사용하세요. */
   characterId: string;
   name: string;
   age: number | null;

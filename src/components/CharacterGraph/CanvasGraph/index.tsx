@@ -733,9 +733,13 @@ export const CharacterGraphCanvas = forwardRef<
                 (highlightedNodeIds &&
                   highlightedNodeIds.includes(charNode.id)) ||
                 false;
-              const isDimmed =
+              const isDimmed = Boolean(
                 (connectedNodeIds && !connectedNodeIds.has(charNode.id)) ||
-                (showMainOnly && charNode.role !== "protagonist");
+                (showMainOnly && charNode.role !== "protagonist") ||
+                (highlightedNodeIds &&
+                  highlightedNodeIds.length > 0 &&
+                  !highlightedNodeIds.includes(charNode.id)),
+              );
 
               drawNode({
                 ctx,
@@ -793,9 +797,14 @@ export const CharacterGraphCanvas = forwardRef<
               // Fix: Strict Star Topology (User Feedback)
               // Only show links that are DIRECTLY connected to the selected node.
               // Hide links between neighbors (e.g., A->B, A->C selected. Hide B->C).
-              const isDimmed = selectedNodeId
-                ? sourceId !== selectedNodeId && targetId !== selectedNodeId
-                : false;
+              const isDimmed =
+                (selectedNodeId
+                  ? sourceId !== selectedNodeId && targetId !== selectedNodeId
+                  : false) ||
+                (highlightedNodeIds &&
+                  highlightedNodeIds.length > 0 &&
+                  (!highlightedNodeIds.includes(sourceId) ||
+                    !highlightedNodeIds.includes(targetId)));
 
               drawLink({
                 ctx,
@@ -956,6 +965,7 @@ export const CharacterGraphCanvas = forwardRef<
                 timestamp: event.date || event.chapter || null,
                 importance: 5,
                 changesMade: null,
+                projectId: (event as unknown as Event).projectId || "",
               };
               setSelectedEvent(bioEvent);
             }}
@@ -987,6 +997,7 @@ export const CharacterGraphCanvas = forwardRef<
                   locationRef: null,
                   prevEventId: null,
                   visualScene: null,
+                  projectId: event.projectId || "",
                 };
                 setSelectedEvent(bioEvent);
               }
