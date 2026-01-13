@@ -3,7 +3,7 @@ import type { ApiResponse, JobResponse } from "@/types/api";
 import type { AnalysisResultData } from "@/types/analysisResult";
 import { calculateContentHash } from "@/utils/hashUtils";
 
-const BASE_URL = "/ai";
+const BASE_URL = "/ai"; // Spring Backend endpoints
 
 interface ChatContext {
   includeCharacters?: boolean;
@@ -19,8 +19,10 @@ export interface ProjectAnalysisJobStatus {
   lastCompletedAt?: string;
 }
 
+const CHAT_BASE_URL = "/ai-api"; // FastAPI Chat service
+
 export const aiService = {
-  // 1. Chat
+  // 1. Chat (FastAPI - stolink-chat)
   chat: async (payload: {
     projectId: string;
     documentId?: string;
@@ -29,7 +31,7 @@ export const aiService = {
   }) => {
     const response = await api.post<
       ApiResponse<{ message: string; suggestions: string[] }>
-    >(`${BASE_URL}/chat`, payload);
+    >(`${CHAT_BASE_URL}/stream`, payload);
     return response.data;
   },
 
