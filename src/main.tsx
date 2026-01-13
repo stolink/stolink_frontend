@@ -9,11 +9,7 @@ reportWebVitals();
 /**
  * Chunk 로딩 에러 감지 (다중 방식으로 견고하게)
  */
-function isChunkLoadError(
-  error: unknown,
-  message: string,
-  filename?: string,
-): boolean {
+function isChunkLoadError(error: unknown, message: string): boolean {
   // 1. 에러 타입 체크 (가장 안정적)
   if (error && typeof error === "object") {
     const err = error as { name?: string; code?: string };
@@ -22,12 +18,8 @@ function isChunkLoadError(
     }
   }
 
-  // 2. 파일 경로 체크 (assets 폴더의 JS/CSS 로드 실패)
-  if (filename && /assets\/.*\.(js|css)$/.test(filename)) {
-    return true;
-  }
-
-  // 3. 메시지 매칭 (폴백 - 브라우저별 다양한 메시지 대응)
+  // 2. 메시지 매칭 (폴백 - 브라우저별 다양한 메시지 대응)
+  // NOTE: 파일 경로 체크 제거됨 - 일반 런타임 에러도 트리거되어 무한 새로고침 발생
   const patterns = [
     "Loading chunk",
     "Failed to fetch dynamically imported module",
@@ -57,9 +49,8 @@ function handleChunkError(): void {
 window.addEventListener("error", (event) => {
   const error = event.error;
   const message = event.message || "";
-  const filename = event.filename;
 
-  if (isChunkLoadError(error, message, filename)) {
+  if (isChunkLoadError(error, message)) {
     handleChunkError();
   }
 });
