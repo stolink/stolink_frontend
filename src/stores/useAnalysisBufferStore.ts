@@ -123,13 +123,13 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
               const jobs = state.activeJobs[projectId];
               state.currentJobId = jobs[jobs.length - 1]; // 가장 최신 Job을 일단 표시
               state.currentJobType = "analysis"; // Default to analysis on reload if unknown
-              state.isAnalyzing = true;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;
               state.currentJobTargetId = null;
-              state.isAnalyzing = false;
             }
+            // isAnalyzing은 persist에서 복원되어도 useProjectAnalysis의 mount status check 결과를 따르도록 함
+            state.isAnalyzing = false;
           }
         });
       },
@@ -198,15 +198,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         });
       },
 
-      shouldAutoFlush: () => {
-        const state = get();
-        const hasEnoughContent =
-          state.bufferCharCount >= MIN_CHARS_FOR_AUTO_FLUSH;
-        const enoughTimePassed =
-          Date.now() - state.lastFlushAt > MIN_INTERVAL_MS;
-
-        return (hasEnoughContent || enoughTimePassed) && !state.isAnalyzing;
-      },
+      shouldAutoFlush: () => false, // Always false as auto-flush is disabled
 
       setAnalyzing: (analyzing) => {
         set((state) => {
@@ -247,6 +239,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           if (!state.activeJobs[projectId].includes(id)) {
             state.activeJobs[projectId].push(id);
           }
+          console.log(
+            `[useAnalysisBufferStore] addJobId: ${id} for project ${projectId}`,
+          );
           state.currentJobId = id;
           state.currentJobType = type;
           state.currentJobTargetId = targetId;
@@ -257,10 +252,16 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       removeJobId: (projectId, id) => {
         set((state) => {
           if (state.activeJobs[projectId]) {
+            console.log(
+              `[useAnalysisBufferStore] removeJobId: ${id} from project ${projectId}`,
+            );
             state.activeJobs[projectId] = state.activeJobs[projectId].filter(
               (jobId) => jobId !== id,
             );
             if (state.activeJobs[projectId].length === 0) {
+              console.log(
+                `[useAnalysisBufferStore] All jobs cleared for project ${projectId}`,
+              );
               delete state.activeJobs[projectId];
               if (state.currentJobId === id) {
                 state.currentJobId = null;
@@ -275,6 +276,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
                 state.activeJobs[projectId][
                   state.activeJobs[projectId].length - 1
                 ];
+              console.log(
+                `[useAnalysisBufferStore] Switched currentJobId to ${state.currentJobId}`,
+              );
             }
           }
         });
@@ -282,6 +286,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 
       clearJobs: (projectId) => {
         set((state) => {
+          console.log(
+            `[useAnalysisBufferStore] clearJobs for project ${projectId}`,
+          );
           delete state.activeJobs[projectId];
           if (state.projectId === projectId) {
             state.currentJobId = null;
