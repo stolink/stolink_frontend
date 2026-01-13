@@ -84,10 +84,7 @@ export const aiService = {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
       `/ai/jobs/${jobId}`,
     );
-    // Handle both wrapped (ApiResponse) and unwrapped (direct) responses
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const responseData = response.data as any;
-    return responseData.data || responseData;
+    return response.data.data;
   },
 
   // 5. Get Project Analysis Job Status (프로젝트 기준 최신 job 상태 조회)

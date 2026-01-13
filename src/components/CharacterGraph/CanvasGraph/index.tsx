@@ -3,7 +3,6 @@ import {
   useState,
   useEffect,
   useMemo,
-  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -101,7 +100,6 @@ export const CharacterGraphCanvas = forwardRef<
     >(relationTypeFilter);
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension] = useState(false);
-
     const [showLogicCheck] = useState(false);
 
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
@@ -380,78 +378,6 @@ export const CharacterGraphCanvas = forwardRef<
       return map;
     }, [characters]);
 
-    // [Consolidated] Handle opening deep analysis modal
-    const handleOpenDeepAnalysis = useCallback(
-      (link: RelationshipLink) => {
-        // Find fresh character objects from map (Ensures full data)
-        const sourceId =
-          typeof link.source === "object"
-            ? (link.source as CharacterNode).id
-            : link.source;
-        const targetId =
-          typeof link.target === "object"
-            ? (link.target as CharacterNode).id
-            : link.target;
-
-        const sourceChar = characterMap.get(sourceId);
-        const targetChar = characterMap.get(targetId);
-
-        if (!sourceChar || !targetChar) {
-          console.warn(
-            "[DeepAnalysis] Character lookup failed for:",
-            sourceId,
-            targetId,
-          );
-          return;
-        }
-
-        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
-        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
-        const isYubiZhuge =
-          (sourceChar.profile?.name?.includes("유비") &&
-            targetChar.profile?.name?.includes("제갈량")) ||
-          (sourceChar.profile?.name?.includes("제갈량") &&
-            targetChar.profile?.name?.includes("유비"));
-
-        const effectiveTypes = isYubiZhuge
-          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
-          : link.relationTypes || [link.type as string];
-
-        // [Debug] Check incoming link data for Radar Chart Attributes
-        console.log("Clicked Link Data for Analysis:", {
-          source: sourceChar.profile.name,
-          target: targetChar.profile.name,
-          link: link,
-          attributes: {
-            emotionalBond: link.emotionalBond,
-            functionalTrust: link.functionalTrust,
-            interdependence: link.interdependence,
-            latentTension: link.latentTension,
-            valueAlignment: link.valueAlignment,
-          },
-        });
-
-        try {
-          const analysisData = generateAnalysisData(
-            sourceChar,
-            targetChar,
-            effectiveTypes,
-            link.strength,
-            events,
-            link.description,
-          );
-          console.log("[DeepAnalysis] Data generated:", analysisData);
-          setDeepAnalysisData(analysisData);
-          setHoveredLink(null); // Close tooltip
-        } catch (error) {
-          console.error("[DeepAnalysis] Generation failed:", error);
-        }
-
-        onLinkClick?.(link);
-      },
-      [onLinkClick, events, characterMap],
-    );
-
     // 연결된 노드 계산
     const connectedNodeIds = useMemo(() => {
       if (!selectedNodeId) return null;
@@ -484,7 +410,53 @@ export const CharacterGraphCanvas = forwardRef<
     // 링크 클릭 핸들러
     const handleLinkClick = (link: LinkObject) => {
       const relLink = link as unknown as RelationshipLink;
-      handleOpenDeepAnalysis(relLink);
+      const sourceId =
+        typeof relLink.source === "object"
+          ? (relLink.source as CharacterNode).id
+          : relLink.source;
+      const targetId =
+        typeof relLink.target === "object"
+          ? (relLink.target as CharacterNode).id
+          : relLink.target;
+
+      const sourceChar = characterMap.get(sourceId);
+      const targetChar = characterMap.get(targetId);
+
+      if (sourceChar && targetChar) {
+        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
+        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
+        const isYubiZhuge =
+          (sourceChar.profile?.name?.includes("유비") &&
+            targetChar.profile?.name?.includes("제갈량")) ||
+          (sourceChar.profile?.name?.includes("제갈량") &&
+            targetChar.profile?.name?.includes("유비"));
+
+        const effectiveTypes = isYubiZhuge
+          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
+          : relLink.relationTypes || [relLink.type];
+
+        const analysisData = generateAnalysisData(
+          {
+            id: sourceId,
+            name: sourceChar.profile?.name || "Unknown",
+            imageUrl: sourceChar.imageUrl,
+          },
+          {
+            id: targetId,
+            name: targetChar.profile?.name || "Unknown",
+            imageUrl: targetChar.imageUrl,
+          },
+          effectiveTypes,
+          relLink.strength,
+          events,
+          relLink.description,
+        );
+        setDeepAnalysisData(analysisData);
+      } else {
+        // Character not found in map
+      }
+
+      onLinkClick?.(relLink);
     };
 
     // 링크 호버 핸들러
@@ -959,40 +931,51 @@ export const CharacterGraphCanvas = forwardRef<
               };
               setSelectedEvent(bioEvent);
             }}
-            onOpenDeepAnalysis={() => handleOpenDeepAnalysis(hoveredLink.link)}
-          />
-        )}
+            onOpenDeepAnalysis={() => {
+              // Re-use logic from handleLinkClick to open the modal
+              const sourceId =
+                typeof hoveredLink.link.source === "object"
+                  ? (hoveredLink.link.source as CharacterNode).id
+                  : hoveredLink.link.source;
+              const targetId =
+                typeof hoveredLink.link.target === "object"
+                  ? (hoveredLink.link.target as CharacterNode).id
+                  : hoveredLink.link.target;
 
-        {/* Deep Analysis Modal */}
-        {deepAnalysisData && (
-          <RelationshipDeepAnalysisModal
-            isOpen={true}
-            onClose={() => setDeepAnalysisData(null)}
-            data={deepAnalysisData}
-            onNavigateToEvent={(eventId) => {
-              const event = events.find((e) => e.eventId === eventId);
-              if (event) {
-                // Convert event to BiographyEvent simple structure
-                const bioEvent: BiographyEvent = {
-                  eventId: event.eventId,
-                  eventType: event.eventType.toLowerCase(),
-                  narrativeSummary: event.narrativeSummary,
-                  description: event.description,
-                  participants: event.participants,
-                  timestamp:
-                    event.timestamp ||
-                    (event.chapter ? String(event.chapter) : null),
-                  importance: event.importance,
-                  changesMade: null,
-                  locationRef: null,
-                  prevEventId: null,
-                  visualScene: null,
-                };
-                setSelectedEvent(bioEvent);
+              const sourceChar = characterMap.get(sourceId);
+              const targetChar = characterMap.get(targetId);
+
+              if (sourceChar && targetChar) {
+                const analysisData = generateAnalysisData(
+                  {
+                    id: sourceId,
+                    name: sourceChar.profile?.name || "Unknown",
+                    imageUrl: sourceChar.imageUrl,
+                  },
+                  {
+                    id: targetId,
+                    name: targetChar.profile?.name || "Unknown",
+                    imageUrl: targetChar.imageUrl,
+                  },
+                  hoveredLink.link.relationTypes || [
+                    hoveredLink.link.type as string,
+                  ], // Use relationTypes if available
+                  hoveredLink.link.strength,
+                  events,
+                  hoveredLink.link.description,
+                );
+                setDeepAnalysisData(analysisData);
               }
             }}
           />
         )}
+
+        {/* Deep Analysis Modal */}
+        <RelationshipDeepAnalysisModal
+          isOpen={!!deepAnalysisData}
+          onClose={() => setDeepAnalysisData(null)}
+          data={deepAnalysisData}
+        />
 
         <EventDetailPanel
           event={selectedEvent}

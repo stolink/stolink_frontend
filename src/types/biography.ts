@@ -37,7 +37,6 @@ export interface BiographyEvent {
   timestamp: string | null; // 시간 (null 가능)
   importance: number; // 1-10 숫자
   changesMade: unknown | null; // 변화 기록
-  projectId: string; // 프로젝트 ID
 }
 
 /** 중요도 수준 판별 헬퍼 */
@@ -62,7 +61,6 @@ export function transformEventToBiography(event: BackendEvent): BiographyEvent {
     timestamp: event.timestamp || null,
     importance: event.importance || 5,
     changesMade: event.changes_made || null,
-    projectId: event.projectId || event.project_id || "",
   };
 }
 

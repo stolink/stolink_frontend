@@ -734,18 +734,19 @@ export const CharacterGraph = forwardRef<
 
         if (!sourceNode || !targetNode) return;
 
-        const sourceChar = nodeCharacterMapRef.current.get(sourceNode.id);
-        const targetChar = nodeCharacterMapRef.current.get(targetNode.id);
-
-        if (!sourceChar || !targetChar) return;
-
-        // Relation types fallback
-        const relTypes = link.relationTypes || [link.type as string];
-
+        // Generate mock data for now (replace with real API call later)
         const mockData = generateAnalysisData(
-          sourceChar,
-          targetChar,
-          relTypes,
+          {
+            id: sourceNode.id,
+            name: sourceNode.name,
+            imageUrl: sourceNode.imageUrl,
+          },
+          {
+            id: targetNode.id,
+            name: targetNode.name,
+            imageUrl: targetNode.imageUrl,
+          },
+          link.relationTypes || [link.type as string],
           link.strength,
           events,
           link.description,

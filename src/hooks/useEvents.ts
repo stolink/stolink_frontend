@@ -24,7 +24,6 @@ function eventToBiography(event: Event): BiographyEvent {
     timestamp: event.timestamp,
     importance: event.importance,
     changes_made: event.changesMade,
-    project_id: event.projectId,
   });
 }
 
@@ -48,12 +47,8 @@ export function useCharacterEvents(
   return useQuery({
     queryKey: ["events", "character", characterId, "debug-force-v1"],
     queryFn: async (): Promise<BiographyEvent[]> => {
-      console.log(`[useCharacterEvents] Query triggered for: ${characterId}`);
       if (!characterId) return [];
       const events = await eventService.getByCharacter(characterId);
-      console.log(
-        `[useCharacterEvents] Service returned ${events.length} events`,
-      );
       return events.map(eventToBiography);
     },
     enabled: enabled && !!characterId,
