@@ -1,6 +1,6 @@
 # StoLink 프로젝트 아키텍처
 
-> **최종 수정**: 2025년 12월 28일
+> **최종 수정**: 2026년 1월 14일
 > **기술 스택**: React 19.2 + TypeScript 5.9 + Vite 7.2 + Zustand 5.0 + TanStack Query 5.90 + D3.js 7.x
 
 ---
@@ -53,7 +53,8 @@ src/
 │   │   ├── ConsistencyPanel.tsx
 │   │   └── ...
 │   ├── CharacterGraph/   # 관계도 (D3.js Force Simulation)
-│   ├── layouts/          # 레이아웃 (3개)
+│   │   ├── CharacterGraph.tsx # 관계도 (World): `react-force-graph-2d`를 사용한 Canvas 기반 고성능 렌더링. 대규모 캐릭터 데이터(1000+)에서도 60fps 유지.
+├── layouts/          # 레이아웃 (3개)
 │   ├── library/          # 서재 관련 (3개)
 │   │   ├── BookCard.tsx
 │   │   ├── CreateBookCard.tsx
@@ -63,7 +64,7 @@ src/
 ├── data/                 # 목 데이터, 상수 (3개)
 │   └── demoData.ts       # 데모 모드 목 데이터
 │
-├── hooks/                # 커스텀 훅 (30개) ⭐
+├── hooks/                # 커스텀 훅 (35개) ⭐
 │   ├── useDocuments.ts   # 문서 CRUD (TanStack Query)
 │   ├── useProjects.ts    # 프로젝트 관리
 │   ├── useCharacters.ts  # 캐릭터 관리
@@ -123,7 +124,7 @@ src/
 │   ├── graphApi.ts
 │   └── index.ts
 │
-├── stores/               # Zustand 스토어 (8개)
+├── stores/               # Zustand 스토어 (18개)
 │   ├── useAuthStore.ts
 │   ├── useEditorStore.ts
 │   ├── useUIStore.ts
@@ -136,7 +137,7 @@ src/
 │
 ├── styles/               # 추가 스타일
 │
-└── types/                # TypeScript 타입 (11개)
+└── types/                # TypeScript 타입 (21개)
     ├── document.ts       # Document, DocumentMetadata
     ├── project.ts        # Project, ProjectStats
     ├── character.ts      # Character, Place, Item, CharacterRelation
@@ -372,7 +373,7 @@ sequenceDiagram
 
 ### 인증 흐름
 
-````mermaid
+```mermaid
 sequenceDiagram
     participant UI as AuthPage
     participant Hook as useAuth
@@ -385,36 +386,32 @@ sequenceDiagram
     Hook->>Store: setUser(user)
     Store->>Store: persist to localStorage
     UI->>UI: navigate('/library')
+```
 
-### 증분 분석 흐름 (SSE + IndexedDB)
+### 증분 분석 흐름 (SSE + IndexedDB + Hash 차분)
 
 ```mermaid
 sequenceDiagram
     participant Editor as EditorPage
-    participant Handler as useEditorHandlers
-    participant Buffer as useAnalysisBufferStore (IndexedDB)
-    participant SSE as useProjectSSE
-    participant API as Backward API
+    participant Handler as useProjectAnalysis
+    participant Store as useAnalysisBufferStore
+    participant Hash as aiService (Hash)
+    participant API as Backend API
 
-    Note over Editor, Buffer: 사용자 입력 및 저장
-    Editor->>Handler: handleContentChange(content)
-    Handler->>Handler: saveContent(content) (API 저장)
-    Handler->>Buffer: addToBuffer(docId, content) (로컬 버퍼링)
+    Editor->>Handler: triggerAnalysis()
+    Handler->>Store: getChangedDocuments()
+    Store->>Hash: calculateContentHash(content)
+    Hash-->>Store: hash
+    Store-->>Handler: Changed Chunks (Hash mismatch)
 
-    Note over Buffer, SSE: 자동 플러시 조건 (10,000자 or 30분)
-    SSE->>Buffer: shouldAutoFlush()
-    Buffer-->>SSE: true
-    SSE->>Buffer: flush()
-    Buffer-->>SSE: { chunks }
-    SSE->>API: POST /api/ai/analyze (chunks)
+    Handler->>API: POST /api/ai/analyze (Partial Chunks)
+    API-->>Handler: { jobId }
 
-    Note over SSE: SSE 이벤트 수신
-    API-->>SSE: Event: progress (분석 진행 중)
-    API-->>SSE: Event: completed (분석 완료)
-    SSE->>Editor: UI 업데이트 (분석 완료 알림)
-````
-
-````
+    Note over Handler, API: SSE (useJobSSE) 실시간 수신
+    API-->>Handler: Event: progress / completed
+    Handler->>Store: setLastAnalyzedHashes(pendingDocs)
+    Handler->>Editor: UI 업데이트 (분석 완료)
+```
 
 ---
 
@@ -456,7 +453,7 @@ sequenceDiagram
 
 ```typescript
 queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
-````
+```
 
 ---
 

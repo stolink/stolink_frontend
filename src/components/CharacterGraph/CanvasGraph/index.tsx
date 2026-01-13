@@ -6,6 +6,7 @@ import {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  startTransition,
 } from "react";
 import { throttle } from "lodash-es";
 import ForceGraph2D, {
@@ -54,6 +55,8 @@ interface CharacterGraphCanvasProps {
   showSearch?: boolean;
   onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
+  /** 편집 모드 - true일 때 내부 DeepAnalysis 모달을 열지 않음 */
+  isEditMode?: boolean;
 }
 
 export interface CharacterGraphCanvasRef {
@@ -84,12 +87,13 @@ export const CharacterGraphCanvas = forwardRef<
       showSearch = true,
       onNodeDragEnd,
       nodeChanges,
+      isEditMode = false,
     },
     ref,
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
-    // Animation Phase State (Triggers re-render for flow effect)
-    const [animationPhase, setAnimationPhase] = useState(0);
+    const animationPhaseRef = useRef(0);
+
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [hoveredLink, setHoveredLink] = useState<{
       link: RelationshipLink;
@@ -111,6 +115,7 @@ export const CharacterGraphCanvas = forwardRef<
 
     // Zoom State for TiledBackground
     const [zoomState, setZoomState] = useState({ x: 0, y: 0, scale: 1 });
+    const hasInitialZoomedRef = useRef(false);
 
     // Deep Analysis Modal
     const [deepAnalysisData, setDeepAnalysisData] =
@@ -128,7 +133,11 @@ export const CharacterGraphCanvas = forwardRef<
 
       const animate = (currentTime: number) => {
         if (currentTime - lastTime >= frameInterval) {
-          setAnimationPhase((prev) => (prev + 0.015) % 1); // Slow smooth flow
+          // Update ref instead of state to prevent React churn
+          animationPhaseRef.current = (animationPhaseRef.current + 0.015) % 1;
+
+          // Force refresh even if simulation is idle to keep shader running
+          // graphRef.current?.refresh(); // ERROR: refresh is not a function
           lastTime = currentTime;
         }
         frameId = requestAnimationFrame(animate);
@@ -137,6 +146,13 @@ export const CharacterGraphCanvas = forwardRef<
       frameId = requestAnimationFrame(animate);
       return () => cancelAnimationFrame(frameId);
     }, []);
+
+    // 외부에서 필터 변경 시 내부 상태 동기화
+    useEffect(() => {
+      startTransition(() => {
+        setInternalFilter(relationTypeFilter);
+      });
+    }, [relationTypeFilter]);
 
     // 노드 데이터 생성
     const initialNodes: CharacterNode[] = useMemo(() => {
@@ -159,22 +175,6 @@ export const CharacterGraphCanvas = forwardRef<
     }, [characters, initialLinks]);
 
     // Ref 핸들 설정 (initialNodes 이후에 선언)
-    useImperativeHandle(
-      ref,
-      () => ({
-        focusNode: async (nodeId: string) => {
-          // react-force-graph-2d의 줌 기능으로 특정 노드 포커스
-          if (graphRef.current) {
-            const node = initialNodes.find((n) => n.id === nodeId);
-            if (node && node.x !== undefined && node.y !== undefined) {
-              graphRef.current.centerAt(node.x, node.y, 1000);
-              graphRef.current.zoom(2, 1000);
-            }
-          }
-        },
-      }),
-      [initialNodes],
-    );
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
@@ -209,13 +209,13 @@ export const CharacterGraphCanvas = forwardRef<
         const adj = new Map<string, string[]>();
         links.forEach((l) => {
           const s =
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source;
+              : String(l.source);
           const t =
-            typeof l.target === "object"
+            typeof l.target === "object" && l.target
               ? (l.target as CharacterNode).id
-              : l.target;
+              : String(l.target);
           if (!adj.has(s)) adj.set(s, []);
           if (!adj.has(t)) adj.set(t, []);
           adj.get(s)?.push(t);
@@ -245,13 +245,13 @@ export const CharacterGraphCanvas = forwardRef<
         // Assign depth to links and Fix Direction (Source -> Target = Low Depth -> High Depth)
         links.forEach((l) => {
           const sId =
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source;
+              : String(l.source);
           const tId =
-            typeof l.target === "object"
+            typeof l.target === "object" && l.target
               ? (l.target as CharacterNode).id
-              : l.target;
+              : String(l.target);
 
           const sDepth = nodeDepths.get(sId);
           const tDepth = nodeDepths.get(tId);
@@ -281,13 +281,13 @@ export const CharacterGraphCanvas = forwardRef<
 
       links.forEach((link) => {
         const s =
-          typeof link.source === "object"
+          typeof link.source === "object" && link.source
             ? (link.source as CharacterNode).id
-            : link.source;
+            : String(link.source);
         const t =
-          typeof link.target === "object"
+          typeof link.target === "object" && link.target
             ? (link.target as CharacterNode).id
-            : link.target;
+            : String(link.target);
         const key = [s, t].sort().join("-");
         if (!pairMap.has(key)) pairMap.set(key, []);
         pairMap.get(key)!.push(link);
@@ -321,9 +321,9 @@ export const CharacterGraphCanvas = forwardRef<
         // [Bidirectional Detection]
         const groupSources = new Set(
           group.map((l) =>
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source,
+              : String(l.source),
           ),
         );
         const isReciprocal = groupSources.size > 1;
@@ -381,18 +381,53 @@ export const CharacterGraphCanvas = forwardRef<
       return map;
     }, [characters]);
 
+    // Ref 핸들 설정 (graphData 선언 이후)
+    useImperativeHandle(
+      ref,
+      () => ({
+        focusNode: async (nodeId: string) => {
+          if (graphRef.current) {
+            const fg = graphRef.current;
+            const { nodes: liveNodes } = graphData;
+            const node = liveNodes.find((n: NodeObject) => n.id === nodeId);
+
+            // 1. 하이라이트 즉시 적용
+            onSearchChange?.([nodeId]);
+
+            const targetX = node.x;
+            const targetY = node.y;
+            if (targetX === undefined || targetY === undefined) return;
+
+            setTimeout(() => {
+              // 가독성과 안정성을 위한 1.2배 고정 줌 센터링
+              fg.centerAt(targetX, targetY); // Instant
+              fg.zoom(1.2, 500); // Animate zoom only
+            }, 50);
+          }
+        },
+      }),
+      [graphData, onSearchChange],
+    );
+
     // [Consolidated] Handle opening deep analysis modal
     const handleOpenDeepAnalysis = useCallback(
       (link: RelationshipLink) => {
+        // 편집 모드에서는 내부 DeepAnalysis 모달을 열지 않고 외부 핸들러만 호출
+        if (isEditMode) {
+          onLinkClick?.(link);
+          return;
+        }
+
+        // Find fresh character objects from map (Ensures full data)
         // Find fresh character objects from map (Ensures full data)
         const sourceId =
-          typeof link.source === "object"
+          typeof link.source === "object" && link.source
             ? (link.source as CharacterNode).id
-            : link.source;
+            : String(link.source);
         const targetId =
-          typeof link.target === "object"
+          typeof link.target === "object" && link.target
             ? (link.target as CharacterNode).id
-            : link.target;
+            : String(link.target);
 
         const sourceChar = characterMap.get(sourceId);
         const targetChar = characterMap.get(targetId);
@@ -450,7 +485,7 @@ export const CharacterGraphCanvas = forwardRef<
 
         onLinkClick?.(link);
       },
-      [onLinkClick, events, characterMap],
+      [onLinkClick, events, characterMap, isEditMode],
     );
 
     // 연결된 노드 계산
@@ -666,11 +701,14 @@ export const CharacterGraphCanvas = forwardRef<
 
     // Initial Zoom to Fit & Dramatic Entry
     useEffect(() => {
+      if (initialNodes.length === 0 || hasInitialZoomedRef.current) return;
+
       // Wait for graph to settle slightly
       const timer = setTimeout(() => {
         if (graphRef.current) {
           // Faster zoom (0.8s) for snappier entry
-          graphRef.current.zoomToFit(800, 120);
+          graphRef.current.zoomToFit(800, 150);
+          hasInitialZoomedRef.current = true;
           // Fade in
           setTimeout(() => setIsLoaded(true), 100);
         }
@@ -748,12 +786,14 @@ export const CharacterGraphCanvas = forwardRef<
                 (highlightedNodeIds &&
                   highlightedNodeIds.includes(charNode.id)) ||
                 false;
+              const isSearchActive = !!highlightedNodeIds;
+              const isConnected = connectedNodeIds?.has(charNode.id);
+              const isSearchResult = highlightedNodeIds?.includes(charNode.id);
+
               const isDimmed = Boolean(
-                (connectedNodeIds && !connectedNodeIds.has(charNode.id)) ||
                 (showMainOnly && charNode.role !== "protagonist") ||
-                (highlightedNodeIds &&
-                  highlightedNodeIds.length > 0 &&
-                  !highlightedNodeIds.includes(charNode.id)),
+                (isSearchActive && !isSearchResult && !isConnected) || // 검색 중이라도 선택/연결된 노드면 dim 금지
+                (!isSearchActive && connectedNodeIds && !isConnected), // 일반 선택 상태에서 비연결 노드 dim
               );
 
               drawNode({
@@ -809,17 +849,22 @@ export const CharacterGraphCanvas = forwardRef<
 
               const isHighlighted =
                 selectedNodeId === sourceId || selectedNodeId === targetId;
+
+              // 인성 검색/필터링 시 하이라이트되지 않은 간선은 흐리게 처리
+              const isSearchActive = !!highlightedNodeIds;
+              const isDimmedBySearch =
+                isSearchActive &&
+                highlightedNodeIds &&
+                (!highlightedNodeIds.includes(sourceId) ||
+                  !highlightedNodeIds.includes(targetId));
+
               // Fix: Strict Star Topology (User Feedback)
               // Only show links that are DIRECTLY connected to the selected node.
               // Hide links between neighbors (e.g., A->B, A->C selected. Hide B->C).
               const isDimmed =
                 (selectedNodeId
                   ? sourceId !== selectedNodeId && targetId !== selectedNodeId
-                  : false) ||
-                (highlightedNodeIds &&
-                  highlightedNodeIds.length > 0 &&
-                  (!highlightedNodeIds.includes(sourceId) ||
-                    !highlightedNodeIds.includes(targetId)));
+                  : false) || isDimmedBySearch;
 
               drawLink({
                 ctx,
@@ -830,7 +875,7 @@ export const CharacterGraphCanvas = forwardRef<
                   isDimmed: isDimmed || false,
                   isSelected: false,
                 },
-                animationPhase: animationPhase,
+                animationPhase: animationPhaseRef.current,
                 showTension,
                 showLogicCheck,
               });
@@ -935,22 +980,26 @@ export const CharacterGraphCanvas = forwardRef<
           <RelationshipEventTooltip
             events={hoveredLink.link.history || []}
             sourceName={
-              typeof hoveredLink.link.source === "object"
+              typeof hoveredLink.link.source === "object" &&
+              hoveredLink.link.source
                 ? (hoveredLink.link.source as CharacterNode).name
                 : "Unknown"
             }
             targetName={
-              typeof hoveredLink.link.target === "object"
+              typeof hoveredLink.link.target === "object" &&
+              hoveredLink.link.target
                 ? (hoveredLink.link.target as CharacterNode).name
                 : "Unknown"
             }
             sourceImage={
-              typeof hoveredLink.link.source === "object"
+              typeof hoveredLink.link.source === "object" &&
+              hoveredLink.link.source
                 ? (hoveredLink.link.source as CharacterNode).imageUrl
                 : undefined
             }
             targetImage={
-              typeof hoveredLink.link.target === "object"
+              typeof hoveredLink.link.target === "object" &&
+              hoveredLink.link.target
                 ? (hoveredLink.link.target as CharacterNode).imageUrl
                 : undefined
             }
@@ -961,11 +1010,13 @@ export const CharacterGraphCanvas = forwardRef<
             description={hoveredLink.link.description}
             onEventClick={(event) => {
               const source =
-                typeof hoveredLink.link.source === "object"
+                typeof hoveredLink.link.source === "object" &&
+                hoveredLink.link.source
                   ? (hoveredLink.link.source as CharacterNode)
                   : { name: "Unknown" };
               const target =
-                typeof hoveredLink.link.target === "object"
+                typeof hoveredLink.link.target === "object" &&
+                hoveredLink.link.target
                   ? (hoveredLink.link.target as CharacterNode)
                   : { name: "Unknown" };
 

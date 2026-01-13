@@ -242,51 +242,63 @@ export function useProjectAnalysis(
 
     const checkProjectJobStatus = async () => {
       try {
-        const jobStatus = await aiService.getProjectAnalysisJob(projectId);
+        const projectStatus = await aiService.getProjectAnalysisJob(projectId);
 
-        // 진행 중인 job이 있으면 SSE 연결
-
-        // 진행 중인 job이 있으면 SSE 연결을 위해 스토어에 추가
-        // 진행 중인 job이 있으면 SSE 연결을 위해 스토어에 추가
+        // 진행 중인 job이 있으면 상세 정보를 조회하여 유효성 검증
         if (
-          jobStatus.jobId &&
-          (jobStatus.status === "processing" || jobStatus.status === "pending")
+          projectStatus.jobId &&
+          (projectStatus.status === "processing" ||
+            projectStatus.status === "pending")
         ) {
-          // Check for staleness to avoid zombie jobs
-          // PENDING jobs > 1 min old are considered stale (backend should have picked them up by now)
-          // PROCESSING jobs > 30 mins old are considered stuck/stale
-          const statusAny = jobStatus as unknown as Record<string, unknown>;
-          const timestampStr = (statusAny.updatedAt ||
-            statusAny.createdAt) as string;
-          const timestamp = timestampStr
-            ? new Date(timestampStr).getTime()
-            : Date.now();
-          const now = Date.now();
-          const elapsed = now - timestamp;
+          try {
+            // [Fix] 프로젝트 상태만으로는 updatedAt을 알 수 없으므로, 개별 Job 상세 조회를 통해 정확한 시간을 가져옵니다.
+            // 이를 통해 '지금 막 시작된' 것으로 오판하여 Zombie Job이 유지되는 문제를 해결합니다.
+            const jobDetail = await aiService.getJobStatus(projectStatus.jobId);
 
-          const isPendingStale =
-            jobStatus.status === "pending" && elapsed > 1 * 60 * 1000; // 1 min (aggressively ignore pending zombies)
-          const isProcessingStale =
-            jobStatus.status === "processing" && elapsed > 30 * 60 * 1000; // 30 min
+            const timestampStr = jobDetail.updatedAt || jobDetail.createdAt;
+            const timestamp = timestampStr
+              ? new Date(timestampStr).getTime()
+              : Date.now();
+            const now = Date.now();
+            const elapsed = now - timestamp;
 
-          if (isPendingStale || isProcessingStale) {
-            // 오래된(Stuck) 작업은 유령 작업으로 간주하여 제거
+            const isPendingStale =
+              jobDetail.status === "pending" && elapsed > 1 * 60 * 1000; // 1 min
+            const isProcessingStale =
+              jobDetail.status === "processing" && elapsed > 30 * 60 * 1000; // 30 min
+
+            if (isPendingStale || isProcessingStale) {
+              console.warn(
+                `[useProjectAnalysis] Found zombie job ${projectStatus.jobId} (status: ${jobDetail.status}, elapsed: ${Math.round(elapsed / 1000)}s). Clearing.`,
+              );
+              clearStoreJobs(projectId);
+            } else {
+              // Valid job
+              addStoreJobId(projectId, projectStatus.jobId, "analysis");
+              setJobProgresses((prev) => ({
+                ...prev,
+                [projectStatus.jobId!]: projectStatus.progress || 0,
+              }));
+            }
+          } catch (err) {
+            // Job 상세 조회 실패 (예: 404) -> 존재하지 않는 Job이므로 클리어
+            console.warn(
+              `[useProjectAnalysis] Failed to fetch details for job ${projectStatus.jobId}. Clearing.`,
+              err,
+            );
             clearStoreJobs(projectId);
-          } else {
-            addStoreJobId(projectId, jobStatus.jobId, "analysis");
-            setJobProgresses((prev) => ({
-              ...prev,
-              [jobStatus.jobId!]: jobStatus.progress || 0,
-            }));
           }
         }
         // 완료된 상태면 캐릭터/관계 쿼리 무효화 (DB에서 최신 데이터 fetch)
         else if (
-          jobStatus.status === "failed" ||
-          jobStatus.status === "completed"
+          projectStatus.status === "failed" ||
+          projectStatus.status === "completed"
         ) {
-          // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
-          // 클라이언트가 알고 있는 모든 진행 중 작업을 정리합니다. (Ghost Job 방지)
+          // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면 정리
+          clearStoreJobs(projectId);
+        } else {
+          // [Bugfix] 서버에 아무런 Job도 없다면(null/null) 로컬 상태도 깨끗하게 비웁니다.
+
           clearStoreJobs(projectId);
         }
       } catch (error) {

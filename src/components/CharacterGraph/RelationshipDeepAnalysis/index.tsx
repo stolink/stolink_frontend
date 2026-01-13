@@ -78,7 +78,7 @@ export function RelationshipDeepAnalysisModal({
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               >
                 {/* Dossier Card */}
-                <div className="relative w-full max-w-6xl h-full max-h-[92vh] bg-[#FAFAF8] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
+                <div className="relative w-full max-w-[1400px] h-full max-h-[92vh] bg-[#FAFAF8] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
                   {/* Accessibility: DialogTitle is required by Radix for screen readers */}
                   <DialogPrimitive.Title className="sr-only">
                     {sourceCharacter.name}와 {targetCharacter.name}의 관계 심층
