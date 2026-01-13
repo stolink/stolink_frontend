@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores";
 
-const CHAT_API_URL = "/api/ai-chat";
+const CHAT_API_URL = "/ai-api";
 
 /**
  * RAG 검색 결과 소스 청크
@@ -18,35 +18,12 @@ export interface SourceChunk {
 }
 
 /**
- * 관계 카드 데이터 (Neo4j CharacterRelationship 기반)
- */
-export interface RelationshipCardData {
-  sourceCharacter: { id: string; name: string };
-  targetCharacter: { id: string; name: string };
-  types: string[]; // ["enemy", "rival"] - 복수 관계 타입
-  strength: number; // 1-10
-  description?: string;
-  bidirectional?: boolean;
-  since?: string;
-}
-
-/**
- * 컨텍스트 카드 (향후 EventCard, CharacterCard 확장 가능)
- */
-export interface ContextCard {
-  cardType: "relationship" | "event" | "character";
-  data: RelationshipCardData;
-  actionUrl: string;
-}
-
-/**
  * SSE 스트림 토큰 타입
  */
 interface StreamToken {
-  type: "token" | "sources" | "cards" | "done" | "error";
+  type: "token" | "sources" | "done" | "error";
   content?: string;
   sources?: SourceChunk[];
-  cards?: ContextCard[];
   error?: string;
 }
 
@@ -58,7 +35,6 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: SourceChunk[];
-  cards?: ContextCard[];
   timestamp: Date;
 }
 
@@ -86,7 +62,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [currentCards, setCurrentCards] = useState<ContextCard[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
@@ -122,7 +97,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
       setAnalysisComplete(false);
       setCurrentResponse("");
       setCurrentSources([]);
-      setCurrentCards([]);
 
       // AbortController 생성
       abortControllerRef.current = new AbortController();
@@ -133,8 +107,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
           Accept: "text/event-stream",
         };
 
-        // Corrected URL: CHAT_API_URL already contains /api/ai-chat
-        const response = await fetch(`${CHAT_API_URL}/stream`, {
+        // Corrected path from /ai/chat/stream to /chat/stream as per guide
+        const response = await fetch(`${CHAT_API_URL}/chat/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -159,7 +133,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
         const decoder = new TextDecoder();
         let accumulatedResponse = "";
         let sources: SourceChunk[] = [];
-        let cards: ContextCard[] = [];
         let isFirstToken = true; // 로컬 플래그로 첫 토큰 감지
 
         while (true) {
@@ -186,9 +159,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 } else if (data.type === "sources" && data.sources) {
                   sources = data.sources;
                   setCurrentSources(sources);
-                } else if (data.type === "cards" && data.cards) {
-                  cards = data.cards;
-                  setCurrentCards(cards);
                 } else if (data.type === "done") {
                   // 스트리밍 완료 - AI 메시지 추가
                   const aiMessage: ChatMessage = {
@@ -196,14 +166,12 @@ export function useChatStream(options?: UseChatStreamOptions) {
                     role: "assistant",
                     content: accumulatedResponse,
                     sources,
-                    cards,
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, aiMessage]);
                   setStreaming(false);
                   setCurrentResponse("");
                   setCurrentSources([]);
-                  setCurrentCards([]);
                 } else if (data.type === "error") {
                   throw new Error(
                     data.error || "알 수 없는 오류가 발생했습니다.",
@@ -227,7 +195,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
             role: "assistant",
             content: accumulatedResponse,
             sources,
-            cards,
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, aiMessage]);
@@ -265,7 +232,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
     // Call stop endpoint as per guide
     try {
-      await fetch(`${CHAT_API_URL}/stop`, {
+      await fetch(`${CHAT_API_URL}/chat/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId }),
@@ -275,7 +242,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
     } finally {
       setStreaming(false);
       setCurrentResponse("");
-      setCurrentCards([]);
     }
   }, [sessionId]);
 
@@ -303,7 +269,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
     setSessionId(sid);
 
     try {
-      const res = await fetch(`${CHAT_API_URL}/history/${sid}?limit=20`, {
+      const res = await fetch(`${CHAT_API_URL}/chat/history/${sid}?limit=20`, {
         credentials: "include",
       });
       if (res.ok) {
@@ -334,7 +300,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
     analysisComplete,
     currentResponse,
     currentSources,
-    currentCards,
     sessionId,
     sendMessage,
     cancelStream,

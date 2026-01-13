@@ -70,15 +70,7 @@ export function CharacterHeader({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setImageError(false);
-    if (displayImageUrl) {
-      console.log(
-        "[CharacterHeader] Display Image URL:",
-        displayImageUrl,
-        "Original:",
-        character.imageUrl,
-      );
-    }
-  }, [displayImageUrl, character.imageUrl]);
+  }, [displayImageUrl]);
 
   return (
     <div className="flex flex-col gap-6 w-full">

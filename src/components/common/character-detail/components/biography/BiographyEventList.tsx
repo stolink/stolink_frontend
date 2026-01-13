@@ -9,12 +9,14 @@ interface BiographyEventListProps {
   events: BiographyEvent[];
   selectedEventId: string | null;
   onEventClick: (eventId: string) => void;
+  characterNameMap?: Record<string, string>;
 }
 
 export function BiographyEventList({
   events,
   selectedEventId,
   onEventClick,
+  characterNameMap,
 }: BiographyEventListProps) {
   // 시간순 정렬 (혹은 연결순? 일단 입력 순서대로 표시하되, 필요한 경우 정렬 로직 추가)
   // BiographyTree와 동일한 순서가 좋음. BiographyTree에서 정렬 로직을 분리하는 것이 이상적이나,
@@ -101,9 +103,22 @@ export function BiographyEventList({
                             ? `${event.narrativeSummary.slice(0, 50)}...`
                             : event.narrativeSummary}
                         </h5>
-                        <p className="text-sm text-espresso-600 mt-1  leading-relaxed opacity-80 break-words whitespace-pre-wrap">
+                        <p className="text-sm text-espresso-600 mt-1 leading-relaxed opacity-80 break-words whitespace-pre-wrap">
                           {event.description || "상세 설명 없음"}
                         </p>
+
+                        {event.participants.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            {event.participants.map((p, i) => (
+                              <span
+                                key={i}
+                                className="text-[10px] px-2 py-0.5 bg-cloud-50/50 rounded-full border border-cloud-100 text-espresso-500 font-medium"
+                              >
+                                {characterNameMap?.[p] || p}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 

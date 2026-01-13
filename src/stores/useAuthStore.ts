@@ -17,6 +17,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  // hasHydrated removed
 
   setAuth: (user) =>
     set({
@@ -37,4 +38,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     }),
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  // setHasHydrated removed
 }));

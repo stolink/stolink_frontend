@@ -1,12 +1,19 @@
-import { BookOpen, ChevronRight, MoreHorizontal } from "lucide-react";
+import {
+  BookOpen,
+  ChevronRight,
+  MoreHorizontal,
+  User as UserIcon,
+} from "lucide-react";
 import { Button } from "@stolink/ui";
 
 interface CharacterAppearancesProps {
   appearances: string[];
+  biography?: string;
 }
 
 export function CharacterAppearances({
   appearances,
+  biography,
 }: CharacterAppearancesProps) {
   return (
     <div className="space-y-4">
@@ -14,6 +21,20 @@ export function CharacterAppearances({
         <BookOpen className="h-5 w-5 text-mocha-500" />
         등장 정보
       </h3>
+
+      {biography && (
+        <div className="editorial-card p-5 mb-6 bg-gradient-to-r from-paper to-white border-l-4 border-l-mocha-400">
+          <div className="flex items-center gap-2 mb-3">
+            <UserIcon className="h-4 w-4 text-mocha-600" />
+            <span className="text-xs font-bold text-mocha-600 uppercase tracking-wider">
+              인물 개요
+            </span>
+          </div>
+          <p className="text-sm text-espresso-700 leading-relaxed line-clamp-3">
+            {biography}
+          </p>
+        </div>
+      )}
 
       {appearances.length > 0 ? (
         <div className="space-y-3">

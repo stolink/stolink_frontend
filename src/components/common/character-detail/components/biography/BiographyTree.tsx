@@ -27,6 +27,7 @@ interface BiographyTreeProps {
   className?: string;
   selectedEventId: string | null;
   onEventClick: (eventId: string) => void;
+  characterNameMap?: Record<string, string>;
 }
 
 const CONTAINER_PADDING = 100;
@@ -52,6 +53,7 @@ export function BiographyTree({
   className,
   selectedEventId,
   onEventClick,
+  characterNameMap,
 }: BiographyTreeProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -246,7 +248,7 @@ export function BiographyTree({
                           key={i}
                           className="text-sm px-2 py-0.5 bg-white rounded-full border border-cloud-200 text-espresso-700"
                         >
-                          {p}
+                          {characterNameMap?.[p] || p}
                         </span>
                       ))}
                     </div>
