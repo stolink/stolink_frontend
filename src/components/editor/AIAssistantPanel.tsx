@@ -17,11 +17,8 @@ import {
   useChatStream,
   type SourceChunk,
   type ChatMessage,
-  type ContextCard,
 } from "@/hooks/useChatStream";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { ChatRelationshipCard } from "./chat/ChatRelationshipCard";
 
 interface AIAssistantPanelProps {
   projectId: string | null;
@@ -39,12 +36,10 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     analysisComplete,
     currentResponse,
     currentSources,
-    currentCards,
     sendMessage,
     cancelStream,
     resetSession,
     clearAnalysisComplete,
-    loadHistory,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
@@ -52,12 +47,11 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   });
 
   // 페이지 진입 시 히스토리 로드
-  // 페이지 진입 시 히스토리 로드
-  useEffect(() => {
-    if (projectId) {
-      loadHistory(projectId);
-    }
-  }, [projectId, loadHistory]);
+  // useEffect(() => {
+  //   if (projectId) {
+  //     loadHistory(projectId);
+  //   }
+  // }, [projectId, loadHistory]);
 
   // 분석 완료 애니메이션 표시 상태
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
@@ -307,20 +301,6 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                         className="inline-block w-1.5 h-4 bg-mocha-400 align-middle ml-1 rounded-sm"
                       />
                     </div>
-                    {/* 스트리밍 중 관계 카드 */}
-                    {currentCards.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        {currentCards.map((card: ContextCard, idx: number) => (
-                          <ChatRelationshipCard
-                            key={`stream-card-${idx}`}
-                            card={card}
-                            onViewDetails={(url) =>
-                              (window.location.href = url)
-                            }
-                          />
-                        ))}
-                      </div>
-                    )}
                     {currentSources.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-mocha-100/30">
                         <SourceList sources={currentSources} />
@@ -537,12 +517,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
  * Message Bubble component with Serif/Sans pairing
  */
 function MessageBubble({ message }: { message: ChatMessage }) {
-  const navigate = useNavigate();
   const isUser = message.role === "user";
-
-  const handleCardAction = (actionUrl: string) => {
-    navigate(actionUrl);
-  };
 
   return (
     <motion.div
@@ -580,19 +555,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
         <div className="whitespace-pre-wrap">{message.content}</div>
-
-        {/* 관계 카드 영역 */}
-        {!isUser && message.cards && message.cards.length > 0 && (
-          <div className="mt-4 space-y-3">
-            {message.cards.map((card, idx) => (
-              <ChatRelationshipCard
-                key={`card-${idx}`}
-                card={card}
-                onViewDetails={handleCardAction}
-              />
-            ))}
-          </div>
-        )}
 
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-mocha-100/30">

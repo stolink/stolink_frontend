@@ -106,41 +106,30 @@ function transformBackendCharacter(backendChar: any): Character {
       backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
-  // 🆕 relations.graph가 비어있으면 relationships 배열이나 직계 relations 배열 확인
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRelation = (rel: any) => ({
+    target: rel.target || rel.targetId,
+    type: rel.type || rel.relationType || rel.relation_type || "ALLY",
+    history: rel.history || null,
+    strength: rel.strength || 5,
+    description: rel.description || "",
+    publicStance: rel.public_stance || rel.publicStance,
+    privateFeeling: rel.private_feeling || rel.privateFeeling,
+    bidirectional: rel.bidirectional,
+    emotionalBond: rel.emotional_bond || rel.emotionalBond,
+    functionalTrust: rel.functional_trust || rel.functionalTrust,
+    valueAlignment: rel.value_alignment || rel.valueAlignment,
+    interdependence: rel.interdependence,
+    latentTension: rel.latent_tension || rel.latentTension,
+  });
+
   const relationsGraph =
     Array.isArray(relations?.graph) && relations.graph.length > 0
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        relations.graph.map((rel: any) => ({
-          target: rel.target,
-          type: rel.type || "ALLY",
-          history: rel.history || null,
-          strength: rel.strength || 5,
-          description: rel.description || "",
-          publicStance: rel.public_stance || rel.publicStance,
-          privateFeeling: rel.private_feeling || rel.privateFeeling,
-        }))
+      ? relations.graph.map(mapRelation)
       : Array.isArray(backendChar.relationships)
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          backendChar.relationships.map((rel: any) => ({
-            target: rel.target || rel.targetId,
-            type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-            history: rel.history || null,
-            strength: rel.strength || 5,
-            description: rel.description || "",
-            publicStance: rel.public_stance,
-            privateFeeling: rel.private_feeling,
-          }))
+        ? backendChar.relationships.map(mapRelation)
         : Array.isArray(relations)
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            relations.map((rel: any) => ({
-              target: rel.target || rel.targetId,
-              type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-              history: rel.history || null,
-              strength: rel.strength || 5,
-              description: rel.description || "",
-              publicStance: rel.public_stance,
-              privateFeeling: rel.private_feeling,
-            }))
+          ? relations.map(mapRelation)
           : [];
 
   // 🆕 callback_result.json: current_mood 객체 처리

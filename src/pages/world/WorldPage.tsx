@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +20,10 @@ import {
   CharacterGraphCanvas,
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
+import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
+import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
+import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 
 // Hooks
@@ -34,8 +37,6 @@ import { Button } from "@stolink/ui";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
-import RelationshipDeepAnalysisModal from "@/components/CharacterGraph/RelationshipDeepAnalysis";
-import { convertLinkToDeepAnalysisData } from "@/utils/relationshipAdapter";
 
 import { useProjectEvents } from "@/hooks/useEvents";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
@@ -70,6 +71,11 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+
+  // 관계 상세 분석 모달 상태
+  const [relationshipAnalysisData, setRelationshipAnalysisData] =
+    useState<RelationshipDeepAnalysisData | null>(null);
+  const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
     [],
   );
@@ -166,49 +172,6 @@ export default function WorldPage() {
     UIRelationType | "all"
   >("all");
 
-  // URL Query Params Handling
-  const [searchParams] = useSearchParams();
-  const relationshipParam = searchParams.get("relationship");
-  const tabParam = searchParams.get("tab");
-  // Selected Tab derived from URL
-  const activeTab =
-    tabParam &&
-    ["graph", "characters", "foreshadowing", "debug"].includes(tabParam)
-      ? tabParam
-      : "graph";
-
-  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
-  const links: RelationshipLink[] = useRelationshipLinks(
-    characters,
-    projectEvents,
-  );
-
-  // selectedRelationship State 제거 -> Derivation
-  // Sync Relationship Modal with URL
-  const selectedRelationship = useMemo(() => {
-    if (!relationshipParam || links.length === 0) return null;
-
-    // 1. Try exact ID match
-    const targetLink = links.find((l) => l.id === relationshipParam);
-    if (targetLink) return targetLink;
-
-    // 2. Try Source-Target match (order independent)
-    if (relationshipParam.includes("-")) {
-      const [p1, p2] = relationshipParam.split("-");
-      return (
-        links.find((l) => {
-          const s = typeof l.source === "string" ? l.source : l.source.id;
-          const t = typeof l.target === "string" ? l.target : l.target.id;
-          return (s === p1 && t === p2) || (s === p2 && t === p1);
-        }) || null
-      );
-    }
-
-    return null;
-  }, [relationshipParam, links]);
-
-  // Sync Tab with URL Logic Removed (Now derived directly)
-
   // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
   // Canvas 그래프 강제 활성화 (디버깅)
   useEffect(() => {
@@ -288,8 +251,11 @@ export default function WorldPage() {
     return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
 
-  // Sync Relationship Modal with URL (After links declared)
-  // Sync Relationship Modal with URL Logic Removed (Now derived in selectedRelationship useMemo)
+  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
+  const links: RelationshipLink[] = useRelationshipLinks(
+    characters,
+    projectEvents,
+  );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -327,10 +293,42 @@ export default function WorldPage() {
 
   const handleLinkClick = (link: RelationshipLink | null) => {
     if (!link) {
-      // Handle link deselection (if applicable, though usually clicking background just clears node selection)
+      setIsRelationshipModalOpen(false);
+      setRelationshipAnalysisData(null);
       return;
     }
-    // Link Click logic removed as we use internal Deep Analysis
+
+    // 링크의 source와 target ID 추출
+    const sourceId =
+      typeof link.source === "string"
+        ? link.source
+        : (link.source as { id: string }).id;
+    const targetId =
+      typeof link.target === "string"
+        ? link.target
+        : (link.target as { id: string }).id;
+
+    // 캐릭터 찾기
+    const sourceChar = characters.find((c) => c._id === sourceId);
+    const targetChar = characters.find((c) => c._id === targetId);
+
+    if (!sourceChar || !targetChar) {
+      console.warn("캐릭터를 찾을 수 없습니다:", sourceId, targetId);
+      return;
+    }
+
+    // 분석 데이터 생성
+    const analysisData = generateAnalysisData(
+      sourceChar,
+      targetChar,
+      link.relationTypes || [link.type],
+      link.strength || 5,
+      projectEvents,
+      link.description,
+    );
+
+    setRelationshipAnalysisData(analysisData);
+    setIsRelationshipModalOpen(true);
   };
 
   return (
@@ -340,15 +338,7 @@ export default function WorldPage() {
           이미지 생성(image 타입)은 백그라운드에서 조용히 진행되므로 오버레이 표시 안 함
       ───────────────────────────────────────────────────────────── */}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          const newParams = new URLSearchParams(searchParams);
-          newParams.set("tab", value);
-          navigate({ search: newParams.toString() }, { replace: true });
-        }}
-        className="h-full flex flex-col relative"
-      >
+      <Tabs defaultValue="graph" className="h-full flex flex-col relative">
         {/* Floating Glass Header - Fixed to Global Header Area */}
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
           {/* Tab Navigation - Pill Style */}
@@ -758,20 +748,18 @@ export default function WorldPage() {
         />
       )}
 
-      {/* Relationship Deep Analysis Modal (Replaces Simple Dialog) */}
+      {/* Relationship Deep Analysis Modal */}
       <RelationshipDeepAnalysisModal
-        isOpen={!!selectedRelationship}
+        isOpen={isRelationshipModalOpen}
         onClose={() => {
-          // URL 파라미터 제거
-          const newParams = new URLSearchParams(searchParams);
-          newParams.delete("relationship");
-          navigate({ search: newParams.toString() }, { replace: true });
+          setIsRelationshipModalOpen(false);
+          setRelationshipAnalysisData(null);
         }}
-        data={
-          selectedRelationship
-            ? convertLinkToDeepAnalysisData(selectedRelationship, characters)
-            : null
-        }
+        data={relationshipAnalysisData}
+        onNavigateToEvent={(eventId) => {
+          // 이벤트로 이동하는 로직 (추후 구현 가능)
+          console.log("Navigate to event:", eventId);
+        }}
       />
     </div>
   );

@@ -113,6 +113,16 @@ export function useProjectAnalysis(
   const triggerReanalysisRef = useRef<(() => Promise<void>) | null>(null);
   const lastKnownJobTypeRef = useRef<"analysis" | "image" | null>(null);
   const lastKnownTargetIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+  const finalizeAnalysisRef = useRef<(() => void) | null>(null);
+
+  // Lifecycle tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Sync refs with store state
   useEffect(() => {
@@ -125,6 +135,10 @@ export function useProjectAnalysis(
 
   // Finalize Analysis (Shared logic for all completion paths)
   const finalizeAnalysis = useCallback(() => {
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return;
+    }
     if (isRequestingRef.current) {
       return;
     }
@@ -199,7 +213,9 @@ export function useProjectAnalysis(
       setBufferAnalyzing(false);
       setAnalysisProgress(100);
       setGlobalProgress(100);
-      // 완료 상태 유지를 위해 flag는 true로 둠 (다음 triggerAnalysis에서 false로 리셋)
+
+      // 완료 처리 끝났으므로 플래그 리셋 (다음 분석을 위해)
+      isFinalizingRef.current = false;
     }
   }, [
     projectId,
@@ -251,7 +267,8 @@ export function useProjectAnalysis(
             jobStatus.status === "processing" && elapsed > 30 * 60 * 1000; // 30 min
 
           if (isPendingStale || isProcessingStale) {
-            // Optionally clear it from store if it was there?
+            // 오래된(Stuck) 작업은 유령 작업으로 간주하여 제거
+            clearStoreJobs(projectId);
           } else {
             addStoreJobId(projectId, jobStatus.jobId, "analysis");
             setJobProgresses((prev) => ({
@@ -261,11 +278,21 @@ export function useProjectAnalysis(
           }
         }
         // 완료된 상태면 캐릭터/관계 쿼리 무효화 (DB에서 최신 데이터 fetch)
-        else if (jobStatus.status === "failed") {
+        else if (
+          jobStatus.status === "failed" ||
+          jobStatus.status === "completed"
+        ) {
+          // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
+          // 클라이언트가 알고 있는 모든 진행 중 작업을 정리합니다. (Ghost Job 방지)
           clearStoreJobs(projectId);
         }
-      } catch (_error) {
-        // API가 없거나 에러 시 기존 로직으로 fallback (IndexedDB 기반)
+      } catch (error) {
+        // API가 404라면 해당 프로젝트에 진행 중인 Job이 없다는 뜻이므로 로컬 상태도 클리어
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const status = (error as any)?.response?.status;
+        if (status === 404) {
+          clearStoreJobs(projectId);
+        }
       }
     };
 
@@ -303,12 +330,24 @@ export function useProjectAnalysis(
         const rawType = event.type || event.status;
         const eventType =
           typeof rawType === "string" ? rawType.toLowerCase() : "";
+        const currentProgress = event.percent || event.progress || 0;
 
         if (eventType === "progress" || eventType === "processing") {
           setJobProgresses((prev) => ({
             ...prev,
-            [eventJobId]: event.percent || event.progress || 0,
+            [eventJobId]: currentProgress,
           }));
+
+          // Progress가 100%에 도달하면 즉시 완료 처리
+          if (currentProgress >= 100) {
+            if (event.result) {
+              lastResultRef.current = event.result as AnalysisResultData;
+            }
+            setJobProgresses((prev) => ({ ...prev, [eventJobId]: 100 }));
+            if (projectId) {
+              removeStoreJobId(projectId, eventJobId);
+            }
+          }
         } else if (
           eventType === "completed" ||
           eventType === "success" ||
@@ -362,22 +401,11 @@ export function useProjectAnalysis(
       setGlobalProgress(averageProgress);
     }, 0);
 
-    // [Stuck Mitigation]
-    // 만약 진행률이 100%인데 Job이 지워지지 않고 3초 이상 머무르면 강제로 완료 처리
-    if (
-      averageProgress >= 100 &&
-      isAnalyzing &&
-      currentActiveJobIds.length > 0
-    ) {
+    // Update progress tracking refs
+    if (averageProgress >= 100 && isAnalyzing) {
       if (lastProgressRef.current !== averageProgress) {
         lastProgressRef.current = averageProgress;
         lastProgressUpdateRef.current = Date.now();
-      } else if (Date.now() - lastProgressUpdateRef.current > 5000) {
-        // 5초 세이프티
-        startTransition(() => {
-          finalizeAnalysis();
-          setIsStuck(true);
-        });
       }
     } else {
       lastProgressRef.current = averageProgress;
@@ -399,6 +427,32 @@ export function useProjectAnalysis(
     setLastAnalyzedHashes,
     finalizeAnalysis,
   ]);
+
+  // [Stuck Mitigation Timer]
+  // 100% 도달 후 3초가 지나도 완료되지 않으면 강제로 완료 처리
+  useEffect(() => {
+    const currentActiveJobIds = projectId ? activeJobs[projectId] || [] : [];
+
+    if (
+      analysisProgress >= 100 &&
+      isAnalyzing &&
+      currentActiveJobIds.length > 0 &&
+      !isRequestingRef.current &&
+      !isFinalizingRef.current
+    ) {
+      const timerId = setTimeout(() => {
+        // Use ref to avoid dependency on finalizeAnalysis
+        if (finalizeAnalysisRef.current && isMountedRef.current) {
+          startTransition(() => {
+            finalizeAnalysisRef.current?.();
+            setIsStuck(true);
+          });
+        }
+      }, 3000); // 3초 후 자동 완료
+
+      return () => clearTimeout(timerId);
+    }
+  }, [analysisProgress, isAnalyzing, activeJobs, projectId]);
 
   // Project Stream 이벤트 처리 (jobId별 분기)
   const queryClientRef = useRef(queryClient);
@@ -534,20 +588,25 @@ export function useProjectAnalysis(
     triggerReanalysisRef.current = triggerAnalysis;
   }, [triggerAnalysis]);
 
+  // finalizeAnalysisRef 업데이트 (타이머에서 사용)
+  useEffect(() => {
+    finalizeAnalysisRef.current = finalizeAnalysis;
+  }, [finalizeAnalysis]);
+
   // 자동 flush 체크 (주기적)
   useEffect(() => {
     if (!projectId || !enabled) return;
 
-    const checkAutoFlush = () => {
-      if (shouldAutoFlush()) {
-        triggerAnalysis();
-      }
-    };
+    // const checkAutoFlush = () => {
+    //   if (shouldAutoFlush()) {
+    //     triggerAnalysis();
+    //   }
+    // };
 
-    // 1분마다 체크
-    const intervalId = window.setInterval(checkAutoFlush, 60_000);
+    // 1분마다 체크 (자동 분석 비활성화 요청으로 주석 처리)
+    // const intervalId = window.setInterval(checkAutoFlush, 60_000);
 
-    return () => window.clearInterval(intervalId);
+    // return () => window.clearInterval(intervalId);
   }, [projectId, enabled, shouldAutoFlush, triggerAnalysis]);
 
   // Job Status Recovery & Polling Fallback
@@ -585,7 +644,13 @@ export function useProjectAnalysis(
         normalizedStatus = "completed";
       }
 
-      // Update progress
+      // Progress Update & Force Completion if 100%
+      const progress =
+        typeof statusAny.progress === "number" ? statusAny.progress : 0;
+      if (progress >= 100) {
+        normalizedStatus = "completed";
+      }
+
       if (typeof statusAny.progress === "number") {
         startTransition(() => {
           setJobProgresses((prev) => ({
