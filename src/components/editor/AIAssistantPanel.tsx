@@ -17,8 +17,11 @@ import {
   useChatStream,
   type SourceChunk,
   type ChatMessage,
+  type ContextCard,
 } from "@/hooks/useChatStream";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { ChatRelationshipCard } from "./chat/ChatRelationshipCard";
 
 interface AIAssistantPanelProps {
   projectId: string | null;
@@ -36,6 +39,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     analysisComplete,
     currentResponse,
     currentSources,
+    currentCards,
     sendMessage,
     cancelStream,
     resetSession,
@@ -301,6 +305,20 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                         className="inline-block w-1.5 h-4 bg-mocha-400 align-middle ml-1 rounded-sm"
                       />
                     </div>
+                    {/* 스트리밍 중 관계 카드 */}
+                    {currentCards.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {currentCards.map((card: ContextCard, idx: number) => (
+                          <ChatRelationshipCard
+                            key={`stream-card-${idx}`}
+                            card={card}
+                            onViewDetails={(url) =>
+                              (window.location.href = url)
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
                     {currentSources.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-mocha-100/30">
                         <SourceList sources={currentSources} />
@@ -495,13 +513,13 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                   "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
                   input.trim()
                     ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
-                    : "bg-white border-mocha-100 text-mocha-200"
+                    : "bg-white border-mocha-100 text-mocha-200",
                 )}
               >
                 <Send
                   className={cn(
                     "h-4.5 w-4.5 transition-transform duration-300",
-                    input.trim() && "translate-x-0.5 -translate-y-0.5"
+                    input.trim() && "translate-x-0.5 -translate-y-0.5",
                   )}
                 />
               </Button>
@@ -517,7 +535,12 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
  * Message Bubble component with Serif/Sans pairing
  */
 function MessageBubble({ message }: { message: ChatMessage }) {
+  const navigate = useNavigate();
   const isUser = message.role === "user";
+
+  const handleCardAction = (actionUrl: string) => {
+    navigate(actionUrl);
+  };
 
   return (
     <motion.div
@@ -525,14 +548,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "flex flex-col gap-3 w-full",
-        isUser ? "items-end" : "items-start"
+        isUser ? "items-end" : "items-start",
       )}
     >
       {/* Label */}
       <div
         className={cn(
           "flex items-center gap-2 mb-1",
-          isUser ? "flex-row-reverse" : "flex-row"
+          isUser ? "flex-row-reverse" : "flex-row",
         )}
       >
         <div className="h-px w-4 bg-mocha-100" />
@@ -546,7 +569,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           "max-w-[95%] p-5 transition-all duration-300 relative",
           isUser
             ? "text-espresso-800 font-serif italic text-lg leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
-            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper"
+            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
         )}
       >
         {!isUser && (
@@ -555,6 +578,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
         <div className="whitespace-pre-wrap">{message.content}</div>
+
+        {/* 관계 카드 영역 */}
+        {!isUser && message.cards && message.cards.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {message.cards.map((card, idx) => (
+              <ChatRelationshipCard
+                key={`card-${idx}`}
+                card={card}
+                onViewDetails={handleCardAction}
+              />
+            ))}
+          </div>
+        )}
 
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-mocha-100/30">
