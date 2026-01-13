@@ -67,6 +67,8 @@ export interface RelationshipTimelinePoint {
   cumulativeHostile: number;
   /** 통합 유대 지수 (Net Sentiment, -100 ~ +100) */
   sentimentTrajectory: number;
+  /** 프로젝트 ID */
+  projectId?: string;
 }
 
 /**

@@ -78,6 +78,11 @@ export interface RelationshipLink extends d3.SimulationLinkDatum<CharacterNode> 
   evolvedFrom?: RelationType;
   since?: string;
   // New fields from schema
+  emotionalBond?: number;
+  functionalTrust?: number;
+  valueAlignment?: number;
+  interdependence?: number;
+  latentTension?: number;
   /** public_stance from backend */
   publicStance?: string;
   /** private_feeling from backend */

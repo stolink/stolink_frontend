@@ -3,7 +3,7 @@ import type { ApiResponse, JobResponse } from "@/types/api";
 import type { AnalysisResultData } from "@/types/analysisResult";
 import { calculateContentHash } from "@/utils/hashUtils";
 
-const BASE_URL = "/ai"; // Spring Backend endpoints
+const BASE_URL = "/ai";
 
 interface ChatContext {
   includeCharacters?: boolean;
@@ -19,10 +19,8 @@ export interface ProjectAnalysisJobStatus {
   lastCompletedAt?: string;
 }
 
-const CHAT_BASE_URL = "/ai-api"; // FastAPI Chat service
-
 export const aiService = {
-  // 1. Chat (FastAPI - stolink-chat)
+  // 1. Chat
   chat: async (payload: {
     projectId: string;
     documentId?: string;
@@ -31,7 +29,7 @@ export const aiService = {
   }) => {
     const response = await api.post<
       ApiResponse<{ message: string; suggestions: string[] }>
-    >(`${CHAT_BASE_URL}/stream`, payload);
+    >(`${BASE_URL}/chat`, payload);
     return response.data;
   },
 
@@ -86,7 +84,10 @@ export const aiService = {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
       `/ai/jobs/${jobId}`,
     );
-    return response.data.data;
+    // Handle both wrapped (ApiResponse) and unwrapped (direct) responses
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const responseData = response.data as any;
+    return responseData.data || responseData;
   },
 
   // 5. Get Project Analysis Job Status (프로젝트 기준 최신 job 상태 조회)

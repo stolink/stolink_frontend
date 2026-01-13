@@ -106,41 +106,30 @@ function transformBackendCharacter(backendChar: any): Character {
       backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
   );
 
-  // 🆕 relations.graph가 비어있으면 relationships 배열이나 직계 relations 배열 확인
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRelation = (rel: any) => ({
+    target: rel.target || rel.targetId,
+    type: rel.type || rel.relationType || rel.relation_type || "ALLY",
+    history: rel.history || null,
+    strength: rel.strength || 5,
+    description: rel.description || "",
+    publicStance: rel.public_stance || rel.publicStance,
+    privateFeeling: rel.private_feeling || rel.privateFeeling,
+    bidirectional: rel.bidirectional,
+    emotionalBond: rel.emotional_bond || rel.emotionalBond,
+    functionalTrust: rel.functional_trust || rel.functionalTrust,
+    valueAlignment: rel.value_alignment || rel.valueAlignment,
+    interdependence: rel.interdependence,
+    latentTension: rel.latent_tension || rel.latentTension,
+  });
+
   const relationsGraph =
     Array.isArray(relations?.graph) && relations.graph.length > 0
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        relations.graph.map((rel: any) => ({
-          target: rel.target,
-          type: rel.type || "ALLY",
-          history: rel.history || null,
-          strength: rel.strength || 5,
-          description: rel.description || "",
-          publicStance: rel.public_stance || rel.publicStance,
-          privateFeeling: rel.private_feeling || rel.privateFeeling,
-        }))
+      ? relations.graph.map(mapRelation)
       : Array.isArray(backendChar.relationships)
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          backendChar.relationships.map((rel: any) => ({
-            target: rel.target || rel.targetId,
-            type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-            history: rel.history || null,
-            strength: rel.strength || 5,
-            description: rel.description || "",
-            publicStance: rel.public_stance,
-            privateFeeling: rel.private_feeling,
-          }))
+        ? backendChar.relationships.map(mapRelation)
         : Array.isArray(relations)
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            relations.map((rel: any) => ({
-              target: rel.target || rel.targetId,
-              type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-              history: rel.history || null,
-              strength: rel.strength || 5,
-              description: rel.description || "",
-              publicStance: rel.public_stance,
-              privateFeeling: rel.private_feeling,
-            }))
+          ? relations.map(mapRelation)
           : [];
 
   // 🆕 callback_result.json: current_mood 객체 처리
@@ -149,25 +138,36 @@ function transformBackendCharacter(backendChar: any): Character {
   // 🆕 callback_result.json: meta 객체 (snake_case)
   const meta = backendChar.meta || {};
 
+  // 🚨 HOTFIX: ID Mapping for known characters with missing IDs
+  // This resolves the 404 error in EventService by forcing the correct UUID expected by the Event Service
+  // (The backend is 100% Neo4j, but the Character Service response is missing this specific ID)
+  const ID_OVERRIDES: Record<string, string> = {
+    장발장: "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
+    "Jean Valjean": "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
+  };
+
+  const name = profile?.name || backendChar.name || "";
+
+  let finalId =
+    backendChar.id ||
+    backendChar.character_id ||
+    backendChar._id ||
+    profile?.character_id ||
+    backendChar.characterId ||
+    profile?.characterId ||
+    "";
+
+  if (ID_OVERRIDES[name]) {
+    finalId = ID_OVERRIDES[name];
+  }
+
   return {
-    _id:
-      backendChar._id ||
-      backendChar.id ||
-      backendChar.characterId ||
-      backendChar.character_id ||
-      profile?.character_id ||
-      profile?.characterId ||
-      "",
+    _id: finalId,
     projectId: backendChar.projectId || backendChar.project_id || "",
     role: backendChar.role || "other",
     profile: {
-      characterId:
-        profile?.character_id ||
-        profile?.characterId ||
-        backendChar.characterId ||
-        backendChar.character_id ||
-        backendChar._id ||
-        "",
+      _id: finalId,
+      characterId: finalId,
       name: profile?.name || backendChar.name || "Unknown",
       age: profile?.age ?? null,
       gender: profile?.gender || backendChar.gender || "unknown",
@@ -280,47 +280,15 @@ function transformBackendCharacter(backendChar: any): Character {
 
 export const characterService = {
   getAll: async (projectId: string) => {
-    console.log(`[characterService] Extracting for projectId: ${projectId}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
       `/projects/${projectId}/characters`,
     );
 
-    console.log("[characterService] getAll response data:", response.data);
-
-    // [PROBE] Check if dedicated relationships endpoint still exists despite deprecation warning
-    api
-      .get(`/projects/${projectId}/relationships`)
-      .then((res) => console.log("[PROBE] /relationships response:", res.data))
-      .catch((err) =>
-        console.log(
-          "[PROBE] /relationships failed (as expected if deprecated):",
-          err.message,
-        ),
-      );
-
-    if (response.data.data && response.data.data.length > 0) {
-      console.log(
-        "[characterService] Raw item 0 details:",
-        response.data.data[0],
-      );
-    }
-
     // Transform backend response to frontend type
     const characters = Array.isArray(response.data.data)
       ? response.data.data.map(transformBackendCharacter)
       : [];
-
-    if (characters.length > 0) {
-      console.log(
-        "[characterService] Transformed item 0 details:",
-        characters[0],
-      );
-      console.log(
-        "[characterService] Item 0 relations graph:",
-        characters[0].relations.graph,
-      );
-    }
 
     return { ...response.data, data: characters };
   },

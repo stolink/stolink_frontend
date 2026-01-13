@@ -85,25 +85,29 @@ export const relationshipService = {
     );
   },
 
-  create: async (payload: CreateRelationshipInput) => {
+  create: async (projectId: string, payload: CreateRelationshipInput) => {
     const response = await api.post<ApiResponse<Relationship>>(
-      "/relationships",
+      `/projects/${projectId}/relationships`,
       payload,
     );
     return response.data;
   },
 
-  update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
+  update: async (
+    projectId: string,
+    id: string,
+    payload: Partial<CreateRelationshipInput>,
+  ) => {
     const response = await api.patch<ApiResponse<Relationship>>(
-      `/relationships/${id}`,
+      `/projects/${projectId}/relationships/${id}`,
       payload,
     );
     return response.data;
   },
 
-  delete: async (id: string) => {
+  delete: async (projectId: string, id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/relationships/${id}`,
+      `/projects/${projectId}/relationships/${id}`,
     );
     return response.data;
   },

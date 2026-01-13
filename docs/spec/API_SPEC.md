@@ -1,7 +1,7 @@
 # StoLink API 명세
 
 > **버전**: 1.2
-> **최종 수정**: 2026년 1월 2일
+> **최종 수정**: 2026년 1월 14일
 > **Base URL**: `https://api.stolink.com` (Production) / `http://localhost:8080` (Development)
 
 ---

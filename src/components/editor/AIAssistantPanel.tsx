@@ -495,13 +495,13 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                   "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
                   input.trim()
                     ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
-                    : "bg-white border-mocha-100 text-mocha-200"
+                    : "bg-white border-mocha-100 text-mocha-200",
                 )}
               >
                 <Send
                   className={cn(
                     "h-4.5 w-4.5 transition-transform duration-300",
-                    input.trim() && "translate-x-0.5 -translate-y-0.5"
+                    input.trim() && "translate-x-0.5 -translate-y-0.5",
                   )}
                 />
               </Button>
@@ -525,14 +525,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "flex flex-col gap-3 w-full",
-        isUser ? "items-end" : "items-start"
+        isUser ? "items-end" : "items-start",
       )}
     >
       {/* Label */}
       <div
         className={cn(
           "flex items-center gap-2 mb-1",
-          isUser ? "flex-row-reverse" : "flex-row"
+          isUser ? "flex-row-reverse" : "flex-row",
         )}
       >
         <div className="h-px w-4 bg-mocha-100" />
@@ -546,7 +546,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           "max-w-[95%] p-5 transition-all duration-300 relative",
           isUser
             ? "text-espresso-800 font-serif italic text-lg leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
-            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper"
+            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
         )}
       >
         {!isUser && (

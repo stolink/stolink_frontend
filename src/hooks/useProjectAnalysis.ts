@@ -69,9 +69,7 @@ export function useProjectAnalysis(
 
   // 버퍼 스토어 (Global State)
   const setProjectId = useAnalysisBufferStore((state) => state.setProjectId);
-  const shouldAutoFlush = useAnalysisBufferStore(
-    (state) => state.shouldAutoFlush,
-  );
+
   const setBufferAnalyzing = useAnalysisBufferStore(
     (state) => state.setAnalyzing,
   );
@@ -113,6 +111,16 @@ export function useProjectAnalysis(
   const triggerReanalysisRef = useRef<(() => Promise<void>) | null>(null);
   const lastKnownJobTypeRef = useRef<"analysis" | "image" | null>(null);
   const lastKnownTargetIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+  const finalizeAnalysisRef = useRef<(() => void) | null>(null);
+
+  // Lifecycle tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Sync refs with store state
   useEffect(() => {
@@ -125,6 +133,10 @@ export function useProjectAnalysis(
 
   // Finalize Analysis (Shared logic for all completion paths)
   const finalizeAnalysis = useCallback(() => {
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return;
+    }
     if (isRequestingRef.current) {
       return;
     }
@@ -133,6 +145,7 @@ export function useProjectAnalysis(
     }
 
     isFinalizingRef.current = true;
+    console.log("[useProjectAnalysis] Starting finalizeAnalysis");
 
     // Get current state to check job type (fallback to refs if store was just cleared)
     const { pendingDocuments } = useAnalysisBufferStore.getState();
@@ -152,11 +165,28 @@ export function useProjectAnalysis(
       useAnalysisBufferStore.getState().clearPendingDocuments();
     }
 
-    // 2. Cache Invalidation (Common or specific)
+    // 2. Trigger completion callback BEFORE invalidation to ensure diff compares against current state
+    console.log("[useProjectAnalysis] Triggering completion callback");
+    onCompleteRef.current?.(lastResultRef.current);
+
+    // 3. Cache Invalidation (Common or specific)
     if (projectId) {
+      console.log(
+        `[useProjectAnalysis] Invalidating queries for project ${projectId}`,
+      );
       // Always invalidate character list as both jobs might affect it
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
+      });
+
+      // Invalidate project events as analysis might update the timeline
+      queryClient.invalidateQueries({
+        queryKey: ["events", "project", projectId],
+      });
+
+      // Invalidate project stats
+      queryClient.invalidateQueries({
+        queryKey: ["projects", "detail", projectId, "stats"],
       });
 
       if (activeType === "image" && activeTargetId) {
@@ -166,9 +196,6 @@ export function useProjectAnalysis(
         });
       }
     }
-
-    // 3. Trigger completion callback
-    onCompleteRef.current?.(lastResultRef.current);
     if (lastResultRef.current?.consistencyReport) {
       useAnalysisBufferStore
         .getState()
@@ -183,24 +210,16 @@ export function useProjectAnalysis(
       clearStoreJobs(projectId);
     }
 
-    // 버퍼에 새로운 변경이 있는지 체크
-    const hasMoreChanges = useAnalysisBufferStore
-      .getState()
-      .hasUnanalyzedChanges();
+    // 모든 분석 완료 처리 (자동 재분석은 사용자 요청 시에만 수행하도록 루프 제거)
+    console.log(
+      "[useProjectAnalysis] Analysis flow complete, resetting finalizing state",
+    );
+    setBufferAnalyzing(false);
+    setAnalysisProgress(100);
+    setGlobalProgress(100);
 
-    if (hasMoreChanges) {
-      // 재분석 시에는 finalizing 플래그를 해제해야 함
-      isFinalizingRef.current = false;
-      window.setTimeout(() => {
-        triggerReanalysisRef.current?.();
-      }, 100);
-    } else {
-      // 모든 분석 완료
-      setBufferAnalyzing(false);
-      setAnalysisProgress(100);
-      setGlobalProgress(100);
-      // 완료 상태 유지를 위해 flag는 true로 둠 (다음 triggerAnalysis에서 false로 리셋)
-    }
+    // 완료 처리 끝났으므로 플래그 리셋 (다음 분석을 위해)
+    isFinalizingRef.current = false;
   }, [
     projectId,
     queryClient,
@@ -223,60 +242,77 @@ export function useProjectAnalysis(
 
     const checkProjectJobStatus = async () => {
       try {
-        const jobStatus = await aiService.getProjectAnalysisJob(projectId);
+        const projectStatus = await aiService.getProjectAnalysisJob(projectId);
 
-        // 진행 중인 job이 있으면 SSE 연결
-
-        // 진행 중인 job이 있으면 SSE 연결을 위해 스토어에 추가
-        // 진행 중인 job이 있으면 SSE 연결을 위해 스토어에 추가
+        // 진행 중인 job이 있으면 상세 정보를 조회하여 유효성 검증
         if (
-          jobStatus.jobId &&
-          (jobStatus.status === "processing" || jobStatus.status === "pending")
+          projectStatus.jobId &&
+          (projectStatus.status === "processing" ||
+            projectStatus.status === "pending")
         ) {
-          // Check for staleness to avoid zombie jobs
-          // PENDING jobs > 1 min old are considered stale (backend should have picked them up by now)
-          // PROCESSING jobs > 30 mins old are considered stuck/stale
-          const statusAny = jobStatus as unknown as Record<string, unknown>;
-          const timestampStr = (statusAny.updatedAt ||
-            statusAny.createdAt) as string;
-          const timestamp = timestampStr
-            ? new Date(timestampStr).getTime()
-            : Date.now();
-          const now = Date.now();
-          const elapsed = now - timestamp;
+          try {
+            // [Fix] 프로젝트 상태만으로는 updatedAt을 알 수 없으므로, 개별 Job 상세 조회를 통해 정확한 시간을 가져옵니다.
+            // 이를 통해 '지금 막 시작된' 것으로 오판하여 Zombie Job이 유지되는 문제를 해결합니다.
+            const jobDetail = await aiService.getJobStatus(projectStatus.jobId);
 
-          const isPendingStale =
-            jobStatus.status === "pending" && elapsed > 1 * 60 * 1000; // 1 min (aggressively ignore pending zombies)
-          const isProcessingStale =
-            jobStatus.status === "processing" && elapsed > 30 * 60 * 1000; // 30 min
+            const timestampStr = jobDetail.updatedAt || jobDetail.createdAt;
+            const timestamp = timestampStr
+              ? new Date(timestampStr).getTime()
+              : Date.now();
+            const now = Date.now();
+            const elapsed = now - timestamp;
 
-          if (isPendingStale || isProcessingStale) {
-            // Optionally clear it from store if it was there?
-          } else {
-            addStoreJobId(projectId, jobStatus.jobId, "analysis");
-            setJobProgresses((prev) => ({
-              ...prev,
-              [jobStatus.jobId!]: jobStatus.progress || 0,
-            }));
+            const isPendingStale =
+              jobDetail.status === "pending" && elapsed > 1 * 60 * 1000; // 1 min
+            const isProcessingStale =
+              jobDetail.status === "processing" && elapsed > 30 * 60 * 1000; // 30 min
+
+            if (isPendingStale || isProcessingStale) {
+              console.warn(
+                `[useProjectAnalysis] Found zombie job ${projectStatus.jobId} (status: ${jobDetail.status}, elapsed: ${Math.round(elapsed / 1000)}s). Clearing.`,
+              );
+              clearStoreJobs(projectId);
+            } else {
+              // Valid job
+              addStoreJobId(projectId, projectStatus.jobId, "analysis");
+              setJobProgresses((prev) => ({
+                ...prev,
+                [projectStatus.jobId!]: projectStatus.progress || 0,
+              }));
+            }
+          } catch (err) {
+            // Job 상세 조회 실패 (예: 404) -> 존재하지 않는 Job이므로 클리어
+            console.warn(
+              `[useProjectAnalysis] Failed to fetch details for job ${projectStatus.jobId}. Clearing.`,
+              err,
+            );
+            clearStoreJobs(projectId);
           }
         }
         // 완료된 상태면 캐릭터/관계 쿼리 무효화 (DB에서 최신 데이터 fetch)
-        else if (jobStatus.status === "failed") {
+        else if (
+          projectStatus.status === "failed" ||
+          projectStatus.status === "completed"
+        ) {
+          // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면 정리
+          clearStoreJobs(projectId);
+        } else {
+          // [Bugfix] 서버에 아무런 Job도 없다면(null/null) 로컬 상태도 깨끗하게 비웁니다.
           clearStoreJobs(projectId);
         }
-      } catch (_error) {
-        // API가 없거나 에러 시 기존 로직으로 fallback (IndexedDB 기반)
+      } catch (error) {
+        // API가 404라면 해당 프로젝트에 진행 중인 Job이 없다는 뜻이므로 로컬 상태도 클리어
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const status = (error as any)?.response?.status;
+        if (status === 404) {
+          clearStoreJobs(projectId);
+        }
       }
     };
 
+    console.log("[useProjectAnalysis] checkProjectJobStatus effect triggered");
     checkProjectJobStatus();
-  }, [
-    projectId,
-    enabled,
-    addStoreJobId,
-    clearStoreJobs,
-    finalizeAnalysis, // Added finalizeAnalysis to dependencies
-  ]);
+  }, [projectId, enabled, addStoreJobId, clearStoreJobs]);
 
   // Note: SSE connection is managed by useJobSSE hook, so cleanup is handled there.
 
@@ -290,42 +326,124 @@ export function useProjectAnalysis(
     aiService.getProjectStatusStreamUrl,
     {
       enabled: !!projectId && activeJobs[projectId]?.length > 0,
-      onMessage: (data) => {
+      onMessage: async (data) => {
         // SSE 이벤트 파싱
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const event = data as any;
         if (!event) return;
 
         // jobId가 직접 있거나 result 내부에 있을 수 있음
-        const eventJobId = event.jobId || event.id;
+        let eventJobId = event.jobId || event.id;
+
+        // Fallback: If jobId is missing in the message but we have exactly one active job, use it.
+        // This is common for project-level status streams.
+        if (!eventJobId && projectId) {
+          const currentJobs = activeJobs[projectId] || [];
+          if (currentJobs.length === 1) {
+            eventJobId = currentJobs[0];
+            console.log(
+              `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`,
+            );
+          }
+        }
+
+        console.log(
+          `[useProjectAnalysis] Received event: ${event.type || event.status} for job ${eventJobId}`,
+        );
         if (!eventJobId) return;
 
         const rawType = event.type || event.status;
         const eventType =
           typeof rawType === "string" ? rawType.toLowerCase() : "";
+        const currentProgress = event.percent || event.progress || 0;
 
         if (eventType === "progress" || eventType === "processing") {
           setJobProgresses((prev) => ({
             ...prev,
-            [eventJobId]: event.percent || event.progress || 0,
+            [eventJobId]: currentProgress,
           }));
+
+          // Progress가 100%에 도달하면 즉시 완료 처리
+          if (currentProgress >= 100) {
+            let result = event.result as AnalysisResultData;
+
+            // SSE에 결과가 없으면 API 호출 시도
+            if (!result) {
+              try {
+                const job =
+                  await aiService.getJobStatus<AnalysisResultData>(eventJobId);
+                console.log(
+                  `[useProjectAnalysis] 100% Progress API Response for ${eventJobId}:`,
+                  job,
+                );
+                result = job.result!;
+              } catch (err) {
+                console.error(
+                  "[useProjectAnalysis] Error fetching job result on 100% progress:",
+                  err,
+                );
+              }
+            }
+
+            if (result) {
+              lastResultRef.current = result;
+            }
+            setJobProgresses((prev) => ({ ...prev, [eventJobId]: 100 }));
+            if (projectId) {
+              removeStoreJobId(projectId, eventJobId);
+            }
+          }
         } else if (
           eventType === "completed" ||
           eventType === "success" ||
           eventType === "done"
         ) {
-          if (event.result) {
-            lastResultRef.current = event.result as AnalysisResultData;
+          console.log(`[useProjectAnalysis] Job ${eventJobId} COMPLETED`);
+          let result = event.result as AnalysisResultData;
+
+          // SSE에 결과가 없으면 API 호출 시도
+          if (!result) {
+            try {
+              const job =
+                await aiService.getJobStatus<AnalysisResultData>(eventJobId);
+              console.log(
+                `[useProjectAnalysis] Completion API Response for ${eventJobId}:`,
+                job,
+              );
+              result = job.result!;
+              console.log(
+                `[useProjectAnalysis] Fetched result for job ${eventJobId} via API`,
+              );
+            } catch (err) {
+              console.error(
+                "[useProjectAnalysis] Error fetching job result on completion:",
+                err,
+              );
+            }
           }
+
+          if (result) {
+            lastResultRef.current = result;
+          }
+
           setJobProgresses((prev) => ({ ...prev, [eventJobId]: 100 }));
           if (projectId) {
             removeStoreJobId(projectId, eventJobId);
           }
         } else if (eventType === "failed" || eventType === "error") {
+          console.error(
+            `[useProjectAnalysis] Job ${eventJobId} FAILED:`,
+            event.message || "Unknown error",
+          );
+          setAnalysisError(event.message || "분석 중 오류가 발생했습니다.");
+          setBufferAnalyzing(false);
+          onErrorRef.current?.(event.message || "Analysis failed");
+
           if (projectId) removeStoreJobId(projectId, eventJobId);
         }
       },
       onError: (err) => {
+        console.error("[useJobSSE] Connection Error:", err);
         setAnalysisError(err);
         setBufferAnalyzing(false);
         onErrorRef.current?.(err);
@@ -362,22 +480,11 @@ export function useProjectAnalysis(
       setGlobalProgress(averageProgress);
     }, 0);
 
-    // [Stuck Mitigation]
-    // 만약 진행률이 100%인데 Job이 지워지지 않고 3초 이상 머무르면 강제로 완료 처리
-    if (
-      averageProgress >= 100 &&
-      isAnalyzing &&
-      currentActiveJobIds.length > 0
-    ) {
+    // Update progress tracking refs
+    if (averageProgress >= 100 && isAnalyzing) {
       if (lastProgressRef.current !== averageProgress) {
         lastProgressRef.current = averageProgress;
         lastProgressUpdateRef.current = Date.now();
-      } else if (Date.now() - lastProgressUpdateRef.current > 5000) {
-        // 5초 세이프티
-        startTransition(() => {
-          finalizeAnalysis();
-          setIsStuck(true);
-        });
       }
     } else {
       lastProgressRef.current = averageProgress;
@@ -399,6 +506,32 @@ export function useProjectAnalysis(
     setLastAnalyzedHashes,
     finalizeAnalysis,
   ]);
+
+  // [Stuck Mitigation Timer]
+  // 100% 도달 후 3초가 지나도 완료되지 않으면 강제로 완료 처리
+  useEffect(() => {
+    const currentActiveJobIds = projectId ? activeJobs[projectId] || [] : [];
+
+    if (
+      analysisProgress >= 100 &&
+      isAnalyzing &&
+      currentActiveJobIds.length > 0 &&
+      !isRequestingRef.current &&
+      !isFinalizingRef.current
+    ) {
+      const timerId = setTimeout(() => {
+        // Use ref to avoid dependency on finalizeAnalysis
+        if (finalizeAnalysisRef.current && isMountedRef.current) {
+          startTransition(() => {
+            finalizeAnalysisRef.current?.();
+            setIsStuck(true);
+          });
+        }
+      }, 3000); // 3초 후 자동 완료
+
+      return () => clearTimeout(timerId);
+    }
+  }, [analysisProgress, isAnalyzing, activeJobs, projectId]);
 
   // Project Stream 이벤트 처리 (jobId별 분기)
   const queryClientRef = useRef(queryClient);
@@ -435,7 +568,12 @@ export function useProjectAnalysis(
 
   // 분석 트리거 (변경된 문서만 분석)
   const triggerAnalysis = useCallback(async () => {
-    if (!projectId) {
+    console.log("[useProjectAnalysis] triggerAnalysis invoked");
+    if (!projectId || isAnalyzing) {
+      console.log("[useProjectAnalysis] triggerAnalysis skipped:", {
+        hasProjectId: !!projectId,
+        isAnalyzing,
+      });
       return;
     }
 
@@ -523,32 +661,25 @@ export function useProjectAnalysis(
 
   // Flush and analyze (강제 실행)
   const flushAndAnalyze = useCallback(async () => {
+    if (isAnalyzing) return;
     const summary = getBufferSummary();
     if (summary.charCount > 0) {
       await triggerAnalysis();
     }
-  }, [getBufferSummary, triggerAnalysis]);
+  }, [getBufferSummary, triggerAnalysis, isAnalyzing]);
 
   // triggerReanalysisRef 업데이트 (finalizeAnalysis에서 사용)
   useEffect(() => {
     triggerReanalysisRef.current = triggerAnalysis;
   }, [triggerAnalysis]);
 
-  // 자동 flush 체크 (주기적)
+  // finalizeAnalysisRef 업데이트 (타이머에서 사용)
+
   useEffect(() => {
-    if (!projectId || !enabled) return;
+    finalizeAnalysisRef.current = finalizeAnalysis;
+  }, [finalizeAnalysis]);
 
-    const checkAutoFlush = () => {
-      if (shouldAutoFlush()) {
-        triggerAnalysis();
-      }
-    };
-
-    // 1분마다 체크
-    const intervalId = window.setInterval(checkAutoFlush, 60_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [projectId, enabled, shouldAutoFlush, triggerAnalysis]);
+  // 자동 flush 체크 (주기적)
 
   // Job Status Recovery & Polling Fallback
   const checkJobStatus = useCallback(async () => {
@@ -585,7 +716,13 @@ export function useProjectAnalysis(
         normalizedStatus = "completed";
       }
 
-      // Update progress
+      // Progress Update & Force Completion if 100%
+      const progress =
+        typeof statusAny.progress === "number" ? statusAny.progress : 0;
+      if (progress >= 100) {
+        normalizedStatus = "completed";
+      }
+
       if (typeof statusAny.progress === "number") {
         startTransition(() => {
           setJobProgresses((prev) => ({

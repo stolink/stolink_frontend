@@ -3,8 +3,10 @@ import {
   useState,
   useEffect,
   useMemo,
+  useCallback,
   forwardRef,
   useImperativeHandle,
+  startTransition,
 } from "react";
 import ForceGraph2D, {
   type NodeObject,
@@ -52,6 +54,8 @@ interface CharacterGraphCanvasProps {
   showSearch?: boolean;
   onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
+  /** 편집 모드 - true일 때 내부 DeepAnalysis 모달을 열지 않음 */
+  isEditMode?: boolean;
 }
 
 export interface CharacterGraphCanvasRef {
@@ -82,12 +86,12 @@ export const CharacterGraphCanvas = forwardRef<
       showSearch = true,
       onNodeDragEnd,
       nodeChanges,
+      isEditMode = false,
     },
     ref,
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
-    // Animation Phase State (Triggers re-render for flow effect)
-    const [animationPhase, setAnimationPhase] = useState(0);
+    const animationPhaseRef = useRef(0);
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [hoveredLink, setHoveredLink] = useState<{
       link: RelationshipLink;
@@ -100,6 +104,7 @@ export const CharacterGraphCanvas = forwardRef<
     >(relationTypeFilter);
     const [showMainOnly, setShowMainOnly] = useState(false);
     const [showTension] = useState(false);
+
     const [showLogicCheck] = useState(false);
 
     const [selectedEvent, setSelectedEvent] = useState<BiographyEvent | null>(
@@ -108,6 +113,7 @@ export const CharacterGraphCanvas = forwardRef<
 
     // Zoom State for TiledBackground
     const [zoomState, setZoomState] = useState({ x: 0, y: 0, scale: 1 });
+    const hasInitialZoomedRef = useRef(false);
 
     // Deep Analysis Modal
     const [deepAnalysisData, setDeepAnalysisData] =
@@ -125,7 +131,11 @@ export const CharacterGraphCanvas = forwardRef<
 
       const animate = (currentTime: number) => {
         if (currentTime - lastTime >= frameInterval) {
-          setAnimationPhase((prev) => (prev + 0.015) % 1); // Slow smooth flow
+          // Update ref instead of state to prevent React churn
+          animationPhaseRef.current = (animationPhaseRef.current + 0.015) % 1;
+
+          // Force refresh even if simulation is idle to keep shader running
+          // graphRef.current?.refresh(); // ERROR: refresh is not a function
           lastTime = currentTime;
         }
         frameId = requestAnimationFrame(animate);
@@ -134,6 +144,13 @@ export const CharacterGraphCanvas = forwardRef<
       frameId = requestAnimationFrame(animate);
       return () => cancelAnimationFrame(frameId);
     }, []);
+
+    // 외부에서 필터 변경 시 내부 상태 동기화
+    useEffect(() => {
+      startTransition(() => {
+        setInternalFilter(relationTypeFilter);
+      });
+    }, [relationTypeFilter]);
 
     // 노드 데이터 생성
     const initialNodes: CharacterNode[] = useMemo(() => {
@@ -154,24 +171,6 @@ export const CharacterGraphCanvas = forwardRef<
         };
       });
     }, [characters, initialLinks]);
-
-    // Ref 핸들 설정 (initialNodes 이후에 선언)
-    useImperativeHandle(
-      ref,
-      () => ({
-        focusNode: async (nodeId: string) => {
-          // react-force-graph-2d의 줌 기능으로 특정 노드 포커스
-          if (graphRef.current) {
-            const node = initialNodes.find((n) => n.id === nodeId);
-            if (node && node.x !== undefined && node.y !== undefined) {
-              graphRef.current.centerAt(node.x, node.y, 1000);
-              graphRef.current.zoom(2, 1000);
-            }
-          }
-        },
-      }),
-      [initialNodes],
-    );
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
@@ -378,6 +377,110 @@ export const CharacterGraphCanvas = forwardRef<
       return map;
     }, [characters]);
 
+    // Ref 핸들 설정 (graphData 선언 이후)
+    useImperativeHandle(
+      ref,
+      () => ({
+        focusNode: async (nodeId: string) => {
+          if (graphRef.current) {
+            const fg = graphRef.current;
+            const { nodes: liveNodes } = graphData;
+            const node = liveNodes.find((n: NodeObject) => n.id === nodeId);
+
+            // 1. 하이라이트 즉시 적용
+            onSearchChange?.([nodeId]);
+
+            if (!node || node.x === undefined || node.y === undefined) return;
+
+            setTimeout(() => {
+              // 가독성과 안정성을 위한 1.2배 고정 줌 센터링
+              fg.centerAt(node.x, node.y); // Instant
+              fg.zoom(1.2, 500); // Animate zoom only
+            }, 50);
+          }
+        },
+      }),
+      [initialNodes, graphData, onSearchChange],
+    );
+
+    // [Consolidated] Handle opening deep analysis modal
+    const handleOpenDeepAnalysis = useCallback(
+      (link: RelationshipLink) => {
+        // 편집 모드에서는 내부 DeepAnalysis 모달을 열지 않고 외부 핸들러만 호출
+        if (isEditMode) {
+          onLinkClick?.(link);
+          return;
+        }
+
+        // Find fresh character objects from map (Ensures full data)
+        const sourceId =
+          typeof link.source === "object"
+            ? (link.source as CharacterNode).id
+            : link.source;
+        const targetId =
+          typeof link.target === "object"
+            ? (link.target as CharacterNode).id
+            : link.target;
+
+        const sourceChar = characterMap.get(sourceId);
+        const targetChar = characterMap.get(targetId);
+
+        if (!sourceChar || !targetChar) {
+          console.warn(
+            "[DeepAnalysis] Character lookup failed for:",
+            sourceId,
+            targetId,
+          );
+          return;
+        }
+
+        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
+        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
+        const isYubiZhuge =
+          (sourceChar.profile?.name?.includes("유비") &&
+            targetChar.profile?.name?.includes("제갈량")) ||
+          (sourceChar.profile?.name?.includes("제갈량") &&
+            targetChar.profile?.name?.includes("유비"));
+
+        const effectiveTypes = isYubiZhuge
+          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
+          : link.relationTypes || [link.type as string];
+
+        // [Debug] Check incoming link data for Radar Chart Attributes
+        console.log("Clicked Link Data for Analysis:", {
+          source: sourceChar.profile.name,
+          target: targetChar.profile.name,
+          link: link,
+          attributes: {
+            emotionalBond: link.emotionalBond,
+            functionalTrust: link.functionalTrust,
+            interdependence: link.interdependence,
+            latentTension: link.latentTension,
+            valueAlignment: link.valueAlignment,
+          },
+        });
+
+        try {
+          const analysisData = generateAnalysisData(
+            sourceChar,
+            targetChar,
+            effectiveTypes,
+            link.strength,
+            events,
+            link.description,
+          );
+          console.log("[DeepAnalysis] Data generated:", analysisData);
+          setDeepAnalysisData(analysisData);
+          setHoveredLink(null); // Close tooltip
+        } catch (error) {
+          console.error("[DeepAnalysis] Generation failed:", error);
+        }
+
+        onLinkClick?.(link);
+      },
+      [onLinkClick, events, characterMap, isEditMode],
+    );
+
     // 연결된 노드 계산
     const connectedNodeIds = useMemo(() => {
       if (!selectedNodeId) return null;
@@ -410,53 +513,7 @@ export const CharacterGraphCanvas = forwardRef<
     // 링크 클릭 핸들러
     const handleLinkClick = (link: LinkObject) => {
       const relLink = link as unknown as RelationshipLink;
-      const sourceId =
-        typeof relLink.source === "object"
-          ? (relLink.source as CharacterNode).id
-          : relLink.source;
-      const targetId =
-        typeof relLink.target === "object"
-          ? (relLink.target as CharacterNode).id
-          : relLink.target;
-
-      const sourceChar = characterMap.get(sourceId);
-      const targetChar = characterMap.get(targetId);
-
-      if (sourceChar && targetChar) {
-        // Mock 데이터 생성하여 Deep Analysis 모달 데이터 설정
-        // [Visual Enhancement] Restore complex types for demo pair to show off shader capabilities
-        const isYubiZhuge =
-          (sourceChar.profile?.name?.includes("유비") &&
-            targetChar.profile?.name?.includes("제갈량")) ||
-          (sourceChar.profile?.name?.includes("제갈량") &&
-            targetChar.profile?.name?.includes("유비"));
-
-        const effectiveTypes = isYubiZhuge
-          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
-          : relLink.relationTypes || [relLink.type];
-
-        const analysisData = generateAnalysisData(
-          {
-            id: sourceId,
-            name: sourceChar.profile?.name || "Unknown",
-            imageUrl: sourceChar.imageUrl,
-          },
-          {
-            id: targetId,
-            name: targetChar.profile?.name || "Unknown",
-            imageUrl: targetChar.imageUrl,
-          },
-          effectiveTypes,
-          relLink.strength,
-          events,
-          relLink.description,
-        );
-        setDeepAnalysisData(analysisData);
-      } else {
-        // Character not found in map
-      }
-
-      onLinkClick?.(relLink);
+      handleOpenDeepAnalysis(relLink);
     };
 
     // 링크 호버 핸들러
@@ -623,11 +680,14 @@ export const CharacterGraphCanvas = forwardRef<
 
     // Initial Zoom to Fit & Dramatic Entry
     useEffect(() => {
+      if (initialNodes.length === 0 || hasInitialZoomedRef.current) return;
+
       // Wait for graph to settle slightly
       const timer = setTimeout(() => {
         if (graphRef.current) {
           // Faster zoom (0.8s) for snappier entry
-          graphRef.current.zoomToFit(800, 120);
+          graphRef.current.zoomToFit(800, 150);
+          hasInitialZoomedRef.current = true;
           // Fade in
           setTimeout(() => setIsLoaded(true), 100);
         }
@@ -705,9 +765,15 @@ export const CharacterGraphCanvas = forwardRef<
                 (highlightedNodeIds &&
                   highlightedNodeIds.includes(charNode.id)) ||
                 false;
-              const isDimmed =
-                (connectedNodeIds && !connectedNodeIds.has(charNode.id)) ||
-                (showMainOnly && charNode.role !== "protagonist");
+              const isSearchActive = !!highlightedNodeIds;
+              const isConnected = connectedNodeIds?.has(charNode.id);
+              const isSearchResult = highlightedNodeIds?.includes(charNode.id);
+
+              const isDimmed = Boolean(
+                (showMainOnly && charNode.role !== "protagonist") ||
+                (isSearchActive && !isSearchResult && !isConnected) || // 검색 중이라도 선택/연결된 노드면 dim 금지
+                (!isSearchActive && connectedNodeIds && !isConnected), // 일반 선택 상태에서 비연결 노드 dim
+              );
 
               drawNode({
                 ctx,
@@ -762,12 +828,21 @@ export const CharacterGraphCanvas = forwardRef<
 
               const isHighlighted =
                 selectedNodeId === sourceId || selectedNodeId === targetId;
+
+              // 인성 검색/필터링 시 하이라이트되지 않은 간선은 흐리게 처리
+              const isSearchActive = highlightedNodeIds !== null;
+              const isDimmedBySearch =
+                isSearchActive &&
+                (!highlightedNodeIds.includes(sourceId) ||
+                  !highlightedNodeIds.includes(targetId));
+
               // Fix: Strict Star Topology (User Feedback)
               // Only show links that are DIRECTLY connected to the selected node.
               // Hide links between neighbors (e.g., A->B, A->C selected. Hide B->C).
-              const isDimmed = selectedNodeId
-                ? sourceId !== selectedNodeId && targetId !== selectedNodeId
-                : false;
+              const isDimmed =
+                (selectedNodeId
+                  ? sourceId !== selectedNodeId && targetId !== selectedNodeId
+                  : false) || isDimmedBySearch;
 
               drawLink({
                 ctx,
@@ -778,7 +853,7 @@ export const CharacterGraphCanvas = forwardRef<
                   isDimmed: isDimmed || false,
                   isSelected: false,
                 },
-                animationPhase: animationPhase,
+                animationPhase: animationPhaseRef.current,
                 showTension,
                 showLogicCheck,
               });
@@ -868,14 +943,58 @@ export const CharacterGraphCanvas = forwardRef<
           <CharacterSearchOverlay
             characters={characters}
             onSelect={(character) => {
-              const node = initialNodes.find((n) => n.id === character._id);
-              if (node && onNodeClick) {
-                onNodeClick(character);
+              const targetId = character._id;
+
+              const fg = graphRef.current;
+              const neighborIds = new Set<string>();
+
+              if (fg) {
+                const { links: liveLinks } = graphData;
+                liveLinks.forEach((l: LinkObject) => {
+                  const sId =
+                    typeof l.source === "object"
+                      ? (l.source as NodeObject).id
+                      : l.source;
+                  const tId =
+                    typeof l.target === "object"
+                      ? (l.target as NodeObject).id
+                      : l.target;
+                  if (sId === targetId) neighborIds.add(tId as string);
+                  if (tId === targetId) neighborIds.add(sId as string);
+                });
+              }
+
+              // 1. Update selection state
+              if (selectedNodeId !== targetId) {
+                onNodeClick?.(character);
+              }
+
+              // 2. Highlight (Target + Neighbors) to ensure edges are visible
+              const idsToHighlight = [targetId, ...Array.from(neighborIds)];
+              onSearchChange?.(idsToHighlight);
+
+              // 3. Zoom
+              if (fg) {
+                const { nodes: liveNodes } = graphData;
+                const node = liveNodes.find(
+                  (n: NodeObject) => n.id === targetId,
+                );
+
+                if (node && node.x !== undefined && node.y !== undefined) {
+                  // [Fix] Use instant transition to avoid D3 conflict between centerAt and zoom
+                  // When both have duration, the second transition cancels the first.
+                  setTimeout(() => {
+                    fg.centerAt(node.x, node.y); // Instant
+                    fg.zoom(1.2, 500); // Animate zoom only (optional) or just instant
+                  }, 50);
+                }
               }
             }}
             onSearch={onSearchChange || (() => {})}
           />
         )}
+
+        {/* DEBUG: Version Indicator */}
 
         {/* Tooltip */}
         {hoveredLink && (
@@ -928,54 +1047,45 @@ export const CharacterGraphCanvas = forwardRef<
                 timestamp: event.date || event.chapter || null,
                 importance: 5,
                 changesMade: null,
+                projectId: (event as unknown as Event).projectId || "",
               };
               setSelectedEvent(bioEvent);
             }}
-            onOpenDeepAnalysis={() => {
-              // Re-use logic from handleLinkClick to open the modal
-              const sourceId =
-                typeof hoveredLink.link.source === "object"
-                  ? (hoveredLink.link.source as CharacterNode).id
-                  : hoveredLink.link.source;
-              const targetId =
-                typeof hoveredLink.link.target === "object"
-                  ? (hoveredLink.link.target as CharacterNode).id
-                  : hoveredLink.link.target;
-
-              const sourceChar = characterMap.get(sourceId);
-              const targetChar = characterMap.get(targetId);
-
-              if (sourceChar && targetChar) {
-                const analysisData = generateAnalysisData(
-                  {
-                    id: sourceId,
-                    name: sourceChar.profile?.name || "Unknown",
-                    imageUrl: sourceChar.imageUrl,
-                  },
-                  {
-                    id: targetId,
-                    name: targetChar.profile?.name || "Unknown",
-                    imageUrl: targetChar.imageUrl,
-                  },
-                  hoveredLink.link.relationTypes || [
-                    hoveredLink.link.type as string,
-                  ], // Use relationTypes if available
-                  hoveredLink.link.strength,
-                  events,
-                  hoveredLink.link.description,
-                );
-                setDeepAnalysisData(analysisData);
-              }
-            }}
+            onOpenDeepAnalysis={() => handleOpenDeepAnalysis(hoveredLink.link)}
           />
         )}
 
         {/* Deep Analysis Modal */}
-        <RelationshipDeepAnalysisModal
-          isOpen={!!deepAnalysisData}
-          onClose={() => setDeepAnalysisData(null)}
-          data={deepAnalysisData}
-        />
+        {deepAnalysisData && (
+          <RelationshipDeepAnalysisModal
+            isOpen={true}
+            onClose={() => setDeepAnalysisData(null)}
+            data={deepAnalysisData}
+            onNavigateToEvent={(eventId) => {
+              const event = events.find((e) => e.eventId === eventId);
+              if (event) {
+                // Convert event to BiographyEvent simple structure
+                const bioEvent: BiographyEvent = {
+                  eventId: event.eventId,
+                  eventType: event.eventType.toLowerCase(),
+                  narrativeSummary: event.narrativeSummary,
+                  description: event.description,
+                  participants: event.participants,
+                  timestamp:
+                    event.timestamp ||
+                    (event.chapter ? String(event.chapter) : null),
+                  importance: event.importance,
+                  changesMade: null,
+                  locationRef: null,
+                  prevEventId: null,
+                  visualScene: null,
+                  projectId: event.projectId || "",
+                };
+                setSelectedEvent(bioEvent);
+              }
+            }}
+          />
+        )}
 
         <EventDetailPanel
           event={selectedEvent}

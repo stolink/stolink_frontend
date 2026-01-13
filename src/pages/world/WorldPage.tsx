@@ -5,7 +5,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Network, Sparkles, UserRound, Users, X } from "lucide-react";
+import {
+  Check,
+  Edit2,
+  Link2,
+  Network,
+  Sparkles,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
 
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import type { Character, RelationshipLink } from "@/types";
@@ -20,8 +29,19 @@ import {
   CharacterGraphCanvas,
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
+import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
+import {
+  RelationshipEditDialog,
+  type RelationshipEditData,
+} from "@/components/CharacterGraph/RelationshipEditDialog";
+import {
+  RelationshipCreateDialog,
+  type RelationshipCreateData,
+} from "@/components/CharacterGraph/RelationshipCreateDialog";
+import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
+import { calculateDiffFromSnapshot } from "@/utils/analysisUtils";
 
 // Hooks
 import { useAnalyzeStory } from "@/hooks/useAI";
@@ -59,6 +79,22 @@ export default function WorldPage() {
     enabled: !!projectId,
   });
 
+  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
+  // [Fix] Defined early to avoid ReferenceError in useProjectAnalysis callback or useEffect deps
+  const links: RelationshipLink[] = useRelationshipLinks(
+    characters,
+    projectEvents,
+  );
+
+  // Snapshot Ref for diff calculation
+  const snapshotRef = useRef<{
+    characters: Character[];
+    links: RelationshipLink[];
+  } | null>(null);
+
+  // Track if we are waiting for data refresh after analysis
+  const [isWaitingForRefresh, setIsWaitingForRefresh] = useState(false);
+
   const updateCharacterMutation = useUpdateCharacter();
 
   const setJobId = useAnalysisBufferStore((state) => state.setJobId);
@@ -68,12 +104,43 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+  const [isDebugAnalyzing] = useState(false);
+
+  // 관계 상세 분석 모달 상태
+  const [relationshipAnalysisData, setRelationshipAnalysisData] =
+    useState<RelationshipDeepAnalysisData | null>(null);
+  const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
     [],
   );
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
   >({});
+
+  // --- Graph Editing State ---
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [pendingPositions, setPendingPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
+  const [isSavingPositions, setIsSavingPositions] = useState(false);
+
+  // --- Relationship Edit State ---
+  const [editingRelationship, setEditingRelationship] =
+    useState<RelationshipEditData | null>(null);
+  const [isRelationshipEditDialogOpen, setIsRelationshipEditDialogOpen] =
+    useState(false);
+
+  // --- Connection Mode State (for creating new relationships) ---
+  type ConnectionMode = "idle" | "selectFirst" | "selectSecond";
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>("idle");
+  const [connectionSourceNode, setConnectionSourceNode] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isRelationshipCreateDialogOpen, setIsRelationshipCreateDialogOpen] =
+    useState(false);
+  const [newRelationshipData, setNewRelationshipData] =
+    useState<RelationshipCreateData | null>(null);
 
   // Polling for analysis status (Global)
   const {
@@ -85,40 +152,41 @@ export default function WorldPage() {
     flushAndAnalyze,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (result) => {
+      // guard: Check acknowledgement
+      if (
+        projectId &&
+        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
+      ) {
+        return;
+      }
       // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
       setShowCompletionAnimation(true);
 
-      if (result) {
-        // 백엔드가 결과를 직접 반환한 경우 (SSE에 result 포함)
-        const diff = calculateAnalysisDiff(characters, links, result);
-        setAnalysisDiff(diff);
+      console.group("🏁 Analysis Complete Visualization");
+      console.log("📥 Raw Analysis Result:", result);
+      console.log("📸 Snapshot stored:", snapshotRef.current);
+      console.groupEnd();
 
-        // Capture names for highlighting after query invalidation
-        const namesToHighlight = [
-          ...diff.newCharacters.map((c) => c.profile.name),
-          ...diff.updatedCharacters.map((u) => {
-            const char = result.characters.find(
-              (c: { name: string }) => c.name === u.id,
-            );
-            return char?.name || "";
-          }),
-        ].filter(Boolean);
-        setPendingHighlightNames(namesToHighlight);
-
-        // Wait 1.5s for the user to see "Completed" state, then open modal
-        setTimeout(() => {
-          setShowCompletionAnimation(false);
-          setIsAnalysisModalOpen(true);
-        }, 1500);
-      } else {
-        // 백엔드가 결과를 DB에만 저장한 경우 (쿼리 무효화로 데이터 갱신됨)
-        // 완료 애니메이션만 표시하고 모달은 생략
-        setTimeout(() => {
-          setShowCompletionAnimation(false);
-        }, 1500);
-      }
+      // Trigger waiting state for data refresh
+      // Diff calculation will happen in useEffect once data is updated
+      setIsWaitingForRefresh(true);
     },
   });
+
+  // Check for Pending Analysis View (from Editor)
+  useEffect(() => {
+    if (projectId) {
+      const pendingView = sessionStorage.getItem(
+        `analysis_pending_view_${projectId}`,
+      );
+      if (pendingView === "true") {
+        console.log("📬 Found pending analysis view from Editor");
+        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+        // Trigger the completion flow immediately
+        setTimeout(() => setIsWaitingForRefresh(true), 0);
+      }
+    }
+  }, [projectId]);
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -127,6 +195,27 @@ export default function WorldPage() {
 
     // 중복 호출 방지: 이미 분석 중이면 리턴
     if (isPolling) return;
+
+    // Capture Snapshot before starting
+    console.log("📸 Capturing Snapshot for Diff...");
+    const snapshot = {
+      characters: [...characters],
+      links: [...links], // links are derived, but capturing current state is safe
+    };
+    snapshotRef.current = snapshot;
+
+    // Persist to sessionStorage to survive page reloads
+    try {
+      sessionStorage.setItem(
+        `analysis_snapshot_${projectId}`,
+        JSON.stringify(snapshot),
+      );
+      // Reset flags for new session
+      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
+      sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+    } catch (e) {
+      console.warn("Failed to save snapshot to sessionStorage", e);
+    }
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
@@ -150,8 +239,85 @@ export default function WorldPage() {
       }
     } catch (_err) {
       // Analysis failed
+      snapshotRef.current = null; // Clear snapshot on error
     }
   };
+
+  // Effect: Calculate Diff when Data Refreshes after Analysis
+  useEffect(() => {
+    if (isWaitingForRefresh && !isPolling) {
+      // [Fix] Allow diff calculation even if snapshot is missing (treat as fresh start)
+      // Check if data seems "fresh" or different (or just assume it is after query invalidation)
+
+      // 1. Try to get snapshot from Ref
+      let prev = snapshotRef.current;
+
+      // 2. If missing (e.g. reload), try SessionStorage
+      if (!prev && projectId) {
+        try {
+          const stored = sessionStorage.getItem(
+            `analysis_snapshot_${projectId}`,
+          );
+          if (stored) {
+            prev = JSON.parse(stored);
+            console.log("📦 Restored Snapshot from SessionStorage");
+          }
+        } catch (e) {
+          console.error("Failed to restore snapshot from storage", e);
+        }
+      }
+
+      // 3. Fallback to empty (Fresh Start)
+      if (!prev) {
+        prev = { characters: [], links: [] };
+      }
+
+      const currentChars = characters;
+      const currentLinks = links;
+
+      console.log("🔄 Calculating Snapshot Diff...", {
+        prevChars: prev.characters.length,
+        nextChars: currentChars.length,
+      });
+
+      const diff = calculateDiffFromSnapshot(
+        prev.characters,
+        prev.links,
+        currentChars,
+        currentLinks,
+      );
+
+      console.log("📉 Snapshot Diff Result:", diff);
+
+      // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
+      setTimeout(() => {
+        setAnalysisDiff(diff);
+
+        // Set highlighting
+        const namesToHighlight = [
+          ...diff.newCharacters.map((c) => c.profile.name),
+          ...diff.updatedCharacters.map((u) => {
+            const char = currentChars.find((c) => c._id === u.id);
+            return char?.profile.name || "";
+          }),
+        ].filter(Boolean);
+        setPendingHighlightNames(namesToHighlight);
+
+        // Reset wait state
+        setIsWaitingForRefresh(false);
+        snapshotRef.current = null; // Clear snapshot ref
+        if (projectId) {
+          sessionStorage.removeItem(`analysis_snapshot_${projectId}`); // Clear storage
+        }
+      }, 0);
+
+      // Open modal
+      setTimeout(() => {
+        setShowCompletionAnimation(false);
+        setIsAnalysisModalOpen(true);
+      }, 1500);
+    }
+  }, [isWaitingForRefresh, isPolling, characters, links, projectId]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
@@ -219,7 +385,7 @@ export default function WorldPage() {
     setPendingHighlightNames,
   ]);
 
-  // Global Keyboard Shortcuts (ESC only - Cmd+K removed)
+  // Global Keyboard Shortcuts (ESC for Clear)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -243,12 +409,6 @@ export default function WorldPage() {
     return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
 
-  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
-  const links: RelationshipLink[] = useRelationshipLinks(
-    characters,
-    projectEvents,
-  );
-
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
     return (
@@ -266,6 +426,37 @@ export default function WorldPage() {
       });
       return;
     }
+
+    // Connection Mode: 새 관계 생성을 위한 노드 선택
+    if (connectionMode === "selectFirst") {
+      setConnectionSourceNode({
+        id: character._id,
+        name: character.profile.name,
+      });
+      setConnectionMode("selectSecond");
+      return;
+    }
+
+    if (connectionMode === "selectSecond" && connectionSourceNode) {
+      // 같은 노드 클릭 방지
+      if (character._id === connectionSourceNode.id) {
+        return;
+      }
+
+      // 새 관계 생성 다이얼로그 열기
+      setNewRelationshipData({
+        sourceId: connectionSourceNode.id,
+        targetId: character._id,
+        sourceName: connectionSourceNode.name,
+        targetName: character.profile.name,
+      });
+      setIsRelationshipCreateDialogOpen(true);
+      setConnectionMode("idle");
+      setConnectionSourceNode(null);
+      return;
+    }
+
+    // 일반 모드: 캐릭터 선택
     const nextChar =
       selectedCharacter?._id === character._id ? null : character;
     startTransition(() => {
@@ -283,12 +474,116 @@ export default function WorldPage() {
     setIsModalOpen(true);
   };
 
-  const handleLinkClick = (link: RelationshipLink | null) => {
-    if (!link) {
-      // Handle link deselection (if applicable, though usually clicking background just clears node selection)
+  // --- Graph Editing Handlers ---
+  const handleStartEdit = () => {
+    setIsEditMode(true);
+    setPendingPositions({});
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setPendingPositions({});
+    // 연결 모드도 취소
+    setConnectionMode("idle");
+    setConnectionSourceNode(null);
+  };
+
+  // --- Connection Mode Handlers ---
+  const handleStartConnection = () => {
+    setConnectionMode("selectFirst");
+    setConnectionSourceNode(null);
+  };
+
+  const handleCancelConnection = () => {
+    setConnectionMode("idle");
+    setConnectionSourceNode(null);
+  };
+
+  const handleSavePositions = async () => {
+    const nodeIds = Object.keys(pendingPositions);
+    if (nodeIds.length === 0) {
+      setIsEditMode(false);
       return;
     }
-    // Link Click logic removed as we use internal Deep Analysis
+
+    setIsSavingPositions(true);
+    try {
+      // 병렬로 위치 업데이트 수행
+      await Promise.all(
+        nodeIds.map((id) =>
+          updateCharacterMutation.mutateAsync({
+            id,
+            payload: {
+              graphPosition: pendingPositions[id],
+            },
+          }),
+        ),
+      );
+      setIsEditMode(false);
+      setPendingPositions({});
+    } catch (error) {
+      console.error("Failed to save positions:", error);
+    } finally {
+      setIsSavingPositions(false);
+    }
+  };
+
+  const handleLinkClick = (link: RelationshipLink | null) => {
+    if (!link) {
+      setIsRelationshipModalOpen(false);
+      setRelationshipAnalysisData(null);
+      return;
+    }
+
+    // 링크의 source와 target ID 추출
+    const sourceId =
+      typeof link.source === "string"
+        ? link.source
+        : (link.source as { id: string }).id;
+    const targetId =
+      typeof link.target === "string"
+        ? link.target
+        : (link.target as { id: string }).id;
+
+    // 캐릭터 찾기
+    const sourceChar = characters.find((c) => c._id === sourceId);
+    const targetChar = characters.find((c) => c._id === targetId);
+
+    if (!sourceChar || !targetChar) {
+      console.warn("캐릭터를 찾을 수 없습니다:", sourceId, targetId);
+      return;
+    }
+
+    // 편집 모드인 경우: RelationshipEditDialog 열기
+    if (isEditMode) {
+      setEditingRelationship({
+        id: link.id,
+        sourceId,
+        targetId,
+        sourceName: sourceChar.profile.name,
+        targetName: targetChar.profile.name,
+        types: (link.relationTypes || [
+          link.type,
+        ]) as import("@/types/character").RelationType[],
+        strength: link.strength || 5,
+        description: link.description || link.label,
+      });
+      setIsRelationshipEditDialogOpen(true);
+      return;
+    }
+
+    // 일반 모드: DeepAnalysis 모달
+    const analysisData = generateAnalysisData(
+      sourceChar,
+      targetChar,
+      link.relationTypes || [link.type],
+      link.strength || 5,
+      projectEvents,
+      link.description,
+    );
+
+    setRelationshipAnalysisData(analysisData);
+    setIsRelationshipModalOpen(true);
   };
 
   return (
@@ -343,6 +638,7 @@ export default function WorldPage() {
           {/* Analysis Overlay (Scoped to Graph) */}
           <AnimatePresence>
             {((isPolling && currentJobType !== "image") ||
+              isDebugAnalyzing ||
               showCompletionAnimation) && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -390,9 +686,11 @@ export default function WorldPage() {
                         ? "분석 완료!"
                         : currentJobType === "image"
                           ? "캐릭터 이미지 생성 중"
-                          : isStuck
-                            ? "분석이 지연되고 있습니다"
-                            : "세계관 분석 중"}
+                          : isDebugAnalyzing
+                            ? "분석 시뮬레이션 중 (Debug)"
+                            : isStuck
+                              ? "분석이 지연되고 있습니다"
+                              : "세계관 분석 중"}
                     </h2>
                     <div className="flex flex-col items-center gap-4">
                       <p
@@ -407,9 +705,11 @@ export default function WorldPage() {
                           ? "분석된 결과를 불러오고 있습니다..."
                           : currentJobType === "image"
                             ? "캐릭터의 새로운 모습을 그리고 있습니다..."
-                            : isStuck
-                              ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
-                              : "AI가 스토리의 흐름을 읽고 있습니다..."}
+                            : isDebugAnalyzing
+                              ? "디버그 모드에서 분석 과정을 테스트하고 있습니다..."
+                              : isStuck
+                                ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
+                                : "AI가 스토리의 흐름을 읽고 있습니다..."}
                       </p>
 
                       {!showCompletionAnimation && (
@@ -428,7 +728,10 @@ export default function WorldPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-mocha-400 font-mono font-bold text-sm">
-                              {Math.round(analysisProgress)}%
+                              {isDebugAnalyzing
+                                ? 65
+                                : Math.round(analysisProgress)}
+                              %
                             </span>
                             {isStuck && (
                               <Button
@@ -459,7 +762,7 @@ export default function WorldPage() {
                   <Button
                     onClick={handleStartAnalysis}
                     className="bg-mocha-500 hover:bg-mocha-600 text-white"
-                    disabled={analyzeMutation.isPending}
+                    disabled={analyzeMutation.isPending || isPolling}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     세계관 분석 시작하기
@@ -489,6 +792,7 @@ export default function WorldPage() {
                   characters={characters}
                   links={links}
                   events={projectEvents}
+                  isEditMode={isEditMode}
                   onNodeDragEnd={async (node) => {
                     if (node.id.startsWith("temp-node") || !node.x || !node.y)
                       return;
@@ -544,6 +848,95 @@ export default function WorldPage() {
                   ref={graphRef as React.RefObject<CharacterGraphRef>}
                 />
               )}
+
+              {/* Graph Edit Controls */}
+              <div className="absolute bottom-6 right-6 flex items-center gap-2 z-20">
+                <AnimatePresence mode="wait">
+                  {!isEditMode ? (
+                    <motion.div
+                      key="edit-start"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                    >
+                      <Button
+                        onClick={handleStartEdit}
+                        className="bg-white/90 backdrop-blur-sm border-mocha-200 text-mocha-600 hover:bg-white shadow-paper h-10 px-4"
+                        intent="secondary"
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        그래프 편집
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="edit-actions"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex items-center gap-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-mocha-200 shadow-paper"
+                    >
+                      {/* 연결 추가 버튼 */}
+                      {connectionMode === "idle" ? (
+                        <Button
+                          onClick={handleStartConnection}
+                          intent="secondary"
+                          className="h-9 px-4 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                          disabled={isSavingPositions}
+                        >
+                          <Link2 className="h-4 w-4 mr-2" />
+                          연결 추가
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleCancelConnection}
+                          intent="secondary"
+                          className="h-9 px-4 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 animate-pulse"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          {connectionMode === "selectFirst"
+                            ? "첫 번째 캐릭터 선택..."
+                            : `${connectionSourceNode?.name} → ?`}
+                        </Button>
+                      )}
+
+                      <div className="w-px h-6 bg-cloud-200" />
+
+                      <Button
+                        onClick={handleCancelEdit}
+                        intent="tertiary"
+                        className="h-9 px-4 text-mocha-400 hover:text-mocha-600"
+                        disabled={isSavingPositions}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        취소
+                      </Button>
+                      <Button
+                        onClick={handleSavePositions}
+                        className="bg-mocha-500 hover:bg-mocha-600 text-white h-9 px-4 shadow-sm"
+                        disabled={isSavingPositions}
+                      >
+                        {isSavingPositions ? (
+                          <div className="flex items-center">
+                            <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                            저장 중...
+                          </div>
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            위치 저장
+                            {Object.keys(pendingPositions).length > 0 && (
+                              <span className="ml-1.5 px-1.5 py-0.5 bg-white/20 rounded-md text-[10px] font-bold">
+                                {Object.keys(pendingPositions).length}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           )}
         </TabsContent>
@@ -560,7 +953,7 @@ export default function WorldPage() {
                   <Button
                     onClick={handleStartAnalysis}
                     className="bg-mocha-500 hover:bg-mocha-600 text-white"
-                    disabled={analyzeMutation.isPending}
+                    disabled={analyzeMutation.isPending || isPolling}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     캐릭터 추출하기
@@ -703,10 +1096,58 @@ export default function WorldPage() {
           onClose={() => {
             setIsAnalysisModalOpen(false);
             setAnalysisDiff(null);
+            // Mark as acknowledged so notifications stop appearing
+            if (projectId) {
+              sessionStorage.setItem(
+                `analysis_acknowledged_${projectId}`,
+                "true",
+              );
+            }
           }}
           diff={analysisDiff}
         />
       )}
+
+      <RelationshipDeepAnalysisModal
+        isOpen={isRelationshipModalOpen}
+        onClose={() => {
+          setIsRelationshipModalOpen(false);
+          setRelationshipAnalysisData(null);
+        }}
+        data={relationshipAnalysisData}
+        onNavigateToEvent={(eventId) => {
+          // 이벤트로 이동하는 로직 (추후 구현 가능)
+          console.log("Navigate to event:", eventId);
+        }}
+      />
+
+      {/* Relationship Edit Dialog (Edit Mode Only) */}
+      <RelationshipEditDialog
+        isOpen={isRelationshipEditDialogOpen}
+        onClose={() => {
+          setIsRelationshipEditDialogOpen(false);
+          setEditingRelationship(null);
+        }}
+        relationship={editingRelationship}
+        projectId={projectId || ""}
+        onSuccess={() => {
+          // 관계 수정 후 캐릭터 목록 리페치는 useUpdateRelationship에서 처리됨
+        }}
+      />
+
+      {/* Relationship Create Dialog (Connection Mode) */}
+      <RelationshipCreateDialog
+        isOpen={isRelationshipCreateDialogOpen}
+        onClose={() => {
+          setIsRelationshipCreateDialogOpen(false);
+          setNewRelationshipData(null);
+        }}
+        data={newRelationshipData}
+        projectId={projectId || ""}
+        onSuccess={() => {
+          // 관계 생성 후 캐릭터 목록 리페치는 useCreateRelationship에서 처리됨
+        }}
+      />
     </div>
   );
 }

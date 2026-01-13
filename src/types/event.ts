@@ -53,6 +53,17 @@ export interface Event {
 
   /** 임베딩 벡터 (선택적) */
   embedding?: number[];
+  /** 챕터 번호 (Neo4j: chapter) */
+  chapter?: number;
+
+  /** 순서 (Neo4j: sequenceOrder) */
+  sequenceOrder?: number;
+
+  /** 원본 문서 ID 목록 (Neo4j: source_documents) */
+  sourceDocuments?: string[];
+
+  /** Parent Project ID */
+  projectId?: string;
 }
 
 /**
@@ -72,6 +83,13 @@ export interface BackendEvent {
   importance_score?: number; // Neo4j field
   changes_made: unknown | null;
   embedding?: number[];
+  // New fields from Neo4j schema
+  chapter?: number;
+  sequenceOrder?: number;
+  sequence_order?: number;
+  source_documents?: string[];
+  project_id?: string;
+  projectId?: string; // Some endpoints might return camelCase
 }
 
 /**
@@ -98,5 +116,10 @@ export function transformBackendEvent(backendEvent: BackendEvent | any): Event {
     importance: backendEvent.importance || backendEvent.importance_score || 5, // importance matches both
     changesMade: backendEvent.changes_made || backendEvent.changesMade || null,
     embedding: backendEvent.embedding,
+    chapter: backendEvent.chapter,
+    sequenceOrder: backendEvent.sequenceOrder ?? backendEvent.sequence_order,
+    sourceDocuments:
+      backendEvent.sourceDocuments ?? backendEvent.source_documents,
+    projectId: backendEvent.projectId || backendEvent.project_id || "",
   };
 }

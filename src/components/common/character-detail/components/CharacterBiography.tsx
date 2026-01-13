@@ -13,6 +13,8 @@ interface CharacterBiographyProps {
   onBackstoryChange: (value: string) => void;
   /** 인물 일대기 사건 데이터 (향후 구현 예정) */
   events?: BiographyEvent[];
+  /** ID -> Name 매핑 */
+  characterNameMap?: Record<string, string>;
   onSave?: () => void;
   onCancel?: () => void;
 }
@@ -22,6 +24,7 @@ export function CharacterBiography({
   isEditMode,
   onBackstoryChange,
   events,
+  characterNameMap,
   onSave,
   onCancel,
 }: CharacterBiographyProps) {
@@ -102,6 +105,7 @@ export function CharacterBiography({
             backstory={backstory}
             selectedEventId={selectedEventId}
             onEventClick={setSelectedEventId}
+            characterNameMap={characterNameMap}
             className="shadow-sm"
           />
 
@@ -110,6 +114,7 @@ export function CharacterBiography({
             events={displayEvents}
             selectedEventId={selectedEventId}
             onEventClick={setSelectedEventId}
+            characterNameMap={characterNameMap}
           />
         </div>
       )}

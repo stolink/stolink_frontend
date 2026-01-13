@@ -24,6 +24,7 @@ function eventToBiography(event: Event): BiographyEvent {
     timestamp: event.timestamp,
     importance: event.importance,
     changes_made: event.changesMade,
+    project_id: event.projectId,
   });
 }
 
@@ -45,16 +46,15 @@ export function useCharacterEvents(
   const { enabled = true } = options;
 
   return useQuery({
-    queryKey: ["events", "character", characterId, "debug-force-v1"],
+    queryKey: ["events", "character", characterId],
     queryFn: async (): Promise<BiographyEvent[]> => {
       if (!characterId) return [];
       const events = await eventService.getByCharacter(characterId);
       return events.map(eventToBiography);
     },
     enabled: enabled && !!characterId,
-    // Debugging: Force fetch every time
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 5 * 60 * 1000, // 5분
+    gcTime: 10 * 60 * 1000, // 10분
   });
 }
 
