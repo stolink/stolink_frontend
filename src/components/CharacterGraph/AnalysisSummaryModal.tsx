@@ -21,41 +21,91 @@ import {
 import { cn } from "@/lib/utils";
 
 // Helper function for badge styles, derived from feature branch logic
+// Helper: Normalize relationship types
+const normalizeRelationType = (type: string) => {
+  const lower = type.toLowerCase();
+  if (lower.includes("romantic") || lower.includes("lover")) return "romantic";
+  if (
+    lower.includes("friend") ||
+    lower.includes("ally") ||
+    lower.includes("friendly")
+  )
+    return "friendly";
+  if (lower.includes("hostile") || lower.includes("enemy")) return "hostile";
+  if (lower.includes("family")) return "family";
+  if (lower.includes("business") || lower.includes("colleague"))
+    return "business";
+  if (lower.includes("master") || lower.includes("servant"))
+    return "master_servant";
+  if (lower.includes("rival")) return "rival";
+  return "default";
+};
+
+// Helper: Get Korean label for relationship types
+const getRelationLabel = (type: string) => {
+  const normalized = normalizeRelationType(type);
+  switch (normalized) {
+    case "romantic":
+      return "연인";
+    case "friendly":
+      return "우호";
+    case "hostile":
+      return "적대";
+    case "family":
+      return "가족";
+    case "business":
+      return "동료";
+    case "master_servant":
+      return "주종";
+    case "rival":
+      return "라이벌";
+    default:
+      return type.toUpperCase(); // Fallback to uppercase
+  }
+};
+
+// Helper function for badge styles, derived from feature branch logic
 const getRelationBadgeStyle = (type: string) => {
-  const lowerType = type.toLowerCase();
-  if (lowerType.includes("hostile") || lowerType.includes("enemy")) {
-    return {
-      background: "linear-gradient(135deg, #EF4444 0%, #F87171 100%)",
-      color: "white",
-      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.25)",
-    };
+  const normalized = normalizeRelationType(type);
+
+  switch (normalized) {
+    case "hostile":
+      return {
+        background: "linear-gradient(135deg, #EF4444 0%, #F87171 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(239, 68, 68, 0.25)",
+      };
+    case "friendly":
+      return {
+        background: "linear-gradient(135deg, #15803D 0%, #22c55e 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(21, 128, 61, 0.25)",
+      };
+    case "family":
+      return {
+        background: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(14, 165, 233, 0.25)",
+      };
+    case "romantic":
+      return {
+        background: "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(236, 72, 153, 0.25)",
+      };
+    case "business":
+      return {
+        background: "linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(139, 92, 246, 0.25)",
+      };
+    default:
+      return {
+        background: "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(164, 119, 100, 0.25)",
+      };
   }
-  if (lowerType.includes("friendly") || lowerType.includes("ally")) {
-    return {
-      background: "linear-gradient(135deg, #15803D 0%, #22c55e 100%)",
-      color: "white",
-      boxShadow: "0 2px 8px rgba(21, 128, 61, 0.25)",
-    };
-  }
-  if (lowerType.includes("family")) {
-    return {
-      background: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
-      color: "white",
-      boxShadow: "0 2px 8px rgba(14, 165, 233, 0.25)",
-    };
-  }
-  if (lowerType.includes("romance")) {
-    return {
-      background: "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
-      color: "white",
-      boxShadow: "0 2px 8px rgba(236, 72, 153, 0.25)",
-    };
-  }
-  return {
-    background: "linear-gradient(135deg, #A47764 0%, #BD9B8D 100%)",
-    color: "white",
-    boxShadow: "0 2px 8px rgba(164, 119, 100, 0.25)",
-  };
 };
 
 // Simple Confetti Component using Framer Motion
@@ -210,13 +260,13 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="relative w-full max-w-4xl overflow-hidden flex flex-col max-h-[88vh]"
+                  className="relative w-full max-w-4xl flex flex-col h-[85vh] sm:h-[88vh]"
                   style={{
                     background:
                       "linear-gradient(180deg, #F5F4F0 0%, #FFFFFF 100%)", // Restored Warm Ivory Gradient
                     backdropFilter: "blur(24px)",
                     WebkitBackdropFilter: "blur(24px)",
-                    borderRadius: "3rem",
+                    borderRadius: "2rem",
                     border: "1px solid rgba(164, 119, 100, 0.15)",
                     boxShadow: "0 32px 64px -12px rgba(61, 48, 42, 0.12)",
                     isolation: "isolate",
@@ -297,29 +347,32 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
 
                         {/* Main title with gradient + Wavy Animation + TV Optimized High Contrast */}
                         <h2
-                          className="text-6xl sm:text-8xl font-black leading-tight tracking-tighter"
+                          className="text-5xl sm:text-7xl font-black leading-tight tracking-tighter break-keep"
                           style={{
                             color: "#A47764", // Pure Mocha color for text
                             textShadow: "0 2px 0 rgba(255, 255, 255, 0.8)", // Clean bottom highlight
                           }}
                         >
-                          {"세계관 분석 완료".split("").map((char, i) => (
+                          {"세계관 분석 완료".split(" ").map((word, i) => (
                             <motion.span
                               key={i}
                               initial={{ y: 0 }}
                               animate={{
-                                y: [0, -12, 0], // Increased wave height for larger font
+                                y: [0, -12, 0],
                               }}
                               transition={{
                                 duration: 0.8,
-                                delay: i * 0.08,
+                                delay: i * 0.15,
                                 repeat: Infinity,
                                 repeatDelay: 1.5,
                                 ease: "easeInOut",
                               }}
-                              style={{ display: "inline-block" }}
+                              style={{
+                                display: "inline-block",
+                                marginRight: "0.25em",
+                              }}
                             >
-                              {char === " " ? "\u00A0" : char}
+                              {word}
                             </motion.span>
                           ))}
                         </h2>
@@ -437,8 +490,8 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                   {/* ═══════════════════════════════════════════════════════════════
                       BODY CONTENT: Scrollable area with refined cards
                   ═══════════════════════════════════════════════════════════════ */}
-                  <ScrollArea className="flex-1">
-                    <div className="px-10 sm:px-14 py-8 min-h-[350px]">
+                  <ScrollArea className="flex-1 w-full min-h-0">
+                    <div className="px-6 sm:px-14 py-8">
                       <AnimatePresence mode="wait">
                         {activeTab === "characters" ? (
                           <motion.div
@@ -588,8 +641,12 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                 <div className="w-16 h-16 rounded-2xl bg-cloud-100 flex items-center justify-center mb-4">
                                   <Users className="w-8 h-8 text-mocha-300" />
                                 </div>
-                                <p className="text-mocha-400 font-medium">
-                                  캐릭터 변경사항이 없습니다
+                                <h3 className="text-lg font-semibold text-espresso-800 mb-2">
+                                  캐릭터 데이터가 최신입니다
+                                </h3>
+                                <p className="text-mocha-400 font-medium max-w-xs mx-auto">
+                                  AI가 새로운 캐릭터나 변경사항을 발견하지
+                                  못했습니다.
                                 </p>
                               </div>
                             )}
@@ -636,12 +693,12 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                     >
                                       <div className="flex items-center gap-6">
                                         <div
-                                          className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider"
+                                          className="px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide shadow-sm"
                                           style={getRelationBadgeStyle(
                                             rel.type,
                                           )}
                                         >
-                                          {rel.type}
+                                          {getRelationLabel(rel.type)}
                                         </div>
                                         <p className="flex-1 text-lg  text-mocha-700 italic">
                                           "{rel.description}"
@@ -741,8 +798,12 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                   <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
                                     <Link2 className="w-8 h-8 text-mocha-300" />
                                   </div>
-                                  <p className="text-mocha-400 font-medium">
-                                    관계 변경사항이 없습니다
+                                  <h3 className="text-lg font-semibold text-espresso-800 mb-2">
+                                    관계 데이터가 최신입니다
+                                  </h3>
+                                  <p className="text-mocha-400 font-medium max-w-xs mx-auto">
+                                    AI가 새로운 역학구도나 관계 변화를 발견하지
+                                    못했습니다.
                                   </p>
                                 </div>
                               )}

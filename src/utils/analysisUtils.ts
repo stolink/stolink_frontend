@@ -17,10 +17,14 @@ export function calculateAnalysisDiff(
   const updatedRelations: { id: string; changes: string[] }[] = [];
   const removedRelations: string[] = [];
 
-  // Helper to find existing character by name (case-insensitive)
+  // Helper to normalize names for comparison
+  const normalizeName = (name: string) =>
+    name.trim().toLowerCase().replace(/\s+/g, " ");
+
+  // Helper to find existing character by name (case-insensitive, normalized)
   const findCharacter = (name: string) =>
     currentCharacters.find(
-      (c) => c.profile.name.toLowerCase() === name.toLowerCase(),
+      (c) => normalizeName(c.profile.name) === normalizeName(name),
     );
 
   // 1. Process Characters
@@ -100,6 +104,43 @@ export function calculateAnalysisDiff(
       if (backendChar.role && backendChar.role !== existing.role) {
         changes.push(`Role changed: ${existing.role} -> ${backendChar.role}`);
       }
+
+      // Check Faction
+      const newFaction = backendChar.faction?.name || "무소속";
+      const oldFaction = existing.profile.faction?.name || "무소속";
+      if (newFaction !== oldFaction) {
+        changes.push(`Faction: ${oldFaction} -> ${newFaction}`);
+      }
+
+      // Check Personality (Core Traits - Array comparison)
+      const newTraits = backendChar.personality?.core_traits || [];
+      const oldTraits = existing.personality.coreTraits || [];
+      const traitsChanged =
+        newTraits.length !== oldTraits.length ||
+        !newTraits.every((t) => oldTraits.includes(t));
+
+      if (traitsChanged && newTraits.length > 0) {
+        changes.push(`Personality updated`);
+      }
+
+      // Check Appearance (Key fields)
+      if (backendChar.appearance) {
+        const app = backendChar.appearance;
+        const oldApp = existing.appearance;
+        const appearanceChanges: string[] = [];
+
+        if (app.physique && app.physique !== oldApp.physique)
+          appearanceChanges.push("physique");
+        if (app.hair_style && app.hair_style !== oldApp.hairStyle)
+          appearanceChanges.push("hair");
+        if (app.eyes && app.eyes !== oldApp.eyes)
+          appearanceChanges.push("eyes");
+
+        if (appearanceChanges.length > 0) {
+          changes.push(`Appearance updated: ${appearanceChanges.join(", ")}`);
+        }
+      }
+
       if (
         backendChar.backstory &&
         existing.profile.backstory &&
@@ -115,6 +156,36 @@ export function calculateAnalysisDiff(
       if (changes.length > 0) {
         updatedCharacters.push({ id: existing._id, changes });
       }
+    }
+  });
+
+  // 1.5. Detect Removed (Deleted) Relations
+  // Iterate through current VALID links and check if they exist in the new analysis result
+  currentLinks.forEach((link) => {
+    // Skip invalid links or links with missing characters
+    const sourceChar = currentCharacters.find((c) => c._id === link.source);
+    const targetChar = currentCharacters.find((c) => c._id === link.target);
+
+    if (!sourceChar || !targetChar) return;
+
+    // Check if this relationship exists in the new analysis result
+    const existsInResult = analysisResult.relationships.some((rel) => {
+      const sName = normalizeName(rel.source);
+      const tName = normalizeName(rel.target);
+      const curSName = normalizeName(sourceChar.profile.name);
+      const curTName = normalizeName(targetChar.profile.name);
+
+      // Check both directions if bidirectional, or specific direction
+      const matchForward = sName === curSName && tName === curTName;
+      const matchReverse =
+        rel.bidirectional && sName === curTName && tName === curSName;
+
+      return matchForward || matchReverse;
+    });
+
+    if (!existsInResult) {
+      // If it exists in current links but NOT in analysis result, mark as removed
+      removedRelations.push(link.id || `${link.source}-${link.target}`);
     }
   });
 
@@ -173,6 +244,136 @@ export function calculateAnalysisDiff(
 
 import { calculateContentHash } from "./hashUtils";
 export { calculateContentHash };
+
+/**
+ * Snapshop-based Diff Calculation
+ * Compares two sets of frontend data (Snapshot vs Current) to determine what changed.
+ */
+export function calculateDiffFromSnapshot(
+  prevCharacters: Character[],
+  prevLinks: RelationshipLink[],
+  nextCharacters: Character[],
+  nextLinks: RelationshipLink[],
+): AnalysisDiff {
+  const newCharacters: Character[] = [];
+  const updatedCharacters: { id: string; changes: string[] }[] = [];
+  const newRelations: RelationshipLink[] = [];
+  const updatedRelations: { id: string; changes: string[] }[] = [];
+  const removedRelations: string[] = [];
+
+  // Helper to normalize names
+  const normalizeName = (name: string) =>
+    name.trim().toLowerCase().replace(/\s+/g, " ");
+
+  // 1. Process Characters
+  // Check for New Characters
+  nextCharacters.forEach((nextChar) => {
+    // Try to find by ID first, then fallback to Name
+    const prevChar =
+      prevCharacters.find((p) => p._id === nextChar._id) ||
+      prevCharacters.find(
+        (p) =>
+          normalizeName(p.profile.name) ===
+          normalizeName(nextChar.profile.name),
+      );
+
+    if (!prevChar) {
+      newCharacters.push(nextChar);
+    } else {
+      // Check for updates
+      const changes: string[] = [];
+
+      // Check key fields
+      if (prevChar.role !== nextChar.role) {
+        changes.push(`Role changed: ${prevChar.role} -> ${nextChar.role}`);
+      }
+
+      const prevFaction = prevChar.profile.faction?.name || "무소속";
+      const nextFaction = nextChar.profile.faction?.name || "무소속";
+      if (prevFaction !== nextFaction) {
+        changes.push(`Faction: ${prevFaction} -> ${nextFaction}`);
+      }
+
+      // Personality (Array comparison)
+      const prevTraits = prevChar.personality.coreTraits || [];
+      const nextTraits = nextChar.personality.coreTraits || [];
+      const traitsChanged =
+        prevTraits.length !== nextTraits.length ||
+        !nextTraits.every((t) => prevTraits.includes(t));
+      if (traitsChanged) changes.push(`Personality updated`);
+
+      // Appearance
+      const prevApp = prevChar.appearance;
+      const nextApp = nextChar.appearance;
+      const appearanceChanges: string[] = [];
+      if (prevApp.physique !== nextApp.physique)
+        appearanceChanges.push("physique");
+      if (prevApp.hairStyle !== nextApp.hairStyle)
+        appearanceChanges.push("hair");
+      if (prevApp.eyes !== nextApp.eyes) appearanceChanges.push("eyes");
+      if (appearanceChanges.length > 0) {
+        changes.push(`Appearance updated: ${appearanceChanges.join(", ")}`);
+      }
+
+      if (changes.length > 0) {
+        updatedCharacters.push({ id: nextChar._id, changes });
+      }
+    }
+  });
+
+  // 2. Process Relationships
+  // Check for New & Updated Relations
+  nextLinks.forEach((nextLink) => {
+    // Find corresponding link in previous set
+    // Relationships are identified by Source-Target pair
+    const prevLink = prevLinks.find(
+      (p) =>
+        (p.source === nextLink.source && p.target === nextLink.target) ||
+        (p.source === nextLink.target && p.target === nextLink.source), // Bidirectional check
+    );
+
+    if (!prevLink) {
+      newRelations.push(nextLink);
+    } else {
+      // Check for updates
+      const changes: string[] = [];
+      if (prevLink.type !== nextLink.type) {
+        changes.push(`Type: ${prevLink.type} -> ${nextLink.type}`);
+      }
+      if (Math.abs((prevLink.strength || 0) - (nextLink.strength || 0)) > 1) {
+        changes.push(`Strength: ${prevLink.strength} -> ${nextLink.strength}`);
+      }
+      if (prevLink.description !== nextLink.description) {
+        changes.push("Description updated");
+      }
+
+      if (changes.length > 0) {
+        updatedRelations.push({ id: nextLink.id, changes });
+      }
+    }
+  });
+
+  // Check for Removed Relations
+  prevLinks.forEach((prevLink) => {
+    const stillExists = nextLinks.some(
+      (n) =>
+        (n.source === prevLink.source && n.target === prevLink.target) ||
+        (n.source === prevLink.target && n.target === prevLink.source),
+    );
+
+    if (!stillExists) {
+      removedRelations.push(prevLink.id);
+    }
+  });
+
+  return {
+    newCharacters,
+    updatedCharacters,
+    newRelations,
+    updatedRelations,
+    removedRelations,
+  };
+}
 
 function transformAnalysisRelationshipToLink(
   rel: import("@/types").AnalysisBackendRelationship,
