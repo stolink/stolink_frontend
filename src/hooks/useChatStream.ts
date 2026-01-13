@@ -133,8 +133,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
           Accept: "text/event-stream",
         };
 
-        // Corrected path from /ai/chat/stream to /chat/stream as per guide
-        const response = await fetch(`${CHAT_API_URL}/chat/stream`, {
+        // Corrected URL: CHAT_API_URL already contains /api/ai-chat
+        const response = await fetch(`${CHAT_API_URL}/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -265,7 +265,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
 
     // Call stop endpoint as per guide
     try {
-      await fetch(`${CHAT_API_URL}/chat/stop`, {
+      await fetch(`${CHAT_API_URL}/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId }),
@@ -303,7 +303,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
     setSessionId(sid);
 
     try {
-      const res = await fetch(`${CHAT_API_URL}/chat/history/${sid}?limit=20`, {
+      const res = await fetch(`${CHAT_API_URL}/history/${sid}?limit=20`, {
         credentials: "include",
       });
       if (res.ok) {
