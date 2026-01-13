@@ -39,6 +39,7 @@ jobs:
         env:
           VITE_API_URL: "/api"
           VITE_BACKEND_URL: "https://${{ vars.CLOUDFRONT_URL }}"
+          VITE_COMMUNITY_URL: "/storead"
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
 
       - name: Generate version info
