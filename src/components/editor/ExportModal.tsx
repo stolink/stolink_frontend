@@ -23,6 +23,7 @@ import type { Character } from "@/types/character";
 import { draftService } from "@/services/draftService";
 import { useToast } from "@/hooks/useToast";
 import { motion, AnimatePresence } from "framer-motion";
+import { COMMUNITY_URL } from "@/config";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -139,10 +140,9 @@ export default function ExportModal({
   }, [textDocuments, selectedDocId]);
 
   const [isPublishing, setIsPublishing] = useState(false);
-  const { toast } = useToast();
 
-  const COMMUNITY_URL =
-    import.meta.env.VITE_COMMUNITY_URL || "http://localhost:5174";
+  const { toast } = useToast();
+  //
 
   const targetDoc = documents.find((d) => d.id === selectedDocId);
   const targetTitle = targetDoc ? targetDoc.title : title;
