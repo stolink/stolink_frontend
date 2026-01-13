@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type {
-  JobStatus,
-  SSEProgressEvent,
-  SSECompletedEvent,
-  SSEFailedEvent,
-} from "@/types/api";
+import type { JobStatus } from "@/types/api";
+
+interface SSEMessage {
+  status?: string;
+  type?: string;
+  percent?: number;
+  progress?: number;
+  completedDocuments?: number;
+  totalDocuments?: number;
+  result?: unknown;
+  error?: string;
+}
 
 interface UseJobSSEOptions<T> {
   enabled?: boolean;
@@ -116,94 +122,115 @@ export function useJobSSE<T = unknown>(
     const eventSource = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = eventSource;
 
+    // Shared message processing logic
+    const processMessageData = (
+      data: Record<string, unknown>,
+      eventType?: string,
+    ) => {
+      try {
+        const msgData = data as unknown as SSEMessage;
+        console.log(
+          `[useJobSSE] ${eventType ? `[${eventType}] ` : ""}Message for ${jobId}:`,
+          data,
+        );
+        onMessageRef.current?.({ ...msgData, eventType });
+
+        // Normalize status/type for comparison
+        const status = (msgData.status || "").toLowerCase();
+        const type = (msgData.type || eventType || "").toLowerCase();
+
+        // Check terminal states first (Completion/Success then Failure)
+        // This ensures the final message with 100% progress counts as "completed"
+        if (
+          type === "completed" ||
+          type === "success" ||
+          status === "completed" ||
+          status === "success" ||
+          status === "done"
+        ) {
+          setResult(msgData.result as T);
+          setJobStatus("completed");
+          setProgress(100);
+          onCompleteRef.current?.(msgData.result as T);
+          cleanup();
+        } else if (
+          type === "failed" ||
+          type === "error" ||
+          status === "failed" ||
+          status === "error"
+        ) {
+          setError(msgData.error || "Job failed");
+          setJobStatus("failed");
+          onErrorRef.current?.(msgData.error || "Job failed");
+          cleanup();
+        }
+        // Progress / Processing (Only if not terminal)
+        else if (
+          type === "progress" ||
+          status === "analyzing" ||
+          status === "processing" ||
+          msgData.percent !== undefined ||
+          msgData.completedDocuments !== undefined
+        ) {
+          const newProgress =
+            msgData.percent ??
+            (msgData.totalDocuments
+              ? Math.floor(
+                  ((msgData.completedDocuments || 0) / msgData.totalDocuments) *
+                    100,
+                )
+              : (msgData.completedDocuments || 0) > 0
+                ? 100
+                : 0);
+
+          setProgress(newProgress);
+          setJobStatus("processing");
+        }
+      } catch (err) {
+        console.error("[useJobSSE] Error processing message data:", err);
+      }
+    };
+
     // Connection opened
     eventSource.onopen = () => {
-      /* Connection opened */
       setIsConnected(true);
       setJobStatus("processing");
     };
 
     // Heartbeat - connection health check
     eventSource.addEventListener("heartbeat", () => {
-      /* Prevent connection timeout */
       setIsConnected(true);
       // Reset timeout timer on heartbeat
       startTimeRef.current = Date.now();
     });
 
-    // Progress update
-    eventSource.addEventListener("progress", (e) => {
-      try {
-        const data = JSON.parse(e.data) as SSEProgressEvent;
-        setProgress(data.percent);
-        setJobStatus("processing");
-        onMessageRef.current?.({ ...data, type: "progress" });
-      } catch (_e) {
-        // Silently fail on malformed data
-      }
+    // Support backend-specific named events
+    const namedEvents = [
+      "status",
+      "progress",
+      "completed",
+      "failed",
+      "connected",
+    ];
+    namedEvents.forEach((evType) => {
+      eventSource.addEventListener(evType, (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          processMessageData(data, evType);
+          if (evType === "connected") {
+            setIsConnected(true);
+          }
+        } catch (_err) {
+          // Silently fail on malformed data
+        }
+      });
     });
 
-    // Job completed
-    eventSource.addEventListener("completed", (e) => {
-      try {
-        const data = JSON.parse(e.data) as SSECompletedEvent<T>;
-        setResult(data.result);
-        setJobStatus("completed");
-        setProgress(100);
-        onMessageRef.current?.({ ...data, type: "completed" });
-        onCompleteRef.current?.(data.result);
-        cleanup();
-      } catch (_e) {
-        // Silently fail on malformed data
-      }
-    });
-
-    // Job failed
-    eventSource.addEventListener("failed", (e) => {
-      try {
-        const data = JSON.parse(e.data) as SSEFailedEvent;
-        setError(data.error);
-        setJobStatus("failed");
-        onMessageRef.current?.({ ...data, type: "failed" });
-        onErrorRef.current?.(data.error);
-        cleanup();
-      } catch (_e) {
-        // Silently fail on malformed data
-      }
-    });
-
-    // Generic message update
+    // Generic message update (unnamed events)
     eventSource.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        onMessageRef.current?.(data);
-        // If the backend doesn't use custom event types, it might send everything here
-        if (data.type === "progress" || data.percent !== undefined) {
-          setProgress(data.percent || 0);
-          setJobStatus("processing");
-        } else if (
-          data.type === "completed" ||
-          data.type === "success" ||
-          data.status === "completed" ||
-          data.status === "success" ||
-          data.status === "done"
-        ) {
-          setResult(data.result);
-          setJobStatus("completed");
-          setProgress(100);
-          onCompleteRef.current?.(data.result);
-          cleanup();
-        } else if (
-          data.type === "failed" ||
-          data.type === "error" ||
-          data.status === "failed" ||
-          data.status === "error"
-        ) {
-          setError(data.error || "Job failed");
-          setJobStatus("failed");
-          onErrorRef.current?.(data.error || "Job failed");
-          cleanup();
-        }
+        processMessageData(data);
       } catch (_e) {
         // Silently fail on manual close
       }

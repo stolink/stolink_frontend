@@ -24,7 +24,7 @@ import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/Relat
 import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
-import { calculateAnalysisDiff } from "@/utils/analysisUtils";
+import { calculateDiffFromSnapshot } from "@/utils/analysisUtils";
 
 // Hooks
 import { useAnalyzeStory } from "@/hooks/useAI";
@@ -62,6 +62,22 @@ export default function WorldPage() {
     enabled: !!projectId,
   });
 
+  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
+  // [Fix] Defined early to avoid ReferenceError in useProjectAnalysis callback or useEffect deps
+  const links: RelationshipLink[] = useRelationshipLinks(
+    characters,
+    projectEvents,
+  );
+
+  // Snapshot Ref for diff calculation
+  const snapshotRef = useRef<{
+    characters: Character[];
+    links: RelationshipLink[];
+  } | null>(null);
+
+  // Track if we are waiting for data refresh after analysis
+  const [isWaitingForRefresh, setIsWaitingForRefresh] = useState(false);
+
   const updateCharacterMutation = useUpdateCharacter();
 
   const setJobId = useAnalysisBufferStore((state) => state.setJobId);
@@ -71,6 +87,7 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+  const [isDebugAnalyzing, setIsDebugAnalyzing] = useState(false);
 
   // 관계 상세 분석 모달 상태
   const [relationshipAnalysisData, setRelationshipAnalysisData] =
@@ -93,40 +110,41 @@ export default function WorldPage() {
     flushAndAnalyze,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (result) => {
+      // guard: Check acknowledgement
+      if (
+        projectId &&
+        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
+      ) {
+        return;
+      }
       // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
       setShowCompletionAnimation(true);
 
-      if (result) {
-        // 백엔드가 결과를 직접 반환한 경우 (SSE에 result 포함)
-        const diff = calculateAnalysisDiff(characters, links, result);
-        setAnalysisDiff(diff);
+      console.group("🏁 Analysis Complete Visualization");
+      console.log("📥 Raw Analysis Result:", result);
+      console.log("📸 Snapshot stored:", snapshotRef.current);
+      console.groupEnd();
 
-        // Capture names for highlighting after query invalidation
-        const namesToHighlight = [
-          ...diff.newCharacters.map((c) => c.profile.name),
-          ...diff.updatedCharacters.map((u) => {
-            const char = result.characters.find(
-              (c: { name: string }) => c.name === u.id,
-            );
-            return char?.name || "";
-          }),
-        ].filter(Boolean);
-        setPendingHighlightNames(namesToHighlight);
-
-        // Wait 1.5s for the user to see "Completed" state, then open modal
-        setTimeout(() => {
-          setShowCompletionAnimation(false);
-          setIsAnalysisModalOpen(true);
-        }, 1500);
-      } else {
-        // 백엔드가 결과를 DB에만 저장한 경우 (쿼리 무효화로 데이터 갱신됨)
-        // 완료 애니메이션만 표시하고 모달은 생략
-        setTimeout(() => {
-          setShowCompletionAnimation(false);
-        }, 1500);
-      }
+      // Trigger waiting state for data refresh
+      // Diff calculation will happen in useEffect once data is updated
+      setIsWaitingForRefresh(true);
     },
   });
+
+  // Check for Pending Analysis View (from Editor)
+  useEffect(() => {
+    if (projectId) {
+      const pendingView = sessionStorage.getItem(
+        `analysis_pending_view_${projectId}`,
+      );
+      if (pendingView === "true") {
+        console.log("📬 Found pending analysis view from Editor");
+        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+        // Trigger the completion flow immediately
+        setTimeout(() => setIsWaitingForRefresh(true), 0);
+      }
+    }
+  }, [projectId]);
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -135,6 +153,27 @@ export default function WorldPage() {
 
     // 중복 호출 방지: 이미 분석 중이면 리턴
     if (isPolling) return;
+
+    // Capture Snapshot before starting
+    console.log("📸 Capturing Snapshot for Diff...");
+    const snapshot = {
+      characters: [...characters],
+      links: [...links], // links are derived, but capturing current state is safe
+    };
+    snapshotRef.current = snapshot;
+
+    // Persist to sessionStorage to survive page reloads
+    try {
+      sessionStorage.setItem(
+        `analysis_snapshot_${projectId}`,
+        JSON.stringify(snapshot),
+      );
+      // Reset flags for new session
+      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
+      sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+    } catch (e) {
+      console.warn("Failed to save snapshot to sessionStorage", e);
+    }
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
@@ -158,8 +197,85 @@ export default function WorldPage() {
       }
     } catch (_err) {
       // Analysis failed
+      snapshotRef.current = null; // Clear snapshot on error
     }
   };
+
+  // Effect: Calculate Diff when Data Refreshes after Analysis
+  useEffect(() => {
+    if (isWaitingForRefresh && !isPolling) {
+      // [Fix] Allow diff calculation even if snapshot is missing (treat as fresh start)
+      // Check if data seems "fresh" or different (or just assume it is after query invalidation)
+
+      // 1. Try to get snapshot from Ref
+      let prev = snapshotRef.current;
+
+      // 2. If missing (e.g. reload), try SessionStorage
+      if (!prev && projectId) {
+        try {
+          const stored = sessionStorage.getItem(
+            `analysis_snapshot_${projectId}`,
+          );
+          if (stored) {
+            prev = JSON.parse(stored);
+            console.log("📦 Restored Snapshot from SessionStorage");
+          }
+        } catch (e) {
+          console.error("Failed to restore snapshot from storage", e);
+        }
+      }
+
+      // 3. Fallback to empty (Fresh Start)
+      if (!prev) {
+        prev = { characters: [], links: [] };
+      }
+
+      const currentChars = characters;
+      const currentLinks = links;
+
+      console.log("🔄 Calculating Snapshot Diff...", {
+        prevChars: prev.characters.length,
+        nextChars: currentChars.length,
+      });
+
+      const diff = calculateDiffFromSnapshot(
+        prev.characters,
+        prev.links,
+        currentChars,
+        currentLinks,
+      );
+
+      console.log("📉 Snapshot Diff Result:", diff);
+
+      // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
+      setTimeout(() => {
+        setAnalysisDiff(diff);
+
+        // Set highlighting
+        const namesToHighlight = [
+          ...diff.newCharacters.map((c) => c.profile.name),
+          ...diff.updatedCharacters.map((u) => {
+            const char = currentChars.find((c) => c._id === u.id);
+            return char?.profile.name || "";
+          }),
+        ].filter(Boolean);
+        setPendingHighlightNames(namesToHighlight);
+
+        // Reset wait state
+        setIsWaitingForRefresh(false);
+        snapshotRef.current = null; // Clear snapshot ref
+        if (projectId) {
+          sessionStorage.removeItem(`analysis_snapshot_${projectId}`); // Clear storage
+        }
+      }, 0);
+
+      // Open modal
+      setTimeout(() => {
+        setShowCompletionAnimation(false);
+        setIsAnalysisModalOpen(true);
+      }, 1500);
+    }
+  }, [isWaitingForRefresh, isPolling, characters, links, projectId]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
@@ -227,9 +343,45 @@ export default function WorldPage() {
     setPendingHighlightNames,
   ]);
 
-  // Global Keyboard Shortcuts (ESC only - Cmd+K removed)
+  // Global Keyboard Shortcuts (Cmd+K for Debug Analysis, ESC for Clear)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K (Meta+K or Ctrl+K) - Trigger Debug Analysis
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+
+        // Prevent multiple triggers
+        if (isDebugAnalyzing || showCompletionAnimation || isAnalysisModalOpen)
+          return;
+
+        console.log("🛠️ Debug Analysis Triggered");
+        setIsDebugAnalyzing(true);
+
+        // 1. Simulate Analysis Phase (3s)
+        setTimeout(() => {
+          setIsDebugAnalyzing(false);
+          setShowCompletionAnimation(true);
+
+          // Generate Mock Diff
+          const mockDiff: AnalysisDiff = {
+            newCharacters: [],
+            updatedCharacters: [],
+            newRelations: [],
+            updatedRelations: [],
+            removedRelations: [],
+          };
+
+          setAnalysisDiff(mockDiff);
+
+          // 2. Simulate Success Phase (1.5s) -> Open Modal
+          setTimeout(() => {
+            setShowCompletionAnimation(false);
+            setIsAnalysisModalOpen(true);
+          }, 1500);
+        }, 3000);
+        return;
+      }
+
       if (e.key === "Escape") {
         // startTransition으로 비긴급 업데이트 처리 (INP 개선)
         startTransition(() => {
@@ -241,7 +393,7 @@ export default function WorldPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isDebugAnalyzing, showCompletionAnimation, isAnalysisModalOpen]);
 
   // Sync selectedCharacter with latest data from characters array
   // We use useMemo to derive the active character data to avoid cascading renders
@@ -250,12 +402,6 @@ export default function WorldPage() {
     const updated = characters.find((c) => c._id === selectedCharacter._id);
     return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
-
-  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
-  const links: RelationshipLink[] = useRelationshipLinks(
-    characters,
-    projectEvents,
-  );
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -383,6 +529,7 @@ export default function WorldPage() {
           {/* Analysis Overlay (Scoped to Graph) */}
           <AnimatePresence>
             {((isPolling && currentJobType !== "image") ||
+              isDebugAnalyzing ||
               showCompletionAnimation) && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -430,9 +577,11 @@ export default function WorldPage() {
                         ? "분석 완료!"
                         : currentJobType === "image"
                           ? "캐릭터 이미지 생성 중"
-                          : isStuck
-                            ? "분석이 지연되고 있습니다"
-                            : "세계관 분석 중"}
+                          : isDebugAnalyzing
+                            ? "분석 시뮬레이션 중 (Debug)"
+                            : isStuck
+                              ? "분석이 지연되고 있습니다"
+                              : "세계관 분석 중"}
                     </h2>
                     <div className="flex flex-col items-center gap-4">
                       <p
@@ -447,9 +596,11 @@ export default function WorldPage() {
                           ? "분석된 결과를 불러오고 있습니다..."
                           : currentJobType === "image"
                             ? "캐릭터의 새로운 모습을 그리고 있습니다..."
-                            : isStuck
-                              ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
-                              : "AI가 스토리의 흐름을 읽고 있습니다..."}
+                            : isDebugAnalyzing
+                              ? "디버그 모드에서 분석 과정을 테스트하고 있습니다..."
+                              : isStuck
+                                ? "작업이 중단되었을 수 있습니다. 잠시 후 다시 시도하거나 초기화해주세요."
+                                : "AI가 스토리의 흐름을 읽고 있습니다..."}
                       </p>
 
                       {!showCompletionAnimation && (
@@ -468,7 +619,10 @@ export default function WorldPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-mocha-400 font-mono font-bold text-sm">
-                              {Math.round(analysisProgress)}%
+                              {isDebugAnalyzing
+                                ? 65
+                                : Math.round(analysisProgress)}
+                              %
                             </span>
                             {isStuck && (
                               <Button
@@ -499,7 +653,7 @@ export default function WorldPage() {
                   <Button
                     onClick={handleStartAnalysis}
                     className="bg-mocha-500 hover:bg-mocha-600 text-white"
-                    disabled={analyzeMutation.isPending}
+                    disabled={analyzeMutation.isPending || isPolling}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     세계관 분석 시작하기
@@ -600,7 +754,7 @@ export default function WorldPage() {
                   <Button
                     onClick={handleStartAnalysis}
                     className="bg-mocha-500 hover:bg-mocha-600 text-white"
-                    disabled={analyzeMutation.isPending}
+                    disabled={analyzeMutation.isPending || isPolling}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     캐릭터 추출하기
@@ -743,6 +897,13 @@ export default function WorldPage() {
           onClose={() => {
             setIsAnalysisModalOpen(false);
             setAnalysisDiff(null);
+            // Mark as acknowledged so notifications stop appearing
+            if (projectId) {
+              sessionStorage.setItem(
+                `analysis_acknowledged_${projectId}`,
+                "true",
+              );
+            }
           }}
           diff={analysisDiff}
         />
