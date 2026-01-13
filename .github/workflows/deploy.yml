@@ -83,13 +83,11 @@ jobs:
             --cache-control "max-age=31536000, immutable" \
             --delete
 
-          # 2. 기타 정적 파일 (version.json 등)
-          aws s3 cp ./dist/version.json s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
-            --cache-control "no-cache, no-store, must-revalidate" || true
-
-          # 3. index.html (항상 최신 버전 확인)
-          aws s3 cp ./dist/index.html s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
-            --cache-control "no-cache, no-store, must-revalidate"
+          # 2. 루트 파일들 (vite.svg, robots.txt, favicon 등 - assets 제외)
+          aws s3 sync ./dist/ s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
+            --exclude "assets/*" \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --delete
 
       - name: CloudFront Invalidation (index.html only)
         run: |

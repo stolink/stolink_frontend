@@ -377,7 +377,6 @@ export function useProjectAnalysis(
             if (result) {
               lastResultRef.current = result;
             }
-
             setJobProgresses((prev) => ({ ...prev, [eventJobId]: 100 }));
             if (projectId) {
               removeStoreJobId(projectId, eventJobId);
@@ -664,6 +663,7 @@ export function useProjectAnalysis(
   }, [triggerAnalysis]);
 
   // finalizeAnalysisRef 업데이트 (타이머에서 사용)
+
   useEffect(() => {
     finalizeAnalysisRef.current = finalizeAnalysis;
   }, [finalizeAnalysis]);
