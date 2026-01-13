@@ -152,7 +152,7 @@ export function InsightsPanel({
                 <h5 className="text-lg font-bold text-espresso-900 mb-1.5 font-serif">
                   {decisiveTrigger.title}
                 </h5>
-                <p className="text-base text-espresso-600 leading-relaxed">
+                <p className="text-base text-espresso-600 leading-relaxed line-clamp-3">
                   {decisiveTrigger.summary}
                 </p>
               </>

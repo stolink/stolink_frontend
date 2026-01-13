@@ -133,10 +133,6 @@ export function ChapterTree({
   onMoveToFolder,
 }: ChapterTreeProps) {
   const chapters = useMemo(() => initialChapters, [initialChapters]);
-  const rootItemIds = useMemo(
-    () => chapters.map((node) => node.id),
-    [chapters],
-  );
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"chapter" | "section">(
     "chapter",
@@ -207,6 +203,9 @@ export function ChapterTree({
     setIsAdding(false);
     setAddingToParent(null);
   };
+
+  // Root level item IDs for SortableContext
+  const rootItemIds = useMemo(() => chapters.map((c) => c.id), [chapters]);
 
   // Drag Start Handler
   const handleDragStart = (event: DragStartEvent) => {

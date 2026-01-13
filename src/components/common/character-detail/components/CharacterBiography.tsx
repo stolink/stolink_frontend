@@ -30,7 +30,6 @@ export function CharacterBiography({
   // useMemo로 정렬된 데이터 계산
   // 실제 이벤트 데이터가 없으면 빈 배열 (UI에서 empty state 표시)
   const displayEvents = useMemo(() => {
-    console.log("CharacterBiography events prop:", events);
     const rawEvents = events && events.length > 0 ? events : [];
     // Deduplicate by eventId to avoid key collisions
     const uniqueEvents = Array.from(

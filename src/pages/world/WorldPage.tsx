@@ -20,10 +20,7 @@ import {
   CharacterGraphCanvas,
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
-import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
-import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
-import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { calculateAnalysisDiff } from "@/utils/analysisUtils";
 
 // Hooks
@@ -71,11 +68,6 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
-
-  // 관계 상세 분석 모달 상태
-  const [relationshipAnalysisData, setRelationshipAnalysisData] =
-    useState<RelationshipDeepAnalysisData | null>(null);
-  const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
     [],
   );
@@ -293,42 +285,10 @@ export default function WorldPage() {
 
   const handleLinkClick = (link: RelationshipLink | null) => {
     if (!link) {
-      setIsRelationshipModalOpen(false);
-      setRelationshipAnalysisData(null);
+      // Handle link deselection (if applicable, though usually clicking background just clears node selection)
       return;
     }
-
-    // 링크의 source와 target ID 추출
-    const sourceId =
-      typeof link.source === "string"
-        ? link.source
-        : (link.source as { id: string }).id;
-    const targetId =
-      typeof link.target === "string"
-        ? link.target
-        : (link.target as { id: string }).id;
-
-    // 캐릭터 찾기
-    const sourceChar = characters.find((c) => c._id === sourceId);
-    const targetChar = characters.find((c) => c._id === targetId);
-
-    if (!sourceChar || !targetChar) {
-      console.warn("캐릭터를 찾을 수 없습니다:", sourceId, targetId);
-      return;
-    }
-
-    // 분석 데이터 생성
-    const analysisData = generateAnalysisData(
-      sourceChar,
-      targetChar,
-      link.relationTypes || [link.type],
-      link.strength || 5,
-      projectEvents,
-      link.description,
-    );
-
-    setRelationshipAnalysisData(analysisData);
-    setIsRelationshipModalOpen(true);
+    // Link Click logic removed as we use internal Deep Analysis
   };
 
   return (
@@ -747,20 +707,6 @@ export default function WorldPage() {
           diff={analysisDiff}
         />
       )}
-
-      {/* Relationship Deep Analysis Modal */}
-      <RelationshipDeepAnalysisModal
-        isOpen={isRelationshipModalOpen}
-        onClose={() => {
-          setIsRelationshipModalOpen(false);
-          setRelationshipAnalysisData(null);
-        }}
-        data={relationshipAnalysisData}
-        onNavigateToEvent={(eventId) => {
-          // 이벤트로 이동하는 로직 (추후 구현 가능)
-          console.log("Navigate to event:", eventId);
-        }}
-      />
     </div>
   );
 }

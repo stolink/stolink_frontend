@@ -98,7 +98,7 @@ export function CharacterPortraitPanel({
         <h3 className="text-2xl font-bold text-espresso-900 font-serif">
           {character.name}
         </h3>
-        <p className="text-sm text-espresso-500 mt-1 whitespace-nowrap">
+        <p className="text-sm text-espresso-500 mt-1">
           → {targetName}에 대한 마음
         </p>
       </motion.div>
