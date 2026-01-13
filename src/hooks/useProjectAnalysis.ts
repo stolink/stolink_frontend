@@ -288,6 +288,10 @@ export function useProjectAnalysis(
           // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
           // 클라이언트가 알고 있는 모든 진행 중 작업을 정리합니다. (Ghost Job 방지)
           clearStoreJobs(projectId);
+        } else {
+          // [Bugfix] 서버에 아무런 Job도 없다면(null/null) 로컬 상태도 깨끗하게 비웁니다.
+          // 이 코드가 없으면 "분석중" 상태가 영원히 유지되는 버그가 발생합니다.
+          clearStoreJobs(projectId);
         }
       } catch (error) {
         // API가 404라면 해당 프로젝트에 진행 중인 Job이 없다는 뜻이므로 로컬 상태도 클리어
