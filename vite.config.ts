@@ -14,11 +14,18 @@ export default defineConfig({
     port: 5173,
     open: true,
     proxy: {
+      // 챗봇 API (Spring과 경로 겹치므로 api보다 위에 선언 필수)
+      "/api/ai-chat": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+        secure: false,
+      },
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
       },
+      // (old) /ai-api Proxy - 하위 호환성 유지 또는 삭제
       "/ai-api": {
         target: "http://localhost:8001",
         changeOrigin: true,

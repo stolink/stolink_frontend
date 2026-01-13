@@ -62,8 +62,7 @@ export function PublishingWizard({
   links = [],
 }: PublishingWizardProps) {
   const { toast } = useToast();
-  const COMMUNITY_URL =
-    import.meta.env.VITE_COMMUNITY_URL || "http://localhost:5174";
+  const COMMUNITY_URL = import.meta.env.VITE_COMMUNITY_URL || "/storead";
 
   // 폴더 제외, 콘텐츠가 있는 문서만 필터링
   const documents: DocumentItem[] = useMemo(() => {
