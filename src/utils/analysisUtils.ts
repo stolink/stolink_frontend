@@ -6,11 +6,22 @@ import type { AnalysisDiff } from "@/types/analysisTypes";
 /**
  * Compare current project data with analysis result to generate a diff report.
  */
-export function calculateAnalysisDiff(
+export const calculateAnalysisDiff = (
   currentCharacters: Character[],
   currentLinks: RelationshipLink[],
   analysisResult: AnalysisResultData,
-): AnalysisDiff {
+): AnalysisDiff => {
+  // Guard Clause: 분석 결과가 없으면 변경 사항 없음으로 처리
+  if (!analysisResult || !analysisResult.characters) {
+    return {
+      newCharacters: [],
+      updatedCharacters: [],
+      newRelations: [],
+      updatedRelations: [],
+      removedRelations: [],
+    };
+  }
+
   const newCharacters: Character[] = [];
   const updatedCharacters: { id: string; changes: string[] }[] = [];
   const newRelations: RelationshipLink[] = [];
@@ -119,7 +130,10 @@ export function calculateAnalysisDiff(
   });
 
   // 2. Process Relationships
-  analysisResult.relationships.forEach((rel) => {
+  // Check if analysisResult.relationships exists, although guard clause handles analysisResult null,
+  // relationships property might be missing or undefined if API fails partly?
+  // BackendRelationship[] is expected.
+  (analysisResult.relationships || []).forEach((rel) => {
     // Relationships in AnalysisResult are (Source Name, Target Name).
     // Use Names to find IDs.
     const sourceChar = findCharacter(rel.source);
@@ -141,7 +155,7 @@ export function calculateAnalysisDiff(
           id: `new-rel-${Date.now()}-${Math.random()}`,
           source: sourceChar._id,
           target: targetChar._id,
-          type: rel.relation_type as RelationType,
+          type: (rel.relation_type as RelationType) || "neutral",
           strength: rel.strength,
           description: rel.description,
           curvature: 0.2,
@@ -171,7 +185,7 @@ export function calculateAnalysisDiff(
     updatedRelations,
     removedRelations,
   };
-}
+};
 
 /**
  * Simple string hashing function for change detection.
