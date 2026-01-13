@@ -390,6 +390,7 @@ export const CharacterGraphCanvas = forwardRef<
             const fg = graphRef.current;
             const { nodes: liveNodes } = graphData;
             const node = liveNodes.find((n: NodeObject) => n.id === nodeId);
+            if (!node) return;
 
             // 1. 하이라이트 즉시 적용
             onSearchChange?.([nodeId]);
