@@ -8,6 +8,7 @@ import {
   useImperativeHandle,
   startTransition,
 } from "react";
+import { throttle } from "lodash-es";
 import ForceGraph2D, {
   type NodeObject,
   type LinkObject,
@@ -92,6 +93,7 @@ export const CharacterGraphCanvas = forwardRef<
   ) => {
     const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
     const animationPhaseRef = useRef(0);
+
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [hoveredLink, setHoveredLink] = useState<{
       link: RelationshipLink;
@@ -171,6 +173,8 @@ export const CharacterGraphCanvas = forwardRef<
         };
       });
     }, [characters, initialLinks]);
+
+    // Ref 핸들 설정 (initialNodes 이후에 선언)
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
@@ -402,7 +406,7 @@ export const CharacterGraphCanvas = forwardRef<
           }
         },
       }),
-      [initialNodes, graphData, onSearchChange],
+      [graphData, onSearchChange],
     );
 
     // [Consolidated] Handle opening deep analysis modal
@@ -414,6 +418,7 @@ export const CharacterGraphCanvas = forwardRef<
           return;
         }
 
+        // Find fresh character objects from map (Ensures full data)
         // Find fresh character objects from map (Ensures full data)
         const sourceId =
           typeof link.source === "object" && link.source
@@ -498,13 +503,27 @@ export const CharacterGraphCanvas = forwardRef<
       return ids;
     }, [selectedNodeId, processedLinks]);
 
-    // 노드 클릭 핸들러
-    const handleNodeClick = (node: CharacterNode) => {
-      const character = characterMap.get(node.id);
-      if (character && onNodeClick) {
-        onNodeClick(character);
-      }
-    };
+    // [Stability] Ref로 콜백 관리하여 시뮬레이션 드리프트 방지
+    const onNodeClickRef = useRef(onNodeClick);
+    useEffect(() => {
+      onNodeClickRef.current = onNodeClick;
+    }, [onNodeClick]);
+
+    const onSearchChangeRef = useRef(onSearchChange);
+    useEffect(() => {
+      onSearchChangeRef.current = onSearchChange;
+    }, [onSearchChange]);
+
+    // 노드 클릭 핸들러 (Ref 패턴으로 안정화)
+    const handleNodeClick = useCallback(
+      (node: CharacterNode) => {
+        const character = characterMap.get(node.id);
+        if (character && onNodeClickRef.current) {
+          onNodeClickRef.current(character);
+        }
+      },
+      [characterMap],
+    );
 
     // 필터 변경 핸들러
     const handleFilterChange = (filter: UIRelationType | "all") => {
@@ -920,16 +939,17 @@ export const CharacterGraphCanvas = forwardRef<
             enableNodeDrag={true}
             enablePanInteraction={true}
             enableZoomInteraction={true}
-            onZoom={(transform: { x: number; y: number; k: number }) => {
-              // [State Conflict Fix] Wrap with requestAnimationFrame to avoid "update during render"
-              requestAnimationFrame(() => {
-                setZoomState({
-                  x: transform.x,
-                  y: transform.y,
-                  scale: transform.k,
-                });
-              });
-            }}
+            onZoom={useMemo(
+              () =>
+                throttle((transform: { x: number; y: number; k: number }) => {
+                  setZoomState({
+                    x: transform.x,
+                    y: transform.y,
+                    scale: transform.k,
+                  });
+                }, 50), // 50ms 스로틀 - 초당 최대 20회 상태 업데이트
+              [],
+            )}
           />
         </div>
 
@@ -946,60 +966,14 @@ export const CharacterGraphCanvas = forwardRef<
           <CharacterSearchOverlay
             characters={characters}
             onSelect={(character) => {
-              const targetId = character._id;
-
-              const fg = graphRef.current;
-              const neighborIds = new Set<string>();
-
-              if (fg) {
-                const { links: liveLinks } = graphData;
-                liveLinks.forEach((l: LinkObject) => {
-                  const sId =
-                    typeof l.source === "object"
-                      ? (l.source as NodeObject).id
-                      : l.source;
-                  const tId =
-                    typeof l.target === "object"
-                      ? (l.target as NodeObject).id
-                      : l.target;
-                  if (sId === targetId) neighborIds.add(tId as string);
-                  if (tId === targetId) neighborIds.add(sId as string);
-                });
-              }
-
-              // 1. Update selection state
-              if (selectedNodeId !== targetId) {
-                onNodeClick?.(character);
-              }
-
-              // 2. Highlight (Target + Neighbors) to ensure edges are visible
-              const idsToHighlight = [targetId, ...Array.from(neighborIds)];
-              onSearchChange?.(idsToHighlight);
-
-              // 3. Zoom
-              if (fg) {
-                const { nodes: liveNodes } = graphData;
-                const node = liveNodes.find(
-                  (n: NodeObject) => n.id === targetId,
-                );
-
-                if (node && node.x !== undefined && node.y !== undefined) {
-                  const targetX = node.x;
-                  const targetY = node.y;
-                  // [Fix] Use instant transition to avoid D3 conflict between centerAt and zoom
-                  // When both have duration, the second transition cancels the first.
-                  setTimeout(() => {
-                    fg.centerAt(targetX, targetY); // Instant
-                    fg.zoom(1.2, 500); // Animate zoom only (optional) or just instant
-                  }, 50);
-                }
+              const node = initialNodes.find((n) => n.id === character._id);
+              if (node && onNodeClick) {
+                onNodeClick(character);
               }
             }}
             onSearch={onSearchChange || (() => {})}
           />
         )}
-
-        {/* DEBUG: Version Indicator */}
 
         {/* Tooltip */}
         {hoveredLink && (

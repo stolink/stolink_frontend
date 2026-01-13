@@ -146,94 +146,118 @@ function CollisionMesh({
   const { viewport } = useThree();
 
   // 색상 데이터 추출 (Memoized to prevent recalc)
-  const colorDataA = useMemo(() => extractColorData(factorsA), [factorsA]);
+  // ESLint fix: Complex expression in dependency array
+  const serializedFactorsA = JSON.stringify(factorsA);
+  const colorDataA = useMemo(
+    () => extractColorData(factorsA),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [serializedFactorsA],
+  );
 
-  const colorDataB = useMemo(() => extractColorData(factorsB), [factorsB]);
+  const serializedFactorsB = JSON.stringify(factorsB);
+  const colorDataB = useMemo(
+    () => extractColorData(factorsB),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [serializedFactorsB],
+  );
 
   // 유니폼 초기값
   // Debug logs
   // Debug logs removed for performance
 
-  // 유니폼 초기값 (Stable ref to prevent re-creation and jumpy uTime)
-  const uniformsRef = useRef({
-    uTime: { value: 0 },
-    uColorA1: { value: hexToThreeColor(colorDataA.colors[0]) },
-    uColorA2: { value: hexToThreeColor(colorDataA.colors[1]) },
-    uColorA3: { value: hexToThreeColor(colorDataA.colors[2]) },
-    uIntensityA1: { value: colorDataA.intensities[0] },
-    uIntensityA2: { value: colorDataA.intensities[1] },
-    uIntensityA3: { value: colorDataA.intensities[2] },
-    uStrengthA: { value: strengthA },
-    uColorB1: { value: hexToThreeColor(colorDataB.colors[0]) },
-    uColorB2: { value: hexToThreeColor(colorDataB.colors[1]) },
-    uColorB3: { value: hexToThreeColor(colorDataB.colors[2]) },
-    uIntensityB1: { value: colorDataB.intensities[0] },
-    uIntensityB2: { value: colorDataB.intensities[1] },
-    uIntensityB3: { value: colorDataB.intensities[2] },
-    uStrengthB: { value: strengthB },
-    uResolution: {
-      value: new THREE.Vector2(viewport.width, viewport.height),
-    },
-  });
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
 
-  // Props 변경 시 유니폼 지속 업데이트
+      // A→B 연기
+      uColorA1: { value: hexToThreeColor(colorDataA.colors[0]) },
+      uColorA2: { value: hexToThreeColor(colorDataA.colors[1]) },
+      uColorA3: { value: hexToThreeColor(colorDataA.colors[2]) },
+      uIntensityA1: { value: colorDataA.intensities[0] },
+      uIntensityA2: { value: colorDataA.intensities[1] },
+      uIntensityA3: { value: colorDataA.intensities[2] },
+      uStrengthA: { value: strengthA },
+
+      // B→A 연기
+      uColorB1: { value: hexToThreeColor(colorDataB.colors[0]) },
+      uColorB2: { value: hexToThreeColor(colorDataB.colors[1]) },
+      uColorB3: { value: hexToThreeColor(colorDataB.colors[2]) },
+      uIntensityB1: { value: colorDataB.intensities[0] },
+      uIntensityB2: { value: colorDataB.intensities[1] },
+      uIntensityB3: { value: colorDataB.intensities[2] },
+      uStrengthB: { value: strengthB },
+
+      uResolution: {
+        value: new THREE.Vector2(viewport.width, viewport.height),
+      },
+    }),
+    [
+      colorDataA.colors,
+      colorDataA.intensities,
+      colorDataB.colors,
+      colorDataB.intensities,
+      strengthA,
+      strengthB,
+      viewport.width,
+      viewport.height,
+    ],
+  );
+
+  // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)
   useEffect(() => {
-    // materialRef.current.uniforms를 직접 참조하여 실제 셰이더 상태 업데이트
-    const material = materialRef.current;
-    if (!material || !material.uniforms) return;
+    if (materialRef.current) {
+      // Update Colors using .set() to avoid GC
+      materialRef.current.uniforms.uColorA1.value.set(colorDataA.colors[0]);
+      materialRef.current.uniforms.uColorA2.value.set(colorDataA.colors[1]);
+      materialRef.current.uniforms.uColorA3.value.set(colorDataA.colors[2]);
 
-    const uniforms = material.uniforms;
+      materialRef.current.uniforms.uIntensityA1.value =
+        colorDataA.intensities[0];
+      materialRef.current.uniforms.uIntensityA2.value =
+        colorDataA.intensities[1];
+      materialRef.current.uniforms.uIntensityA3.value =
+        colorDataA.intensities[2];
 
-    if (uniforms.uColorA1) uniforms.uColorA1.value.set(colorDataA.colors[0]);
-    if (uniforms.uColorA2) uniforms.uColorA2.value.set(colorDataA.colors[1]);
-    if (uniforms.uColorA3) uniforms.uColorA3.value.set(colorDataA.colors[2]);
-    if (uniforms.uIntensityA1)
-      uniforms.uIntensityA1.value = colorDataA.intensities[0];
-    if (uniforms.uIntensityA2)
-      uniforms.uIntensityA2.value = colorDataA.intensities[1];
-    if (uniforms.uIntensityA3)
-      uniforms.uIntensityA3.value = colorDataA.intensities[2];
+      materialRef.current.uniforms.uColorB1.value.set(colorDataB.colors[0]);
+      materialRef.current.uniforms.uColorB2.value.set(colorDataB.colors[1]);
+      materialRef.current.uniforms.uColorB3.value.set(colorDataB.colors[2]);
 
-    if (uniforms.uColorB1) uniforms.uColorB1.value.set(colorDataB.colors[0]);
-    if (uniforms.uColorB2) uniforms.uColorB2.value.set(colorDataB.colors[1]);
-    if (uniforms.uColorB3) uniforms.uColorB3.value.set(colorDataB.colors[2]);
-    if (uniforms.uIntensityB1)
-      uniforms.uIntensityB1.value = colorDataB.intensities[0];
-    if (uniforms.uIntensityB2)
-      uniforms.uIntensityB2.value = colorDataB.intensities[1];
-    if (uniforms.uIntensityB3)
-      uniforms.uIntensityB3.value = colorDataB.intensities[2];
+      materialRef.current.uniforms.uIntensityB1.value =
+        colorDataB.intensities[0];
+      materialRef.current.uniforms.uIntensityB2.value =
+        colorDataB.intensities[1];
+      materialRef.current.uniforms.uIntensityB3.value =
+        colorDataB.intensities[2];
+    }
   }, [colorDataA, colorDataB]);
 
   // 애니메이션 프레임
   useFrame((state) => {
-    const material = materialRef.current;
-    if (!material || !material.uniforms) return;
+    if (materialRef.current) {
+      // 시간 업데이트
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
 
-    const uniforms = material.uniforms;
+      // 강도 부드럽게 전환 (lerp)
+      const currentStrengthA = materialRef.current.uniforms.uStrengthA.value;
+      const currentStrengthB = materialRef.current.uniforms.uStrengthB.value;
 
-    // 시간 업데이트 (getElapsedTime 사용으로 연속성 보장)
-    if (uniforms.uTime) uniforms.uTime.value = state.clock.getElapsedTime();
-
-    // 강도 부드럽게 전환 (lerp)
-    if (uniforms.uStrengthA) {
-      uniforms.uStrengthA.value = THREE.MathUtils.lerp(
-        uniforms.uStrengthA.value,
+      // LERP Factor slightly adjusted for smoothness
+      materialRef.current.uniforms.uStrengthA.value = THREE.MathUtils.lerp(
+        currentStrengthA,
         strengthA,
         0.05,
       );
-    }
-    if (uniforms.uStrengthB) {
-      uniforms.uStrengthB.value = THREE.MathUtils.lerp(
-        uniforms.uStrengthB.value,
+      materialRef.current.uniforms.uStrengthB.value = THREE.MathUtils.lerp(
+        currentStrengthB,
         strengthB,
         0.05,
       );
-    }
 
-    // 해상도 업데이트
-    if (uniforms.uResolution) {
-      uniforms.uResolution.value.set(viewport.width, viewport.height);
+      // 해상도 업데이트
+      materialRef.current.uniforms.uResolution.value.set(
+        viewport.width,
+        viewport.height,
+      );
     }
   });
 
@@ -244,8 +268,7 @@ function CollisionMesh({
         ref={materialRef}
         vertexShader={collisionVertexShader}
         fragmentShader={collisionFragmentShader}
-        // eslint-disable-next-line
-        uniforms={uniformsRef.current}
+        uniforms={uniforms}
         transparent
         depthWrite={false}
         blending={THREE.AdditiveBlending}
@@ -269,12 +292,11 @@ export const EmotionCollisionEffect = memo(
     return (
       <div className={cn("w-full h-full pointer-events-none", className)}>
         <Canvas
-          frameloop="always"
           gl={{
             alpha: true,
             antialias: true,
             powerPreference: "high-performance",
-            depth: false,
+            depth: false, // Depth buffer not needed for 2D shader
             stencil: false,
           }}
           camera={{ position: [0, 0, 1], fov: 75 }}

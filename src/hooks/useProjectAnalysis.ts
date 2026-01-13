@@ -298,6 +298,7 @@ export function useProjectAnalysis(
           clearStoreJobs(projectId);
         } else {
           // [Bugfix] 서버에 아무런 Job도 없다면(null/null) 로컬 상태도 깨끗하게 비웁니다.
+
           clearStoreJobs(projectId);
         }
       } catch (error) {

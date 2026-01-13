@@ -23,10 +23,13 @@ export const handlers = [
     if (body.email === "test@example.com" && body.password === "password") {
       return HttpResponse.json({
         data: {
-          id: "test-user-id",
-          email: "test@example.com",
-          nickname: "Test User",
-          createdAt: "2025-01-01T00:00:00Z",
+          user: {
+            id: "test-user-id",
+            email: "test@example.com",
+            nickname: "Test User",
+            createdAt: "2025-01-01T00:00:00Z",
+          },
+          expiresIn: 3600,
         },
       });
     }

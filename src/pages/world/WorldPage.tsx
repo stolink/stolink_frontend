@@ -104,7 +104,7 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
-  const [isDebugAnalyzing] = useState(false);
+  const [isDebugAnalyzing, setIsDebugAnalyzing] = useState(false);
 
   // 관계 상세 분석 모달 상태
   const [relationshipAnalysisData, setRelationshipAnalysisData] =
@@ -141,7 +141,6 @@ export default function WorldPage() {
     useState(false);
   const [newRelationshipData, setNewRelationshipData] =
     useState<RelationshipCreateData | null>(null);
-
   // Polling for analysis status (Global)
   const {
     isAnalyzing: isPolling,
@@ -385,9 +384,45 @@ export default function WorldPage() {
     setPendingHighlightNames,
   ]);
 
-  // Global Keyboard Shortcuts (ESC for Clear)
+  // Global Keyboard Shortcuts (Cmd+K for Debug Analysis, ESC for Clear)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K (Meta+K or Ctrl+K) - Trigger Debug Analysis
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+
+        // Prevent multiple triggers
+        if (isDebugAnalyzing || showCompletionAnimation || isAnalysisModalOpen)
+          return;
+
+        console.log("🛠️ Debug Analysis Triggered");
+        setIsDebugAnalyzing(true);
+
+        // 1. Simulate Analysis Phase (3s)
+        setTimeout(() => {
+          setIsDebugAnalyzing(false);
+          setShowCompletionAnimation(true);
+
+          // Generate Mock Diff
+          const mockDiff: AnalysisDiff = {
+            newCharacters: [],
+            updatedCharacters: [],
+            newRelations: [],
+            updatedRelations: [],
+            removedRelations: [],
+          };
+
+          setAnalysisDiff(mockDiff);
+
+          // 2. Simulate Success Phase (1.5s) -> Open Modal
+          setTimeout(() => {
+            setShowCompletionAnimation(false);
+            setIsAnalysisModalOpen(true);
+          }, 1500);
+        }, 3000);
+        return;
+      }
+
       if (e.key === "Escape") {
         // startTransition으로 비긴급 업데이트 처리 (INP 개선)
         startTransition(() => {
@@ -399,7 +434,7 @@ export default function WorldPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isDebugAnalyzing, showCompletionAnimation, isAnalysisModalOpen]);
 
   // Sync selectedCharacter with latest data from characters array
   // We use useMemo to derive the active character data to avoid cascading renders
@@ -534,7 +569,6 @@ export default function WorldPage() {
       setRelationshipAnalysisData(null);
       return;
     }
-
     // 링크의 source와 target ID 추출
     const sourceId =
       typeof link.source === "string"
@@ -848,7 +882,6 @@ export default function WorldPage() {
                   ref={graphRef as React.RefObject<CharacterGraphRef>}
                 />
               )}
-
               {/* Graph Edit Controls */}
               <div className="absolute bottom-6 right-6 flex items-center gap-2 z-20">
                 <AnimatePresence mode="wait">
@@ -1108,6 +1141,7 @@ export default function WorldPage() {
         />
       )}
 
+      {/* Relationship Deep Analysis Modal */}
       <RelationshipDeepAnalysisModal
         isOpen={isRelationshipModalOpen}
         onClose={() => {
@@ -1120,7 +1154,6 @@ export default function WorldPage() {
           console.log("Navigate to event:", eventId);
         }}
       />
-
       {/* Relationship Edit Dialog (Edit Mode Only) */}
       <RelationshipEditDialog
         isOpen={isRelationshipEditDialogOpen}

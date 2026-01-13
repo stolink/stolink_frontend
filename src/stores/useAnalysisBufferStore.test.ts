@@ -78,7 +78,7 @@ describe("useAnalysisBufferStore", () => {
       expect(useAnalysisBufferStore.getState().shouldAutoFlush()).toBe(false);
     });
 
-    it("버퍼가 임계치 이상이고 시간이 충분히 지나면 true 반환", () => {
+    it("auto-flush가 비활성화되어 조건과 관계없이 항상 false 반환", () => {
       const longContent = "A".repeat(ANALYSIS_BUFFER_CONFIG.MIN_CHARS + 1);
 
       // lastFlushAt을 31분 전으로 설정
@@ -88,7 +88,8 @@ describe("useAnalysisBufferStore", () => {
       });
       useAnalysisBufferStore.getState().addToBuffer("doc-1", longContent);
 
-      expect(useAnalysisBufferStore.getState().shouldAutoFlush()).toBe(true);
+      // auto-flush is disabled, so should always return false
+      expect(useAnalysisBufferStore.getState().shouldAutoFlush()).toBe(false);
     });
 
     it("분석 중이면 false 반환", () => {
