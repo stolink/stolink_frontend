@@ -205,13 +205,13 @@ export const CharacterGraphCanvas = forwardRef<
         const adj = new Map<string, string[]>();
         links.forEach((l) => {
           const s =
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source;
+              : String(l.source);
           const t =
-            typeof l.target === "object"
+            typeof l.target === "object" && l.target
               ? (l.target as CharacterNode).id
-              : l.target;
+              : String(l.target);
           if (!adj.has(s)) adj.set(s, []);
           if (!adj.has(t)) adj.set(t, []);
           adj.get(s)?.push(t);
@@ -241,13 +241,13 @@ export const CharacterGraphCanvas = forwardRef<
         // Assign depth to links and Fix Direction (Source -> Target = Low Depth -> High Depth)
         links.forEach((l) => {
           const sId =
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source;
+              : String(l.source);
           const tId =
-            typeof l.target === "object"
+            typeof l.target === "object" && l.target
               ? (l.target as CharacterNode).id
-              : l.target;
+              : String(l.target);
 
           const sDepth = nodeDepths.get(sId);
           const tDepth = nodeDepths.get(tId);
@@ -277,13 +277,13 @@ export const CharacterGraphCanvas = forwardRef<
 
       links.forEach((link) => {
         const s =
-          typeof link.source === "object"
+          typeof link.source === "object" && link.source
             ? (link.source as CharacterNode).id
-            : link.source;
+            : String(link.source);
         const t =
-          typeof link.target === "object"
+          typeof link.target === "object" && link.target
             ? (link.target as CharacterNode).id
-            : link.target;
+            : String(link.target);
         const key = [s, t].sort().join("-");
         if (!pairMap.has(key)) pairMap.set(key, []);
         pairMap.get(key)!.push(link);
@@ -317,9 +317,9 @@ export const CharacterGraphCanvas = forwardRef<
         // [Bidirectional Detection]
         const groupSources = new Set(
           group.map((l) =>
-            typeof l.source === "object"
+            typeof l.source === "object" && l.source
               ? (l.source as CharacterNode).id
-              : l.source,
+              : String(l.source),
           ),
         );
         const isReciprocal = groupSources.size > 1;
@@ -1006,22 +1006,26 @@ export const CharacterGraphCanvas = forwardRef<
           <RelationshipEventTooltip
             events={hoveredLink.link.history || []}
             sourceName={
-              typeof hoveredLink.link.source === "object"
+              typeof hoveredLink.link.source === "object" &&
+              hoveredLink.link.source
                 ? (hoveredLink.link.source as CharacterNode).name
                 : "Unknown"
             }
             targetName={
-              typeof hoveredLink.link.target === "object"
+              typeof hoveredLink.link.target === "object" &&
+              hoveredLink.link.target
                 ? (hoveredLink.link.target as CharacterNode).name
                 : "Unknown"
             }
             sourceImage={
-              typeof hoveredLink.link.source === "object"
+              typeof hoveredLink.link.source === "object" &&
+              hoveredLink.link.source
                 ? (hoveredLink.link.source as CharacterNode).imageUrl
                 : undefined
             }
             targetImage={
-              typeof hoveredLink.link.target === "object"
+              typeof hoveredLink.link.target === "object" &&
+              hoveredLink.link.target
                 ? (hoveredLink.link.target as CharacterNode).imageUrl
                 : undefined
             }
@@ -1032,11 +1036,13 @@ export const CharacterGraphCanvas = forwardRef<
             description={hoveredLink.link.description}
             onEventClick={(event) => {
               const source =
-                typeof hoveredLink.link.source === "object"
+                typeof hoveredLink.link.source === "object" &&
+                hoveredLink.link.source
                   ? (hoveredLink.link.source as CharacterNode)
                   : { name: "Unknown" };
               const target =
-                typeof hoveredLink.link.target === "object"
+                typeof hoveredLink.link.target === "object" &&
+                hoveredLink.link.target
                   ? (hoveredLink.link.target as CharacterNode)
                   : { name: "Unknown" };
 
