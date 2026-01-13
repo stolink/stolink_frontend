@@ -416,13 +416,13 @@ export const CharacterGraphCanvas = forwardRef<
 
         // Find fresh character objects from map (Ensures full data)
         const sourceId =
-          typeof link.source === "object"
+          typeof link.source === "object" && link.source
             ? (link.source as CharacterNode).id
-            : link.source;
+            : String(link.source);
         const targetId =
-          typeof link.target === "object"
+          typeof link.target === "object" && link.target
             ? (link.target as CharacterNode).id
-            : link.target;
+            : String(link.target);
 
         const sourceChar = characterMap.get(sourceId);
         const targetChar = characterMap.get(targetId);
