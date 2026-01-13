@@ -66,10 +66,8 @@ describe("useRegister", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // Check if auth state was set
-    const authState = useAuthStore.getState();
-    expect(authState.isAuthenticated).toBe(true);
-    expect(authState.user?.email).toBe("new@example.com");
+    // Note: 회원가입 후 자동 로그인하지 않음 - 로그인 페이지로 리다이렉트됨
+    // Auth state는 변경되지 않음 (로그인이 필요)
   });
 });
 
