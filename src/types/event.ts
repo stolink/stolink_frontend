@@ -61,6 +61,9 @@ export interface Event {
 
   /** 원본 문서 ID 목록 (Neo4j: source_documents) */
   sourceDocuments?: string[];
+
+  /** Parent Project ID */
+  projectId?: string;
 }
 
 /**
@@ -85,6 +88,8 @@ export interface BackendEvent {
   sequenceOrder?: number;
   sequence_order?: number;
   source_documents?: string[];
+  project_id?: string;
+  projectId?: string; // Some endpoints might return camelCase
 }
 
 /**
@@ -115,5 +120,6 @@ export function transformBackendEvent(backendEvent: BackendEvent | any): Event {
     sequenceOrder: backendEvent.sequenceOrder ?? backendEvent.sequence_order,
     sourceDocuments:
       backendEvent.sourceDocuments ?? backendEvent.source_documents,
+    projectId: backendEvent.projectId || backendEvent.project_id || "",
   };
 }
