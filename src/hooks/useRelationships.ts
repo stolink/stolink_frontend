@@ -22,7 +22,7 @@ export function useCreateRelationship(projectId: string) {
 
   return useMutation({
     mutationFn: (payload: CreateRelationshipInput) =>
-      relationshipService.create(payload),
+      relationshipService.create(projectId, payload),
     onSuccess: () => {
       // 캐릭터 데이터에 관계가 포함되어 있으므로 캐릭터 목록 무효화
       queryClient.invalidateQueries({
@@ -46,7 +46,7 @@ export function useUpdateRelationship(projectId: string) {
     }: {
       id: string;
       payload: Partial<CreateRelationshipInput>;
-    }) => relationshipService.update(id, payload),
+    }) => relationshipService.update(projectId, id, payload),
     // Optimistic update for deprecated API removed
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -63,7 +63,7 @@ export function useDeleteRelationship(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => relationshipService.delete(id),
+    mutationFn: (id: string) => relationshipService.delete(projectId, id),
     // Optimistic update for deprecated API removed
     onSuccess: () => {
       queryClient.invalidateQueries({

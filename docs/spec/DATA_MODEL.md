@@ -1,7 +1,7 @@
 # StoLink 데이터 모델 명세
 
 > **버전**: 1.5
-> **최종 수정**: 2026년 1월 2일
+> **최종 수정**: 2026년 1월 14일
 > **상태**: 현재 구현 기준 (sync-docs 워크플로우로 동기화)
 
 ---
@@ -450,7 +450,7 @@ export function getCharacterFaction(char: Character): string {
 
 // 관계 배열을 가져오는 헬퍼 (레거시 호환)
 export function getCharacterRelationships(
-  char: Character
+  char: Character,
 ): CharacterRelation[] {
   return char.relations?.graph || [];
 }
@@ -653,11 +653,12 @@ interface AnalysisBufferState {
   currentJobType: "analysis" | "image" | null; // 작업 유형
   activeJobs: Record<string, string[]>; // 프로젝트별 활성 작업 ID 목록
   lastAnalyzedHashes: Record<string, string>; // 문서별 마지막 분석 해시 (중복 분석 방지)
+  pendingDocuments: Record<string, string>; // 분석 대상 문서 해시 (이미 요청 중인 문서 중복 전송 방지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 일관성 리포트
 }
 
 // Config Constants
-// - MIN_CHARS_FOR_AUTO_FLUSH = 10,000
+// - MIN_CHARS_FOR_AUTO_FLUSH = 5,000
 // - MIN_INTERVAL_MS = 30분
 ```
 

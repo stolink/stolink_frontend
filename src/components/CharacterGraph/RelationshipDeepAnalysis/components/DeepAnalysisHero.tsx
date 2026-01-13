@@ -234,7 +234,7 @@ const FactorPill = ({ factor }: { factor: StrengthFactor }) => {
         <span style={{ color }} className="shrink-0">
           {getRelationIcon(factor.type)}
         </span>
-        <span className="text-xs font-serif font-bold text-espresso-800 tracking-tight truncate max-w-[120px]">
+        <span className="text-xs font-serif font-bold text-espresso-800 tracking-tight">
           {label}
         </span>
       </div>
@@ -298,21 +298,21 @@ const CharacterPerspective = ({
           )}
         </motion.div>
 
-        <div className="space-y-0 relative z-10">
-          <h2 className="text-[52px] md:text-[68px] font-serif font-black text-espresso-900 tracking-tight leading-none">
+        <div className="space-y-0 relative z-10 min-w-0 flex-1">
+          <h2 className="text-[clamp(1.25rem,5vw,3.5rem)] md:text-[clamp(2.5rem,5vw,4.25rem)] font-serif font-black text-espresso-900 tracking-tight leading-tight truncate">
             {char.name}
           </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-2 md:mt-4">
             {perspectiveData.factors.slice(0, 3).map((f, i) => (
               <span
                 key={i}
-                className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-600 backdrop-blur-sm whitespace-nowrap"
+                className="px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-white/60 border border-espresso-900/5 text-[10px] md:text-xs font-bold text-espresso-600 backdrop-blur-sm"
               >
                 # {simplifyTerm(f.type)}
               </span>
             ))}
             {perspectiveData.factors.length > 3 && (
-              <span className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-400 backdrop-blur-sm">
+              <span className="px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-white/60 border border-espresso-900/5 text-[10px] md:text-xs font-bold text-espresso-400 backdrop-blur-sm">
                 + {perspectiveData.factors.length - 3}
               </span>
             )}
@@ -415,23 +415,23 @@ export function DeepAnalysisHero({
         className="max-w-[1400px] mx-auto relative"
       >
         {/* Analysis Header */}
-        <div className="flex items-center gap-6 mb-20 px-4">
-          <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-white/60 border border-espresso-900/5 shadow-xl backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-12 md:mb-20 px-4">
+          <div className="flex items-center gap-3 px-4 md:px-5 py-1.5 md:py-2 rounded-full bg-white/60 border border-espresso-900/5 shadow-xl backdrop-blur-xl">
             <span className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
-            <span className="text-sm font-black text-espresso-800 uppercase tracking-[0.4em]">
+            <span className="text-[10px] md:text-sm font-black text-espresso-800 uppercase tracking-[0.2em] md:tracking-[0.4em] whitespace-nowrap">
               Deep Discovery Analysis
             </span>
           </div>
           {description && (
-            <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-mocha-500/10 border border-mocha-500/20 shadow-sm backdrop-blur-xl">
-              <Star className="w-4 h-4 text-mocha-500 fill-mocha-500" />
-              <span className="text-sm font-black text-mocha-700">
+            <div className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-1.5 md:py-2 rounded-full bg-mocha-500/10 border border-mocha-500/20 shadow-sm backdrop-blur-xl">
+              <Star className="w-3 h-3 md:w-4 md:h-4 text-mocha-500 fill-mocha-500" />
+              <span className="text-xs md:text-sm font-black text-mocha-700 truncate max-w-[200px] md:max-w-none">
                 {description}
               </span>
             </div>
           )}
           {since && (
-            <div className="flex items-center gap-2.5 text-base text-espresso-400 font-serif italic">
+            <div className="flex items-center gap-2 md:gap-2.5 text-sm md:text-base text-espresso-400 font-serif italic whitespace-nowrap">
               <span className="text-mocha-300">✦</span>
               <span>인연의 시작 : {since}</span>
             </div>
@@ -439,7 +439,7 @@ export function DeepAnalysisHero({
         </div>
 
         {/* Main Side-by-Side Content */}
-        <div className="flex flex-col xl:flex-row items-start justify-between gap-24 xl:gap-8 relative">
+        <div className="flex flex-col xl:flex-row items-center xl:items-start justify-between gap-12 xl:gap-8 relative">
           <motion.div
             initial={{ x: -60, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -455,7 +455,7 @@ export function DeepAnalysisHero({
           </motion.div>
 
           {/* Central Connecting Divider with Shader Effect */}
-          <div className="hidden xl:flex w-[280px] self-stretch flex-col relative pt-[8rem] shrink-0">
+          <div className="hidden xl:flex w-[clamp(240px,25vw,380px)] self-stretch flex-col relative pt-[8rem] shrink-0">
             <div className="absolute inset-0 flex items-center justify-center">
               <EmotionCollisionEffect
                 factorsA={asymmetricStrength.sourceToTarget.factors}

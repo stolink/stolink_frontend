@@ -33,6 +33,7 @@ export function CharacterSearchOverlay({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const parentRef = useRef<HTMLDivElement>(null); // Virtualizer parent
+  const isSelectingRef = useRef(false);
 
   // Search Logic with Fuzzy + Chosung (deferred query 사용)
   const matches = useMemo(() => {
@@ -54,6 +55,8 @@ export function CharacterSearchOverlay({
 
   // Notify parent of matches for highlighting
   useEffect(() => {
+    if (isSelectingRef.current) return;
+
     if (!deferredQuery.trim()) {
       onSearch(null);
     } else {
@@ -114,9 +117,15 @@ export function CharacterSearchOverlay({
   };
 
   const handleSelect = (char: Character) => {
+    isSelectingRef.current = true;
     onSelect(char);
     setQuery("");
     setIsFocused(false);
+
+    // Reset selection flag after a short delay
+    setTimeout(() => {
+      isSelectingRef.current = false;
+    }, 500);
   };
 
   const clearSearch = () => {
@@ -129,7 +138,7 @@ export function CharacterSearchOverlay({
     <div
       ref={containerRef}
       className={cn(
-        "absolute top-6 left-1/2 z-20 flex flex-col gap-2 transition-all duration-300",
+        "absolute top-24 left-1/2 z-20 flex flex-col gap-2 transition-all duration-300",
         isFocused ? "w-[600px]" : "w-[480px]",
       )}
       style={{
