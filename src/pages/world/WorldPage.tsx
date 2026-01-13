@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +34,8 @@ import { Button } from "@stolink/ui";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
+import RelationshipDeepAnalysisModal from "@/components/CharacterGraph/RelationshipDeepAnalysis";
+import { convertLinkToDeepAnalysisData } from "@/utils/relationshipAdapter";
 
 import { useProjectEvents } from "@/hooks/useEvents";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
@@ -164,6 +166,49 @@ export default function WorldPage() {
     UIRelationType | "all"
   >("all");
 
+  // URL Query Params Handling
+  const [searchParams] = useSearchParams();
+  const relationshipParam = searchParams.get("relationship");
+  const tabParam = searchParams.get("tab");
+  // Selected Tab derived from URL
+  const activeTab =
+    tabParam &&
+    ["graph", "characters", "foreshadowing", "debug"].includes(tabParam)
+      ? tabParam
+      : "graph";
+
+  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
+  const links: RelationshipLink[] = useRelationshipLinks(
+    characters,
+    projectEvents,
+  );
+
+  // selectedRelationship State 제거 -> Derivation
+  // Sync Relationship Modal with URL
+  const selectedRelationship = useMemo(() => {
+    if (!relationshipParam || links.length === 0) return null;
+
+    // 1. Try exact ID match
+    const targetLink = links.find((l) => l.id === relationshipParam);
+    if (targetLink) return targetLink;
+
+    // 2. Try Source-Target match (order independent)
+    if (relationshipParam.includes("-")) {
+      const [p1, p2] = relationshipParam.split("-");
+      return (
+        links.find((l) => {
+          const s = typeof l.source === "string" ? l.source : l.source.id;
+          const t = typeof l.target === "string" ? l.target : l.target.id;
+          return (s === p1 && t === p2) || (s === p2 && t === p1);
+        }) || null
+      );
+    }
+
+    return null;
+  }, [relationshipParam, links]);
+
+  // Sync Tab with URL Logic Removed (Now derived directly)
+
   // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
   // Canvas 그래프 강제 활성화 (디버깅)
   useEffect(() => {
@@ -243,11 +288,8 @@ export default function WorldPage() {
     return updated ? updated : selectedCharacter;
   }, [characters, selectedCharacter]);
 
-  // Character.relationships에서 관계 데이터 추출 (이벤트 히스토리 포함)
-  const links: RelationshipLink[] = useRelationshipLinks(
-    characters,
-    projectEvents,
-  );
+  // Sync Relationship Modal with URL (After links declared)
+  // Sync Relationship Modal with URL Logic Removed (Now derived in selectedRelationship useMemo)
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -298,7 +340,15 @@ export default function WorldPage() {
           이미지 생성(image 타입)은 백그라운드에서 조용히 진행되므로 오버레이 표시 안 함
       ───────────────────────────────────────────────────────────── */}
 
-      <Tabs defaultValue="graph" className="h-full flex flex-col relative">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.set("tab", value);
+          navigate({ search: newParams.toString() }, { replace: true });
+        }}
+        className="h-full flex flex-col relative"
+      >
         {/* Floating Glass Header - Fixed to Global Header Area */}
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-1 py-1 bg-paper/80 backdrop-blur-xl rounded-2xl shadow-paper-floating border border-cloud-200 shrink-0">
           {/* Tab Navigation - Pill Style */}
@@ -707,6 +757,22 @@ export default function WorldPage() {
           diff={analysisDiff}
         />
       )}
+
+      {/* Relationship Deep Analysis Modal (Replaces Simple Dialog) */}
+      <RelationshipDeepAnalysisModal
+        isOpen={!!selectedRelationship}
+        onClose={() => {
+          // URL 파라미터 제거
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete("relationship");
+          navigate({ search: newParams.toString() }, { replace: true });
+        }}
+        data={
+          selectedRelationship
+            ? convertLinkToDeepAnalysisData(selectedRelationship, characters)
+            : null
+        }
+      />
     </div>
   );
 }
