@@ -189,8 +189,13 @@ export function PublishingWizard({
     );
 
     // === 관계별 심층 분석 데이터 생성 (storead 연동용) ===
-    const relationshipAnalysis: Record<string, RelationshipDeepAnalysisData> =
-      {};
+    // link.id를 기본 키로 사용하여 키 충돌 방지
+    // keyMap: source-target 조합으로 link.id를 조회할 수 있는 매핑 테이블
+    const relationshipAnalysis: Record<
+      string,
+      RelationshipDeepAnalysisData & { _linkId: string }
+    > = {};
+    const keyMap: Record<string, string> = {}; // "source-target" -> linkId 매핑
 
     if (includeGraph && characters.length > 0) {
       links.forEach((link) => {
@@ -198,6 +203,7 @@ export function PublishingWizard({
         const targetChar = characters.find((c) => c._id === link.target);
 
         if (sourceChar && targetChar) {
+          const linkId = String(link.id);
           const analysisData = generateAnalysisData(
             sourceChar,
             targetChar,
@@ -207,8 +213,13 @@ export function PublishingWizard({
             sourceChar.relations?.graph?.find((r) => r.target === link.target)
               ?.description,
           );
-          // 양방향 키 저장 (조회 편의성)
-          relationshipAnalysis[`${link.source}-${link.target}`] = analysisData;
+
+          // link.id를 기본 키로 저장 (충돌 방지)
+          relationshipAnalysis[linkId] = { ...analysisData, _linkId: linkId };
+
+          // 양방향 조회용 키 매핑 (source-target, target-source 모두 같은 linkId 참조)
+          keyMap[`${link.source}-${link.target}`] = linkId;
+          keyMap[`${link.target}-${link.source}`] = linkId;
         }
       });
     }
@@ -218,6 +229,7 @@ export function PublishingWizard({
       links: includeGraph ? graphLinks : [],
       profiles: includeCharacters ? profiles : {},
       relationshipAnalysis: includeGraph ? relationshipAnalysis : {},
+      relationshipKeyMap: includeGraph ? keyMap : {}, // 양방향 조회용 키 매핑
     };
   };
 
