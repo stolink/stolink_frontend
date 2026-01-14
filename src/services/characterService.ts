@@ -130,6 +130,11 @@ function transformBackendCharacter(backendChar: BackendCharacter): Character {
     string,
     unknown
   >;
+  const profileFaction = (profile?.faction || {}) as Record<string, unknown>;
+  const profileFactionSocial = (profileFaction?.social || {}) as Record<
+    string,
+    unknown
+  >;
   const rawPersonality = (safeParse(
     backendChar.personality,
     backendChar.personalityjson ||
@@ -197,18 +202,36 @@ function transformBackendCharacter(backendChar: BackendCharacter): Character {
   return {
     _id: finalId,
     projectId: backendChar.projectId || backendChar.project_id || "",
-    role: backendChar.role || "other",
+    role: (backendChar.role as CharacterRole) || "other",
     profile: {
       _id: finalId,
       characterId: finalId,
-      name: profile?.name || backendChar.name || "Unknown",
-      age: profile?.age ?? null,
-      gender: profile?.gender || backendChar.gender || "unknown",
-      race: profile?.race || backendChar.race || "unknown",
-      mbti: profile?.mbti || backendChar.mbti || null,
-      occupation: profile?.occupation,
-      birthplace: profile?.birthplace,
-      family: profile?.family,
+      name:
+        (profile?.name as string) || (backendChar.name as string) || "Unknown",
+      age:
+        (profile?.age as number | null) ??
+        (backendChar.age as number | null) ??
+        null,
+      gender:
+        (profile?.gender as string) ||
+        (backendChar.gender as string) ||
+        "unknown",
+      race:
+        (profile?.race as string) || (backendChar.race as string) || "unknown",
+      mbti:
+        (profile?.mbti as string | null) ||
+        (backendChar.mbti as string | null) ||
+        null,
+      occupation:
+        (profile?.occupation as string) ||
+        (backendChar.occupation as string) ||
+        "",
+      birthplace:
+        (profile?.birthplace as string) ||
+        (backendChar.birthplace as string) ||
+        "",
+      family:
+        (profile?.family as string) || (backendChar.family as string) || "",
       // 🆕 profile.personality는 이제 객체 (ProfilePersonality)
       personality: {
         coreTraits:
@@ -231,112 +254,124 @@ function transformBackendCharacter(backendChar: BackendCharacter): Character {
         (backendChar.backstory as string) ||
         "",
       faction: {
-        name: (profile?.faction as Record<string, unknown>)?.name as
-          | string
-          | null,
+        name: profileFaction?.name as string | null,
         social: {
-          rank:
-            ((
-              (profile?.faction as Record<string, unknown>)?.social as Record<
-                string,
-                unknown
-              >
-            )?.rank as string) || "COMMON",
-          influence:
-            ((
-              (profile?.faction as Record<string, unknown>)?.social as Record<
-                string,
-                unknown
-              >
-            )?.influence as number) || 0,
+          rank: (profileFactionSocial?.rank as string) || "COMMON",
+          influence: (profileFactionSocial?.influence as number) || 0,
           // 🆕 callback_result.json: faction_reputation
           factionReputation:
-            ((
-              (profile?.faction as Record<string, unknown>)?.social as Record<
-                string,
-                unknown
-              >
-            )?.faction_reputation as Record<string, unknown>) ||
-            ((
-              (profile?.faction as Record<string, unknown>)?.social as Record<
-                string,
-                unknown
-              >
-            )?.factionReputation as Record<string, unknown>) ||
+            (profileFactionSocial?.faction_reputation as Record<
+              string,
+              unknown
+            >) ||
+            (profileFactionSocial?.factionReputation as Record<
+              string,
+              unknown
+            >) ||
             {},
         },
       },
     },
-    aliases: backendChar.aliases || aliases || [],
-    status: backendChar.status || "alive",
-    motivation: backendChar.motivation,
-    firstAppearance: backendChar.firstAppearance,
+    aliases: (backendChar.aliases as string[]) || (aliases as string[]) || [],
+    status: (backendChar.status as string) || "alive",
+    motivation: backendChar.motivation as string | undefined,
+    firstAppearance: backendChar.firstAppearance as string | undefined,
     // ... appearance remains same ...
     appearance: {
-      physique: rawAppearance.physique || "",
-      skinTone: rawAppearance.skin_tone || rawAppearance.skinTone || "",
-      eyes: rawAppearance.eyes || "",
-      nose: rawAppearance.nose || "",
-      mouth: rawAppearance.mouth || "",
-      hairStyle: rawAppearance.hair_style || rawAppearance.hairStyle || "",
-      hairColor: rawAppearance.hair_color || rawAppearance.hairColor || "",
+      physique: (rawAppearance.physique as string) || "",
+      skinTone:
+        (rawAppearance.skin_tone as string) ||
+        (rawAppearance.skinTone as string) ||
+        "",
+      eyes: (rawAppearance.eyes as string) || "",
+      nose: (rawAppearance.nose as string) || "",
+      mouth: (rawAppearance.mouth as string) || "",
+      hairStyle:
+        (rawAppearance.hair_style as string) ||
+        (rawAppearance.hairStyle as string) ||
+        "",
+      hairColor:
+        (rawAppearance.hair_color as string) ||
+        (rawAppearance.hairColor as string) ||
+        "",
       attire:
-        rawAppearance.attire ||
-        (rawAppearance.clothing ? [rawAppearance.clothing] : []),
-      expression: rawAppearance.expression || "",
+        (rawAppearance.attire as string[]) ||
+        (rawAppearance.clothing ? [rawAppearance.clothing as string] : []),
+      expression: (rawAppearance.expression as string) || "",
       scarsTattoos:
-        rawAppearance.scars_tattoos ||
-        rawAppearance.scarsTattoos ||
+        (rawAppearance.scars_tattoos as string[]) ||
+        (rawAppearance.scarsTattoos as string[]) ||
         (rawAppearance.distinctive_features
-          ? [rawAppearance.distinctive_features]
+          ? [rawAppearance.distinctive_features as string]
           : []),
       styleContext: {
         artStyle:
-          rawAppearance.style_context?.art_style ||
-          rawAppearance.styleContext?.artStyle ||
+          ((rawAppearance.style_context as Record<string, unknown>)
+            ?.art_style as string) ||
+          ((rawAppearance.styleContext as Record<string, unknown>)
+            ?.artStyle as string) ||
           "Digital Illustration",
       },
     },
-    // Character.personality - profile.personality와 동일하게 매핑
     personality: {
       coreTraits:
-        profilePersonality.core_traits ||
-        profilePersonality.coreTraits ||
-        rawPersonality.core_traits ||
-        rawPersonality.coreTraits ||
+        (profilePersonality.core_traits as string[]) ||
+        (profilePersonality.coreTraits as string[]) ||
+        (rawPersonality.core_traits as string[]) ||
+        (rawPersonality.coreTraits as string[]) ||
         [],
-      flaws: profilePersonality.flaws || rawPersonality.flaws || [],
-      values: profilePersonality.values || rawPersonality.values || [],
+      flaws:
+        (profilePersonality.flaws as string[]) ||
+        (rawPersonality.flaws as string[]) ||
+        [],
+      values:
+        (profilePersonality.values as string[]) ||
+        (rawPersonality.values as string[]) ||
+        [],
     },
     relations: {
       graph: relationsGraph,
       // 🆕 callback_result.json: event_refs, location_context
       eventRefs:
-        (relations?.event_refs as string[]) ||
-        (relations?.eventRefs as string[]) ||
-        (backendChar.relations?.event_refs as string[]) ||
-        (backendChar.relations?.eventRefs as string[]) ||
+        ((relations as Record<string, unknown>)?.event_refs as string[]) ||
+        ((relations as Record<string, unknown>)?.eventRefs as string[]) ||
+        ((backendChar.relations as Record<string, unknown>)
+          ?.event_refs as string[]) ||
+        ((backendChar.relations as Record<string, unknown>)
+          ?.eventRefs as string[]) ||
         [],
       locationContext:
-        (relations?.location_context as string) ||
-        (relations?.locationContext as string) ||
-        (backendChar.relations?.location_context as string) ||
-        (backendChar.relations?.locationContext as string) ||
+        ((relations as Record<string, unknown>)?.location_context as string) ||
+        ((relations as Record<string, unknown>)?.locationContext as string) ||
+        ((backendChar.relations as Record<string, unknown>)
+          ?.location_context as string) ||
+        ((backendChar.relations as Record<string, unknown>)
+          ?.locationContext as string) ||
         "",
     },
     // 🆕 callback_result.json: current_mood (snake_case)
     currentMood: {
-      emotion: currentMood.emotion || "",
-      intensity: currentMood.intensity || 0,
-      trigger: currentMood.trigger || null,
+      emotion: (currentMood.emotion as string) || "",
+      intensity: (currentMood.intensity as number) || 0,
+      trigger: (currentMood.trigger as string | null) || null,
     },
     inventory: [],
     // 🆕 callback_result.json: meta (snake_case)
     meta: {
-      createdAt: meta.created_at || meta.createdAt || null,
-      updatedAt: meta.updated_at || meta.updatedAt || null,
-      dataVersion: meta.data_version || meta.dataVersion || "2.0.0",
-      lockVersion: meta.lock_version || meta.lockVersion || 0,
+      createdAt:
+        (meta.created_at as string | null) ||
+        (meta.createdAt as string | null) ||
+        null,
+      updatedAt:
+        (meta.updated_at as string | null) ||
+        (meta.updatedAt as string | null) ||
+        null,
+      dataVersion:
+        (meta.data_version as string) ||
+        (meta.dataVersion as string) ||
+        "2.0.0",
+      lockVersion:
+        (meta.lock_version as number) || (meta.lockVersion as number) || 0,
     },
     imageUrl: resolveImageUrl(backendChar.imageUrl as string),
     embedding: backendChar.embedding as number[] | undefined,
