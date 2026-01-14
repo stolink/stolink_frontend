@@ -26,6 +26,7 @@ interface DeepAnalysisHeroProps {
   relationshipTypes: string[]; // Added
   description?: string; // Added
   since?: string;
+  onShaderReady?: () => void;
   className?: string;
 }
 
@@ -268,14 +269,14 @@ const CharacterPerspective = ({
       <div
         className={cn(
           "flex items-center gap-12 relative",
-          side === "right" && "flex-row-reverse text-right",
+          side === "right" && "flex-row-reverse text-right"
         )}
       >
         {/* Ambient Aurora in the empty space between name/portrait and card */}
         <div
           className={cn(
             "absolute z-0",
-            side === "left" ? "left-[140%] top-0" : "right-[140%] top-0",
+            side === "left" ? "left-[140%] top-0" : "right-[140%] top-0"
           )}
         >
           <AsymmetryAurora sourceColor={myColor} targetColor={otherSideColor} />
@@ -324,7 +325,7 @@ const CharacterPerspective = ({
       <div
         className={cn(
           "w-full max-w-[420px] bg-white/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-white/60 shadow-2xl relative overflow-hidden",
-          side === "right" ? "rounded-tr-none" : "rounded-tl-none",
+          side === "right" ? "rounded-tr-none" : "rounded-tl-none"
         )}
       >
         {/* Emotion Blobs inside card */}
@@ -397,13 +398,14 @@ export function DeepAnalysisHero({
   relationshipTypes: _relationshipTypes,
   description,
   since,
+  onShaderReady,
 }: DeepAnalysisHeroProps) {
   // Note: _relationshipTypes is passed for future use but currently colors are derived from factors
   const sourceColor = getRelationColor(
-    asymmetricStrength.sourceToTarget.factors[0]?.type,
+    asymmetricStrength.sourceToTarget.factors[0]?.type
   );
   const targetColor = getRelationColor(
-    asymmetricStrength.targetToSource.factors[0]?.type,
+    asymmetricStrength.targetToSource.factors[0]?.type
   );
 
   return (
@@ -462,6 +464,7 @@ export function DeepAnalysisHero({
                 factorsB={asymmetricStrength.targetToSource.factors}
                 strengthA={asymmetricStrength.sourceToTarget.total}
                 strengthB={asymmetricStrength.targetToSource.total}
+                onReady={onShaderReady}
                 className="w-full h-full"
               />
             </div>

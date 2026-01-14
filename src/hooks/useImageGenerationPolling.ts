@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJobPolling } from "./useJobPolling";
+import { characterKeys } from "./useCharacters";
+import type { Character } from "@/types";
 import {
   imageService,
   type ImageGenerationResult,
@@ -42,11 +44,58 @@ export function useImageGenerationPolling(
     (result: ImageGenerationResult) => {
       if (!result || !result.imageUrl) return;
 
-      // Invalidate character queries to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ["characters"] });
-      queryClient.invalidateQueries({
-        queryKey: ["character", characterId],
-      });
+      // Force cache bust to ensure browser fetches the new image content
+      const timestamp = Date.now();
+      const newImageUrl = result.imageUrl.includes("?")
+        ? `${result.imageUrl}&t=${timestamp}`
+        : `${result.imageUrl}?t=${timestamp}`;
+
+      // 1. Update Detail Cache immediately
+      queryClient.setQueryData(
+        characterKeys.detail(characterId),
+        (old: unknown) => {
+          const char = old as Character | undefined;
+          return char ? { ...char, imageUrl: newImageUrl } : char;
+        },
+      );
+
+      // Fuzzy update all detail queries
+      queryClient.setQueriesData(
+        { queryKey: characterKeys.details() },
+        (old: unknown) => {
+          const char = old as Character | undefined;
+          return char && char._id === characterId
+            ? { ...char, imageUrl: newImageUrl }
+            : char;
+        },
+      );
+
+      // 2. Update List Cache immediately (Iterate all lists)
+      queryClient.setQueriesData(
+        { queryKey: characterKeys.lists() },
+        (old: unknown) => {
+          const list = old as Character[] | undefined;
+          if (!list) return list;
+          let matchCount = 0;
+          const result = list.map((char) => {
+            if (char._id === characterId) {
+              matchCount++;
+              return { ...char, imageUrl: newImageUrl };
+            }
+            return char;
+          });
+          console.log(
+            `[Polling] List Cache Update in progress. Matches found: ${matchCount} for ID: ${characterId}`,
+          );
+          return result;
+        },
+      );
+
+      console.log("[Polling] Manual Cache Update Executed. URL:", newImageUrl);
+
+      // 3. Remove immediate invalidation to prevent stale data overwrite
+      // We rely completely on the manual update above for immediate feedback.
+      // The data will eventually sync when the user navigates away or refreshes explicitly.
 
       // Call user's onComplete callback
       onComplete?.(result.imageUrl);

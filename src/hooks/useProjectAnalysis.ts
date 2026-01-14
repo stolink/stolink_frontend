@@ -93,9 +93,15 @@ export function useProjectAnalysis(
     (state) => state.lastConsistencyReport,
   );
   const activeJobs = useAnalysisBufferStore((state) => state.activeJobs);
+  const activeAnalysisJobs = useAnalysisBufferStore(
+    (state) => state.activeAnalysisJobs,
+  );
   const addStoreJobId = useAnalysisBufferStore((state) => state.addJobId);
   const removeStoreJobId = useAnalysisBufferStore((state) => state.removeJobId);
   const clearStoreJobs = useAnalysisBufferStore((state) => state.clearJobs);
+  const clearAnalysisJobs = useAnalysisBufferStore(
+    (state) => state.clearAnalysisJobs,
+  );
 
   const [jobProgresses, setJobProgresses] = useState<Record<string, number>>(
     {},
@@ -167,7 +173,14 @@ export function useProjectAnalysis(
 
     // 2. Trigger completion callback BEFORE invalidation to ensure diff compares against current state
     console.log("[useProjectAnalysis] Triggering completion callback");
-    onCompleteRef.current?.(lastResultRef.current);
+    if (activeType === "analysis") {
+      onCompleteRef.current?.(lastResultRef.current);
+    } else {
+      console.log(
+        "[useProjectAnalysis] Skipping completion callback for non-analysis job type:",
+        activeType,
+      );
+    }
 
     // 3. Cache Invalidation (Common or specific)
     if (projectId) {
@@ -294,14 +307,15 @@ export function useProjectAnalysis(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const status = (error as any)?.response?.status;
         if (status === 404) {
-          clearStoreJobs(projectId);
+          // 404 for analysis job status should only clear analysis jobs, not image jobs
+          clearAnalysisJobs(projectId);
         }
       }
     };
 
     console.log("[useProjectAnalysis] checkProjectJobStatus effect triggered");
     checkProjectJobStatus();
-  }, [projectId, enabled, addStoreJobId, clearStoreJobs]);
+  }, [projectId, enabled, addStoreJobId, clearStoreJobs, clearAnalysisJobs]);
 
   // Note: SSE connection is managed by useJobSSE hook, so cleanup is handled there.
 
@@ -314,7 +328,7 @@ export function useProjectAnalysis(
     projectId,
     aiService.getProjectStatusStreamUrl,
     {
-      enabled: !!projectId && activeJobs[projectId]?.length > 0,
+      enabled: !!projectId && (activeAnalysisJobs[projectId]?.length ?? 0) > 0,
       onMessage: async (data) => {
         // SSE 이벤트 파싱
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -324,12 +338,12 @@ export function useProjectAnalysis(
         // jobId가 직접 있거나 result 내부에 있을 수 있음
         let eventJobId = event.jobId || event.id;
 
-        // Fallback: If jobId is missing in the message but we have exactly one active job, use it.
+        // Fallback: If jobId is missing in the message but we have exactly one active analysis job, use it.
         // This is common for project-level status streams.
         if (!eventJobId && projectId) {
-          const currentJobs = activeJobs[projectId] || [];
-          if (currentJobs.length === 1) {
-            eventJobId = currentJobs[0];
+          const currentAnalysisJobs = activeAnalysisJobs[projectId] || [];
+          if (currentAnalysisJobs.length === 1) {
+            eventJobId = currentAnalysisJobs[0];
             console.log(
               `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`,
             );
@@ -357,7 +371,13 @@ export function useProjectAnalysis(
             let result = event.result as AnalysisResultData;
 
             // SSE에 결과가 없으면 API 호출 시도
-            if (!result) {
+            // SSE에 결과가 없으면 API 호출 시도 (단, 이미지 작업은 제외)
+            const { currentJobId: storeJobId, currentJobType: storeJobType } =
+              useAnalysisBufferStore.getState();
+            const isImageJob =
+              storeJobId === eventJobId && storeJobType === "image";
+
+            if (!result && !isImageJob) {
               try {
                 const job =
                   await aiService.getJobStatus<AnalysisResultData>(eventJobId);
@@ -372,6 +392,10 @@ export function useProjectAnalysis(
                   err,
                 );
               }
+            } else if (isImageJob) {
+              console.log(
+                `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`,
+              );
             }
 
             if (result) {
@@ -391,7 +415,13 @@ export function useProjectAnalysis(
           let result = event.result as AnalysisResultData;
 
           // SSE에 결과가 없으면 API 호출 시도
-          if (!result) {
+          // SSE에 결과가 없으면 API 호출 시도 (단, 이미지 작업은 제외)
+          const { currentJobId: storeJobId, currentJobType: storeJobType } =
+            useAnalysisBufferStore.getState();
+          const isImageJob =
+            storeJobId === eventJobId && storeJobType === "image";
+
+          if (!result && !isImageJob) {
             try {
               const job =
                 await aiService.getJobStatus<AnalysisResultData>(eventJobId);
@@ -409,6 +439,10 @@ export function useProjectAnalysis(
                 err,
               );
             }
+          } else if (isImageJob) {
+            console.log(
+              `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`,
+            );
           }
 
           if (result) {

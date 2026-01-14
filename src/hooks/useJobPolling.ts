@@ -13,7 +13,7 @@ interface UseJobPollingOptions<T> {
 export function useJobPolling<T = unknown>(
   jobId: string | null,
   checkStatusFn: (id: string) => Promise<JobResponse<T>>,
-  options: UseJobPollingOptions<T> = {},
+  options: UseJobPollingOptions<T> = {}
 ) {
   const {
     enabled = true,
@@ -73,6 +73,7 @@ export function useJobPolling<T = unknown>(
       }
 
       if (response.status === "failed") {
+        console.error("[useJobPolling] Job failed response:", response); // 상세 디버깅용 로그 추가
         const errorMsg = response.error || "Job failed";
         setError(errorMsg);
         setIsPolling(false);
@@ -82,7 +83,7 @@ export function useJobPolling<T = unknown>(
 
       return false; // Continue polling
     },
-    [onComplete, onError],
+    [onComplete, onError]
   );
 
   const poll = useCallback(async () => {
@@ -111,7 +112,7 @@ export function useJobPolling<T = unknown>(
       // Continue polling - use ref to avoid stale closure
       timeoutRef.current = setTimeout(
         () => pollRef.current?.(),
-        pollingInterval,
+        pollingInterval
       );
     } catch (err) {
       if (unmountedRef.current) return;

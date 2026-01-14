@@ -36,7 +36,7 @@ import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
-import { useQueryClient } from "@tanstack/react-query"; // Added useQueryClient
+// Removed useQueryClient to satisfy lint
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@stolink/ui";
@@ -65,6 +65,8 @@ interface CharacterDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (updated: Character) => void;
+  /** Fallback project ID if character.projectId is missing */
+  projectId?: string;
 }
 
 export default function CharacterDetailDialog({
@@ -72,6 +74,7 @@ export default function CharacterDetailDialog({
   isOpen,
   onClose,
   onSave,
+  projectId: propProjectId,
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
@@ -90,16 +93,42 @@ export default function CharacterDetailDialog({
     enabled: !!character?._id && isOpen,
   });
 
-  // 화면에 표시할 최종 캐릭터 데이터 (수정모드 > 페치된 데이터 > props 데이터)
+  // 화면에 표시할 최종 캐릭터 데이터 (수정모드 > 페치가 완료된 데이터 > props 데이터)
+  // [Fix] fetchedChar가 있으나 imageUrl이 없는 경우(백엔드 지연) props의 데이터를 우선하여 이미지 표시 보장
   const displayCharacter = isEditMode
     ? editedCharacter
-    : fetchedChar || character; // 페치된 데이터 우선 사용
+    : fetchedChar?.imageUrl
+      ? fetchedChar
+      : character;
+
+  // [Debug] Check if data contains imageUrl
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[DetailDialog] Data Trace:", {
+        isEditMode,
+        hasEditedChar: !!editedCharacter,
+        propId: character?._id,
+        propImage: character?.imageUrl,
+        fetchedId: fetchedChar?._id,
+        fetchedImage: fetchedChar?.imageUrl,
+        displayImage: displayCharacter?.imageUrl,
+        appearance: displayCharacter?.appearance,
+      });
+    }
+  }, [
+    isOpen,
+    character,
+    fetchedChar,
+    displayCharacter,
+    isEditMode,
+    editedCharacter,
+  ]);
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Unused, removing to satisfy lint
 
   // Watch for global image job completion
   const isGlobalAnalyzing = useAnalysisBufferStore(
@@ -118,7 +147,13 @@ export default function CharacterDetailDialog({
         setImageJobId(null);
         setGlobalJobId(null); // Clear global job tracking
       },
-      onError: () => {
+      onError: (err) => {
+        console.error("[ImageGeneration] Polling failed:", err);
+        toast({
+          variant: "destructive",
+          title: "이미지 생성 실패",
+          description: err || "알 수 없는 오류가 발생했습니다.",
+        });
         setImageJobId(null);
       },
       onTimeout: () => {
@@ -132,28 +167,8 @@ export default function CharacterDetailDialog({
 
   // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
   // Add minimum display time to ensure animation is visible even for fast jobs
-  useEffect(() => {
-    if (imageJobId && !isGlobalAnalyzing && currentJobType !== "image") {
-      // Job finished - add delay to ensure animation is visible
-      const timer = setTimeout(async () => {
-        // Use refetchQueries instead of invalidateQueries for immediate data refresh
-        await queryClient.refetchQueries({ queryKey: ["characters"] });
-        await queryClient.refetchQueries({
-          queryKey: ["character", character?._id],
-        });
-        setImageJobId(null);
-        setTempImageUrl(null); // Clear temp, let real data take over
-      }, 800); // Minimum 800ms animation display
-
-      return () => clearTimeout(timer);
-    }
-  }, [
-    imageJobId,
-    isGlobalAnalyzing,
-    currentJobType,
-    queryClient,
-    character?._id,
-  ]);
+  // Replaced by useImageGenerationPolling hook's internal cache update
+  // The hook now handles SetQueryData for both detail and list caches immediately.
 
   // Use local imageJobId as primary indicator for animation
   // This ensures animation shows even if global state updates faster than React re-renders
@@ -199,6 +214,39 @@ export default function CharacterDetailDialog({
       setTempImageUrl(null);
     }
   }
+
+  // [Fix] Sync editedCharacter with fresh fetched data when not editing
+  // This ensures that after a save (or external update), the next edit starts with fresh data
+  useEffect(() => {
+    if (!isEditMode && fetchedChar) {
+      setEditedCharacter(structuredClone(fetchedChar));
+    }
+  }, [fetchedChar, isEditMode]);
+
+  // [Fix] 이미지가 새로 생성되었을 때 수정 모드인 경우에도 이미지 URL 동기화
+  useEffect(() => {
+    const newImage = fetchedChar?.imageUrl || character?.imageUrl;
+    if (
+      isEditMode &&
+      editedCharacter &&
+      newImage &&
+      editedCharacter.imageUrl !== newImage
+    ) {
+      // If the incoming image is different (e.g. newly generated), update editedCharacter
+      setEditedCharacter((prev) =>
+        prev ? { ...prev, imageUrl: newImage } : prev,
+      );
+      console.log(
+        "[DetailDialog] Synced NEW image to editedCharacter:",
+        newImage,
+      );
+    }
+  }, [
+    fetchedChar?.imageUrl,
+    character?.imageUrl,
+    isEditMode,
+    editedCharacter, // Corrected dependency
+  ]);
 
   // Effect to recover background job if dialog reopens with same character
   useEffect(() => {
@@ -315,84 +363,143 @@ export default function CharacterDetailDialog({
   const getCleanPayload = useCallback(() => {
     if (!editedCharacter) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { _id, projectId, meta, imageUrl, ...basePayload } = editedCharacter;
+    const {
+      _id,
+      projectId: charProjectId,
+      meta: _meta,
+      ...basePayload
+    } = editedCharacter;
     const cleanPayload =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (sanitizeValue(basePayload) as Record<string, any>) || {};
 
+    // Standardize to user rule: all camelCase, except project_id
+    const effectiveProjectId = charProjectId || propProjectId;
+    if (effectiveProjectId) {
+      cleanPayload.project_id = effectiveProjectId;
+    }
+
+    // Ensure imageUrl is included if present
+    if (editedCharacter.imageUrl) {
+      cleanPayload.imageUrl = editedCharacter.imageUrl;
+    }
+
     if (!cleanPayload.profile) cleanPayload.profile = {};
+
+    // [New] Profile Personality Mapping (snake_case inside nested objects)
+    if (cleanPayload.profile.personality) {
+      const p = cleanPayload.profile.personality;
+      if (p.coreTraits) {
+        p.core_traits = p.coreTraits;
+        delete p.coreTraits;
+      }
+      // personality top-level also needs mapping if exists independently
+      if (cleanPayload.personality) {
+        cleanPayload.personality.core_traits =
+          cleanPayload.personality.coreTraits;
+        delete cleanPayload.personality.coreTraits;
+      }
+    }
 
     if (cleanPayload.appearance) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const app = cleanPayload.appearance as any;
 
-      // Add snake_case aliases
+      // Map to snake_case for backend compatibility within nested object
       if (app.hairStyle) app.hair_style = app.hairStyle;
       if (app.hairColor) app.hair_color = app.hairColor;
       if (app.skinTone) app.skin_tone = app.skinTone;
       if (app.scarsTattoos) app.scars_tattoos = app.scarsTattoos;
       if (app.styleContext) {
         app.style_context = {
-          ...app.styleContext,
-          art_style: app.styleContext.artStyle,
+          art_style: app.styleContext.artStyle || app.styleContext.art_style,
         };
+        delete app.styleContext;
       }
+
+      // Cleanup camelCase after mapping
+      delete app.hairStyle;
+      delete app.hairColor;
+      delete app.skinTone;
+      delete app.scarsTattoos;
 
       // Cleanup undefined
       Object.keys(app).forEach((key) => {
         if (app[key] === undefined) delete app[key];
       });
 
-      // Redundant JSON backups
+      // Redundant JSON backups (using the processed snake_case version)
       const jsonStr = JSON.stringify(app);
       app.appearanceJson = jsonStr;
-      app.appearance_json = jsonStr;
       cleanPayload.appearanceJson = jsonStr;
-      cleanPayload.appearance_json = jsonStr;
     }
 
     return cleanPayload;
-  }, [editedCharacter, sanitizeValue]);
+  }, [editedCharacter, sanitizeValue, propProjectId]);
 
   const handleConfirmImageGeneration = useCallback(
     async (
       action: "create" | "edit",
+      projectIdOverride?: string,
       _promptOverride?: string,
       settingOverride?: Record<string, unknown>,
     ) => {
-      if (!character?._id || !character?.projectId) return;
+      // Use displayCharacter which has the latest data from API
+      const targetChar = displayCharacter || character;
+      // Use projectIdOverride as fallback if character.projectId is missing
+      const effectiveProjectId =
+        targetChar?.projectId || projectIdOverride || propProjectId;
+
+      console.log("[handleConfirmImageGeneration] Effective IDs:", {
+        characterProjectId: targetChar?.projectId,
+        projectIdOverride,
+        propProjectId,
+        effectiveProjectId,
+      });
+
+      if (!targetChar?._id || !effectiveProjectId) {
+        console.error("[ImageGeneration] Missing character ID or project ID", {
+          targetChar,
+          effectiveProjectId,
+          propProjectId,
+        });
+        toast({
+          variant: "destructive",
+          title: "오류",
+          description: "캐릭터 정보가 올바르지 않습니다.",
+        });
+        return;
+      }
 
       try {
         // Construct prompt from character attributes
         const parts: string[] = [];
-        const sourceChar = displayCharacter || character;
 
-        if (sourceChar?.profile?.name) {
-          parts.push(`Character: ${sourceChar.profile.name}`);
+        if (targetChar?.profile?.name) {
+          parts.push(`Character: ${targetChar.profile.name}`);
         }
-        if (sourceChar?.appearance?.physique) {
-          parts.push(`Physique: ${sourceChar.appearance.physique}`);
+        if (targetChar?.appearance?.physique) {
+          parts.push(`Physique: ${targetChar.appearance.physique}`);
         }
-        if (sourceChar?.appearance?.hairColor) {
+        if (targetChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${sourceChar.appearance.hairColor} ${sourceChar.appearance.hairStyle}`,
+            `Hair: ${targetChar.appearance.hairColor} ${targetChar.appearance.hairStyle}`,
           );
         }
-        if (sourceChar?.appearance?.eyes) {
-          parts.push(`Eyes: ${sourceChar.appearance.eyes}`);
+        if (targetChar?.appearance?.eyes) {
+          parts.push(`Eyes: ${targetChar.appearance.eyes}`);
         }
-        if (sourceChar?.appearance?.attire) {
-          const attire = Array.isArray(sourceChar.appearance.attire)
-            ? sourceChar.appearance.attire.join(", ")
-            : sourceChar.appearance.attire;
+        if (targetChar?.appearance?.attire) {
+          const attire = Array.isArray(targetChar.appearance.attire)
+            ? targetChar.appearance.attire.join(", ")
+            : targetChar.appearance.attire;
           if (attire) parts.push(`Attire: ${attire}`);
         }
-        if (sourceChar?.appearance?.expression) {
-          parts.push(`Expression: ${sourceChar.appearance.expression}`);
+        if (targetChar?.appearance?.expression) {
+          parts.push(`Expression: ${targetChar.appearance.expression}`);
         }
-        if (sourceChar?.personality?.coreTraits?.length > 0) {
-          parts.push(`Traits: ${sourceChar.personality.coreTraits.join(", ")}`);
+        if (targetChar?.personality?.coreTraits?.length > 0) {
+          parts.push(`Traits: ${targetChar.personality.coreTraits.join(", ")}`);
         }
 
         // Add manual prompt if provided
@@ -420,7 +527,8 @@ export default function CharacterDetailDialog({
             : "A high quality character portrait";
 
         // Extract precise prompt fields from setting if available (for backend to use directly)
-        const additionalOptions = selectedSetting
+        // Extract precise prompt fields from setting if available (for backend to use directly)
+        const cleanSetting = selectedSetting
           ? {
               visual_background: String(
                 selectedSetting.visual_background || "",
@@ -435,24 +543,31 @@ export default function CharacterDetailDialog({
         // Get character data to sync with backend during generation
         const characterData = getCleanPayload();
 
+        console.log("[CharacterDetailDialog] Generating image with payload:", {
+          effectiveProjectId,
+          targetId: targetChar._id,
+          cleanSetting,
+          characterDataJson: JSON.stringify(characterData, null, 2),
+        });
+
         const { jobId } = await imageService.generateCharacterImage(
-          character.projectId,
-          character._id,
+          effectiveProjectId,
+          targetChar._id,
           action,
           generatedPrompt,
-          selectedSetting as unknown as Record<string, string>,
-          additionalOptions,
+          cleanSetting, // Pass clean setting as 5th arg (replaces raw object)
+          cleanSetting, // Pass same clean object as 6th arg (for root-level backward compat)
           (characterData as Record<string, unknown>) || undefined,
         );
 
         setImageJobId(jobId);
-        setGlobalJobId(jobId, "image", character._id);
+        setGlobalJobId(jobId, "image", targetChar._id);
         toast({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch (_e) {
-        /* Ignored */
+      } catch (err) {
+        console.error("[ImageGeneration] API call failed:", err);
         toast({
           variant: "destructive",
           title: "실패",
@@ -463,6 +578,7 @@ export default function CharacterDetailDialog({
     [
       character,
       displayCharacter,
+      propProjectId,
       settings,
       selectedSettingId,
       manualPrompt,
@@ -507,6 +623,33 @@ export default function CharacterDetailDialog({
   }, [displayCharacter, character]);
 
   const handleOpenImageGeneration = useCallback(() => {
+    const targetChar = displayCharacter || character;
+
+    console.log("[handleOpenImageGeneration] Called with:", {
+      propProjectId,
+      displayCharacter: displayCharacter
+        ? {
+            _id: displayCharacter._id,
+            projectId: displayCharacter.projectId,
+            name: displayCharacter.profile?.name,
+          }
+        : null,
+      character: character
+        ? {
+            _id: character._id,
+            projectId: character.projectId,
+            name: character.profile?.name,
+          }
+        : null,
+      targetChar: targetChar
+        ? {
+            _id: targetChar._id,
+            projectId: targetChar.projectId,
+            name: targetChar.profile?.name,
+          }
+        : null,
+    });
+
     // Validation: Check if character has enough info (Name + at least 2 traits)
     if (!validateImageGeneration()) {
       toast({
@@ -518,12 +661,26 @@ export default function CharacterDetailDialog({
       return;
     }
 
-    const mode = character?.imageUrl ? "edit" : "create";
-    handleConfirmImageGeneration(mode);
-  }, [handleConfirmImageGeneration, validateImageGeneration, character, toast]);
+    const mode = targetChar?.imageUrl ? "edit" : "create";
+    handleConfirmImageGeneration(mode, propProjectId);
+  }, [
+    handleConfirmImageGeneration,
+    validateImageGeneration,
+    displayCharacter,
+    character,
+    propProjectId,
+    toast,
+  ]);
 
   const handleSave = useCallback(async () => {
-    if (!editedCharacter || !character?._id) return;
+    console.log("[DetailDialog] handleSave CLICKED");
+    if (!editedCharacter || !character?._id) {
+      console.warn("[DetailDialog] handleSave - Missing data", {
+        editedCharacter,
+        characterId: character?._id,
+      });
+      return;
+    }
 
     // 0. Primary Validation
     if (!editedCharacter.profile?.name?.trim()) {
@@ -537,14 +694,25 @@ export default function CharacterDetailDialog({
 
     try {
       const cleanPayload = getCleanPayload();
-      if (!cleanPayload) return;
+      console.log("[DetailDialog] handleSave - Start", {
+        characterId: character._id,
+        payload: cleanPayload,
+        propProjectId,
+      });
+
+      if (!cleanPayload) {
+        console.warn("[DetailDialog] handleSave - No payload, skipping mutate");
+        return;
+      }
 
       // 1. Call Backend API to update character
       // Mutation hook now handles cache update (immediate) and delayed refetch (safe)
-      await updateCharacter.mutateAsync({
+      console.log("[DetailDialog] handleSave - Calling mutateAsync...");
+      const response = await updateCharacter.mutateAsync({
         id: character._id,
         payload: cleanPayload,
       });
+      console.log("[DetailDialog] handleSave - Mutate Success:", response);
 
       toast({
         variant: "success",
@@ -594,13 +762,33 @@ export default function CharacterDetailDialog({
     updateCharacter,
     toast,
     getCleanPayload,
+    propProjectId,
   ]);
 
   const handleFieldChange = useCallback(
     (field: string, value: string | string[]) => {
       setEditedCharacter((prev) => {
         if (!prev) return prev;
-        return { ...prev, [field]: value };
+
+        // Handle nested paths like "profile.name", "profile.occupation"
+        const keys = field.split(".");
+        if (keys.length === 1) {
+          return { ...prev, [field]: value };
+        }
+
+        // Deep clone and set nested value
+        const result = structuredClone(prev);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let current: any = result;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!current[keys[i]]) {
+            current[keys[i]] = {};
+          }
+          current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = value;
+
+        return result;
       });
     },
     [],

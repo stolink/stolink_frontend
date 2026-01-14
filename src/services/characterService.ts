@@ -34,6 +34,7 @@ export interface CreateCharacterInput {
   appearance?: Partial<CharacterAppearance>;
   personality?: Partial<CharacterPersonality>;
   graphPosition?: { x: number; y: number };
+  imageUrl?: string;
 }
 
 /**
@@ -46,8 +47,7 @@ export type UpdateCharacterInput = Partial<CreateCharacterInput>;
  * callback_result.json 스키마 기준 (snake_case → camelCase)
  */
 // Helper to safe parse or return object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const safeParse = (data: any, defaultVal: any) => {
+const safeParse = (data: unknown, defaultVal: unknown): unknown => {
   if (typeof data === "string") {
     try {
       return JSON.parse(data);
@@ -58,29 +58,57 @@ const safeParse = (data: any, defaultVal: any) => {
   return data || defaultVal;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformBackendCharacter(backendChar: any): Character {
-  // Parse JSON fields (handle both stringified JSON and pre-parsed objects)
-  const profile = safeParse(
+interface BackendCharacter {
+  _id?: string;
+  characterId?: string;
+  character_id?: string;
+  projectId?: string;
+  project_id?: string;
+  name?: string;
+  imageUrl?: string;
+  profile?: unknown;
+  profilejson?: unknown;
+  profile_json?: unknown;
+  appearance?: unknown;
+  appearancejson?: unknown;
+  appearance_json?: unknown;
+  personality?: unknown;
+  personalityjson?: unknown;
+  personality_json?: unknown;
+  relations?: unknown;
+  appearances?: unknown[];
+  data_version?: number;
+  dataVersion?: number;
+  lock_version?: number;
+  lockVersion?: number;
+  [key: string]: unknown;
+}
+
+function transformBackendCharacter(backendChar: BackendCharacter): Character {
+  const profile = (safeParse(
     backendChar.profile,
     backendChar.profilejson || backendChar.profile_json || {},
-  );
+  ) || {}) as Record<string, unknown>;
 
   // 🆕 relations 데이터 추출 로직 강화: 다양한 필드명과 파싱 상태 대응
-  const relationsFromObj = backendChar.relations || {};
-  const relationsFromJson = safeParse(
+  const relationsFromObj = (backendChar.relations || {}) as Record<
+    string,
+    unknown
+  >;
+  const relationsFromJson = (safeParse(
     backendChar.relationsjson ||
       backendChar.relations_json ||
       backendChar.relationsJson,
     {},
-  );
+  ) || {}) as Record<string, unknown>;
 
   // graph 데이터가 있는 쪽을 선택 (JSON 문자열 파싱 결과 우선)
-  const relations =
+  const relations = (
     Array.isArray(relationsFromJson?.graph) &&
     relationsFromJson.graph.length > 0
       ? relationsFromJson
-      : relationsFromObj;
+      : relationsFromObj
+  ) as Record<string, unknown>;
 
   const aliases = safeParse(
     backendChar.aliases,
@@ -89,77 +117,82 @@ function transformBackendCharacter(backendChar: any): Character {
       backendChar.aliasesJson ||
       [],
   );
-  const rawAppearance = safeParse(
+  const rawAppearance = (safeParse(
     backendChar.appearance,
     backendChar.appearancejson ||
       backendChar.appearance_json ||
       backendChar.appearanceJson ||
       {},
-  );
+  ) || {}) as Record<string, unknown>;
 
   // 🆕 profile.personality 및 기타 필드 복구
-  const profilePersonality = profile?.personality || {};
-  const rawPersonality = safeParse(
+  const profilePersonality = (profile?.personality || {}) as Record<
+    string,
+    unknown
+  >;
+  const rawPersonality = (safeParse(
     backendChar.personality,
     backendChar.personalityjson ||
       backendChar.personality_json ||
       backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
-  );
+  ) || {}) as Record<string, unknown>;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRelation = (rel: any) => ({
-    target: rel.target || rel.targetId,
-    type: rel.type || rel.relationType || rel.relation_type || "ALLY",
-    history: rel.history || null,
-    strength: rel.strength || 5,
-    description: rel.description || "",
-    publicStance: rel.public_stance || rel.publicStance,
-    privateFeeling: rel.private_feeling || rel.privateFeeling,
-    bidirectional: rel.bidirectional,
-    emotionalBond: rel.emotional_bond || rel.emotionalBond,
-    functionalTrust: rel.functional_trust || rel.functionalTrust,
-    valueAlignment: rel.value_alignment || rel.valueAlignment,
-    interdependence: rel.interdependence,
-    latentTension: rel.latent_tension || rel.latentTension,
+  const mapRelation = (rel: Record<string, unknown>) => ({
+    target: (rel.target || rel.targetId) as string,
+    type: (rel.type ||
+      rel.relationType ||
+      rel.relation_type ||
+      "ALLY") as string,
+    history: (rel.history as string | null) || null,
+    strength: (rel.strength as number) || 5,
+    description: (rel.description as string) || "",
+    publicStance: (rel.public_stance || rel.publicStance) as string,
+    privateFeeling: (rel.private_feeling || rel.privateFeeling) as string,
+    bidirectional: rel.bidirectional as boolean | undefined,
+    emotionalBond: (rel.emotional_bond || rel.emotionalBond) as
+      | number
+      | undefined,
+    functionalTrust: (rel.functional_trust || rel.functionalTrust) as
+      | number
+      | undefined,
+    valueAlignment: (rel.value_alignment || rel.valueAlignment) as
+      | number
+      | undefined,
+    interdependence: rel.interdependence as number | undefined,
+    latentTension: (rel.latent_tension || rel.latentTension) as
+      | number
+      | undefined,
   });
 
   const relationsGraph =
     Array.isArray(relations?.graph) && relations.graph.length > 0
-      ? relations.graph.map(mapRelation)
+      ? (relations.graph as Record<string, unknown>[]).map(mapRelation)
       : Array.isArray(backendChar.relationships)
-        ? backendChar.relationships.map(mapRelation)
+        ? (backendChar.relationships as Record<string, unknown>[]).map(
+            mapRelation,
+          )
         : Array.isArray(relations)
-          ? relations.map(mapRelation)
+          ? (relations as Record<string, unknown>[]).map(mapRelation)
           : [];
 
   // 🆕 callback_result.json: current_mood 객체 처리
-  const currentMood = backendChar.current_mood || backendChar.currentMood || {};
+  const currentMood = (backendChar.current_mood ||
+    backendChar.currentMood ||
+    {}) as Record<string, unknown>;
 
   // 🆕 callback_result.json: meta 객체 (snake_case)
-  const meta = backendChar.meta || {};
+  const meta = (backendChar.meta || {}) as Record<string, unknown>;
 
   // 🚨 HOTFIX: ID Mapping for known characters with missing IDs
   // This resolves the 404 error in EventService by forcing the correct UUID expected by the Event Service
   // (The backend is 100% Neo4j, but the Character Service response is missing this specific ID)
-  const ID_OVERRIDES: Record<string, string> = {
-    장발장: "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
-    "Jean Valjean": "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
-  };
-
-  const name = profile?.name || backendChar.name || "";
-
-  let finalId =
-    backendChar.id ||
+  const finalId = (backendChar.id ||
     backendChar.character_id ||
     backendChar._id ||
-    profile?.character_id ||
+    (profile?.character_id as string) ||
     backendChar.characterId ||
-    profile?.characterId ||
-    "";
-
-  if (ID_OVERRIDES[name]) {
-    finalId = ID_OVERRIDES[name];
-  }
+    (profile?.characterId as string) ||
+    "") as string;
 
   return {
     _id: finalId,
@@ -179,24 +212,57 @@ function transformBackendCharacter(backendChar: any): Character {
       // 🆕 profile.personality는 이제 객체 (ProfilePersonality)
       personality: {
         coreTraits:
-          profilePersonality.core_traits ||
-          profilePersonality.coreTraits ||
-          rawPersonality.core_traits ||
-          rawPersonality.coreTraits ||
+          (profilePersonality.core_traits as string[]) ||
+          (profilePersonality.coreTraits as string[]) ||
+          (rawPersonality.core_traits as string[]) ||
+          (rawPersonality.coreTraits as string[]) ||
           [],
-        flaws: profilePersonality.flaws || rawPersonality.flaws || [],
-        values: profilePersonality.values || rawPersonality.values || [],
+        flaws:
+          (profilePersonality.flaws as string[]) ||
+          (rawPersonality.flaws as string[]) ||
+          [],
+        values:
+          (profilePersonality.values as string[]) ||
+          (rawPersonality.values as string[]) ||
+          [],
       },
-      backstory: profile?.backstory || backendChar.backstory || "",
+      backstory:
+        (profile?.backstory as string) ||
+        (backendChar.backstory as string) ||
+        "",
       faction: {
-        name: profile?.faction?.name || null,
+        name: (profile?.faction as Record<string, unknown>)?.name as
+          | string
+          | null,
         social: {
-          rank: profile?.faction?.social?.rank || "COMMON",
-          influence: profile?.faction?.social?.influence || 0,
+          rank:
+            ((
+              (profile?.faction as Record<string, unknown>)?.social as Record<
+                string,
+                unknown
+              >
+            )?.rank as string) || "COMMON",
+          influence:
+            ((
+              (profile?.faction as Record<string, unknown>)?.social as Record<
+                string,
+                unknown
+              >
+            )?.influence as number) || 0,
           // 🆕 callback_result.json: faction_reputation
           factionReputation:
-            profile?.faction?.social?.faction_reputation ||
-            profile?.faction?.social?.factionReputation ||
+            ((
+              (profile?.faction as Record<string, unknown>)?.social as Record<
+                string,
+                unknown
+              >
+            )?.faction_reputation as Record<string, unknown>) ||
+            ((
+              (profile?.faction as Record<string, unknown>)?.social as Record<
+                string,
+                unknown
+              >
+            )?.factionReputation as Record<string, unknown>) ||
             {},
         },
       },
@@ -246,16 +312,16 @@ function transformBackendCharacter(backendChar: any): Character {
       graph: relationsGraph,
       // 🆕 callback_result.json: event_refs, location_context
       eventRefs:
-        relations?.event_refs ||
-        relations?.eventRefs ||
-        backendChar.relations?.event_refs ||
-        backendChar.relations?.eventRefs ||
+        (relations?.event_refs as string[]) ||
+        (relations?.eventRefs as string[]) ||
+        (backendChar.relations?.event_refs as string[]) ||
+        (backendChar.relations?.eventRefs as string[]) ||
         [],
       locationContext:
-        relations?.location_context ||
-        relations?.locationContext ||
-        backendChar.relations?.location_context ||
-        backendChar.relations?.locationContext ||
+        (relations?.location_context as string) ||
+        (relations?.locationContext as string) ||
+        (backendChar.relations?.location_context as string) ||
+        (backendChar.relations?.locationContext as string) ||
         "",
     },
     // 🆕 callback_result.json: current_mood (snake_case)
@@ -272,57 +338,71 @@ function transformBackendCharacter(backendChar: any): Character {
       dataVersion: meta.data_version || meta.dataVersion || "2.0.0",
       lockVersion: meta.lock_version || meta.lockVersion || 0,
     },
-    imageUrl: resolveImageUrl(backendChar.imageUrl),
-    embedding: backendChar.embedding,
-    graphPosition: backendChar.graphPosition || undefined,
+    imageUrl: resolveImageUrl(backendChar.imageUrl as string),
+    embedding: backendChar.embedding as number[] | undefined,
+    graphPosition:
+      (backendChar.graphPosition as { x: number; y: number }) || undefined,
   };
 }
 
 export const characterService = {
   getAll: async (projectId: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await api.get<ApiResponse<any[]>>(
+    const response = await api.get<ApiResponse<Record<string, unknown>[]>>(
       `/projects/${projectId}/characters`,
     );
 
     // Transform backend response to frontend type
+    // Inject projectId if not present in backend response
     const characters = Array.isArray(response.data.data)
-      ? response.data.data.map(transformBackendCharacter)
+      ? response.data.data.map((char) => {
+          const transformed = transformBackendCharacter(
+            char as BackendCharacter,
+          );
+          // Ensure projectId is set (backend may omit project_id)
+          if (!transformed.projectId) {
+            transformed.projectId = projectId;
+          }
+          return transformed;
+        })
       : [];
 
     return { ...response.data, data: characters };
   },
 
   getById: async (id: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await api.get<ApiResponse<any>>(`/characters/${id}`);
+    const response = await api.get<ApiResponse<Record<string, unknown>>>(
+      `/characters/${id}`,
+    );
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data),
+      data: transformBackendCharacter(response.data.data as BackendCharacter),
     };
   },
 
   create: async (projectId: string, payload: CreateCharacterInput) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<Record<string, unknown>>>(
       `/projects/${projectId}/characters`,
       payload,
     );
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data),
+      data: transformBackendCharacter(response.data.data as BackendCharacter),
     };
   },
 
   update: async (id: string, payload: UpdateCharacterInput) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await api.patch<ApiResponse<any>>(
+    console.log(`[characterService] PATCH /characters/${id}`, payload);
+    const response = await api.patch<ApiResponse<Record<string, unknown>>>(
       `/characters/${id}`,
       payload,
     );
+    console.log(
+      `[characterService] PATCH /characters/${id} Response:`,
+      response.data,
+    );
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data),
+      data: transformBackendCharacter(response.data.data as BackendCharacter),
     };
   },
 
