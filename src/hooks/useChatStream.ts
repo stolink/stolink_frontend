@@ -107,8 +107,8 @@ export function useChatStream(options?: UseChatStreamOptions) {
           Accept: "text/event-stream",
         };
 
-        // Corrected path from /ai/chat/stream to /chat/stream as per guide
-        const response = await fetch(`${CHAT_API_URL}/chat/stream`, {
+        // Chat stream endpoint: /ai-api/stream
+        const response = await fetch(`${CHAT_API_URL}/stream`, {
           method: "POST",
           headers,
           body: JSON.stringify({
