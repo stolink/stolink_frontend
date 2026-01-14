@@ -229,8 +229,8 @@ export const FORCE_CONFIG = {
       strength: 0.9, // Almost rigid
     },
     hostile: {
-      distance: 1000, // Long separation
-      strength: 0.6, // Strong enough to fight triangle inequality
+      distance: 260, // Further reduced by 1/3 (from 400)
+      strength: 0.2, // Further reduced by 1/3 (from 0.3)
     },
     neutral: {
       distance: 200,
@@ -315,7 +315,7 @@ export const SEMANTIC_FORCE_CONFIG = {
     friendly: 1.5,
     romantic: 2.0,
     family: 1.2,
-    hostile: -2.0,
+    hostile: -0.7, // Further reduced by 1/3 (from -1.0)
     neutral: 0.5,
     complex: 0.3,
   } as Record<string, number>,
