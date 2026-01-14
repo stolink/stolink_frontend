@@ -18,6 +18,7 @@ import {
 
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import type { Character, RelationshipLink } from "@/types";
+import type { AnalysisDiff } from "@/types/analysisTypes";
 import { roleLabels } from "./constants";
 
 import {
@@ -29,7 +30,6 @@ import {
   CharacterGraphCanvas,
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
-import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
 import {
   RelationshipEditDialog,
   type RelationshipEditData,
@@ -38,9 +38,6 @@ import {
   RelationshipCreateDialog,
   type RelationshipCreateData,
 } from "@/components/CharacterGraph/RelationshipCreateDialog";
-import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
-import type { AnalysisDiff } from "@/types/analysisTypes";
-import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 import { calculateDiffFromSnapshot } from "@/utils/analysisUtils";
 
 // Hooks
@@ -106,10 +103,6 @@ export default function WorldPage() {
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [isDebugAnalyzing, setIsDebugAnalyzing] = useState(false);
 
-  // 관계 상세 분석 모달 상태
-  const [relationshipAnalysisData, setRelationshipAnalysisData] =
-    useState<RelationshipDeepAnalysisData | null>(null);
-  const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
     [],
   );
@@ -606,18 +599,8 @@ export default function WorldPage() {
       return;
     }
 
-    // 일반 모드: DeepAnalysis 모달
-    const analysisData = generateAnalysisData(
-      sourceChar,
-      targetChar,
-      link.relationTypes || [link.type],
-      link.strength || 5,
-      projectEvents,
-      link.description,
-    );
-
-    setRelationshipAnalysisData(analysisData);
-    setIsRelationshipModalOpen(true);
+    // 일반 모드: CanvasGraph handles its own modal
+    // No action needed here, CanvasGraph will show DeepAnalysis modal internally
   };
 
   return (
@@ -1141,19 +1124,7 @@ export default function WorldPage() {
         />
       )}
 
-      {/* Relationship Deep Analysis Modal */}
-      <RelationshipDeepAnalysisModal
-        isOpen={isRelationshipModalOpen}
-        onClose={() => {
-          setIsRelationshipModalOpen(false);
-          setRelationshipAnalysisData(null);
-        }}
-        data={relationshipAnalysisData}
-        onNavigateToEvent={(eventId) => {
-          // 이벤트로 이동하는 로직 (추후 구현 가능)
-          console.log("Navigate to event:", eventId);
-        }}
-      />
+      {/* Relationship Deep Analysis Modal - Removed: Now handled internally by CanvasGraph */}
       {/* Relationship Edit Dialog (Edit Mode Only) */}
       <RelationshipEditDialog
         isOpen={isRelationshipEditDialogOpen}

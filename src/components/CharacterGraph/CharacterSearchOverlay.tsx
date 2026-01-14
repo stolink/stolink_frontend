@@ -148,7 +148,7 @@ export function CharacterSearchOverlay({
     <div
       ref={containerRef}
       className={cn(
-        "absolute top-24 left-1/2 z-20 flex flex-col gap-2 transition-all duration-300",
+        "absolute top-[86px] left-1/2 z-20 flex flex-col gap-2 transition-all duration-300",
         isFocused ? "w-[600px]" : "w-[480px]",
       )}
       style={{

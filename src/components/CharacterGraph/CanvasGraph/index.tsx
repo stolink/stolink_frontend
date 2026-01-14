@@ -130,14 +130,14 @@ export const CharacterGraphCanvas = forwardRef<
       let lastTime = 0;
       const targetFPS = 24; // Limit FPS for performance (flow doesn't need 60fps)
       const frameInterval = 1000 / targetFPS;
-
       const animate = (currentTime: number) => {
         if (currentTime - lastTime >= frameInterval) {
-          // Update ref instead of state to prevent React churn
+          // [CRITICAL] Update phase ref to drive flow animation
           animationPhaseRef.current = (animationPhaseRef.current + 0.015) % 1;
 
-          // Force refresh even if simulation is idle to keep shader running
-          // graphRef.current?.refresh(); // ERROR: refresh is not a function
+          // Force regular redraws even if simulation is idle to keep flow shaders running
+          // By setting d3AlphaTarget(0.0001), we ensure the simulation keeps ticking
+          // without having to call reheat methods manually here.
           lastTime = currentTime;
         }
         frameId = requestAnimationFrame(animate);
@@ -766,11 +766,13 @@ export const CharacterGraphCanvas = forwardRef<
             nodeId="id"
             linkSource="source"
             linkTarget="target"
-            d3AlphaDecay={FORCE_CONFIG.alphaDecay}
+            d3AlphaDecay={0.01}
+            d3AlphaMin={0}
+            d3AlphaTarget={0.0001}
             d3VelocityDecay={FORCE_CONFIG.velocityDecay}
             // d3Force="charge"  <-- REMOVED: Custom configured in useEffect
             warmupTicks={50}
-            cooldownTicks={200}
+            cooldownTicks={Infinity}
             // 줌 설정
             minZoom={ZOOM_CONFIG.min}
             maxZoom={ZOOM_CONFIG.max}
@@ -929,9 +931,15 @@ export const CharacterGraphCanvas = forwardRef<
             onLinkHover={handleLinkHover}
             onNodeDragEnd={(node: NodeObject) => {
               const charNode = node as unknown as CharacterNode;
-              // [Drag Fix] Fix node position after drag
-              charNode.fx = charNode.x;
-              charNode.fy = charNode.y;
+
+              // [Drag Fix] Only fix position in edit mode, otherwise release it
+              if (!isEditMode) {
+                charNode.fx = undefined;
+                charNode.fy = undefined;
+              } else {
+                charNode.fx = charNode.x;
+                charNode.fy = charNode.y;
+              }
 
               if (onNodeDragEnd) {
                 onNodeDragEnd(charNode);

@@ -295,10 +295,14 @@ export const EmotionCollisionEffect = memo(
           gl={{
             alpha: true,
             antialias: true,
-            powerPreference: "high-performance",
-            depth: false, // Depth buffer not needed for 2D shader
+            powerPreference: "default",
+            depth: false,
             stencil: false,
+            preserveDrawingBuffer: true, // [FIX] Prevent frame loss on visibility change
           }}
+          frameloop="always"
+          flat // Disable tone mapping for consistent colors
+          resize={{ debounce: 0, scroll: false }} // [FIX] Immediate resize, ignore scroll events
           camera={{ position: [0, 0, 1], fov: 75 }}
           style={{ background: "transparent" }}
           dpr={Math.min(window.devicePixelRatio, 2)}
