@@ -22,7 +22,6 @@ export default defineConfig({
       "/ai-api": {
         target: "http://localhost:8000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ai-api/, "/api"),
         secure: false,
       },
       // MinIO Buckets Proxy

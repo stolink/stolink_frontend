@@ -34,8 +34,16 @@ export function useAuthInit() {
           await authService.refresh();
           const userResponse = await authService.getMe();
           setUser(userResponse.data);
-        } catch {
-          // refresh도 실패하면 로그아웃 상태 유지 (조용히)
+        } catch (error) {
+          // 400 에러(쿠키 없음)인 경우 즉시 중단하고 초기화 완료 처리
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((error as any).response?.status === 400) {
+            console.log("[AuthInit] No refresh token (400). Stopping init.");
+            logout();
+            setIsInitializing(false);
+            return;
+          }
+
           logout();
         }
       } finally {
