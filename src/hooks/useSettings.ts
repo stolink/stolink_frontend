@@ -15,9 +15,8 @@ export function useSettings(projectId: string) {
     queryKey: settingKeys.list(projectId),
     queryFn: async () => {
       const response = await settingService.getAll(projectId);
-      return response.data || [];
+      return response?.data || (Array.isArray(response) ? response : []);
     },
     enabled: !!projectId,
-    staleTime: 60000, // 1 minute
   });
 }

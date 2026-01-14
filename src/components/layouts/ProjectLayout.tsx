@@ -2,6 +2,7 @@ import { Outlet, useParams, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, ChevronLeft } from "lucide-react";
 import { ActivityBar } from "./ActivityBar";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { ProjectAnalysisListener } from "@/components/common/ProjectAnalysisListener";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { useEditorStore, useAnalysisBufferStore } from "@/stores";
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
@@ -78,6 +79,7 @@ export function ProjectLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground min-w-[1024px]">
+      <ProjectAnalysisListener />
       {/* Global Header - Fixed Top */}
       {!isDemo && (
         <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm z-20 relative">

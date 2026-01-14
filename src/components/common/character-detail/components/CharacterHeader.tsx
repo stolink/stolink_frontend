@@ -130,8 +130,8 @@ export function CharacterHeader({
           <Button
             intent="secondary"
             size="icon"
-            onClick={() => {
-              console.log("[CharacterHeader] Image generation button clicked");
+            onClick={(e) => {
+              e.stopPropagation();
               onGenerateImage();
             }}
             disabled={isGeneratingImage}
@@ -183,10 +183,9 @@ export function CharacterHeader({
           {onEdit && !isEditMode && (
             <Button
               intent="ghost"
-              size="icon"
-              onClick={() => {
-                console.log("[CharacterHeader] Edit button clicked");
-                onEdit();
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
               }}
               className="h-9 w-9 shrink-0 rounded-full border border-cloud-200 hover:bg-white hover:shadow-md hover:border-mocha-500/30 transition-all z-30"
             >

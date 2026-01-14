@@ -45,9 +45,12 @@ export interface AnalysisBackendRelationship {
 }
 
 export interface BackendConflict {
-  severity?: "critical" | "warning" | "medium";
-  category: string;
+  severity?: "critical" | "warning" | "medium" | "HIGH" | "MEDIUM" | "LOW";
+  category?: string;
+  type?: string;
   description: string;
+  suggestion?: string;
+  resolution?: string;
   location?: {
     chapter?: string;
     line?: number;
@@ -55,10 +58,31 @@ export interface BackendConflict {
   };
 }
 
+export interface BackendResolutionSummary {
+  auto_fixable?: number;
+  ready_for_update?: number;
+  needs_human_review?: number;
+  total_conflicts?: number;
+  high_severity_count?: number;
+}
+
+export interface BackendConsistencyStats {
+  auto_fixable_count?: number;
+  high_severity_count?: number;
+  medium_severity_count?: number;
+}
+
 export interface BackendConsistencyReport {
+  job_id?: string;
+  created_at?: string;
   score?: number;
   overall_score?: number; // legacy field
-  conflicts: BackendConflict[];
+  conflicts?: BackendConflict[];
+  conflicts_json?: string | BackendConflict[];
+  stats?: BackendConsistencyStats;
+  resolution_summary?: BackendResolutionSummary;
+  resolution_summary_json?: string | BackendResolutionSummary;
+  requires_human_review?: boolean;
 }
 
 export interface BackendForeshadowingItem {
@@ -93,6 +117,7 @@ export interface Conflict {
   severity: "critical" | "warning";
   category: string;
   description: string;
+  suggestion?: string;
   location?: {
     chapter?: string;
     line?: number;
@@ -100,9 +125,19 @@ export interface Conflict {
   };
 }
 
+export interface ConsistencyStats {
+  fixable: number;
+  critical: number;
+  warning: number;
+}
+
 export interface ConsistencyReport {
+  jobId?: string;
+  analyzedAt?: string;
   score: number; // 0-100
   conflicts: Conflict[];
+  stats: ConsistencyStats;
+  needsReview: boolean;
 }
 
 export interface ForeshadowingItem {
@@ -130,7 +165,7 @@ export interface AnalysisMetadata {
 }
 
 // ============================================
-// Analysis Result Data
+// Analysis Result Data (Main Wrapper)
 // ============================================
 
 export interface AnalysisResultData {
@@ -152,21 +187,19 @@ export function transformConflict(
   backend: BackendConflict,
   score?: number,
 ): Conflict {
-  // severity 결정: 명시적 severity가 있으면 사용, 없으면 score 기준
-  // "medium" severity는 프론트엔드에서 "warning"으로 매핑
   let severity: "critical" | "warning" = "warning";
-  if (backend.severity) {
-    // medium -> warning 매핑 (프론트엔드는 critical/warning만 표시)
-    severity = backend.severity === "critical" ? "critical" : "warning";
-  } else if (score !== undefined) {
-    // score 40 이하면 critical로 간주
-    severity = score <= 40 ? "critical" : "warning";
+  const raw = backend.severity;
+  if (raw === "critical" || raw === "HIGH") {
+    severity = "critical";
+  } else if (score !== undefined && score <= 40) {
+    severity = "critical";
   }
 
   return {
     severity,
-    category: backend.category,
+    category: backend.type || backend.category || "Unknown",
     description: backend.description,
+    suggestion: backend.suggestion || backend.resolution || undefined,
     location: backend.location
       ? {
           chapter: backend.location.chapter,
@@ -181,9 +214,71 @@ export function transformConsistencyReport(
   backend: BackendConsistencyReport,
 ): ConsistencyReport {
   const score = backend.score ?? backend.overall_score ?? 0;
+
+  // Conflicts: Handle both parsed array and JSON string/mixed field
+  let rawConflicts: BackendConflict[] = [];
+  if (Array.isArray(backend.conflicts)) {
+    rawConflicts = backend.conflicts;
+  } else if (Array.isArray(backend.conflicts_json)) {
+    rawConflicts = backend.conflicts_json;
+  } else if (typeof backend.conflicts_json === "string") {
+    try {
+      rawConflicts = JSON.parse(backend.conflicts_json);
+    } catch (e) {
+      console.error("Failed to parse conflicts_json", e);
+      rawConflicts = [];
+    }
+  }
+
+  const conflicts = rawConflicts.map((c) => transformConflict(c, score));
+
+  // Stats: Handle resolution_summary or legacy stats or calculation
+  let stats: ConsistencyStats = { fixable: 0, critical: 0, warning: 0 };
+
+  let resolutionSummary: BackendResolutionSummary | null = null;
+  if (backend.resolution_summary) {
+    resolutionSummary = backend.resolution_summary;
+  } else if (
+    typeof backend.resolution_summary_json === "object" &&
+    backend.resolution_summary_json !== null
+  ) {
+    resolutionSummary =
+      backend.resolution_summary_json as BackendResolutionSummary;
+  } else if (typeof backend.resolution_summary_json === "string") {
+    try {
+      resolutionSummary = JSON.parse(backend.resolution_summary_json);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (resolutionSummary) {
+    stats = {
+      fixable: resolutionSummary.auto_fixable ?? 0,
+      critical: conflicts.filter((c) => c.severity === "critical").length,
+      warning: conflicts.filter((c) => c.severity === "warning").length,
+    };
+  } else if (backend.stats) {
+    stats = {
+      fixable: backend.stats.auto_fixable_count ?? 0,
+      critical: backend.stats.high_severity_count ?? 0,
+      warning: backend.stats.medium_severity_count ?? 0,
+    };
+  } else {
+    stats = {
+      fixable: 0,
+      critical: conflicts.filter((c) => c.severity === "critical").length,
+      warning: conflicts.filter((c) => c.severity === "warning").length,
+    };
+  }
+
   return {
+    jobId: backend.job_id,
+    analyzedAt: backend.created_at,
     score,
-    conflicts: backend.conflicts.map((c) => transformConflict(c, score)),
+    conflicts,
+    stats,
+    needsReview: backend.requires_human_review ?? false,
   };
 }
 

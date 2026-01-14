@@ -3,17 +3,16 @@ import type { ApiResponse } from "@/types/api";
 
 export interface ProjectSetting {
   id: string;
-  projectId: string;
   name: string;
-  description?: string;
   type?: string;
-  imageUrl?: string;
-  visual_background?: string;
+  category?: string; // Keep for compatibility if needed
+  description?: string;
   atmosphere?: string;
   lighting?: string;
   time_of_day?: string;
   art_style?: string;
-  // backend SettingResponse may have more fields
+  visual_background?: string;
+  createdAt?: string;
 }
 
 export const settingService = {
@@ -23,7 +22,7 @@ export const settingService = {
    */
   getAll: async (projectId: string) => {
     const response = await api.get<ApiResponse<ProjectSetting[]>>(
-      `/projects/${projectId}/settings`
+      `/projects/${projectId}/settings`,
     );
     return response.data;
   },

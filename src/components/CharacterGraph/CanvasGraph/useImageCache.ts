@@ -30,14 +30,12 @@ export function useImageCache(characters: Character[]) {
       }
 
       // 새 이미지 로드
-      console.log(`[useImageCache] Loading new image: ${imageUrl}`);
       promises.push(
         new Promise<void>((resolve) => {
           const img = new Image();
           img.crossOrigin = "anonymous"; // CORS 처리
 
           img.onload = () => {
-            console.log(`[useImageCache] Success: ${imageUrl}`);
             newCache.set(imageUrl, img);
             resolve();
           };
@@ -55,7 +53,6 @@ export function useImageCache(characters: Character[]) {
     // 모든 이미지 로드 완료 후 캐시 업데이트
     if (promises.length > 0) {
       Promise.all(promises).then(() => {
-        console.log("[useImageCache] Updating cache state with new images");
         setCache((prev) => new Map([...prev, ...newCache]));
       });
     } else if (newCache.size > 0) {

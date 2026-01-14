@@ -76,22 +76,15 @@ export function useImageGenerationPolling(
         (old: unknown) => {
           const list = old as Character[] | undefined;
           if (!list) return list;
-          let matchCount = 0;
           const result = list.map((char) => {
             if (char._id === characterId) {
-              matchCount++;
               return { ...char, imageUrl: newImageUrl };
             }
             return char;
           });
-          console.log(
-            `[Polling] List Cache Update in progress. Matches found: ${matchCount} for ID: ${characterId}`,
-          );
           return result;
         },
       );
-
-      console.log("[Polling] Manual Cache Update Executed. URL:", newImageUrl);
 
       // 3. Remove immediate invalidation to prevent stale data overwrite
       // We rely completely on the manual update above for immediate feedback.

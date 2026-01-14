@@ -152,14 +152,14 @@ function CollisionMesh({
   const colorDataA = useMemo(
     () => extractColorData(factorsA),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serializedFactorsA]
+    [serializedFactorsA],
   );
 
   const serializedFactorsB = JSON.stringify(factorsB);
   const colorDataB = useMemo(
     () => extractColorData(factorsB),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serializedFactorsB]
+    [serializedFactorsB],
   );
 
   // 유니폼 초기값
@@ -201,7 +201,7 @@ function CollisionMesh({
       strengthB,
       viewport.width,
       viewport.height,
-    ]
+    ],
   );
 
   // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)
@@ -232,34 +232,33 @@ function CollisionMesh({
     }
   }, [colorDataA, colorDataB]);
 
-  // 애니메이션 프레임
+  // R3F 정식 애니메이션 훅 - frameloop="always"와 함께 사용
   useFrame((state) => {
-    if (materialRef.current) {
-      // 시간 업데이트
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    if (!materialRef.current) return;
 
-      // 강도 부드럽게 전환 (lerp)
-      const currentStrengthA = materialRef.current.uniforms.uStrengthA.value;
-      const currentStrengthB = materialRef.current.uniforms.uStrengthB.value;
+    // 시간 업데이트
+    materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
 
-      // LERP Factor slightly adjusted for smoothness
-      materialRef.current.uniforms.uStrengthA.value = THREE.MathUtils.lerp(
-        currentStrengthA,
-        strengthA,
-        0.05
-      );
-      materialRef.current.uniforms.uStrengthB.value = THREE.MathUtils.lerp(
-        currentStrengthB,
-        strengthB,
-        0.05
-      );
+    // 강도 부드럽게 전환 (lerp)
+    const currentStrengthA = materialRef.current.uniforms.uStrengthA.value;
+    const currentStrengthB = materialRef.current.uniforms.uStrengthB.value;
 
-      // 해상도 업데이트
-      materialRef.current.uniforms.uResolution.value.set(
-        viewport.width,
-        viewport.height
-      );
-    }
+    materialRef.current.uniforms.uStrengthA.value = THREE.MathUtils.lerp(
+      currentStrengthA,
+      strengthA,
+      0.05,
+    );
+    materialRef.current.uniforms.uStrengthB.value = THREE.MathUtils.lerp(
+      currentStrengthB,
+      strengthB,
+      0.05,
+    );
+
+    // 해상도 업데이트
+    materialRef.current.uniforms.uResolution.value.set(
+      viewport.width,
+      viewport.height,
+    );
   });
 
   return (
@@ -292,8 +291,16 @@ export const EmotionCollisionEffect = memo(
     className,
   }: EmotionCollisionEffectProps) {
     return (
-      <div className={cn("w-full h-full pointer-events-none", className)}>
+      <div
+        className={cn("w-full h-full pointer-events-none", className)}
+        style={{
+          // GPU layer promotion
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
+      >
         <Canvas
+          frameloop="always"
           onCreated={() => {
             // Signal that the R3F context and shaders are ready
             onReady?.();
@@ -304,9 +311,15 @@ export const EmotionCollisionEffect = memo(
             powerPreference: "high-performance",
             depth: false, // Depth buffer not needed for 2D shader
             stencil: false,
+            preserveDrawingBuffer: true, // Prevent buffer clearing during scroll
           }}
           camera={{ position: [0, 0, 1], fov: 75 }}
-          style={{ background: "transparent" }}
+          style={{
+            background: "transparent",
+            // Ensure Canvas stays on its own compositing layer
+            willChange: "transform",
+            transform: "translateZ(0)",
+          }}
           dpr={Math.min(window.devicePixelRatio, 2)}
         >
           <CollisionMesh
@@ -335,7 +348,7 @@ export const EmotionCollisionEffect = memo(
       isEqual(prev.factorsA, next.factorsA) &&
       isEqual(prev.factorsB, next.factorsB)
     );
-  }
+  },
 );
 
 export default EmotionCollisionEffect;

@@ -70,11 +70,8 @@ api.interceptors.response.use(
       originalRequest &&
       !originalRequest._retry
     ) {
-      console.log("[Auth] 401 error detected. Attempting to refresh token...");
-
       // /auth/refresh 요청 자체가 실패한 경우는 재시도하지 않음
       if (originalRequest.url?.includes("/auth/refresh")) {
-        console.log("[Auth] Refresh token request failed. Logging out.");
         clearCacheAndLogout();
         return Promise.reject(error);
       }
@@ -82,10 +79,6 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log(
-          `[Auth] Acquiring refresh lock for ${originalRequest.url}...`,
-        );
-
         // Web Locks API를 사용하여 탭 간 동기화
         await navigator.locks.request("auth_refresh_lock", async () => {
           // 마지막 refresh 시간을 확인하여 중복 요청 방지 (3초 내 재요청이면 스킵)
@@ -93,14 +86,10 @@ api.interceptors.response.use(
           const now = Date.now();
 
           if (lastRefreshTime && now - parseInt(lastRefreshTime) < 3000) {
-            console.log(
-              `[Auth] Token refreshed recently (${now - parseInt(lastRefreshTime)}ms ago). Skipping refresh for ${originalRequest.url}.`,
-            );
             return;
           }
 
           // 토큰 재발급 시도
-          console.log("[Auth] Sending refresh request...");
           const response = await api.post("/auth/refresh");
 
           // 백엔드가 200 OK를 주더라도 실제로는 실패했을 수 있으므로 응답 확인 (ApiResponse 형태인 경우)
@@ -114,12 +103,10 @@ api.interceptors.response.use(
             );
           }
 
-          console.log("[Auth] Refresh successful.");
           localStorage.setItem("last_refresh_time", Date.now().toString());
         });
 
         // 락 해제 후 원래 요청 재시도
-        console.log(`[Auth] Retrying original request: ${originalRequest.url}`);
         return api(originalRequest);
       } catch (refreshError) {
         console.error("[Auth] Refresh process failed:", refreshError);
@@ -127,7 +114,6 @@ api.interceptors.response.use(
         // 이미 다른 요청에 의해 로그아웃 처리 중일 수 있으므로 중복 실행 방지
         const { isAuthenticated } = useAuthStore.getState();
         if (isAuthenticated) {
-          console.log("[Auth] Logging out due to refresh failure.");
           clearCacheAndLogout();
         }
         return Promise.reject(refreshError);

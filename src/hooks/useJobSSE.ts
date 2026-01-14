@@ -19,6 +19,7 @@ interface UseJobSSEOptions<T> {
   onError?: (error: string) => void;
   onTimeout?: () => void;
   onMessage?: (data: unknown) => void;
+  terminateOnComplete?: boolean;
 }
 
 interface UseJobSSEReturn<T> {
@@ -57,6 +58,7 @@ export function useJobSSE<T = unknown>(
     onError,
     onTimeout,
     onMessage,
+    terminateOnComplete = true,
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -129,10 +131,6 @@ export function useJobSSE<T = unknown>(
     ) => {
       try {
         const msgData = data as unknown as SSEMessage;
-        console.log(
-          `[useJobSSE] ${eventType ? `[${eventType}] ` : ""}Message for ${jobId}:`,
-          data,
-        );
         onMessageRef.current?.({ ...msgData, eventType });
 
         // Normalize status/type for comparison
@@ -152,7 +150,9 @@ export function useJobSSE<T = unknown>(
           setJobStatus("completed");
           setProgress(100);
           onCompleteRef.current?.(msgData.result as T);
-          cleanup();
+          if (terminateOnComplete) {
+            cleanup();
+          }
         } else if (
           type === "failed" ||
           type === "error" ||

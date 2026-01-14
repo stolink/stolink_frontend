@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,8 +34,9 @@ import {
 } from "@/hooks/useCharacters";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
-import { imageService, settingService, type ProjectSetting } from "@/services";
+import { imageService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
+import { useSettings } from "@/hooks/useSettings";
 // Removed useQueryClient to satisfy lint
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,7 @@ export default function CharacterDetailDialog({
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+  const lastErrorTimeRef = useRef<number>(0);
 
   const { toast } = useToast();
   // const queryClient = useQueryClient(); // Unused, removing to satisfy lint
@@ -123,12 +125,16 @@ export default function CharacterDetailDialog({
         setGlobalJobId(null); // Clear global job tracking
       },
       onError: (err) => {
-        console.error("[ImageGeneration] Polling failed:", err);
-        toast({
-          variant: "destructive",
-          title: "이미지 생성 실패",
-          description: err || "알 수 없는 오류가 발생했습니다.",
-        });
+        const now = Date.now();
+        if (now - lastErrorTimeRef.current > 2000) {
+          console.error("[ImageGeneration] Polling failed:", err);
+          toast({
+            variant: "destructive",
+            title: "이미지 생성 실패",
+            description: err || "알 수 없는 오류가 발생했습니다.",
+          });
+          lastErrorTimeRef.current = now;
+        }
         setImageJobId(null);
       },
       onTimeout: () => {
@@ -259,7 +265,7 @@ export default function CharacterDetailDialog({
 
   // 모든 캐릭터 정보 조회 (참여자 ID를 이름으로 변환하기 위함)
   const { data: allCharacters = [] } = useCharacters(
-    displayCharacter?.projectId ?? "",
+    propProjectId || displayCharacter?.projectId || "",
     {
       enabled: !!displayCharacter?.projectId && isOpen,
     },
@@ -275,29 +281,45 @@ export default function CharacterDetailDialog({
   }, [allCharacters]);
 
   const [selectedSettingId, setSelectedSettingId] = useState<string>("none");
-  const [settings, setSettings] = useState<ProjectSetting[]>([]);
   const [manualPrompt, setManualPrompt] = useState("");
 
-  // Load settings
-  useEffect(() => {
-    if (isOpen && character?.projectId) {
-      settingService
-        .getAll(character.projectId)
-        .then((res) => {
-          if (Array.isArray(res.data)) {
-            // Deduplicate and filter valid settings to prevent key collisions
-            const validSettings = res.data.filter((s) => s && s.id);
-            const uniqueSettings = Array.from(
-              new Map(validSettings.map((s) => [s.id, s])).values(),
-            );
-            setSettings(uniqueSettings);
-          }
-        })
-        .catch((_e) => {
-          /* Ignored */
-        });
-    }
-  }, [isOpen, character?.projectId, character?._id]);
+  // Load settings (places) using hook
+  const effectiveProjectId = propProjectId || displayCharacter?.projectId || "";
+  const { data: settingsData = [] } = useSettings(effectiveProjectId);
+
+  // Deduplicate settings to prevent key collisions
+  const settings = useMemo(() => {
+    const data = Array.isArray(settingsData) ? settingsData : [];
+
+    // Normalize IDs (support various backend field names)
+    const normalizedData = data.map((item, idx: number) => {
+      const s = item as unknown as Record<string, unknown>;
+      return {
+        ...s,
+        id:
+          (s.id as string) ||
+          (s._id as string) ||
+          (s.placeId as string) ||
+          (s.uuid as string) ||
+          `fallback-id-${idx}`,
+        name:
+          (s.name as string) ||
+          (s.title as string) ||
+          (s.label as string) ||
+          (s.displayName as string) ||
+          "이름 없음",
+      } as ProjectSetting;
+    });
+
+    const uniqueMap = new Map();
+    normalizedData.forEach((s) => {
+      if (!uniqueMap.has(s.id)) {
+        uniqueMap.set(s.id, s);
+      }
+    });
+
+    return Array.from(uniqueMap.values()) as ProjectSetting[];
+  }, [settingsData]);
 
   /* ------------------------------------------------------------------
    * Payload Processing Helpers
