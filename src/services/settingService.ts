@@ -11,6 +11,7 @@ export interface ProjectSetting {
   lighting?: string;
   time_of_day?: string;
   art_style?: string;
+  visual_background?: string;
   createdAt?: string;
 }
 

@@ -293,7 +293,7 @@ export default function CharacterDetailDialog({
 
     // Normalize IDs (support various backend field names)
     const normalizedData = data.map((item, idx: number) => {
-      const s = item as Record<string, unknown>;
+      const s = item as unknown as Record<string, unknown>;
       return {
         ...s,
         id:
@@ -308,7 +308,7 @@ export default function CharacterDetailDialog({
           (s.label as string) ||
           (s.displayName as string) ||
           "이름 없음",
-      };
+      } as ProjectSetting;
     });
 
     const uniqueMap = new Map();
