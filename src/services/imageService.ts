@@ -35,7 +35,7 @@ export const imageService = {
       time_of_day?: string;
       art_style?: string;
     },
-    characterData?: Record<string, unknown>,
+    characterData?: Record<string, unknown>
   ): Promise<{ jobId: string; status: string }> => {
     const response = await api.post<
       | { data: { jobId: string; status?: string } }
@@ -72,10 +72,10 @@ export const imageService = {
    * @returns Job status with image generation result
    */
   getImageJobStatus: async (
-    jobId: string,
+    jobId: string
   ): Promise<JobResponse<ImageGenerationResult>> => {
     let response;
-    let retries = 3;
+    let retries = 10;
     let lastError;
 
     while (retries > 0) {
@@ -90,7 +90,10 @@ export const imageService = {
         lastError = err;
         // If 404, the job might not be indexed yet, retry
         if (axiosError.response?.status === 404 && retries > 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          console.warn(
+            `[ImageService] Job ${jobId} not found yet. Retrying... (${retries} attempts left)`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           retries--;
           continue;
         }
@@ -120,6 +123,10 @@ export const imageService = {
     const responseData = response.data as RawJobResponse;
     const rawData = responseData.data || responseData;
 
+    if (rawData?.status === "failed" || rawData?.status === "FAILED") {
+      console.warn("[ImageService] Job failed. RAW BACKEND RESPONSE:", rawData);
+    }
+
     if (!rawData || !rawData.status) {
       throw new Error("Invalid job status response");
     }
@@ -130,8 +137,8 @@ export const imageService = {
       status: (rawData.status.toLowerCase() ||
         "pending") as JobResponse<ImageGenerationResult>["status"],
       progress: rawData.progress || 0,
-      message: rawData.message,
-      error: rawData.error,
+      message: rawData.message || (rawData as any).errorMessage,
+      error: rawData.error || (rawData as any).errorMessage,
       createdAt:
         rawData.createdAt || rawData.created_at || new Date().toISOString(),
       updatedAt:

@@ -3,6 +3,7 @@
 // 캐릭터 관계 심층 분석 메인 모달 컴포넌트
 // =====================================================
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -13,7 +14,7 @@ import { RelationshipWarningBanner } from "./components/RelationshipWarningBanne
 import { SharedScenesPanel } from "./components/SharedScenesPanel";
 import { DeepAnalysisHero } from "./components/DeepAnalysisHero";
 import { MoodBackground } from "./components/MoodBackground";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,14 @@ export function RelationshipDeepAnalysisModal({
   data,
   onNavigateToEvent,
 }: RelationshipDeepAnalysisModalProps) {
-  // Add console log for deep analysis data verification
+  const [isShaderReady, setIsShaderReady] = useState(false);
+
+  // Reset loading state when modal opens with new data
+  useEffect(() => {
+    if (isOpen) {
+      setIsShaderReady(false);
+    }
+  }, [isOpen, data?.sourceCharacter.id, data?.targetCharacter.id]);
 
   if (!data) return null;
 
@@ -70,7 +78,7 @@ export function RelationshipDeepAnalysisModal({
                 className={cn(
                   "fixed left-0 top-0 z-[151]",
                   "w-full h-full",
-                  "flex items-center justify-center p-4 md:p-8",
+                  "flex items-center justify-center p-4 md:p-8"
                 )}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -111,6 +119,7 @@ export function RelationshipDeepAnalysisModal({
                       description={data.description}
                       onClose={onClose}
                       since={since}
+                      onShaderReady={() => setIsShaderReady(true)}
                     />
 
                     <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">
@@ -239,6 +248,40 @@ export function RelationshipDeepAnalysisModal({
                       )}
                     </div>
                   </div>
+
+                  {/* 3. Loading Overlay */}
+                  <AnimatePresence>
+                    {!isShaderReady && (
+                      <motion.div
+                        className="absolute inset-0 z-[200] bg-[#FAFAF8] flex flex-col items-center justify-center"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                      >
+                        <div className="relative">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          >
+                            <Loader2 className="w-12 h-12 text-mocha-500" />
+                          </motion.div>
+                          <div className="absolute inset-0 blur-xl bg-mocha-400/20 rounded-full animate-pulse" />
+                        </div>
+                        <motion.p
+                          className="mt-6 text-sm font-serif font-bold text-espresso-400 tracking-[0.2em] uppercase"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          Deep Analysis Discovering...
+                        </motion.p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </DialogPrimitive.Content>

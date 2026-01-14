@@ -43,7 +43,7 @@ interface UseProjectAnalysisReturn {
 
 export function useProjectAnalysis(
   projectId: string | null,
-  options: UseProjectAnalysisOptions = {},
+  options: UseProjectAnalysisOptions = {}
 ): UseProjectAnalysisReturn {
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
   const queryClient = useQueryClient();
@@ -71,34 +71,40 @@ export function useProjectAnalysis(
   const setProjectId = useAnalysisBufferStore((state) => state.setProjectId);
 
   const setBufferAnalyzing = useAnalysisBufferStore(
-    (state) => state.setAnalyzing,
+    (state) => state.setAnalyzing
   );
   const getBufferSummary = useAnalysisBufferStore(
-    (state) => state.getBufferSummary,
+    (state) => state.getBufferSummary
   );
   const currentJobId = useAnalysisBufferStore((state) => state.currentJobId);
   const currentJobType = useAnalysisBufferStore(
-    (state) => state.currentJobType,
+    (state) => state.currentJobType
   );
   // setJobId removed (unused)
   const setGlobalProgress = useAnalysisBufferStore(
-    (state) => state.setProgress,
+    (state) => state.setProgress
   );
   const setLastAnalyzedHashes = useAnalysisBufferStore(
-    (state) => state.setLastAnalyzedHashes,
+    (state) => state.setLastAnalyzedHashes
   );
   const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
   const resetAnalysis = useAnalysisBufferStore((state) => state.resetAnalysis);
   const lastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.lastConsistencyReport,
+    (state) => state.lastConsistencyReport
   );
   const activeJobs = useAnalysisBufferStore((state) => state.activeJobs);
+  const activeAnalysisJobs = useAnalysisBufferStore(
+    (state) => state.activeAnalysisJobs
+  );
   const addStoreJobId = useAnalysisBufferStore((state) => state.addJobId);
   const removeStoreJobId = useAnalysisBufferStore((state) => state.removeJobId);
   const clearStoreJobs = useAnalysisBufferStore((state) => state.clearJobs);
+  const clearAnalysisJobs = useAnalysisBufferStore(
+    (state) => state.clearAnalysisJobs
+  );
 
   const [jobProgresses, setJobProgresses] = useState<Record<string, number>>(
-    {},
+    {}
   );
   const lastResultRef = useRef<AnalysisResultData | null>(null);
 
@@ -167,12 +173,19 @@ export function useProjectAnalysis(
 
     // 2. Trigger completion callback BEFORE invalidation to ensure diff compares against current state
     console.log("[useProjectAnalysis] Triggering completion callback");
-    onCompleteRef.current?.(lastResultRef.current);
+    if (activeType === "analysis") {
+      onCompleteRef.current?.(lastResultRef.current);
+    } else {
+      console.log(
+        "[useProjectAnalysis] Skipping completion callback for non-analysis job type:",
+        activeType
+      );
+    }
 
     // 3. Cache Invalidation (Common or specific)
     if (projectId) {
       console.log(
-        `[useProjectAnalysis] Invalidating queries for project ${projectId}`,
+        `[useProjectAnalysis] Invalidating queries for project ${projectId}`
       );
       // Always invalidate character list as both jobs might affect it
       queryClient.invalidateQueries({
@@ -212,7 +225,7 @@ export function useProjectAnalysis(
 
     // 모든 분석 완료 처리 (자동 재분석은 사용자 요청 시에만 수행하도록 루프 제거)
     console.log(
-      "[useProjectAnalysis] Analysis flow complete, resetting finalizing state",
+      "[useProjectAnalysis] Analysis flow complete, resetting finalizing state"
     );
     setBufferAnalyzing(false);
     setAnalysisProgress(100);
@@ -294,7 +307,8 @@ export function useProjectAnalysis(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const status = (error as any)?.response?.status;
         if (status === 404) {
-          clearStoreJobs(projectId);
+          // 404 for analysis job status should only clear analysis jobs, not image jobs
+          clearAnalysisJobs(projectId);
         }
       }
     };
@@ -314,7 +328,7 @@ export function useProjectAnalysis(
     projectId,
     aiService.getProjectStatusStreamUrl,
     {
-      enabled: !!projectId && activeJobs[projectId]?.length > 0,
+      enabled: !!projectId && (activeAnalysisJobs[projectId]?.length ?? 0) > 0,
       onMessage: async (data) => {
         // SSE 이벤트 파싱
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -324,20 +338,20 @@ export function useProjectAnalysis(
         // jobId가 직접 있거나 result 내부에 있을 수 있음
         let eventJobId = event.jobId || event.id;
 
-        // Fallback: If jobId is missing in the message but we have exactly one active job, use it.
+        // Fallback: If jobId is missing in the message but we have exactly one active analysis job, use it.
         // This is common for project-level status streams.
         if (!eventJobId && projectId) {
-          const currentJobs = activeJobs[projectId] || [];
-          if (currentJobs.length === 1) {
-            eventJobId = currentJobs[0];
+          const currentAnalysisJobs = activeAnalysisJobs[projectId] || [];
+          if (currentAnalysisJobs.length === 1) {
+            eventJobId = currentAnalysisJobs[0];
             console.log(
-              `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`,
+              `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`
             );
           }
         }
 
         console.log(
-          `[useProjectAnalysis] Received event: ${event.type || event.status} for job ${eventJobId}`,
+          `[useProjectAnalysis] Received event: ${event.type || event.status} for job ${eventJobId}`
         );
         if (!eventJobId) return;
 
@@ -357,21 +371,31 @@ export function useProjectAnalysis(
             let result = event.result as AnalysisResultData;
 
             // SSE에 결과가 없으면 API 호출 시도
-            if (!result) {
+            // SSE에 결과가 없으면 API 호출 시도 (단, 이미지 작업은 제외)
+            const { currentJobId: storeJobId, currentJobType: storeJobType } =
+              useAnalysisBufferStore.getState();
+            const isImageJob =
+              storeJobId === eventJobId && storeJobType === "image";
+
+            if (!result && !isImageJob) {
               try {
                 const job =
                   await aiService.getJobStatus<AnalysisResultData>(eventJobId);
                 console.log(
                   `[useProjectAnalysis] 100% Progress API Response for ${eventJobId}:`,
-                  job,
+                  job
                 );
                 result = job.result!;
               } catch (err) {
                 console.error(
                   "[useProjectAnalysis] Error fetching job result on 100% progress:",
-                  err,
+                  err
                 );
               }
+            } else if (isImageJob) {
+              console.log(
+                `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`
+              );
             }
 
             if (result) {
@@ -391,24 +415,34 @@ export function useProjectAnalysis(
           let result = event.result as AnalysisResultData;
 
           // SSE에 결과가 없으면 API 호출 시도
-          if (!result) {
+          // SSE에 결과가 없으면 API 호출 시도 (단, 이미지 작업은 제외)
+          const { currentJobId: storeJobId, currentJobType: storeJobType } =
+            useAnalysisBufferStore.getState();
+          const isImageJob =
+            storeJobId === eventJobId && storeJobType === "image";
+
+          if (!result && !isImageJob) {
             try {
               const job =
                 await aiService.getJobStatus<AnalysisResultData>(eventJobId);
               console.log(
                 `[useProjectAnalysis] Completion API Response for ${eventJobId}:`,
-                job,
+                job
               );
               result = job.result!;
               console.log(
-                `[useProjectAnalysis] Fetched result for job ${eventJobId} via API`,
+                `[useProjectAnalysis] Fetched result for job ${eventJobId} via API`
               );
             } catch (err) {
               console.error(
                 "[useProjectAnalysis] Error fetching job result on completion:",
-                err,
+                err
               );
             }
+          } else if (isImageJob) {
+            console.log(
+              `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`
+            );
           }
 
           if (result) {
@@ -422,7 +456,7 @@ export function useProjectAnalysis(
         } else if (eventType === "failed" || eventType === "error") {
           console.error(
             `[useProjectAnalysis] Job ${eventJobId} FAILED:`,
-            event.message || "Unknown error",
+            event.message || "Unknown error"
           );
           setAnalysisError(event.message || "분석 중 오류가 발생했습니다.");
           setBufferAnalyzing(false);
@@ -437,7 +471,7 @@ export function useProjectAnalysis(
         setBufferAnalyzing(false);
         onErrorRef.current?.(err);
       },
-    },
+    }
   );
 
   // 전역 진행률 계산
@@ -446,7 +480,7 @@ export function useProjectAnalysis(
     const currentActiveJobIds = projectId ? activeJobs[projectId] || [] : [];
     const totalProgress = currentActiveJobIds.reduce(
       (sum, jobId) => sum + (jobProgresses[jobId] || 0),
-      0,
+      0
     );
 
     if (currentActiveJobIds.length === 0) {
@@ -621,7 +655,7 @@ export function useProjectAnalysis(
           error instanceof Error ? error.message : "Analysis request failed";
         console.error(
           `Failed to analyze document ${chunk.documentId}:`,
-          errorMsg,
+          errorMsg
         );
         errors.push(errorMsg);
 

@@ -130,9 +130,12 @@ export function CharacterHeader({
           <Button
             intent="secondary"
             size="icon"
-            onClick={() => onGenerateImage()}
+            onClick={() => {
+              console.log("[CharacterHeader] Image generation button clicked");
+              onGenerateImage();
+            }}
             disabled={isGeneratingImage}
-            className="absolute bottom-4 right-4 h-11 w-11 rounded-full shadow-xl border-2 border-white/80 hover:scale-110 transition-all duration-200 bg-white/95 backdrop-blur-sm opacity-0 group-hover:opacity-100"
+            className="absolute bottom-4 right-4 h-11 w-11 rounded-full shadow-xl border-2 border-white/80 hover:scale-110 transition-all duration-200 bg-white/95 backdrop-blur-sm opacity-0 group-hover:opacity-100 z-30"
             title="AI 이미지 생성"
           >
             <Sparkles className="h-5 w-5 text-primary" />
@@ -161,14 +164,31 @@ export function CharacterHeader({
             <p className="magazine-caption mt-1.5">
               {gender || "미정"} · {age ? `${age}세` : "나이 미상"}
             </p>
+            {/* [New] Concise Appearance Summary */}
+            <p className="text-xs text-mocha-400 mt-1 italic line-clamp-1">
+              {[
+                character.appearance?.physique,
+                character.appearance?.eyes
+                  ? `${character.appearance.eyes} 눈`
+                  : null,
+                character.appearance?.hairColor
+                  ? `${character.appearance.hairColor} 머리`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", ") || "외모 정보가 입력되지 않았습니다."}
+            </p>
           </div>
 
           {onEdit && !isEditMode && (
             <Button
               intent="ghost"
               size="icon"
-              onClick={onEdit}
-              className="h-9 w-9 shrink-0 rounded-full border border-cloud-200 hover:bg-white hover:shadow-md hover:border-mocha-500/30 transition-all"
+              onClick={() => {
+                console.log("[CharacterHeader] Edit button clicked");
+                onEdit();
+              }}
+              className="h-9 w-9 shrink-0 rounded-full border border-cloud-200 hover:bg-white hover:shadow-md hover:border-mocha-500/30 transition-all z-30"
             >
               <Edit className="h-4 w-4 text-mocha-500" />
             </Button>

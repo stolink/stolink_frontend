@@ -34,6 +34,7 @@ export interface CreateCharacterInput {
   appearance?: Partial<CharacterAppearance>;
   personality?: Partial<CharacterPersonality>;
   graphPosition?: { x: number; y: number };
+  imageUrl?: string;
 }
 
 /**
@@ -63,7 +64,7 @@ function transformBackendCharacter(backendChar: any): Character {
   // Parse JSON fields (handle both stringified JSON and pre-parsed objects)
   const profile = safeParse(
     backendChar.profile,
-    backendChar.profilejson || backendChar.profile_json || {},
+    backendChar.profilejson || backendChar.profile_json || {}
   );
 
   // 🆕 relations 데이터 추출 로직 강화: 다양한 필드명과 파싱 상태 대응
@@ -72,7 +73,7 @@ function transformBackendCharacter(backendChar: any): Character {
     backendChar.relationsjson ||
       backendChar.relations_json ||
       backendChar.relationsJson,
-    {},
+    {}
   );
 
   // graph 데이터가 있는 쪽을 선택 (JSON 문자열 파싱 결과 우선)
@@ -87,14 +88,14 @@ function transformBackendCharacter(backendChar: any): Character {
     backendChar.aliasesjson ||
       backendChar.aliases_json ||
       backendChar.aliasesJson ||
-      [],
+      []
   );
   const rawAppearance = safeParse(
     backendChar.appearance,
     backendChar.appearancejson ||
       backendChar.appearance_json ||
       backendChar.appearanceJson ||
-      {},
+      {}
   );
 
   // 🆕 profile.personality 및 기타 필드 복구
@@ -103,7 +104,7 @@ function transformBackendCharacter(backendChar: any): Character {
     backendChar.personality,
     backendChar.personalityjson ||
       backendChar.personality_json ||
-      backendChar.personalityJson || { core_traits: [], flaws: [], values: [] },
+      backendChar.personalityJson || { core_traits: [], flaws: [], values: [] }
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,14 +142,7 @@ function transformBackendCharacter(backendChar: any): Character {
   // 🚨 HOTFIX: ID Mapping for known characters with missing IDs
   // This resolves the 404 error in EventService by forcing the correct UUID expected by the Event Service
   // (The backend is 100% Neo4j, but the Character Service response is missing this specific ID)
-  const ID_OVERRIDES: Record<string, string> = {
-    장발장: "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
-    "Jean Valjean": "44069ed3-8d44-40e4-8e6f-cbf1dac5325f",
-  };
-
-  const name = profile?.name || backendChar.name || "";
-
-  let finalId =
+  const finalId =
     backendChar.id ||
     backendChar.character_id ||
     backendChar._id ||
@@ -156,10 +150,6 @@ function transformBackendCharacter(backendChar: any): Character {
     backendChar.characterId ||
     profile?.characterId ||
     "";
-
-  if (ID_OVERRIDES[name]) {
-    finalId = ID_OVERRIDES[name];
-  }
 
   return {
     _id: finalId,
@@ -282,12 +272,20 @@ export const characterService = {
   getAll: async (projectId: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.get<ApiResponse<any[]>>(
-      `/projects/${projectId}/characters`,
+      `/projects/${projectId}/characters`
     );
 
     // Transform backend response to frontend type
+    // Inject projectId if not present in backend response
     const characters = Array.isArray(response.data.data)
-      ? response.data.data.map(transformBackendCharacter)
+      ? response.data.data.map((char) => {
+          const transformed = transformBackendCharacter(char);
+          // Ensure projectId is set (backend may omit project_id)
+          if (!transformed.projectId) {
+            transformed.projectId = projectId;
+          }
+          return transformed;
+        })
       : [];
 
     return { ...response.data, data: characters };
@@ -306,7 +304,7 @@ export const characterService = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.post<ApiResponse<any>>(
       `/projects/${projectId}/characters`,
-      payload,
+      payload
     );
     return {
       ...response.data,
@@ -315,10 +313,15 @@ export const characterService = {
   },
 
   update: async (id: string, payload: UpdateCharacterInput) => {
+    console.log(`[characterService] PATCH /characters/${id}`, payload);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await api.patch<ApiResponse<any>>(
       `/characters/${id}`,
-      payload,
+      payload
+    );
+    console.log(
+      `[characterService] PATCH /characters/${id} Response:`,
+      response.data
     );
     return {
       ...response.data,
@@ -333,7 +336,7 @@ export const characterService = {
 
   regenerateImage: async (id: string) => {
     const response = await api.post<ApiResponse<{ jobId: string }>>(
-      `/characters/${id}/regenerate`,
+      `/characters/${id}/regenerate`
     );
     return response.data;
   },

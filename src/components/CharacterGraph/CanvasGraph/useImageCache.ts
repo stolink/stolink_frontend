@@ -30,31 +30,42 @@ export function useImageCache(characters: Character[]) {
       }
 
       // 새 이미지 로드
+      console.log(`[useImageCache] Loading new image: ${imageUrl}`);
       promises.push(
         new Promise<void>((resolve) => {
           const img = new Image();
           img.crossOrigin = "anonymous"; // CORS 처리
 
           img.onload = () => {
+            console.log(`[useImageCache] Success: ${imageUrl}`);
             newCache.set(imageUrl, img);
             resolve();
           };
 
           img.onerror = () => {
-            // 로드 실패 시 무시 (이니셜 fallback 사용)
-            console.warn(`Failed to load image: ${imageUrl}`);
+            console.warn(`[useImageCache] Error: ${imageUrl}`);
             resolve();
           };
 
           img.src = imageUrl;
-        }),
+        })
       );
     });
 
     // 모든 이미지 로드 완료 후 캐시 업데이트
-    Promise.all(promises).then(() => {
-      setCache((prev) => new Map([...prev, ...newCache]));
-    });
+    if (promises.length > 0) {
+      Promise.all(promises).then(() => {
+        console.log("[useImageCache] Updating cache state with new images");
+        setCache((prev) => new Map([...prev, ...newCache]));
+      });
+    } else if (newCache.size > 0) {
+      // 이미 모든 이미지가 캐시되어 있었던 경우에도 동기화가 필요할 수 있음
+      setCache((prev) => {
+        const next = new Map(prev);
+        newCache.forEach((v, k) => next.set(k, v));
+        return next;
+      });
+    }
   }, [characters]);
 
   return cache;

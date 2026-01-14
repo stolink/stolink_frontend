@@ -116,6 +116,7 @@ interface EmotionCollisionEffectProps {
   strengthA: number;
   /** B→A 전체 강도 (0-10) */
   strengthB: number;
+  onReady?: () => void;
   className?: string;
 }
 
@@ -151,14 +152,14 @@ function CollisionMesh({
   const colorDataA = useMemo(
     () => extractColorData(factorsA),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serializedFactorsA],
+    [serializedFactorsA]
   );
 
   const serializedFactorsB = JSON.stringify(factorsB);
   const colorDataB = useMemo(
     () => extractColorData(factorsB),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serializedFactorsB],
+    [serializedFactorsB]
   );
 
   // 유니폼 초기값
@@ -200,7 +201,7 @@ function CollisionMesh({
       strengthB,
       viewport.width,
       viewport.height,
-    ],
+    ]
   );
 
   // Props 변경 시 색상 유니폼 업데이트 (Optimized: Reusing objects with .set)
@@ -245,18 +246,18 @@ function CollisionMesh({
       materialRef.current.uniforms.uStrengthA.value = THREE.MathUtils.lerp(
         currentStrengthA,
         strengthA,
-        0.05,
+        0.05
       );
       materialRef.current.uniforms.uStrengthB.value = THREE.MathUtils.lerp(
         currentStrengthB,
         strengthB,
-        0.05,
+        0.05
       );
 
       // 해상도 업데이트
       materialRef.current.uniforms.uResolution.value.set(
         viewport.width,
-        viewport.height,
+        viewport.height
       );
     }
   });
@@ -287,11 +288,16 @@ export const EmotionCollisionEffect = memo(
     factorsB,
     strengthA,
     strengthB,
+    onReady,
     className,
   }: EmotionCollisionEffectProps) {
     return (
       <div className={cn("w-full h-full pointer-events-none", className)}>
         <Canvas
+          onCreated={() => {
+            // Signal that the R3F context and shaders are ready
+            onReady?.();
+          }}
           gl={{
             alpha: true,
             antialias: true,
@@ -329,7 +335,7 @@ export const EmotionCollisionEffect = memo(
       isEqual(prev.factorsA, next.factorsA) &&
       isEqual(prev.factorsB, next.factorsB)
     );
-  },
+  }
 );
 
 export default EmotionCollisionEffect;

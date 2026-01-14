@@ -16,6 +16,8 @@ const visualFieldConfig: {
   { key: "physique", label: "체격", icon: "💪" },
   { key: "skinTone", label: "피부", icon: "✨" },
   { key: "eyes", label: "눈", icon: "👁️" },
+  { key: "nose", label: "코", icon: "👃" },
+  { key: "mouth", label: "입", icon: "👄" },
   { key: "hairStyle", label: "헤어스타일", icon: "💇" },
   { key: "hairColor", label: "머리색", icon: "🎨" },
   { key: "attire", label: "의상", icon: "👔" },

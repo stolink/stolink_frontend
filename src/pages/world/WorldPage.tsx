@@ -66,7 +66,7 @@ export default function WorldPage() {
   // [Fix] Defined early to avoid ReferenceError in useProjectAnalysis callback or useEffect deps
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents,
+    projectEvents
   );
 
   // Snapshot Ref for diff calculation
@@ -94,7 +94,7 @@ export default function WorldPage() {
     useState<RelationshipDeepAnalysisData | null>(null);
   const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
-    [],
+    []
   );
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
@@ -135,7 +135,7 @@ export default function WorldPage() {
   useEffect(() => {
     if (projectId) {
       const pendingView = sessionStorage.getItem(
-        `analysis_pending_view_${projectId}`,
+        `analysis_pending_view_${projectId}`
       );
       if (pendingView === "true") {
         console.log("📬 Found pending analysis view from Editor");
@@ -166,7 +166,7 @@ export default function WorldPage() {
     try {
       sessionStorage.setItem(
         `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot),
+        JSON.stringify(snapshot)
       );
       // Reset flags for new session
       sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
@@ -214,7 +214,7 @@ export default function WorldPage() {
       if (!prev && projectId) {
         try {
           const stored = sessionStorage.getItem(
-            `analysis_snapshot_${projectId}`,
+            `analysis_snapshot_${projectId}`
           );
           if (stored) {
             prev = JSON.parse(stored);
@@ -242,7 +242,7 @@ export default function WorldPage() {
         prev.characters,
         prev.links,
         currentChars,
-        currentLinks,
+        currentLinks
       );
 
       console.log("📉 Snapshot Diff Result:", diff);
@@ -279,7 +279,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null,
+    null
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -316,7 +316,7 @@ export default function WorldPage() {
             if (pendingHighlightNames.includes(c.profile.name)) {
               // Check if it's new or updated (heuristic: if it was in diff.newCharacters)
               const isNew = analysisDiff?.newCharacters.some(
-                (nc) => nc.profile.name === c.profile.name,
+                (nc) => nc.profile.name === c.profile.name
               );
               newChanges[c._id] = isNew ? "new" : "updated";
             }
@@ -470,7 +470,7 @@ export default function WorldPage() {
       link.relationTypes || [link.type],
       link.strength || 5,
       projectEvents,
-      link.description,
+      link.description
     );
 
     setRelationshipAnalysisData(analysisData);
@@ -589,7 +589,7 @@ export default function WorldPage() {
                           "text-mocha-500",
                           !showCompletionAnimation &&
                             !isStuck &&
-                            "animate-pulse",
+                            "animate-pulse"
                         )}
                       >
                         {showCompletionAnimation
@@ -856,37 +856,11 @@ export default function WorldPage() {
       <CharacterDetailDialog
         character={activeCharacter}
         isOpen={isModalOpen}
+        projectId={projectId}
         onClose={() => setIsModalOpen(false)}
         onSave={async (updatedChar) => {
-          try {
-            if (!updateCharacterMutation) return;
-
-            // _id is required for update
-            if (!updatedChar._id) {
-              return;
-            }
-
-            // TODO: CreateCharacterInput 타입 정의가 appearance/personality를 포함하도록 업데이트 필요
-            // 현재는 빌드 에러 방지를 위해 any 캐스팅 사용
-            const payload = {
-              role: updatedChar.role || "extra",
-              status: updatedChar.status || "active",
-              profile: {
-                ...updatedChar.profile,
-                name: updatedChar.profile.name,
-              },
-              appearance: updatedChar.appearance,
-              personality: updatedChar.personality,
-            };
-
-            await updateCharacterMutation.mutateAsync({
-              id: updatedChar._id,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              payload: payload as any,
-            });
-          } catch (_error) {
-            // Failed to save character
-          }
+          // 캐릭터 수정 후 추가로 월드 페이지에서 처리할 로직이 있다면 여기에 작성
+          console.log("[WorldPage] Character updated:", updatedChar._id);
         }}
       />
 
@@ -901,7 +875,7 @@ export default function WorldPage() {
             if (projectId) {
               sessionStorage.setItem(
                 `analysis_acknowledged_${projectId}`,
-                "true",
+                "true"
               );
             }
           }}
