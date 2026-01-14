@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -101,6 +101,7 @@ export default function CharacterDetailDialog({
 
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+  const lastErrorTimeRef = useRef<number>(0);
 
   const { toast } = useToast();
   // const queryClient = useQueryClient(); // Unused, removing to satisfy lint
@@ -123,12 +124,16 @@ export default function CharacterDetailDialog({
         setGlobalJobId(null); // Clear global job tracking
       },
       onError: (err) => {
-        console.error("[ImageGeneration] Polling failed:", err);
-        toast({
-          variant: "destructive",
-          title: "이미지 생성 실패",
-          description: err || "알 수 없는 오류가 발생했습니다.",
-        });
+        const now = Date.now();
+        if (now - lastErrorTimeRef.current > 2000) {
+          console.error("[ImageGeneration] Polling failed:", err);
+          toast({
+            variant: "destructive",
+            title: "이미지 생성 실패",
+            description: err || "알 수 없는 오류가 발생했습니다.",
+          });
+          lastErrorTimeRef.current = now;
+        }
         setImageJobId(null);
       },
       onTimeout: () => {

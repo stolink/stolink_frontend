@@ -108,10 +108,10 @@ export default function EditorRightSidebar({
               <TabsTrigger
                 value="consistency"
                 className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
-                title="인사이트 (일관성 체크)"
+                title="개연성 검증"
               >
                 <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">인사이트</span>
+                <span className="truncate">검증</span>
               </TabsTrigger>
               <TabsTrigger
                 value="inspector"

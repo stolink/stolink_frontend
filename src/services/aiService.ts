@@ -1,6 +1,9 @@
 import api from "@/api/client";
 import type { ApiResponse, JobResponse } from "@/types/api";
-import type { AnalysisResultData } from "@/types/analysisResult";
+import type {
+  AnalysisResultData,
+  BackendConsistencyReport,
+} from "@/types/analysisResult";
 import { calculateContentHash } from "@/utils/hashUtils";
 
 const BASE_URL = "/ai"; // Spring Backend endpoints
@@ -99,6 +102,16 @@ export const aiService = {
     return response.data.data;
   },
 
+  // 6. Get Consistency Report (Latest)
+  getConsistencyReport: async (
+    projectId: string,
+  ): Promise<BackendConsistencyReport> => {
+    const response = await api.get<ApiResponse<BackendConsistencyReport>>(
+      `/projects/${projectId}/consistency-report`,
+    );
+    return response.data.data;
+  },
+
   // SSE Stream URL for project-wide status (e.g., analysis, import)
   getProjectStatusStreamUrl: (projectId: string): string => {
     const baseUrl = import.meta.env.VITE_API_URL || "/api";
@@ -144,6 +157,54 @@ export const aiService = {
           updatedAt: new Date().toISOString(),
         });
       }, 1000);
+    });
+  },
+
+  mockGetConsistencyReport: async (
+    _projectId: string,
+  ): Promise<BackendConsistencyReport> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          job_id: "uuid-job-1234",
+          created_at: new Date().toISOString(),
+          score: 75,
+          overall_score: 75,
+          requires_human_review: true,
+          conflicts: [
+            {
+              type: "TIMELINE_CONFLICT",
+              severity: "HIGH",
+              description: "박민수가 죽은 상태에서 4화에 다시 등장합니다.",
+              suggestion:
+                "해당 캐릭터의 생존 여부를 타임라인에서 확인하고, 사망 시점 이후의 등장을 삭제하거나 회상신으로 처리하세요.",
+              location: {
+                chapter: "4화",
+                line: 15,
+                document_id: "uuid-doc-5678",
+              },
+            },
+            {
+              type: "CHARACTER_TRAIT_CONFLICT",
+              severity: "MEDIUM",
+              description: "진혁의 성격이 1화와 다르게 묘사됩니다.",
+              suggestion:
+                "캐릭터 시트의 성격 키워드와 해당 장면의 행동이 일치하는지 재검토하세요.",
+              location: {
+                chapter: "2화",
+                line: 10,
+              },
+            },
+          ],
+          resolution_summary: {
+            high_severity_count: 1,
+            total_conflicts: 2,
+            auto_fixable: 0,
+            needs_human_review: 1,
+            ready_for_update: 0,
+          },
+        });
+      }, 800);
     });
   },
 

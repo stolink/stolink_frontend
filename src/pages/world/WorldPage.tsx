@@ -802,9 +802,8 @@ export default function WorldPage() {
         isOpen={isModalOpen}
         projectId={projectId}
         onClose={() => setIsModalOpen(false)}
-        onSave={async (updatedChar) => {
+        onSave={async (_updatedChar) => {
           // 캐릭터 수정 후 추가로 월드 페이지에서 처리할 로직이 있다면 여기에 작성
-          console.log("[WorldPage] Character updated:", updatedChar._id);
         }}
       />
 
@@ -835,9 +834,8 @@ export default function WorldPage() {
           setRelationshipAnalysisData(null);
         }}
         data={relationshipAnalysisData}
-        onNavigateToEvent={(eventId) => {
+        onNavigateToEvent={(_eventId) => {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
-          console.log("Navigate to event:", eventId);
         }}
       />
     </div>

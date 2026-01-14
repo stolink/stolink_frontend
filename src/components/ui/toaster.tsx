@@ -2,16 +2,16 @@
  * Toast UI Component - Warm & Soft Design System
  * Mocha palette integration for consistent brand experience
  */
-import { useToastContainer } from "@/hooks/useToast";
+import { useToastContainer, dismiss } from "@/hooks/useToast";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Toaster() {
   const toasts = useToastContainer();
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full max-w-[90vw] sm:max-w-[420px]">
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => {
           const isDestructive = toast.variant === "destructive";
@@ -20,47 +20,51 @@ export function Toaster() {
           return (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              layout
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              onClick={() => dismiss(toast.id)}
               className={cn(
-                "pointer-events-auto min-w-[320px] max-w-[420px] rounded-xl border p-4 shadow-paper-floating backdrop-blur-md",
-                isDestructive && "bg-red-50/95 border-red-200 text-red-900",
-                isSuccess && "bg-sage-50/95 border-sage-200 text-sage-700",
+                "pointer-events-auto relative group cursor-pointer w-full rounded-2xl border p-4 shadow-paper-floating backdrop-blur-xl transition-all hover:scale-[1.02] active:scale-[0.98]",
+                isDestructive &&
+                  "bg-red-50/90 border-red-200/60 text-red-900 shadow-red-900/5",
+                isSuccess &&
+                  "bg-sage-50/90 border-sage-200/60 text-sage-800 shadow-sage-900/5",
                 !isDestructive &&
                   !isSuccess &&
-                  "bg-white/95 border-mocha-200/60 text-espresso-900",
+                  "bg-white/90 border-mocha-200/40 text-espresso-900 shadow-mocha-900/5",
               )}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 pr-6 text-left">
                 {/* Icon */}
                 <div
                   className={cn(
-                    "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
-                    isDestructive && "bg-red-100 text-red-600",
-                    isSuccess && "bg-sage-100 text-sage-600",
+                    "flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center shadow-sm",
+                    isDestructive && "bg-red-100/80 text-red-600",
+                    isSuccess && "bg-sage-100/80 text-sage-600",
                     !isDestructive &&
                       !isSuccess &&
-                      "bg-mocha-100 text-mocha-600",
+                      "bg-mocha-100/80 text-mocha-600",
                   )}
                 >
                   {isDestructive ? (
-                    <AlertTriangle className="w-4 h-4" />
+                    <AlertTriangle className="w-5 h-5" />
                   ) : isSuccess ? (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-5 h-5" />
                   ) : (
-                    <Info className="w-4 h-4" />
+                    <Info className="w-5 h-5" />
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pt-0.5">
                   <p
                     className={cn(
-                      "font-heading font-semibold text-sm leading-tight",
-                      isDestructive && "text-red-900",
-                      isSuccess && "text-sage-700",
+                      "font-heading font-bold text-sm leading-tight tracking-tight",
+                      isDestructive && "text-red-950",
+                      isSuccess && "text-sage-900",
                       !isDestructive && !isSuccess && "text-espresso-900",
                     )}
                   >
@@ -69,16 +73,27 @@ export function Toaster() {
                   {toast.description && (
                     <p
                       className={cn(
-                        "mt-1 text-sm leading-relaxed opacity-80",
-                        isDestructive && "text-red-700",
-                        isSuccess && "text-sage-600",
-                        !isDestructive && !isSuccess && "text-espresso-600",
+                        "mt-1 text-xs leading-relaxed font-medium opacity-70",
+                        isDestructive && "text-red-800",
+                        isSuccess && "text-sage-700",
+                        !isDestructive && !isSuccess && "text-mocha-800",
                       )}
                     >
                       {toast.description}
                     </p>
                   )}
                 </div>
+
+                {/* Close Button Hint */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dismiss(toast.id);
+                  }}
+                  className="absolute top-3 right-3 p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-black/5 transition-all"
+                >
+                  <X className="w-4 h-4 text-espresso-900/40" />
+                </button>
               </div>
             </motion.div>
           );

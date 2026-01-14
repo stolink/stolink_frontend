@@ -255,9 +255,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             }
           }
 
-          console.log(
-            `[useAnalysisBufferStore] addJobId: ${id} (type: ${type}) for project ${projectId}`,
-          );
           state.currentJobId = id;
           state.currentJobType = type;
           state.currentJobTargetId = targetId;
@@ -269,16 +266,10 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // activeJobs에서 제거
           if (state.activeJobs[projectId]) {
-            console.log(
-              `[useAnalysisBufferStore] removeJobId: ${id} from project ${projectId}`,
-            );
             state.activeJobs[projectId] = state.activeJobs[projectId].filter(
               (jobId) => jobId !== id,
             );
             if (state.activeJobs[projectId].length === 0) {
-              console.log(
-                `[useAnalysisBufferStore] All jobs cleared for project ${projectId}`,
-              );
               delete state.activeJobs[projectId];
               if (state.currentJobId === id) {
                 state.currentJobId = null;
@@ -290,9 +281,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
                 state.activeJobs[projectId][
                   state.activeJobs[projectId].length - 1
                 ];
-              console.log(
-                `[useAnalysisBufferStore] Switched currentJobId to ${state.currentJobId}`,
-              );
             }
           }
 
@@ -310,9 +298,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 
       clearJobs: (projectId) => {
         set((state) => {
-          console.log(
-            `[useAnalysisBufferStore] clearJobs for project ${projectId}`,
-          );
           delete state.activeJobs[projectId];
           delete state.activeAnalysisJobs[projectId];
           if (state.projectId === projectId) {
@@ -327,9 +312,6 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 
       clearAnalysisJobs: (projectId) => {
         set((state) => {
-          console.log(
-            `[useAnalysisBufferStore] clearAnalysisJobs for project ${projectId}`,
-          );
           // 이미지 작업 등 다른 작업은 유지하고 분석 작업만 제거
           delete state.activeAnalysisJobs[projectId];
 
@@ -448,6 +430,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         activeAnalysisJobs: state.activeAnalysisJobs,
         lastAnalyzedHashes: state.lastAnalyzedHashes,
         pendingDocuments: state.pendingDocuments,
+        lastConsistencyReport: state.lastConsistencyReport,
       }),
       // 기존 저장 상태에 새 필드가 없을 때 기본값 적용
       merge: (persistedState, currentState) => {

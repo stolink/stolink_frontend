@@ -441,7 +441,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // Capture Snapshot when starting analysis
   const handleStartAnalysisWrapper = useCallback(() => {
     // Capture Snapshot before starting
-    console.log("📸 [Editor] Capturing Snapshot for Diff...");
     const snapshot = {
       characters: [...characters],
       links: [...graphLinks],

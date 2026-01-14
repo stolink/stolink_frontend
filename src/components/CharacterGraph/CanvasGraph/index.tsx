@@ -419,18 +419,6 @@ export const CharacterGraphCanvas = forwardRef<
           : link.relationTypes || [link.type as string];
 
         // [Debug] Check incoming link data for Radar Chart Attributes
-        console.log("Clicked Link Data for Analysis:", {
-          source: sourceChar.profile.name,
-          target: targetChar.profile.name,
-          link: link,
-          attributes: {
-            emotionalBond: link.emotionalBond,
-            functionalTrust: link.functionalTrust,
-            interdependence: link.interdependence,
-            latentTension: link.latentTension,
-            valueAlignment: link.valueAlignment,
-          },
-        });
 
         // If parent provides onLinkClick, delegate to parent (avoid duplicate modal)
         if (onLinkClick) {
@@ -448,7 +436,6 @@ export const CharacterGraphCanvas = forwardRef<
             events,
             link.description,
           );
-          console.log("[DeepAnalysis] Data generated:", analysisData);
           setDeepAnalysisData(analysisData);
           setHoveredLink(null); // Close tooltip
         } catch (error) {
