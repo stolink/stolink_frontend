@@ -66,7 +66,7 @@ export default function WorldPage() {
   // [Fix] Defined early to avoid ReferenceError in useProjectAnalysis callback or useEffect deps
   const links: RelationshipLink[] = useRelationshipLinks(
     characters,
-    projectEvents
+    projectEvents,
   );
 
   // Snapshot Ref for diff calculation
@@ -87,14 +87,14 @@ export default function WorldPage() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
-  const [isDebugAnalyzing, setIsDebugAnalyzing] = useState(false);
+  const [isDebugAnalyzing, _setIsDebugAnalyzing] = useState(false);
 
   // 관계 상세 분석 모달 상태
   const [relationshipAnalysisData, setRelationshipAnalysisData] =
     useState<RelationshipDeepAnalysisData | null>(null);
   const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [pendingHighlightNames, setPendingHighlightNames] = useState<string[]>(
-    []
+    [],
   );
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
@@ -109,7 +109,7 @@ export default function WorldPage() {
     currentJobType,
     flushAndAnalyze,
   } = useProjectAnalysis(projectId ?? null, {
-    onAnalysisComplete: (result) => {
+    onAnalysisComplete: (_result) => {
       // guard: Check acknowledgement
       if (
         projectId &&
@@ -119,11 +119,6 @@ export default function WorldPage() {
       }
       // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
       setShowCompletionAnimation(true);
-
-      console.group("🏁 Analysis Complete Visualization");
-      console.log("📥 Raw Analysis Result:", result);
-      console.log("📸 Snapshot stored:", snapshotRef.current);
-      console.groupEnd();
 
       // Trigger waiting state for data refresh
       // Diff calculation will happen in useEffect once data is updated
@@ -135,10 +130,9 @@ export default function WorldPage() {
   useEffect(() => {
     if (projectId) {
       const pendingView = sessionStorage.getItem(
-        `analysis_pending_view_${projectId}`
+        `analysis_pending_view_${projectId}`,
       );
       if (pendingView === "true") {
-        console.log("📬 Found pending analysis view from Editor");
         sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
         // Trigger the completion flow immediately
         setTimeout(() => setIsWaitingForRefresh(true), 0);
@@ -155,7 +149,6 @@ export default function WorldPage() {
     if (isPolling) return;
 
     // Capture Snapshot before starting
-    console.log("📸 Capturing Snapshot for Diff...");
     const snapshot = {
       characters: [...characters],
       links: [...links], // links are derived, but capturing current state is safe
@@ -166,7 +159,7 @@ export default function WorldPage() {
     try {
       sessionStorage.setItem(
         `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot)
+        JSON.stringify(snapshot),
       );
       // Reset flags for new session
       sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
@@ -214,11 +207,10 @@ export default function WorldPage() {
       if (!prev && projectId) {
         try {
           const stored = sessionStorage.getItem(
-            `analysis_snapshot_${projectId}`
+            `analysis_snapshot_${projectId}`,
           );
           if (stored) {
             prev = JSON.parse(stored);
-            console.log("📦 Restored Snapshot from SessionStorage");
           }
         } catch (e) {
           console.error("Failed to restore snapshot from storage", e);
@@ -233,19 +225,12 @@ export default function WorldPage() {
       const currentChars = characters;
       const currentLinks = links;
 
-      console.log("🔄 Calculating Snapshot Diff...", {
-        prevChars: prev.characters.length,
-        nextChars: currentChars.length,
-      });
-
       const diff = calculateDiffFromSnapshot(
         prev.characters,
         prev.links,
         currentChars,
-        currentLinks
+        currentLinks,
       );
-
-      console.log("📉 Snapshot Diff Result:", diff);
 
       // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
       setTimeout(() => {
@@ -279,7 +264,7 @@ export default function WorldPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   // 그래프 하이라이팅용 경량 상태 (즉시 반응)
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
@@ -316,7 +301,7 @@ export default function WorldPage() {
             if (pendingHighlightNames.includes(c.profile.name)) {
               // Check if it's new or updated (heuristic: if it was in diff.newCharacters)
               const isNew = analysisDiff?.newCharacters.some(
-                (nc) => nc.profile.name === c.profile.name
+                (nc) => nc.profile.name === c.profile.name,
               );
               newChanges[c._id] = isNew ? "new" : "updated";
             }
@@ -346,41 +331,7 @@ export default function WorldPage() {
   // Global Keyboard Shortcuts (Cmd+K for Debug Analysis, ESC for Clear)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K (Meta+K or Ctrl+K) - Trigger Debug Analysis
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-
-        // Prevent multiple triggers
-        if (isDebugAnalyzing || showCompletionAnimation || isAnalysisModalOpen)
-          return;
-
-        console.log("🛠️ Debug Analysis Triggered");
-        setIsDebugAnalyzing(true);
-
-        // 1. Simulate Analysis Phase (3s)
-        setTimeout(() => {
-          setIsDebugAnalyzing(false);
-          setShowCompletionAnimation(true);
-
-          // Generate Mock Diff
-          const mockDiff: AnalysisDiff = {
-            newCharacters: [],
-            updatedCharacters: [],
-            newRelations: [],
-            updatedRelations: [],
-            removedRelations: [],
-          };
-
-          setAnalysisDiff(mockDiff);
-
-          // 2. Simulate Success Phase (1.5s) -> Open Modal
-          setTimeout(() => {
-            setShowCompletionAnimation(false);
-            setIsAnalysisModalOpen(true);
-          }, 1500);
-        }, 3000);
-        return;
-      }
+      // Removed Debug Analysis Trigger (Cmd+K)
 
       if (e.key === "Escape") {
         // startTransition으로 비긴급 업데이트 처리 (INP 개선)
@@ -470,7 +421,7 @@ export default function WorldPage() {
       link.relationTypes || [link.type],
       link.strength || 5,
       projectEvents,
-      link.description
+      link.description,
     );
 
     setRelationshipAnalysisData(analysisData);
@@ -510,13 +461,6 @@ export default function WorldPage() {
             >
               <Sparkles className="h-3.5 w-3.5" />
               복선
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="debug"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs border border-transparent data-[state=inactive]:text-mocha-300 data-[state=inactive]:hover:text-mocha-500 transition-all opacity-50"
-            >
-              DEBUG
             </TabsTrigger>
           </TabsList>
         </div>
@@ -589,7 +533,7 @@ export default function WorldPage() {
                           "text-mocha-500",
                           !showCompletionAnimation &&
                             !isStuck &&
-                            "animate-pulse"
+                            "animate-pulse",
                         )}
                       >
                         {showCompletionAnimation
@@ -875,7 +819,7 @@ export default function WorldPage() {
             if (projectId) {
               sessionStorage.setItem(
                 `analysis_acknowledged_${projectId}`,
-                "true"
+                "true",
               );
             }
           }}

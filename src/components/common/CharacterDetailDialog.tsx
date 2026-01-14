@@ -99,29 +99,6 @@ export default function CharacterDetailDialog({
     ? editedCharacter
     : (fetchedChar ?? character);
 
-  // [Debug] Check if data contains imageUrl
-  useEffect(() => {
-    if (isOpen) {
-      console.log("[DetailDialog] Data Trace:", {
-        isEditMode,
-        hasEditedChar: !!editedCharacter,
-        propId: character?._id,
-        propImage: character?.imageUrl,
-        fetchedId: fetchedChar?._id,
-        fetchedImage: fetchedChar?.imageUrl,
-        displayImage: displayCharacter?.imageUrl,
-        appearance: displayCharacter?.appearance,
-      });
-    }
-  }, [
-    isOpen,
-    character,
-    fetchedChar,
-    displayCharacter,
-    isEditMode,
-    editedCharacter,
-  ]);
-
   // Image generation polling
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
@@ -233,10 +210,6 @@ export default function CharacterDetailDialog({
       // If the incoming image is different (e.g. newly generated), update editedCharacter
       setEditedCharacter((prev) =>
         prev ? { ...prev, imageUrl: newImage } : prev,
-      );
-      console.log(
-        "[DetailDialog] Synced NEW image to editedCharacter:",
-        newImage,
       );
     }
   }, [
@@ -448,19 +421,7 @@ export default function CharacterDetailDialog({
       const effectiveProjectId =
         targetChar?.projectId || projectIdOverride || propProjectId;
 
-      console.log("[handleConfirmImageGeneration] Effective IDs:", {
-        characterProjectId: targetChar?.projectId,
-        projectIdOverride,
-        propProjectId,
-        effectiveProjectId,
-      });
-
       if (!targetChar?._id || !effectiveProjectId) {
-        console.error("[ImageGeneration] Missing character ID or project ID", {
-          targetChar,
-          effectiveProjectId,
-          propProjectId,
-        });
         toast({
           variant: "destructive",
           title: "오류",
@@ -541,13 +502,6 @@ export default function CharacterDetailDialog({
         // Get character data to sync with backend during generation
         const characterData = getCleanPayload();
 
-        console.log("[CharacterDetailDialog] Generating image with payload:", {
-          effectiveProjectId,
-          targetId: targetChar._id,
-          cleanSetting,
-          characterDataJson: JSON.stringify(characterData, null, 2),
-        });
-
         const { jobId } = await imageService.generateCharacterImage(
           effectiveProjectId,
           targetChar._id,
@@ -623,31 +577,6 @@ export default function CharacterDetailDialog({
   const handleOpenImageGeneration = useCallback(() => {
     const targetChar = displayCharacter || character;
 
-    console.log("[handleOpenImageGeneration] Called with:", {
-      propProjectId,
-      displayCharacter: displayCharacter
-        ? {
-            _id: displayCharacter._id,
-            projectId: displayCharacter.projectId,
-            name: displayCharacter.profile?.name,
-          }
-        : null,
-      character: character
-        ? {
-            _id: character._id,
-            projectId: character.projectId,
-            name: character.profile?.name,
-          }
-        : null,
-      targetChar: targetChar
-        ? {
-            _id: targetChar._id,
-            projectId: targetChar.projectId,
-            name: targetChar.profile?.name,
-          }
-        : null,
-    });
-
     // Validation: Check if character has enough info (Name + at least 2 traits)
     if (!validateImageGeneration()) {
       toast({
@@ -671,12 +600,7 @@ export default function CharacterDetailDialog({
   ]);
 
   const handleSave = useCallback(async () => {
-    console.log("[DetailDialog] handleSave CLICKED");
     if (!editedCharacter || !character?._id) {
-      console.warn("[DetailDialog] handleSave - Missing data", {
-        editedCharacter,
-        characterId: character?._id,
-      });
       return;
     }
 
@@ -692,25 +616,17 @@ export default function CharacterDetailDialog({
 
     try {
       const cleanPayload = getCleanPayload();
-      console.log("[DetailDialog] handleSave - Start", {
-        characterId: character._id,
-        payload: cleanPayload,
-        propProjectId,
-      });
 
       if (!cleanPayload) {
-        console.warn("[DetailDialog] handleSave - No payload, skipping mutate");
         return;
       }
 
       // 1. Call Backend API to update character
       // Mutation hook now handles cache update (immediate) and delayed refetch (safe)
-      console.log("[DetailDialog] handleSave - Calling mutateAsync...");
-      const response = await updateCharacter.mutateAsync({
+      await updateCharacter.mutateAsync({
         id: character._id,
         payload: cleanPayload,
       });
-      console.log("[DetailDialog] handleSave - Mutate Success:", response);
 
       toast({
         variant: "success",
@@ -760,7 +676,6 @@ export default function CharacterDetailDialog({
     updateCharacter,
     toast,
     getCleanPayload,
-    propProjectId,
   ]);
 
   const handleFieldChange = useCallback(

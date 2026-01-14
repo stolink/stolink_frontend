@@ -24,5 +24,22 @@ export const resolveImageUrl = (
     }
   }
 
+  // Production: Ensure protocol is present for domain-based URLs
+  // Backend might return URLs without protocol like "dev.stolink.link/media/..."
+  if (
+    !url.startsWith("http://") &&
+    !url.startsWith("https://") &&
+    !url.startsWith("/")
+  ) {
+    // Check if it looks like a domain (contains a dot before the first slash)
+    const firstSlash = url.indexOf("/");
+    const hasDot = url
+      .substring(0, firstSlash === -1 ? url.length : firstSlash)
+      .includes(".");
+    if (hasDot) {
+      return `https://${url}`;
+    }
+  }
+
   return url;
 };
