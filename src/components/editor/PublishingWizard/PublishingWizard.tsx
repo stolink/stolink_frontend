@@ -19,8 +19,12 @@ import { ConfirmationStep } from "./ConfirmationStep";
 import type { DocumentItem } from "./SortableDocumentItem";
 import { draftService } from "@/services/draftService";
 import { useToast } from "@/hooks/useToast";
+import { useProjectEvents } from "@/hooks/useEvents";
 import type { Character } from "@/types/character";
 import { COMMUNITY_URL } from "@/config";
+// 심층 분석 데이터 생성 함수 및 타입 import
+import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
+import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
 
 interface PublishingWizardProps {
   isOpen: boolean;
@@ -63,6 +67,7 @@ export function PublishingWizard({
   links = [],
 }: PublishingWizardProps) {
   const { toast } = useToast();
+  const { data: allEvents = [] } = useProjectEvents(projectId);
 
   // 폴더 제외, 콘텐츠가 있는 문서만 필터링
   const documents: DocumentItem[] = useMemo(() => {
@@ -129,7 +134,7 @@ export function PublishingWizard({
   // === 그래프 스냅샷 생성 ===
   const createGraphSnapshot = () => {
     if (!includeCharacters && !includeGraph) {
-      return { nodes: [], links: [], profiles: {} };
+      return { nodes: [], links: [], profiles: {}, relationshipAnalysis: {} };
     }
 
     const nodes = characters.map((c) => ({
@@ -183,10 +188,48 @@ export function PublishingWizard({
       ]),
     );
 
+    // === 관계별 심층 분석 데이터 생성 (storead 연동용) ===
+    // link.id를 기본 키로 사용하여 키 충돌 방지
+    // keyMap: source-target 조합으로 link.id를 조회할 수 있는 매핑 테이블
+    const relationshipAnalysis: Record<
+      string,
+      RelationshipDeepAnalysisData & { _linkId: string }
+    > = {};
+    const keyMap: Record<string, string> = {}; // "source-target" -> linkId 매핑
+
+    if (includeGraph && characters.length > 0) {
+      links.forEach((link) => {
+        const sourceChar = characters.find((c) => c._id === link.source);
+        const targetChar = characters.find((c) => c._id === link.target);
+
+        if (sourceChar && targetChar) {
+          const linkId = String(link.id);
+          const analysisData = generateAnalysisData(
+            sourceChar,
+            targetChar,
+            [link.type],
+            link.strength,
+            allEvents, // 로드된 프로젝트 전체 이벤트 주입
+            sourceChar.relations?.graph?.find((r) => r.target === link.target)
+              ?.description,
+          );
+
+          // link.id를 기본 키로 저장 (충돌 방지)
+          relationshipAnalysis[linkId] = { ...analysisData, _linkId: linkId };
+
+          // 양방향 조회용 키 매핑 (source-target, target-source 모두 같은 linkId 참조)
+          keyMap[`${link.source}-${link.target}`] = linkId;
+          keyMap[`${link.target}-${link.source}`] = linkId;
+        }
+      });
+    }
+
     return {
       nodes: includeGraph ? nodes : [],
       links: includeGraph ? graphLinks : [],
       profiles: includeCharacters ? profiles : {},
+      relationshipAnalysis: includeGraph ? relationshipAnalysis : {},
+      relationshipKeyMap: includeGraph ? keyMap : {}, // 양방향 조회용 키 매핑
     };
   };
 
