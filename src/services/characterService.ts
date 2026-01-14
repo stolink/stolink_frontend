@@ -426,15 +426,11 @@ export const characterService = {
   },
 
   update: async (id: string, payload: UpdateCharacterInput) => {
-    console.log(`[characterService] PATCH /characters/${id}`, payload);
     const response = await api.patch<ApiResponse<Record<string, unknown>>>(
       `/characters/${id}`,
       payload,
     );
-    console.log(
-      `[characterService] PATCH /characters/${id} Response:`,
-      response.data,
-    );
+
     return {
       ...response.data,
       data: transformBackendCharacter(response.data.data as BackendCharacter),
