@@ -94,12 +94,10 @@ export default function CharacterDetailDialog({
   });
 
   // 화면에 표시할 최종 캐릭터 데이터 (수정모드 > 페치가 완료된 데이터 > props 데이터)
-  // [Fix] fetchedChar가 있으나 imageUrl이 없는 경우(백엔드 지연) props의 데이터를 우선하여 이미지 표시 보장
+  // [Fix] fetchedChar가 있으면 우선 사용 (imageUrl 유무와 관계없이 전체 데이터 활용)
   const displayCharacter = isEditMode
     ? editedCharacter
-    : fetchedChar?.imageUrl
-      ? fetchedChar
-      : character;
+    : (fetchedChar ?? character);
 
   // [Debug] Check if data contains imageUrl
   useEffect(() => {

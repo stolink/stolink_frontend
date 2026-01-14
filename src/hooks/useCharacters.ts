@@ -19,7 +19,7 @@ export const characterKeys = {
  */
 export function useCharacters(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: characterKeys.list(projectId),
@@ -37,17 +37,13 @@ export function useCharacters(
       });
     },
     enabled: options?.enabled !== false && !!projectId,
-    staleTime: 5000, // 5s stale time to prevent immediate refetch overwriting optimistic updates
   });
 }
 
 /**
  * Hook for fetching single character
  */
-export function useCharacter(
-  id: string,
-  options?: { enabled?: boolean; staleTime?: number }
-) {
+export function useCharacter(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: characterKeys.detail(id),
     queryFn: async () => {
@@ -55,7 +51,6 @@ export function useCharacter(
       return response.data;
     },
     enabled: options?.enabled !== false && !!id,
-    staleTime: options?.staleTime ?? 3000, // Default 3s stale time to prevent immediate refetch overwrite
   });
 }
 
@@ -95,31 +90,35 @@ export function useUpdateCharacter() {
       id: string;
       payload: Partial<CreateCharacterInput>;
     }) => characterService.update(id, payload),
-    onSuccess: (data, variables) => {
-      // 1. Update Detail Cache immediately with response data
-      if (data && data.data) {
-        queryClient.setQueryData(characterKeys.detail(variables.id), data.data);
+    onMutate: async ({ id, payload }) => {
+      // Cancel outgoing refetches to prevent overwrites
+      await queryClient.cancelQueries({ queryKey: characterKeys.detail(id) });
+      const previous = queryClient.getQueryData(characterKeys.detail(id));
 
-        // 2. Update List Cache immediately (Optimistic UI)
-        // We iterate over all list queries to find and update the character
-        // This works even if the backend response doesn't include projectId
-        queryClient.setQueriesData(
-          { queryKey: characterKeys.lists() },
-          (old: Character[] | undefined) => {
-            if (!old) return old;
-            return old.map((char) =>
-              char._id === variables.id ? { ...char, ...data.data } : char
-            );
-          }
+      // Optimistic update - immediately reflect in UI
+      queryClient.setQueryData(
+        characterKeys.detail(id),
+        (old: Character | undefined) => (old ? { ...old, ...payload } : old),
+      );
+
+      return { previous, id };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(
+          characterKeys.detail(context.id),
+          context.previous,
         );
       }
-
-      // 3. Invalidate lists immediately as well (backup)
-      // Note: We do NOT invalidate 'detail' immediately to prevent race conditions
-      // where a fast refetch gets stale data from DB before it's fully consistent.
-      // We rely on setQueryData above for the detail view, and the delayed invalidation in onSettled.
-      // We also keep list invalidation for safety, but the setQueriesData above gives instant feedback.
-      queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
+    },
+    onSuccess: (data, variables) => {
+      // Update Detail Cache immediately with response data
+      // This prevents "flicker" where UI shows old data waiting for refetch
+      // Note: We do NOT update list cache here to prevent graph reset
+      if (data && data.data) {
+        queryClient.setQueryData(characterKeys.detail(variables.id), data.data);
+      }
     },
     onSettled: (_data, _error, { id }) => {
       // 4. Delayed Invalidation for Eventual Consistency (Neo4j propagation safety)
