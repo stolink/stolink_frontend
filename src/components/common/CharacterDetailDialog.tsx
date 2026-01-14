@@ -31,13 +31,12 @@ import {
   useCharacter,
   useUpdateCharacter,
   useCharacters,
-  characterKeys,
 } from "@/hooks/useCharacters";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import { useImageGenerationPolling } from "@/hooks/useImageGenerationPolling";
 import { imageService, settingService, type ProjectSetting } from "@/services";
 import { useToast } from "@/hooks/useToast";
-import { useQueryClient } from "@tanstack/react-query"; // Added useQueryClient
+// Removed useQueryClient to satisfy lint
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@stolink/ui";
@@ -79,7 +78,7 @@ export default function CharacterDetailDialog({
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
-    null
+    null,
   );
   const [activeTab, setActiveTab] = useState("overview"); // Tab state management
   const [imageJobId, setImageJobId] = useState<string | null>(null);
@@ -129,11 +128,11 @@ export default function CharacterDetailDialog({
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Unused, removing to satisfy lint
 
   // Watch for global image job completion
   const isGlobalAnalyzing = useAnalysisBufferStore(
-    (state) => state.isAnalyzing
+    (state) => state.isAnalyzing,
   );
 
   // Image generation polling
@@ -163,7 +162,7 @@ export default function CharacterDetailDialog({
     });
 
   const currentJobType = useAnalysisBufferStore(
-    (state) => state.currentJobType
+    (state) => state.currentJobType,
   );
 
   // If we have a local imageJobId but global analysis stopped (and it was our job), it means it's done.
@@ -182,7 +181,7 @@ export default function CharacterDetailDialog({
 
   // Track previous character ID for detecting changes
   const [prevCharacterId, setPrevCharacterId] = useState<string | undefined>(
-    character?._id
+    character?._id,
   );
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
@@ -235,18 +234,18 @@ export default function CharacterDetailDialog({
     ) {
       // If the incoming image is different (e.g. newly generated), update editedCharacter
       setEditedCharacter((prev) =>
-        prev ? { ...prev, imageUrl: newImage } : prev
+        prev ? { ...prev, imageUrl: newImage } : prev,
       );
       console.log(
         "[DetailDialog] Synced NEW image to editedCharacter:",
-        newImage
+        newImage,
       );
     }
   }, [
     fetchedChar?.imageUrl,
     character?.imageUrl,
     isEditMode,
-    editedCharacter?.imageUrl,
+    editedCharacter, // Corrected dependency
   ]);
 
   // Effect to recover background job if dialog reopens with same character
@@ -264,7 +263,7 @@ export default function CharacterDetailDialog({
   }, [isOpen, character?._id, imageJobId]);
 
   const { traits, relationships } = useCharacterData(
-    displayCharacter // displayCharacter 사용
+    displayCharacter, // displayCharacter 사용
   );
 
   // 캐릭터의 이벤트(일대기) 조회
@@ -272,7 +271,7 @@ export default function CharacterDetailDialog({
     displayCharacter?._id ?? null,
     {
       enabled: !!displayCharacter?._id && isOpen,
-    }
+    },
   );
 
   // 프론트엔드 필터링: 백엔드가 모든 이벤트를 반환하는 경우 대비
@@ -292,7 +291,7 @@ export default function CharacterDetailDialog({
     displayCharacter?.projectId ?? "",
     {
       enabled: !!displayCharacter?.projectId && isOpen,
-    }
+    },
   );
 
   // ID -> Name 매핑 생성
@@ -318,7 +317,7 @@ export default function CharacterDetailDialog({
             // Deduplicate and filter valid settings to prevent key collisions
             const validSettings = res.data.filter((s) => s && s.id);
             const uniqueSettings = Array.from(
-              new Map(validSettings.map((s) => [s.id, s])).values()
+              new Map(validSettings.map((s) => [s.id, s])).values(),
             );
             setSettings(uniqueSettings);
           }
@@ -367,7 +366,7 @@ export default function CharacterDetailDialog({
     const {
       _id,
       projectId: charProjectId,
-      meta,
+      meta: _meta,
       ...basePayload
     } = editedCharacter;
     const cleanPayload =
@@ -436,14 +435,14 @@ export default function CharacterDetailDialog({
     }
 
     return cleanPayload;
-  }, [editedCharacter, sanitizeValue]);
+  }, [editedCharacter, sanitizeValue, propProjectId]);
 
   const handleConfirmImageGeneration = useCallback(
     async (
       action: "create" | "edit",
       projectIdOverride?: string,
       _promptOverride?: string,
-      settingOverride?: Record<string, unknown>
+      settingOverride?: Record<string, unknown>,
     ) => {
       // Use displayCharacter which has the latest data from API
       const targetChar = displayCharacter || character;
@@ -484,7 +483,7 @@ export default function CharacterDetailDialog({
         }
         if (targetChar?.appearance?.hairColor) {
           parts.push(
-            `Hair: ${targetChar.appearance.hairColor} ${targetChar.appearance.hairStyle}`
+            `Hair: ${targetChar.appearance.hairColor} ${targetChar.appearance.hairStyle}`,
           );
         }
         if (targetChar?.appearance?.eyes) {
@@ -532,7 +531,7 @@ export default function CharacterDetailDialog({
         const cleanSetting = selectedSetting
           ? {
               visual_background: String(
-                selectedSetting.visual_background || ""
+                selectedSetting.visual_background || "",
               ),
               atmosphere: String(selectedSetting.atmosphere || ""),
               lighting: String(selectedSetting.lighting || ""),
@@ -558,7 +557,7 @@ export default function CharacterDetailDialog({
           generatedPrompt,
           cleanSetting, // Pass clean setting as 5th arg (replaces raw object)
           cleanSetting, // Pass same clean object as 6th arg (for root-level backward compat)
-          (characterData as Record<string, unknown>) || undefined
+          (characterData as Record<string, unknown>) || undefined,
         );
 
         setImageJobId(jobId);
@@ -586,7 +585,7 @@ export default function CharacterDetailDialog({
       toast,
       setGlobalJobId,
       getCleanPayload,
-    ]
+    ],
   );
 
   const handleEdit = useCallback(() => {
@@ -726,7 +725,7 @@ export default function CharacterDetailDialog({
         !isEqual(character?.appearance, editedCharacter.appearance) ||
         !isEqual(
           character?.personality?.coreTraits,
-          editedCharacter.personality?.coreTraits
+          editedCharacter.personality?.coreTraits,
         ) ||
         character?.profile?.name !== editedCharacter.profile?.name;
 
@@ -763,6 +762,7 @@ export default function CharacterDetailDialog({
     updateCharacter,
     toast,
     getCleanPayload,
+    propProjectId,
   ]);
 
   const handleFieldChange = useCallback(
@@ -791,7 +791,7 @@ export default function CharacterDetailDialog({
         return result;
       });
     },
-    []
+    [],
   );
 
   const handleAppearanceChange = useCallback(
@@ -807,7 +807,7 @@ export default function CharacterDetailDialog({
         };
       });
     },
-    []
+    [],
   );
 
   if (!character) {
@@ -984,7 +984,7 @@ export default function CharacterDetailDialog({
                             className="bg-paper border-cloud-200 hover:border-primary/40 transition-colors"
                             value={manualPrompt}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) => setManualPrompt(e.target.value)}
                           />
                         </div>
@@ -1054,7 +1054,7 @@ export default function CharacterDetailDialog({
                                   >
                                     #{trait}
                                   </span>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -1104,11 +1104,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.occupation || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.occupation",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -1129,11 +1129,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.birthplace || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.birthplace",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -1154,11 +1154,11 @@ export default function CharacterDetailDialog({
                           <Input
                             value={displayCharacter.profile.family || ""}
                             onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
+                              e: React.ChangeEvent<HTMLInputElement>,
                             ) =>
                               handleFieldChange(
                                 "profile.family",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"

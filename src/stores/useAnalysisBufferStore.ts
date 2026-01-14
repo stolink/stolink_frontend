@@ -67,13 +67,13 @@ interface AnalysisBufferStore {
   setJobId: (
     id: string | null,
     type?: "analysis" | "image",
-    targetId?: string | null
+    targetId?: string | null,
   ) => void;
   addJobId: (
     projectId: string,
     id: string,
     type?: "analysis" | "image",
-    targetId?: string | null
+    targetId?: string | null,
   ) => void;
   removeJobId: (projectId: string, id: string) => void;
   setLastAnalyzedHashes: (hashes: Record<string, string>) => void;
@@ -144,7 +144,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         set((state) => {
           // 같은 문서의 이전 청크가 있으면 교체 (덮어쓰기)
           const existingIndex = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId
+            (chunk) => chunk.documentId === documentId,
           );
 
           if (existingIndex >= 0) {
@@ -174,7 +174,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       removeFromBuffer: (documentId) => {
         set((state) => {
           const index = state.buffer.findIndex(
-            (chunk) => chunk.documentId === documentId
+            (chunk) => chunk.documentId === documentId,
           );
           if (index >= 0) {
             state.bufferCharCount -= state.buffer[index].charCount;
@@ -256,7 +256,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           }
 
           console.log(
-            `[useAnalysisBufferStore] addJobId: ${id} (type: ${type}) for project ${projectId}`
+            `[useAnalysisBufferStore] addJobId: ${id} (type: ${type}) for project ${projectId}`,
           );
           state.currentJobId = id;
           state.currentJobType = type;
@@ -270,14 +270,14 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           // activeJobs에서 제거
           if (state.activeJobs[projectId]) {
             console.log(
-              `[useAnalysisBufferStore] removeJobId: ${id} from project ${projectId}`
+              `[useAnalysisBufferStore] removeJobId: ${id} from project ${projectId}`,
             );
             state.activeJobs[projectId] = state.activeJobs[projectId].filter(
-              (jobId) => jobId !== id
+              (jobId) => jobId !== id,
             );
             if (state.activeJobs[projectId].length === 0) {
               console.log(
-                `[useAnalysisBufferStore] All jobs cleared for project ${projectId}`
+                `[useAnalysisBufferStore] All jobs cleared for project ${projectId}`,
               );
               delete state.activeJobs[projectId];
               if (state.currentJobId === id) {
@@ -291,7 +291,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
                   state.activeJobs[projectId].length - 1
                 ];
               console.log(
-                `[useAnalysisBufferStore] Switched currentJobId to ${state.currentJobId}`
+                `[useAnalysisBufferStore] Switched currentJobId to ${state.currentJobId}`,
               );
             }
           }
@@ -311,7 +311,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       clearJobs: (projectId) => {
         set((state) => {
           console.log(
-            `[useAnalysisBufferStore] clearJobs for project ${projectId}`
+            `[useAnalysisBufferStore] clearJobs for project ${projectId}`,
           );
           delete state.activeJobs[projectId];
           delete state.activeAnalysisJobs[projectId];
@@ -328,7 +328,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       clearAnalysisJobs: (projectId) => {
         set((state) => {
           console.log(
-            `[useAnalysisBufferStore] clearAnalysisJobs for project ${projectId}`
+            `[useAnalysisBufferStore] clearAnalysisJobs for project ${projectId}`,
           );
           // 이미지 작업 등 다른 작업은 유지하고 분석 작업만 제거
           delete state.activeAnalysisJobs[projectId];
@@ -450,16 +450,18 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         pendingDocuments: state.pendingDocuments,
       }),
       // 기존 저장 상태에 새 필드가 없을 때 기본값 적용
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...((persistedState ?? {}) as object),
-        // 새로 추가된 필드들에 기본값 보장
-        activeAnalysisJobs:
-          (persistedState as Record<string, unknown>)?.activeAnalysisJobs ??
-          currentState.activeAnalysisJobs,
-      }),
-    }
-  )
+      merge: (persistedState, currentState) => {
+        const ps = persistedState as Partial<AnalysisBufferStore> | null;
+        return {
+          ...currentState,
+          ...(ps || {}),
+          // Ensure new fields have defaults if missing in older persisted state
+          activeAnalysisJobs:
+            ps?.activeAnalysisJobs ?? currentState.activeAnalysisJobs,
+        } as AnalysisBufferStore;
+      },
+    },
+  ),
 );
 
 // 설정 상수 export (테스트 및 UI 표시용)

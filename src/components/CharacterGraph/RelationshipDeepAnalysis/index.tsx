@@ -3,7 +3,7 @@
 // 캐릭터 관계 심층 분석 메인 모달 컴포넌트
 // =====================================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -36,7 +36,9 @@ export function RelationshipDeepAnalysisModal({
   // Reset loading state when modal opens with new data
   useEffect(() => {
     if (isOpen) {
-      setIsShaderReady(false);
+      startTransition(() => {
+        setIsShaderReady(false);
+      });
     }
   }, [isOpen, data?.sourceCharacter.id, data?.targetCharacter.id]);
 
@@ -78,7 +80,7 @@ export function RelationshipDeepAnalysisModal({
                 className={cn(
                   "fixed left-0 top-0 z-[151]",
                   "w-full h-full",
-                  "flex items-center justify-center p-4 md:p-8"
+                  "flex items-center justify-center p-4 md:p-8",
                 )}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}

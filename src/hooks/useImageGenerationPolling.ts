@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJobPolling } from "./useJobPolling";
 import { characterKeys } from "./useCharacters";
+import type { Character } from "@/types";
 import {
   imageService,
   type ImageGenerationResult,
@@ -33,7 +34,7 @@ interface UseImageGenerationPollingResult {
 export function useImageGenerationPolling(
   jobId: string | null,
   characterId: string,
-  options: UseImageGenerationPollingOptions = {}
+  options: UseImageGenerationPollingOptions = {},
 ): UseImageGenerationPollingResult {
   const queryClient = useQueryClient();
   const { enabled = true, onComplete, onError, onTimeout } = options;
@@ -50,26 +51,33 @@ export function useImageGenerationPolling(
         : `${result.imageUrl}?t=${timestamp}`;
 
       // 1. Update Detail Cache immediately
-      queryClient.setQueryData(characterKeys.detail(characterId), (old: any) =>
-        old ? { ...old, imageUrl: newImageUrl } : old
+      queryClient.setQueryData(
+        characterKeys.detail(characterId),
+        (old: unknown) => {
+          const char = old as Character | undefined;
+          return char ? { ...char, imageUrl: newImageUrl } : char;
+        },
       );
 
       // Fuzzy update all detail queries
       queryClient.setQueriesData(
         { queryKey: characterKeys.details() },
-        (old: any) =>
-          old && old._id === characterId
-            ? { ...old, imageUrl: newImageUrl }
-            : old
+        (old: unknown) => {
+          const char = old as Character | undefined;
+          return char && char._id === characterId
+            ? { ...char, imageUrl: newImageUrl }
+            : char;
+        },
       );
 
       // 2. Update List Cache immediately (Iterate all lists)
       queryClient.setQueriesData(
         { queryKey: characterKeys.lists() },
-        (old: any[] | undefined) => {
-          if (!old) return old;
+        (old: unknown) => {
+          const list = old as Character[] | undefined;
+          if (!list) return list;
           let matchCount = 0;
-          const result = old.map((char) => {
+          const result = list.map((char) => {
             if (char._id === characterId) {
               matchCount++;
               return { ...char, imageUrl: newImageUrl };
@@ -77,10 +85,10 @@ export function useImageGenerationPolling(
             return char;
           });
           console.log(
-            `[Polling] List Cache Update in progress. Matches found: ${matchCount} for ID: ${characterId}`
+            `[Polling] List Cache Update in progress. Matches found: ${matchCount} for ID: ${characterId}`,
           );
           return result;
-        }
+        },
       );
 
       console.log("[Polling] Manual Cache Update Executed. URL:", newImageUrl);
@@ -92,7 +100,7 @@ export function useImageGenerationPolling(
       // Call user's onComplete callback
       onComplete?.(result.imageUrl);
     },
-    [characterId, queryClient, onComplete]
+    [characterId, queryClient, onComplete],
   );
 
   // Use generic job polling hook with image-specific typing
@@ -107,7 +115,7 @@ export function useImageGenerationPolling(
         onComplete: handleComplete,
         onError,
         onTimeout,
-      }
+      },
     );
 
   return {

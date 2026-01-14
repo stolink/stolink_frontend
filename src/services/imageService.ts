@@ -35,7 +35,7 @@ export const imageService = {
       time_of_day?: string;
       art_style?: string;
     },
-    characterData?: Record<string, unknown>
+    characterData?: Record<string, unknown>,
   ): Promise<{ jobId: string; status: string }> => {
     const response = await api.post<
       | { data: { jobId: string; status?: string } }
@@ -72,7 +72,7 @@ export const imageService = {
    * @returns Job status with image generation result
    */
   getImageJobStatus: async (
-    jobId: string
+    jobId: string,
   ): Promise<JobResponse<ImageGenerationResult>> => {
     let response;
     let retries = 10;
@@ -91,7 +91,7 @@ export const imageService = {
         // If 404, the job might not be indexed yet, retry
         if (axiosError.response?.status === 404 && retries > 1) {
           console.warn(
-            `[ImageService] Job ${jobId} not found yet. Retrying... (${retries} attempts left)`
+            `[ImageService] Job ${jobId} not found yet. Retrying... (${retries} attempts left)`,
           );
           await new Promise((resolve) => setTimeout(resolve, 2000));
           retries--;
@@ -137,8 +137,12 @@ export const imageService = {
       status: (rawData.status.toLowerCase() ||
         "pending") as JobResponse<ImageGenerationResult>["status"],
       progress: rawData.progress || 0,
-      message: rawData.message || (rawData as any).errorMessage,
-      error: rawData.error || (rawData as any).errorMessage,
+      message:
+        rawData.message ||
+        ((rawData as Record<string, unknown>).errorMessage as string),
+      error:
+        rawData.error ||
+        ((rawData as Record<string, unknown>).errorMessage as string),
       createdAt:
         rawData.createdAt || rawData.created_at || new Date().toISOString(),
       updatedAt:

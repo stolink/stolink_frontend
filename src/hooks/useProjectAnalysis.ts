@@ -43,7 +43,7 @@ interface UseProjectAnalysisReturn {
 
 export function useProjectAnalysis(
   projectId: string | null,
-  options: UseProjectAnalysisOptions = {}
+  options: UseProjectAnalysisOptions = {},
 ): UseProjectAnalysisReturn {
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
   const queryClient = useQueryClient();
@@ -71,40 +71,40 @@ export function useProjectAnalysis(
   const setProjectId = useAnalysisBufferStore((state) => state.setProjectId);
 
   const setBufferAnalyzing = useAnalysisBufferStore(
-    (state) => state.setAnalyzing
+    (state) => state.setAnalyzing,
   );
   const getBufferSummary = useAnalysisBufferStore(
-    (state) => state.getBufferSummary
+    (state) => state.getBufferSummary,
   );
   const currentJobId = useAnalysisBufferStore((state) => state.currentJobId);
   const currentJobType = useAnalysisBufferStore(
-    (state) => state.currentJobType
+    (state) => state.currentJobType,
   );
   // setJobId removed (unused)
   const setGlobalProgress = useAnalysisBufferStore(
-    (state) => state.setProgress
+    (state) => state.setProgress,
   );
   const setLastAnalyzedHashes = useAnalysisBufferStore(
-    (state) => state.setLastAnalyzedHashes
+    (state) => state.setLastAnalyzedHashes,
   );
   const isAnalyzing = useAnalysisBufferStore((state) => state.isAnalyzing);
   const resetAnalysis = useAnalysisBufferStore((state) => state.resetAnalysis);
   const lastConsistencyReport = useAnalysisBufferStore(
-    (state) => state.lastConsistencyReport
+    (state) => state.lastConsistencyReport,
   );
   const activeJobs = useAnalysisBufferStore((state) => state.activeJobs);
   const activeAnalysisJobs = useAnalysisBufferStore(
-    (state) => state.activeAnalysisJobs
+    (state) => state.activeAnalysisJobs,
   );
   const addStoreJobId = useAnalysisBufferStore((state) => state.addJobId);
   const removeStoreJobId = useAnalysisBufferStore((state) => state.removeJobId);
   const clearStoreJobs = useAnalysisBufferStore((state) => state.clearJobs);
   const clearAnalysisJobs = useAnalysisBufferStore(
-    (state) => state.clearAnalysisJobs
+    (state) => state.clearAnalysisJobs,
   );
 
   const [jobProgresses, setJobProgresses] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const lastResultRef = useRef<AnalysisResultData | null>(null);
 
@@ -178,14 +178,14 @@ export function useProjectAnalysis(
     } else {
       console.log(
         "[useProjectAnalysis] Skipping completion callback for non-analysis job type:",
-        activeType
+        activeType,
       );
     }
 
     // 3. Cache Invalidation (Common or specific)
     if (projectId) {
       console.log(
-        `[useProjectAnalysis] Invalidating queries for project ${projectId}`
+        `[useProjectAnalysis] Invalidating queries for project ${projectId}`,
       );
       // Always invalidate character list as both jobs might affect it
       queryClient.invalidateQueries({
@@ -225,7 +225,7 @@ export function useProjectAnalysis(
 
     // 모든 분석 완료 처리 (자동 재분석은 사용자 요청 시에만 수행하도록 루프 제거)
     console.log(
-      "[useProjectAnalysis] Analysis flow complete, resetting finalizing state"
+      "[useProjectAnalysis] Analysis flow complete, resetting finalizing state",
     );
     setBufferAnalyzing(false);
     setAnalysisProgress(100);
@@ -315,7 +315,7 @@ export function useProjectAnalysis(
 
     console.log("[useProjectAnalysis] checkProjectJobStatus effect triggered");
     checkProjectJobStatus();
-  }, [projectId, enabled, addStoreJobId, clearStoreJobs]);
+  }, [projectId, enabled, addStoreJobId, clearStoreJobs, clearAnalysisJobs]);
 
   // Note: SSE connection is managed by useJobSSE hook, so cleanup is handled there.
 
@@ -345,13 +345,13 @@ export function useProjectAnalysis(
           if (currentAnalysisJobs.length === 1) {
             eventJobId = currentAnalysisJobs[0];
             console.log(
-              `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`
+              `[useProjectAnalysis] Using fallback jobId: ${eventJobId}`,
             );
           }
         }
 
         console.log(
-          `[useProjectAnalysis] Received event: ${event.type || event.status} for job ${eventJobId}`
+          `[useProjectAnalysis] Received event: ${event.type || event.status} for job ${eventJobId}`,
         );
         if (!eventJobId) return;
 
@@ -383,18 +383,18 @@ export function useProjectAnalysis(
                   await aiService.getJobStatus<AnalysisResultData>(eventJobId);
                 console.log(
                   `[useProjectAnalysis] 100% Progress API Response for ${eventJobId}:`,
-                  job
+                  job,
                 );
                 result = job.result!;
               } catch (err) {
                 console.error(
                   "[useProjectAnalysis] Error fetching job result on 100% progress:",
-                  err
+                  err,
                 );
               }
             } else if (isImageJob) {
               console.log(
-                `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`
+                `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`,
               );
             }
 
@@ -427,21 +427,21 @@ export function useProjectAnalysis(
                 await aiService.getJobStatus<AnalysisResultData>(eventJobId);
               console.log(
                 `[useProjectAnalysis] Completion API Response for ${eventJobId}:`,
-                job
+                job,
               );
               result = job.result!;
               console.log(
-                `[useProjectAnalysis] Fetched result for job ${eventJobId} via API`
+                `[useProjectAnalysis] Fetched result for job ${eventJobId} via API`,
               );
             } catch (err) {
               console.error(
                 "[useProjectAnalysis] Error fetching job result on completion:",
-                err
+                err,
               );
             }
           } else if (isImageJob) {
             console.log(
-              `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`
+              `[useProjectAnalysis] Skipping result fetch for Image Job ${eventJobId}`,
             );
           }
 
@@ -456,7 +456,7 @@ export function useProjectAnalysis(
         } else if (eventType === "failed" || eventType === "error") {
           console.error(
             `[useProjectAnalysis] Job ${eventJobId} FAILED:`,
-            event.message || "Unknown error"
+            event.message || "Unknown error",
           );
           setAnalysisError(event.message || "분석 중 오류가 발생했습니다.");
           setBufferAnalyzing(false);
@@ -471,7 +471,7 @@ export function useProjectAnalysis(
         setBufferAnalyzing(false);
         onErrorRef.current?.(err);
       },
-    }
+    },
   );
 
   // 전역 진행률 계산
@@ -480,7 +480,7 @@ export function useProjectAnalysis(
     const currentActiveJobIds = projectId ? activeJobs[projectId] || [] : [];
     const totalProgress = currentActiveJobIds.reduce(
       (sum, jobId) => sum + (jobProgresses[jobId] || 0),
-      0
+      0,
     );
 
     if (currentActiveJobIds.length === 0) {
@@ -655,7 +655,7 @@ export function useProjectAnalysis(
           error instanceof Error ? error.message : "Analysis request failed";
         console.error(
           `Failed to analyze document ${chunk.documentId}:`,
-          errorMsg
+          errorMsg,
         );
         errors.push(errorMsg);
 

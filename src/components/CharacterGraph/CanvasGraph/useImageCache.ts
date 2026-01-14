@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import type { Character } from "@/types";
 
 /**
@@ -48,7 +48,7 @@ export function useImageCache(characters: Character[]) {
           };
 
           img.src = imageUrl;
-        })
+        }),
       );
     });
 
@@ -60,10 +60,12 @@ export function useImageCache(characters: Character[]) {
       });
     } else if (newCache.size > 0) {
       // 이미 모든 이미지가 캐시되어 있었던 경우에도 동기화가 필요할 수 있음
-      setCache((prev) => {
-        const next = new Map(prev);
-        newCache.forEach((v, k) => next.set(k, v));
-        return next;
+      startTransition(() => {
+        setCache((prev) => {
+          const next = new Map(prev);
+          newCache.forEach((v, k) => next.set(k, v));
+          return next;
+        });
       });
     }
   }, [characters]);
