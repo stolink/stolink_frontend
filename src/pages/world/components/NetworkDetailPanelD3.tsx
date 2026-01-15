@@ -147,168 +147,167 @@ export function NetworkDetailPanelD3({
         </div>
       </div>
 
-      {/* Stats with Icons & Gradient */}
-      <div className="px-5 py-4 border-b border-cloud-50">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
-            <div className="flex items-center gap-2 mb-2">
-              <Network className="h-4 w-4 text-mocha-500" />
-              <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
-                관계 인물
-              </span>
+      {/* Connected Characters */}
+      <ScrollArea className="flex-1">
+        {/* Stats with Icons & Gradient */}
+        <div className="px-5 py-4 border-b border-cloud-50">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <Network className="h-4 w-4 text-mocha-500" />
+                <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
+                  관계 인물
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-espresso-900">
+                {connectedLinks.length}
+              </div>
             </div>
-            <div className="text-2xl font-bold text-espresso-900">
-              {connectedLinks.length}
+            <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-mocha-500" />
+                <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
+                  등장 횟수
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-espresso-900">-</div>
             </div>
-          </div>
-          <div className="p-4 bg-cloud-50 border border-cloud-100 rounded-xl group hover:border-mocha-200 transition-all">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-mocha-500" />
-              <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-widest">
-                등장 횟수
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-espresso-900">-</div>
           </div>
         </div>
-      </div>
 
-      {/* Soul Inspector Section (Premium) */}
-      <div className="px-5 py-5 border-b border-cloud-50 space-y-5 bg-gradient-to-b from-cloud-50/30 to-white">
-        {(() => {
-          const personality =
-            displayCharacter.profile?.personality ||
-            displayCharacter.personality;
-          const traits = [
-            ...(Array.isArray(personality?.coreTraits)
-              ? personality.coreTraits
-              : []),
-            ...(Array.isArray(personality?.values) ? personality.values : []),
-          ];
-          const mood = displayCharacter.currentMood;
-          const archetypeSelection =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (displayCharacter as any).archetype || "Unknown";
+        {/* Soul Inspector Section (Premium) */}
+        <div className="px-5 py-5 border-b border-cloud-50 space-y-5 bg-gradient-to-b from-cloud-50/30 to-white">
+          {(() => {
+            const personality =
+              displayCharacter.profile?.personality ||
+              displayCharacter.personality;
+            const traits = [
+              ...(Array.isArray(personality?.coreTraits)
+                ? personality.coreTraits
+                : []),
+              ...(Array.isArray(personality?.values) ? personality.values : []),
+            ];
+            const mood = displayCharacter.currentMood;
+            const archetypeSelection =
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (displayCharacter as any).archetype || "Unknown";
 
-          return (
-            <>
-              {/* Mental State & Emotion Glow */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Activity className="w-3 h-3 text-mocha-400" />
-                    심리 상태 (Soul State)
-                  </h4>
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] font-bold px-2 py-0 h-5 bg-white border-cloud-200"
-                  >
-                    {archetypeSelection}
-                  </Badge>
-                </div>
-
-                <div className="relative p-3 rounded-xl border border-cloud-100 bg-white shadow-sm overflow-hidden">
-                  {/* Background Mood Color Glow */}
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 w-16 h-16 blur-2xl opacity-20 transition-all duration-1000",
-                      {
-                        "bg-emerald-400":
-                          !mood?.emotion ||
-                          mood.emotion === "Happy" ||
-                          mood.emotion === "Calm",
-                        "bg-rose-400":
-                          mood?.emotion === "Angry" ||
-                          mood?.emotion === "Hostile",
-                        "bg-blue-400": mood?.emotion === "Sad",
-                        "bg-amber-400":
-                          mood?.emotion === "Anxious" ||
-                          mood?.emotion === "Fear",
-                      },
-                    )}
-                  />
-
-                  <div className="flex items-center justify-between relative z-10">
-                    <span className="text-sm font-semibold text-espresso-700">
-                      {mood?.emotion || "평온함"}
-                    </span>
-                    <span className="text-[10px] text-espresso-400 font-medium">
-                      강도: {mood?.intensity || 5}/10
-                    </span>
+            return (
+              <>
+                {/* Mental State & Emotion Glow */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Activity className="w-3 h-3 text-mocha-400" />
+                      심리 상태 (Soul State)
+                    </h4>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] font-bold px-2 py-0 h-5 bg-white border-cloud-200"
+                    >
+                      {archetypeSelection}
+                    </Badge>
                   </div>
-                  <div className="mt-2 h-1 w-full bg-cloud-50 rounded-full overflow-hidden relative z-10">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(mood?.intensity || 5) * 10}%` }}
+
+                  <div className="relative p-3 rounded-xl border border-cloud-100 bg-white shadow-sm overflow-hidden">
+                    {/* Background Mood Color Glow */}
+                    <div
                       className={cn(
-                        "h-full rounded-full transition-all duration-700",
+                        "absolute top-0 right-0 w-16 h-16 blur-2xl opacity-20 transition-all duration-1000",
                         {
-                          "bg-emerald-500":
+                          "bg-emerald-400":
                             !mood?.emotion ||
                             mood.emotion === "Happy" ||
                             mood.emotion === "Calm",
-                          "bg-rose-500":
+                          "bg-rose-400":
                             mood?.emotion === "Angry" ||
                             mood?.emotion === "Hostile",
-                          "bg-blue-500": mood?.emotion === "Sad",
-                          "bg-amber-500":
+                          "bg-blue-400": mood?.emotion === "Sad",
+                          "bg-amber-400":
                             mood?.emotion === "Anxious" ||
                             mood?.emotion === "Fear",
                         },
                       )}
                     />
+
+                    <div className="flex items-center justify-between relative z-10">
+                      <span className="text-sm font-semibold text-espresso-700">
+                        {mood?.emotion || "평온함"}
+                      </span>
+                      <span className="text-[10px] text-espresso-400 font-medium">
+                        강도: {mood?.intensity || 5}/10
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1 w-full bg-cloud-50 rounded-full overflow-hidden relative z-10">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(mood?.intensity || 5) * 10}%` }}
+                        className={cn(
+                          "h-full rounded-full transition-all duration-700",
+                          {
+                            "bg-emerald-500":
+                              !mood?.emotion ||
+                              mood.emotion === "Happy" ||
+                              mood.emotion === "Calm",
+                            "bg-rose-500":
+                              mood?.emotion === "Angry" ||
+                              mood?.emotion === "Hostile",
+                            "bg-blue-500": mood?.emotion === "Sad",
+                            "bg-amber-500":
+                              mood?.emotion === "Anxious" ||
+                              mood?.emotion === "Fear",
+                          },
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Core Traits & Values */}
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Brain className="w-3 h-3 text-mocha-400" />
-                  핵심 기질 & 가치관
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {traits.length > 0 ? (
-                    traits.slice(0, 6).map((trait: string, i: number) => (
-                      <motion.span
-                        key={i}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="px-2.5 py-1 bg-white border border-cloud-200 rounded-lg text-[11px] text-espresso-600 font-medium shadow-sm active:shadow-none transition-shadow"
-                      >
-                        {trait}
-                      </motion.span>
-                    ))
-                  ) : (
-                    <div className="w-full py-4 text-center border border-dashed border-cloud-300 rounded-xl">
-                      <p className="text-[10px] text-espresso-400">
-                        학습된 성격 데이터가 없습니다
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Character Motive / Secret (if available) */}
-              {displayCharacter.motivation && (
-                <div className="p-3 bg-mocha-50/30 border border-mocha-100 rounded-xl relative overflow-hidden group">
-                  <h4 className="text-[9px] font-bold text-mocha-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    행동 동기
+                {/* Core Traits & Values */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-extrabold text-espresso-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Brain className="w-3 h-3 text-mocha-400" />
+                    핵심 기질 & 가치관
                   </h4>
-                  <p className="text-xs text-mocha-700 leading-relaxed italic line-clamp-2">
-                    "{displayCharacter.motivation}"
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {traits.length > 0 ? (
+                      traits.slice(0, 6).map((trait: string, i: number) => (
+                        <motion.span
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="px-2.5 py-1 bg-white border border-cloud-200 rounded-lg text-[11px] text-espresso-600 font-medium shadow-sm active:shadow-none transition-shadow"
+                        >
+                          {trait}
+                        </motion.span>
+                      ))
+                    ) : (
+                      <div className="w-full py-4 text-center border border-dashed border-cloud-300 rounded-xl">
+                        <p className="text-[10px] text-espresso-400">
+                          학습된 성격 데이터가 없습니다
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </>
-          );
-        })()}
-      </div>
 
-      {/* Connected Characters */}
-      <ScrollArea className="flex-1">
+                {/* Character Motive / Secret (if available) */}
+                {displayCharacter.motivation && (
+                  <div className="p-3 bg-mocha-50/30 border border-mocha-100 rounded-xl relative overflow-hidden group">
+                    <h4 className="text-[9px] font-bold text-mocha-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      행동 동기
+                    </h4>
+                    <p className="text-xs text-mocha-700 leading-relaxed italic line-clamp-2">
+                      "{displayCharacter.motivation}"
+                    </p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
         <div className="p-5">
           <h4 className="editorial-section-heading text-xs mb-4">
             <Users className="h-4 w-4 text-primary/70" />
