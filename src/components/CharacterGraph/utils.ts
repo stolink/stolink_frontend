@@ -39,28 +39,33 @@ export function generateLinksFromCharacters(
       normalized.includes("brother") ||
       normalized.includes("sister") ||
       normalized.includes("parent") ||
+      normalized.includes("relative")
+    ) {
+      return "family";
+    }
+    if (
       normalized.includes("mentor") ||
       normalized.includes("teacher") ||
       normalized.includes("student") ||
       normalized.includes("master")
     ) {
-      return "friendly";
+      return "mentor";
     }
 
     // 갈등 관계
     if (normalized.includes("rival")) {
-      return "hostile";
+      return "rival";
     }
     if (
       normalized.includes("hostile") ||
       normalized.includes("enemy") ||
       normalized.includes("antagonist")
     ) {
-      return "hostile";
+      return "enemy";
     }
 
     // 나머지는 우호/협력 관계
-    return "friendly";
+    return "ally";
   };
 
   characters.forEach((sourceChar) => {
@@ -136,7 +141,8 @@ export function getRelationshipColor(
     return RELATION_PALETTE.complex.standard;
   }
 
-  const palette = RELATION_PALETTE[type];
+  const normalizedType = type?.toLowerCase() as UIRelationType;
+  const palette = RELATION_PALETTE[normalizedType];
   if (!palette) return "#9ca3af"; // Default gray
 
   return palette.standard;
@@ -147,69 +153,20 @@ export function getRelationshipMetaCategory(type: UIRelationType): string {
 }
 
 // =====================================================
-// 🔍 검색 유틸리티 (초성 검색 지원)
+// 🔍 검색 유틸리티 (초성 검색 + 띄어쓰기 무시 지원)
 // =====================================================
 
-/** 한글 초성 배열 */
-const CHOSUNG = [
-  "ㄱ",
-  "ㄲ",
-  "ㄴ",
-  "ㄷ",
-  "ㄸ",
-  "ㄹ",
-  "ㅁ",
-  "ㅂ",
-  "ㅃ",
-  "ㅅ",
-  "ㅆ",
-  "ㅇ",
-  "ㅈ",
-  "ㅉ",
-  "ㅊ",
-  "ㅋ",
-  "ㅌ",
-  "ㅍ",
-  "ㅎ",
-];
+import { matchKorean } from "@/lib/korean-search";
 
 /**
- * 한글 문자열에서 초성만 추출합니다.
- * 예: "장발장" → "ㅈㅂㅈ"
- */
-export function getChosung(str: string): string {
-  return str
-    .split("")
-    .map((char) => {
-      const code = char.charCodeAt(0) - 44032;
-      // 한글 범위가 아니면 원문자 반환
-      if (code < 0 || code > 11171) return char;
-      return CHOSUNG[Math.floor(code / 588)];
-    })
-    .join("");
-}
-
-/**
- * Fuzzy 검색 + 초성 검색을 지원하는 매칭 함수
+ * Fuzzy 검색 + 초성 검색을 지원하는 매칭 함수 (Wrapper)
  * @param name 검색 대상 이름
  * @param query 검색어
  * @returns 매칭 여부
  */
 export function matchesSearch(name: string, query: string): boolean {
-  if (!query.trim()) return true;
-
-  const lowerName = name.toLowerCase();
-  const lowerQuery = query.toLowerCase();
-
-  // 1. 일반 포함 검색
-  if (lowerName.includes(lowerQuery)) return true;
-
-  // 2. 초성 검색 (query가 한글인 경우)
-  const nameChosung = getChosung(name);
-  const queryChosung = getChosung(query);
-  if (nameChosung.includes(queryChosung)) return true;
-
-  return false;
+  // Use shared robust utility
+  return matchKorean(name, query);
 }
 
 // =====================================================

@@ -6,10 +6,15 @@ import type { CharacterRole } from "@/types";
 
 // UI에서 사용하는 관계 타입
 export type UIRelationType =
-  | "friendly"
-  | "hostile"
-  | "romantic"
+  | "ally"
+  | "enemy"
+  | "rival"
   | "family"
+  | "betrayed"
+  | "knows"
+  | "protects"
+  | "mentor"
+  | "romantic"
   | "neutral"
   | "complex";
 
@@ -19,22 +24,38 @@ export type UIRelationType =
  */
 export function toUIRelationType(type: string): UIRelationType {
   const normalized = type.toLowerCase();
+  // Direct mapping if it matches known types
+  const knownTypes: UIRelationType[] = [
+    "ally",
+    "enemy",
+    "rival",
+    "family",
+    "betrayed",
+    "knows",
+    "protects",
+    "mentor",
+    "romantic",
+    "neutral",
+    "complex",
+  ];
+
+  if (knownTypes.includes(normalized as UIRelationType)) {
+    return normalized as UIRelationType;
+  }
+
   const mapping: Record<string, UIRelationType> = {
-    // UI types (direct mapping)
-    friendly: "friendly",
-    hostile: "hostile",
-    romantic: "romantic",
-    family: "family",
-    neutral: "neutral",
-    complex: "complex",
-    // Backend types (uppercase)
-    ally: "friendly",
-    enemy: "hostile",
-    rival: "hostile",
-    mentor: "family",
-    master_servant: "neutral",
-    coworker: "neutral",
-    classmate: "friendly",
+    // Legacy/Alternative mappings
+    friendly: "ally",
+    hostile: "enemy",
+    master_servant: "mentor",
+    coworker: "ally",
+    classmate: "knows",
+    love: "romantic",
+    crush: "romantic",
+    sibling: "family",
+    parent: "family",
+    child: "family",
+    relative: "family",
   };
   return mapping[normalized] || "neutral";
 }
@@ -60,84 +81,167 @@ export const META_CATEGORY_COLORS = {
 
 // 관계 타입별 메타 카테고리 매핑
 export const RELATION_TO_META_CATEGORY: Record<UIRelationType, MetaCategory> = {
-  friendly: "positive",
+  ally: "positive",
   romantic: "positive",
   family: "positive",
-  hostile: "negative",
+  protects: "positive",
+  mentor: "positive",
+  enemy: "negative",
+  rival: "negative",
+  betrayed: "negative",
   neutral: "neutral",
+  knows: "neutral",
   complex: "neutral",
 };
 
 // 관계 타입별 HEX 색상 (메타 카테고리 기반 재정의)
 export const RELATION_COLORS_HEX = {
-  // Positive Group (Green/Blue)
-  friendly: "#15803D", // Standard Green
-  romantic: "#DB2777", // Pink via Tokens (Updated from Emerald)
-  family: "#4F5861", // Blue/Gray via Tokens
+  // Positive Group
+  ally: "#10B981", // Emerald 500 (Trust)
+  romantic: "#EC4899", // Pink 500 (Love)
+  family: "#0D9488", // Teal 600 (Firm Bond - Updated from Indigo)
+  protects: "#0EA5E9", // Sky 500 (Shield)
+  mentor: "#F59E0B", // Amber 500 (Wisdom/Light)
 
-  // Negative Group (Red/Orange)
-  hostile: "#E11D48", // Red via Tokens
+  // Negative Group
+  enemy: "#EF4444", // Red 500 (Danger)
+  rival: "#F97316", // Orange 500 (Competition)
+  betrayed: "#BE123C", // Rose 700 (Deep Blood/Scar - Updated from Violet)
 
   // Neutral/Complex
-  neutral: "#9CA3AF", // Gray
-  complex: "#7C3AED", // Violet (Super Edge)
+  neutral: "#94A3B8", // Slate 400 (Background)
+  knows: "#A1A1AA", // Zinc 400 (Faint)
+  complex: "#7C3AED", // Violet 600 (Mystery - Kept distinct)
 } as const;
+
+// 관계 타입별 우선순위 (시각적 지배력)
+// 낮을수록 우선순위 높음 (1 = Top Priority)
+export const RELATION_PRIORITY: Record<UIRelationType, number> = {
+  // Critical / Danger (Red/Rose) - Must be seen first
+  betrayed: 1,
+  enemy: 2,
+
+  // Special / Deep (Teal/Pink)
+  family: 3,
+  romantic: 4,
+
+  // Active / Competition (Orange/Emerald)
+  rival: 5,
+  ally: 6,
+
+  // Passive / Support (Amber/Sky)
+  mentor: 7,
+  protects: 8,
+
+  // Neutral / Weak (Gray/Purple)
+  complex: 9,
+  knows: 10,
+  neutral: 11,
+};
 
 // 관계 타입별 색상 팔레트 (Meta-Category 색조 준수)
 export const RELATION_PALETTE: Record<
   UIRelationType,
   { weak: string; standard: string; deep: string }
 > = {
-  friendly: {
-    weak: "#86EFAC", // Green 300
-    standard: RELATION_COLORS_HEX.friendly,
-    deep: "#14532D", // Green 900
+  ally: {
+    weak: "#6EE7B7",
+    standard: RELATION_COLORS_HEX.ally,
+    deep: "#065F46",
   },
   romantic: {
-    weak: "#F472B6", // Pink 400
+    weak: "#F9A8D4",
     standard: RELATION_COLORS_HEX.romantic,
-    deep: "#831843", // Pink 900
+    deep: "#831843",
   },
   family: {
-    weak: "#94A3B8", // Slate 400
+    weak: "#5EEAD4",
     standard: RELATION_COLORS_HEX.family,
-    deep: "#1E293B", // Slate 800
+    deep: "#134E4A",
+  }, // Teal variations
+  protects: {
+    weak: "#7DD3FC",
+    standard: RELATION_COLORS_HEX.protects,
+    deep: "#0C4A6E",
   },
-  hostile: {
-    weak: "#FCA5A5", // Red 300
-    standard: RELATION_COLORS_HEX.hostile,
-    deep: "#7F1D1D", // Red 900
+  mentor: {
+    weak: "#FCD34D",
+    standard: RELATION_COLORS_HEX.mentor,
+    deep: "#78350F",
   },
+  enemy: {
+    weak: "#FCA5A5",
+    standard: RELATION_COLORS_HEX.enemy,
+    deep: "#7F1D1D",
+  },
+  rival: {
+    weak: "#FDBA74",
+    standard: RELATION_COLORS_HEX.rival,
+    deep: "#7C2D12",
+  },
+  betrayed: {
+    weak: "#FDA4AF",
+    standard: RELATION_COLORS_HEX.betrayed,
+    deep: "#881337",
+  }, // Rose variations
   neutral: {
-    weak: "#D1D5DB", // Gray 300
+    weak: "#CBD5E1",
     standard: RELATION_COLORS_HEX.neutral,
-    deep: "#374151", // Gray 700
+    deep: "#475569",
+  },
+  knows: {
+    weak: "#E4E4E7",
+    standard: RELATION_COLORS_HEX.knows,
+    deep: "#52525B",
   },
   complex: {
-    weak: "#A78BFA", // Violet 400
+    weak: "#C4B5FD",
     standard: RELATION_COLORS_HEX.complex,
-    deep: "#4C1D95", // Violet 900
+    deep: "#5B21B6",
   },
 };
 
 // 관계 타입별 기본 색상 (Standard 기준)
 export const RELATION_COLORS: Record<UIRelationType, string> = {
-  friendly: RELATION_COLORS_HEX.friendly,
-  hostile: RELATION_COLORS_HEX.hostile,
-  romantic: RELATION_COLORS_HEX.romantic,
+  ally: RELATION_COLORS_HEX.ally,
+  enemy: RELATION_COLORS_HEX.enemy,
+  rival: RELATION_COLORS_HEX.rival,
   family: RELATION_COLORS_HEX.family,
+  betrayed: RELATION_COLORS_HEX.betrayed,
+  knows: RELATION_COLORS_HEX.knows,
+  protects: RELATION_COLORS_HEX.protects,
+  mentor: RELATION_COLORS_HEX.mentor,
+  romantic: RELATION_COLORS_HEX.romantic,
   neutral: RELATION_COLORS_HEX.neutral,
   complex: RELATION_COLORS_HEX.complex,
 };
 
-// 관계 타입별 라벨 (한글)
-// 관계 타입별 라벨 (한글)
+// 관계 타입별 배지 스타일 (Tailwind Classes)
+export const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
+  ally: "bg-emerald-500 text-white border-emerald-500",
+  enemy: "bg-rose-500 text-white border-rose-500",
+  rival: "bg-orange-500 text-white border-orange-500",
+  family: "bg-teal-600 text-white border-teal-600",
+  betrayed: "bg-rose-700 text-white border-rose-700",
+  knows: "bg-stone-400 text-white border-stone-400",
+  protects: "bg-sky-500 text-white border-sky-500",
+  mentor: "bg-amber-500 text-white border-amber-500",
+  romantic: "bg-pink-400 text-white border-pink-400",
+  neutral: "bg-slate-400 text-white border-slate-400",
+  complex: "bg-purple-500 text-white border-purple-500",
+};
+
 // 관계 타입별 라벨 (한글)
 export const RELATION_LABELS: Record<UIRelationType, string> = {
-  friendly: "우호",
-  hostile: "적대",
-  romantic: "로맨스",
+  ally: "동맹",
+  enemy: "적대",
+  rival: "라이벌",
   family: "가족",
+  betrayed: "배신",
+  knows: "안면",
+  protects: "보호",
+  mentor: "멘토",
+  romantic: "로맨스",
   neutral: "중립",
   complex: "복합",
 };
@@ -224,25 +328,49 @@ export const FORCE_CONFIG = {
   // Friendly = Short & Rigid (Clump together)
   // Hostile = Long & Strong (Force apart)
   dynamic: {
-    friendly: {
-      distance: 80, // Very Short (Tight cluster)
-      strength: 0.9, // Almost rigid
+    ally: {
+      distance: 80,
+      strength: 0.9,
     },
-    hostile: {
-      distance: 260, // Further reduced by 1/3 (from 400)
-      strength: 0.2, // Further reduced by 1/3 (from 0.3)
+    mentor: {
+      distance: 90,
+      strength: 0.8,
+    },
+    protects: {
+      distance: 70,
+      strength: 0.9,
+    },
+    family: {
+      distance: 60,
+      strength: 0.95,
+    },
+    romantic: {
+      distance: 50,
+      strength: 0.95,
+    },
+    knows: {
+      distance: 220,
+      strength: 0.2,
     },
     neutral: {
       distance: 200,
       strength: 0.3,
     },
-    family: {
-      distance: 60, // Extremely close
-      strength: 0.95,
+    rival: {
+      distance: 180, // Closer than enemy
+      strength: 0.4,
     },
-    romantic: {
-      distance: 50, // Intimate
-      strength: 0.95,
+    enemy: {
+      distance: 300,
+      strength: 0.15, // Push away hard
+    },
+    betrayed: {
+      distance: 250,
+      strength: 0.2,
+    },
+    complex: {
+      distance: 150,
+      strength: 0.5,
     },
   },
 
@@ -301,22 +429,32 @@ export const ANIMATION = {
 // =====================================================
 
 export const RELATION_ANGLES: Record<string, number> = {
-  friendly: 90, // 위 (Emerald)
-  romantic: 150, // 10시 (Pink)
-  family: 210, // 7시 (Blue)
-  hostile: 0, // 오른쪽 (Red)
-  neutral: 270, // 아래 (Gray)
-  complex: 45, // 1시 (Violet)
+  ally: 90, // UP
+  mentor: 45, // UP-RIGHT
+  protects: 135, // UP-LEFT
+  family: 210, // BOTTOM-LEFT (Firm)
+  romantic: 150,
+  knows: 270,
+  neutral: 270,
+  rival: 30, // Slight aggression
+  enemy: 0, // RIGHT (Opposing?) - Actually D3 force doesn't use angle directly usually, but for positioning
+  betrayed: 330,
+  complex: 45,
 };
 
 export const SEMANTIC_FORCE_CONFIG = {
   // 관계별 가중치 (양수: 인력, 음수: 척력)
   relationWeights: {
-    friendly: 1.5,
-    romantic: 2.0,
+    ally: 1.5,
+    protects: 1.8,
+    mentor: 1.6,
     family: 1.2,
-    hostile: -0.7, // Further reduced by 1/3 (from -1.0)
+    romantic: 2.0,
+    knows: 0.3,
     neutral: 0.5,
+    rival: -0.2, // Slight competition
+    enemy: -0.8, // Strong repulsion
+    betrayed: -0.5,
     complex: 0.3,
   } as Record<string, number>,
   defaultRepulsion: -1.0,

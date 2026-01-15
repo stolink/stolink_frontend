@@ -54,6 +54,7 @@ interface AnalysisBufferStore {
   lastAnalyzedHashes: Record<string, string>; // documentId -> contentHash
   pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 분석 결과 (일관성 리포트)
+  processedConflicts: Record<string, "resolved" | "ignored" | "deleted">; // 처리된 이슈 관리
 
   // 액션
   setProjectId: (projectId: string | null) => void;
@@ -87,6 +88,12 @@ interface AnalysisBufferStore {
   clearJobs: (projectId: string) => void;
   // 분석 작업만 제거 (이미지 생성 유지)
   clearAnalysisJobs: (projectId: string) => void;
+  // 이슈 상태 관리
+  markConflictStatus: (
+    id: string,
+    status: "resolved" | "ignored" | "deleted",
+  ) => void;
+  clearProcessedConflicts: () => void;
   // 강제 초기화
   resetAnalysis: () => void;
 
@@ -112,6 +119,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       lastAnalyzedHashes: {},
       pendingDocuments: {}, // 분석 요청된 문서 트래킹
       lastConsistencyReport: null,
+      processedConflicts: {},
 
       setProjectId: (projectId) => {
         set((state) => {
@@ -121,6 +129,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.buffer = [];
             state.bufferCharCount = 0;
             state.lastConsistencyReport = null; // 프로젝트 변경 시 리포트 초기화
+            state.processedConflicts = {}; // 프로젝트 변경 시 초기화
             // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
 
             if (projectId && state.activeJobs[projectId]?.length > 0) {
@@ -353,6 +362,16 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           state.pendingDocuments = {};
         });
       },
+      markConflictStatus: (id, status) => {
+        set((state) => {
+          state.processedConflicts[id] = status;
+        });
+      },
+      clearProcessedConflicts: () => {
+        set((state) => {
+          state.processedConflicts = {};
+        });
+      },
 
       resetAnalysis: () => {
         set((state) => {
@@ -431,6 +450,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         lastAnalyzedHashes: state.lastAnalyzedHashes,
         pendingDocuments: state.pendingDocuments,
         lastConsistencyReport: state.lastConsistencyReport,
+        processedConflicts: state.processedConflicts,
       }),
       // 기존 저장 상태에 새 필드가 없을 때 기본값 적용
       merge: (persistedState, currentState) => {

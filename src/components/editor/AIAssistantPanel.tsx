@@ -1,18 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Send,
-  Square,
   RotateCcw,
   Sparkles,
   Network,
+  CheckCircle2,
   Quote,
   ChevronDown,
   ChevronUp,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@stolink/ui";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { resolveImageUrl } from "@/utils/imageUtils";
 import {
   useChatStream,
   type SourceChunk,
@@ -20,15 +18,25 @@ import {
 } from "@/hooks/useChatStream";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useUIStore } from "@/stores/useUIStore";
+import { useCharacters } from "@/hooks/useCharacters";
+import { useProjectEvents } from "@/hooks/useEvents";
+import { AIChatInput, type AIChatInputRef } from "./AIChatInput";
+
+import type { ConsistencyReport } from "@/types/analysisResult";
+import type { Character } from "@/types/character";
+
 interface AIAssistantPanelProps {
   projectId: string | null;
+  consistencyReport?: ConsistencyReport | null;
 }
 
-export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
-  const [input, setInput] = useState("");
+export default function AIAssistantPanel({
+  projectId,
+  consistencyReport,
+}: AIAssistantPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+  const chatInputRef = useRef<AIChatInputRef>(null);
   const {
     messages,
     streaming,
@@ -41,13 +49,14 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     resetSession,
     loadHistory,
     clearAnalysisComplete,
+    loadHistory,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
     },
   });
 
-  // 페이지 진입 시 히스토리 로드
+  // 초기 히스토리 로드
   useEffect(() => {
     if (projectId) {
       loadHistory(projectId);
@@ -60,7 +69,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   // 분석 완료 시 애니메이션 트리거
   useEffect(() => {
     if (analysisComplete) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line
       setShowCompleteAnimation(true);
       // 0.8초 후 애니메이션 숨기고 응답 표시
       const timer = setTimeout(() => {
@@ -76,49 +85,69 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, currentResponse]);
 
-  const handleSend = async () => {
-    if (!input.trim() || streaming) return;
+  // InsightsPanel 등에서 넘어온 자동 발송 메시지 처리
+  const pendingMessage = useUIStore((state) => state.pendingAIChatMessage);
+  const setPendingMessage = useUIStore(
+    (state) => state.setPendingAIChatMessage,
+  );
+
+  useEffect(() => {
+    if (!pendingMessage || streaming) {
+      return;
+    }
+
+    // Attempt to set input. We use a short delay to ensure editor is hydrated.
+    const timer = setTimeout(() => {
+      if (chatInputRef.current) {
+        const success = chatInputRef.current.setInput(pendingMessage);
+        if (success) {
+          setPendingMessage(null);
+          chatInputRef.current.focus();
+        }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [pendingMessage, streaming, setPendingMessage]);
+
+  const handleSend = async (
+    message: string,
+    contextData: Record<string, unknown>,
+  ) => {
+    if (!message.trim() || streaming) return;
 
     if (!projectId) {
       console.warn("projectId가 없습니다.");
       return;
     }
 
-    const message = input;
-    setInput("");
-    await sendMessage(message, projectId);
+    await sendMessage(message, projectId, contextData);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // Tag Suggestion Data Sources
+  const { data: characters } = useCharacters(projectId ?? "");
+  const { data: events } = useProjectEvents(projectId);
 
   return (
-    <div className="flex flex-col h-full bg-[#FBFBF9] relative font-sans overflow-hidden">
+    <div className="flex flex-col h-full bg-cloud-50/30 relative overflow-hidden">
       {/* Header with refined Identity */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mocha-100/40 bg-white/60 backdrop-blur-md sticky top-0 z-20 shrink-0 shadow-sm">
-        <div className="flex flex-col select-none cursor-default group">
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-display font-bold tracking-tight text-espresso-900 leading-none">
-              Check
-            </span>
-            <span className="text-xs font-sans font-black tracking-[0.2em] text-mocha-400 uppercase leading-none opacity-80 group-hover:text-mocha-600 transition-colors">
-              bot
-            </span>
+      <div className="h-[52px] px-4 flex items-center justify-between border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-mocha-100 rounded-lg">
+            <Sparkles className="w-3.5 h-3.5 text-mocha-700" />
           </div>
-          <div className="mt-1.5 h-[3px] w-6 bg-mocha-200 group-hover:w-10 transition-all duration-500 rounded-full" />
+          <div>
+            <h3 className="text-sm font-bold text-espresso-900">Check-Bot</h3>
+          </div>
         </div>
         <Button
           intent="ghost"
           size="icon"
           onClick={() => resetSession(projectId ?? undefined)}
-          className="h-9 w-9 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-xl"
+          className="h-8 w-8 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-lg"
           title="새 대화 시작"
         >
-          <RotateCcw className="h-4.5 w-4.5" />
+          <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
 
@@ -147,8 +176,8 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                 >
                   <Network className="w-24 h-24 text-mocha-400" />
                 </motion.div>
-                <div className="w-20 h-20 rounded-2xl bg-mocha-50 flex items-center justify-center relative z-10 shadow-paper">
-                  <Sparkles className="h-8 w-8 text-mocha-500" />
+                <div className="w-20 h-20 rounded-2xl bg-mocha-50/30 backdrop-blur-md flex items-center justify-center relative z-10 shadow-paper border border-white/40">
+                  <Sparkles className="h-8 w-8 text-mocha-500/80" />
                 </div>
               </div>
               <h3 className="text-xl font-display text-espresso-900 mb-2">
@@ -162,7 +191,11 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
           ) : (
             <div key="message-list" className="space-y-10">
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  characters={characters || []}
+                />
               ))}
 
               {/* 토스 스타일 분석 완료 애니메이션 */}
@@ -330,6 +363,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
                         duration: 2,
                         repeat: Infinity,
                         ease: "easeInOut",
+                        delay: 0,
                       }}
                       className="w-36 h-36 rounded-full blur-2xl"
                       style={{
@@ -456,59 +490,23 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
       </div>
 
       {/* Input Area - Marginalia Style */}
-      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-[#FBFBF9] via-[#FBFBF9] to-transparent">
-        <div className="relative group transition-all duration-300">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              projectId
-                ? "책의 이음새에 대해 무엇을 물어볼까요?"
-                : "프로젝트를 선택해주세요"
-            }
-            disabled={streaming || !projectId}
-            className="min-h-[64px] max-h-[160px] w-full resize-none border-mocha-200/60 bg-white/80 p-5 pr-14 text-[0.95rem] rounded-2xl shadow-paper focus:ring-2 focus:ring-mocha-100 focus:border-mocha-300 backdrop-blur-sm transition-all placeholder:text-mocha-300/80 font-serif italic"
-            rows={1}
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
-          />
-          <div className="absolute right-3 bottom-3">
-            {streaming ? (
-              <Button
-                type="button"
-                size="icon"
-                intent="ghost"
-                onClick={cancelStream}
-                className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300"
-              >
-                <Square className="h-4.5 w-4.5 fill-current animate-pulse" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSend}
-                size="icon"
-                disabled={!input.trim() || !projectId}
-                className={cn(
-                  "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
-                  input.trim()
-                    ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
-                    : "bg-white border-mocha-100 text-mocha-200",
-                )}
-              >
-                <Send
-                  className={cn(
-                    "h-4.5 w-4.5 transition-transform duration-300",
-                    input.trim() && "translate-x-0.5 -translate-y-0.5",
-                  )}
-                />
-              </Button>
-            )}
-          </div>
-        </div>
+      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-cloud-50 via-cloud-50 to-transparent">
+        <AIChatInput
+          ref={chatInputRef}
+          projectId={projectId}
+          characters={characters}
+          events={events}
+          consistencyReport={consistencyReport || null}
+          onSend={handleSend}
+          streaming={streaming}
+          onCancel={cancelStream}
+          placeholder={
+            projectId
+              ? "Check-Bot에게 무엇을 물어볼까요?"
+              : "프로젝트를 선택해주세요"
+          }
+          disabled={streaming || !projectId}
+        />
       </div>
     </div>
   );
@@ -517,7 +515,13 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
 /**
  * Message Bubble component with Serif/Sans pairing
  */
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  characters = [],
+}: {
+  message: ChatMessage;
+  characters?: Character[];
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -555,7 +559,62 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             <Quote className="w-4 h-4 text-mocha-100 opacity-50" />
           </div>
         )}
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        <div className="whitespace-pre-wrap">
+          {(() => {
+            // Parse and style tags: [#Conflict], [@Character], [!Event]
+            const parts = message.content.split(
+              /(\[#[^\]]+\]|\[@[^\]]+\]|\[![^\]]+\])/g,
+            );
+            return parts.map((part, index) => {
+              if (part.startsWith("[#") && part.endsWith("]")) {
+                const label = part.slice(2, -1);
+                return (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border-2 border-rose-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                  >
+                    #{label}
+                  </span>
+                );
+              }
+              if (part.startsWith("[@") && part.endsWith("]")) {
+                const label = part.slice(2, -1);
+                const char = characters.find(
+                  (c) => c.profile?.name === label || c.profile?.name === label, // Simplified check
+                );
+                const imageUrl = char?.imageUrl;
+
+                return (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 mx-1 text-[15px] font-black tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border-2 border-sage-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                  >
+                    {imageUrl && (
+                      <img
+                        src={resolveImageUrl(imageUrl)}
+                        alt={label}
+                        className="w-5 h-5 rounded-full object-cover border border-sage-200/50 -ml-1"
+                      />
+                    )}
+                    @{label}
+                  </span>
+                );
+              }
+              if (part.startsWith("[!") && part.endsWith("]")) {
+                const label = part.slice(2, -1);
+                return (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border-2 border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                  >
+                    !{label}
+                  </span>
+                );
+              }
+              return part;
+            });
+          })()}
+        </div>
 
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-mocha-100/30">

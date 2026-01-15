@@ -3,6 +3,7 @@ import type { NodeViewProps } from "@tiptap/react";
 import { User, Package } from "lucide-react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
+import { resolveImageUrl } from "@/utils/imageUtils";
 import { CharacterHoverCard } from "./CharacterHoverCard";
 import { DEMO_CHARACTERS, DEMO_ITEMS } from "@/data/demoData";
 
@@ -28,6 +29,9 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
   const description = character?.profile?.backstory;
   const age = character?.profile?.age;
   const traits = character?.personality?.coreTraits;
+  const imageUrl =
+    character?.imageUrl ||
+    (character as { profile?: { imageUrl?: string } })?.profile?.imageUrl;
 
   // 아이템용 호버 카드 컨텐츠
   const itemDescription = item?.extras?.설명 as string | undefined;
@@ -57,7 +61,7 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
               description={description}
               age={age ?? undefined}
               trait={traits?.[0]}
-              avatar={undefined} // 새 스키마에 imageUrl 없음
+              avatar={imageUrl ? resolveImageUrl(imageUrl) : undefined}
             />
           ) : isItem ? (
             itemHoverContent
@@ -83,6 +87,12 @@ export default function CharacterNodeView({ node }: NodeViewProps) {
         >
           {isItem ? (
             <Package className="w-3 h-3" />
+          ) : imageUrl ? (
+            <img
+              src={resolveImageUrl(imageUrl)}
+              alt={label}
+              className="w-4 h-4 rounded-full object-cover"
+            />
           ) : (
             <User className="w-3 h-3" />
           )}

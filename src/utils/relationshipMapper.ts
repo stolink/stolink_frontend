@@ -10,27 +10,32 @@ export function normalizeRelationType(type: string): RelationType {
   const normalized = type.toLowerCase();
 
   const mapping: Record<string, RelationType> = {
-    // Standard
-    friendly: "friendly",
-    hostile: "hostile",
+    // Standard (Keep as is)
+    ally: "ally",
+    enemy: "enemy",
+    rival: "rival",
+    family: "family",
+    betrayed: "betrayed",
+    knows: "knows",
+    protects: "protects",
+    mentor: "mentor",
     romantic: "romantic",
+    neutral: "neutral",
+    complex: "complex",
 
-    // Backend uppercase variants
-    ally: "friendly",
-    enemy: "hostile",
-    neutral: "friendly",
+    // Legacy / Aliases -> New Standard
+    friendly: "ally",
+    hostile: "enemy",
 
-    // Legacy / Aliases / Mapping for removed types
-    family: "friendly",
-    friendship: "friendly",
-    friend: "friendly",
-    conflict: "hostile",
-    rival: "hostile",
+    // Legacy Variants
+    friendship: "ally",
+    friend: "ally",
+    conflict: "enemy",
     lover: "romantic",
     romance: "romantic",
   };
 
-  return mapping[normalized] || "friendly";
+  return mapping[normalized] || "neutral";
 }
 
 /**
@@ -148,7 +153,7 @@ export function extractRelationshipLinks(
           // Fallback to single type
           relationTypes = [
             normalizeRelationType(
-              rel.relationType || rel.relation_type || rel.type || "friendly",
+              rel.relationType || rel.relation_type || rel.type || "ally",
             ),
           ];
         }

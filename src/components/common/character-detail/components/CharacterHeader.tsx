@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Edit,
+  Pencil,
   Sparkles,
   Feather,
   MapPin,
@@ -145,7 +145,7 @@ export function CharacterHeader({
 
       {/* Main Identity Section */}
       <div className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2">
           <div className="flex-1 min-w-0">
             {isEditMode ? (
               <Input
@@ -179,19 +179,25 @@ export function CharacterHeader({
                 .join(", ") || "외모 정보가 입력되지 않았습니다."}
             </p>
           </div>
-
           {onEdit && !isEditMode && (
-            <Button
-              intent="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.();
-              }}
-              className="h-9 w-9 shrink-0 rounded-full border border-cloud-200 hover:bg-white hover:shadow-md hover:border-mocha-500/30 transition-all z-30"
-            >
-              <Edit className="h-4 w-4 text-mocha-500" />
-            </Button>
+            <div className="flex justify-end w-full mb-1">
+              <Button
+                intent="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.();
+                }}
+                className="rounded-full px-4 py-1.5 h-8 border border-cloud-300 bg-white hover:bg-cloud-50 shadow-sm text-espresso-800 transition-all z-30 flex items-center gap-1.5 group/edit"
+              >
+                <Pencil className="h-3.5 w-3.5 text-mocha-500 group-hover/edit:text-mocha-600" />
+                <span className="text-xs font-medium tracking-wide">
+                  정보 수정
+                </span>
+              </Button>
+            </div>
           )}
+          {/* Edit button removed to move to main toolbar */}
         </div>
 
         {/* Profile Attributes - 2 Column Grid */}

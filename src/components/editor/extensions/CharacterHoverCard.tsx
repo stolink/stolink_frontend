@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { User, Calendar, Sparkles } from "lucide-react";
+import { resolveImageUrl } from "@/utils/imageUtils";
 
 interface CharacterHoverCardProps {
   name: string;
@@ -25,7 +26,7 @@ export function CharacterHoverCard({
         <div className="flex items-center gap-3">
           {avatar ? (
             <img
-              src={avatar}
+              src={resolveImageUrl(avatar)}
               alt={name}
               className="w-10 h-10 rounded-full border-2 border-white/30 object-cover shadow-sm"
             />

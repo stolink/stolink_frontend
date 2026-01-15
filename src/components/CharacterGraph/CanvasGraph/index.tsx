@@ -22,7 +22,12 @@ import type {
 } from "@/types";
 import type { Event } from "@/types/event";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
-import { FORCE_CONFIG, ZOOM_CONFIG, type UIRelationType } from "../constants";
+import {
+  FORCE_CONFIG,
+  ZOOM_CONFIG,
+  type UIRelationType,
+  RELATION_PRIORITY,
+} from "../constants";
 import { calculateRelationCounts } from "../utils";
 import { drawNode } from "./CanvasNodeRenderer";
 import { drawLink } from "./CanvasLinkRenderer";
@@ -334,6 +339,17 @@ export const CharacterGraphCanvas = forwardRef<
           // Create Super Edge (Complex or Parallel)
           const base = group[0];
           const typesArray = Array.from(allTypes);
+
+          // [Priority Logic] Sort types by RELATION_PRIORITY
+          // Lower number = Higher priority
+          typesArray.sort((a, b) => {
+            const pA =
+              RELATION_PRIORITY[a.toLowerCase() as UIRelationType] ?? 99;
+            const pB =
+              RELATION_PRIORITY[b.toLowerCase() as UIRelationType] ?? 99;
+            return pA - pB;
+          });
+
           const primaryType = typesArray[0] || base.type;
           const superEdge = {
             ...base,
@@ -572,9 +588,9 @@ export const CharacterGraphCanvas = forwardRef<
             let configKey: keyof typeof FORCE_CONFIG.dynamic = "neutral";
 
             if (["friendly", "ally", "classmate"].includes(type))
-              configKey = "friendly";
+              configKey = "ally";
             else if (["hostile", "enemy", "rival"].includes(type))
-              configKey = "hostile";
+              configKey = "enemy";
             else if (["family", "mentor"].includes(type)) configKey = "family";
             else if (["romantic"].includes(type)) configKey = "romantic";
             else if (["neutral", "coworker"].includes(type))
@@ -590,10 +606,10 @@ export const CharacterGraphCanvas = forwardRef<
             // Hostile: High strength = Further (longer distance separation)
             const strengthVal = relLink.strength || 1;
 
-            if (configKey === "hostile") {
+            if (configKey === "enemy") {
               // More hate = More separation (Halved effect from 0.2 -> 0.1)
               return baseDistance * (1 + (strengthVal - 1) * 0.1);
-            } else if (configKey === "friendly" || configKey === "romantic") {
+            } else if (configKey === "ally" || configKey === "romantic") {
               // More love = Closer (Halved effect from 0.1 -> 0.05)
               return Math.max(
                 20,
@@ -608,9 +624,9 @@ export const CharacterGraphCanvas = forwardRef<
             let configKey: keyof typeof FORCE_CONFIG.dynamic = "neutral";
 
             if (["friendly", "ally", "classmate"].includes(type))
-              configKey = "friendly";
+              configKey = "ally";
             else if (["hostile", "enemy", "rival"].includes(type))
-              configKey = "hostile";
+              configKey = "enemy";
             else if (["family", "mentor"].includes(type)) configKey = "family";
             else if (["romantic"].includes(type)) configKey = "romantic";
 

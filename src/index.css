@@ -17,17 +17,16 @@
   }
   body {
     background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    /* Default to Spectral for all body text */
+    color: #333333; /* Dark Gray for better contrast/less fatigue */
+    /* Step 1: Default to Sans-serif (Gothic) for UI */
     font-family:
-      "Spectral",
       "Pretendard",
       -apple-system,
       BlinkMacSystemFont,
       system-ui,
-      serif;
+      sans-serif;
 
-    /* 전역 텍스트 렌더링 최적화 - 고해상도 모니터 대응 */
+    /* Step 2: Rendering Optimization */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -35,18 +34,20 @@
       "kern" 1,
       "liga" 1;
 
-    line-height: 1.6; /* Balanced readability */
+    /* Step 3: Micro-typography */
+    line-height: 1.6;
+    letter-spacing: -0.025em; /* Tighten slightly for Korean Gothic */
   }
 
   /* All typography uses DM Serif Display for headers */
+  /* Global Typography - Inherit Sans-serif (Pretendard) by default */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    font-family: "DM Serif Display", serif;
-    font-weight: 400; /* Serif Display fonts usually look better at 400 */
+    font-weight: 700;
     letter-spacing: -0.01em;
   }
 }
@@ -878,14 +879,9 @@ svg text {
   shape-rendering: geometricPrecision;
 }
 
-/* Retina/고해상도 디스플레이 대응 */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+/* Retina/High-Res Display Optimization - Removed subpixel-antialiased to enforce sharp/thin text per user request */
+/* @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   body {
-    -webkit-font-smoothing: subpixel-antialiased;
+    -webkit-font-smoothing: antialiased;
   }
-
-  /* 고해상도에서 border 선명도 */
-  * {
-    -webkit-backface-visibility: hidden;
-  }
-}
+} */

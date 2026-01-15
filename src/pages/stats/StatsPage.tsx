@@ -325,7 +325,7 @@ export default function StatsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto pb-2">
+              <div className="overflow-x-auto pb-2 pt-16 -mt-10 px-1">
                 <motion.div
                   className="flex gap-1 min-w-max"
                   initial="initial"
@@ -341,29 +341,47 @@ export default function StatsPage() {
                       {week.map((day, dIndex) => (
                         <motion.div
                           key={dIndex}
-                          className={cn(
-                            "w-3 h-3 rounded-[2px] relative group cursor-pointer",
-                            getIntensityColor(day.count),
-                          )}
-                          variants={{
-                            initial: { opacity: 0, scale: 0.5 },
-                            visible: { opacity: 1, scale: 1 },
-                          }}
-                          whileHover={{ scale: 1.4, zIndex: 10 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 25,
-                          }}
+                          className="relative w-3 h-3 z-0 hover:z-50"
+                          initial="rest"
+                          whileHover="hover"
                         >
+                          <motion.div
+                            className={cn(
+                              "w-full h-full rounded-[2px] cursor-pointer",
+                              getIntensityColor(day.count),
+                            )}
+                            variants={{
+                              initial: { opacity: 0, scale: 0.5 },
+                              visible: { opacity: 1, scale: 1 },
+                              rest: { scale: 1 },
+                              hover: { scale: 1.5 },
+                            }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 25,
+                            }}
+                          />
                           {day.date && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none whitespace-nowrap">
-                              <div className="bg-espresso-900/95 backdrop-blur-sm text-white text-[10px] py-1 px-2 rounded-md shadow-xl font-medium border border-white/10">
-                                <span>
-                                  {day.date}: {day.count.toLocaleString()} 자
+                            <motion.div
+                              className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap will-change-transform"
+                              variants={{
+                                rest: { opacity: 0, y: 5, scale: 0.9 },
+                                hover: { opacity: 1, y: 0, scale: 1 },
+                              }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <div className="bg-espresso-900/90 backdrop-blur-md text-white text-[11px] py-1.5 px-3 rounded-lg shadow-xl font-medium border border-white/10 tracking-tight subpixel-antialiased">
+                                <span className="block text-center tabular-nums">
+                                  {day.date}
+                                </span>
+                                <span className="block text-center font-bold text-mocha-100">
+                                  {day.count.toLocaleString()} 자
                                 </span>
                               </div>
-                            </div>
+                              {/* Arrow */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-espresso-900/90" />
+                            </motion.div>
                           )}
                         </motion.div>
                       ))}

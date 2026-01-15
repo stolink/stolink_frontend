@@ -25,7 +25,7 @@ export function BiographyEventList({
 
   return (
     <div className="space-y-6">
-      <h4 className="font-heading text-lg text-espresso-900 border-b-2 border-mocha-200 pb-1 inline-block">
+      <h4 className="text-lg text-espresso-900 border-b-2 border-mocha-200 pb-1 inline-block font-bold">
         사건 목록 ({events.length})
       </h4>
 

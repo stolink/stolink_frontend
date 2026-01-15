@@ -35,27 +35,76 @@ interface DeepAnalysisHeroProps {
  */
 const simplifyTerm = (term: string) => {
   const t = term.toLowerCase();
+
+  // 1. Ally / Coworker
+  if (t.includes("ally") || t.includes("alliance") || t.includes("동맹"))
+    return "목표를 함께하는 든든한 동료";
+  if (t.includes("coworker") || t.includes("동료") || t.includes("partner"))
+    return "함께 합을 맞추는 파트너";
+
+  // 2. Rival / Enemy
+  if (t.includes("rival") || t.includes("라이벌") || t.includes("경쟁"))
+    return "서로의 성장을 자극하는 라이벌";
+  if (t.includes("enemy") || t.includes("원수") || t.includes("hostile"))
+    return "피할 수 없는 숙명의 원수";
+
+  // 3. Romantic / Friend
   if (
-    t.includes("subordinate") ||
+    t.includes("romantic") ||
+    t.includes("lover") ||
+    t.includes("사랑") ||
+    t.includes("연인")
+  )
+    return "설렘 가득한 로맨스";
+  if (
+    t.includes("friend") ||
+    t.includes("친구") ||
+    t.includes("friendly") ||
+    t.includes("우호")
+  )
+    return "서로 믿고 의지하는 친구";
+
+  // 4. Mentor / Family
+  if (t.includes("mentor") || t.includes("스승") || t.includes("멘토"))
+    return "나를 이끌어주는 멘토";
+  if (t.includes("family") || t.includes("가족") || t.includes("집안"))
+    return "피보다 진한 유대, 가족";
+
+  // 5. Master-Servant / Subordinate
+  if (
     t.includes("master_servant") ||
-    t.includes("군신")
+    t.includes("subordinate") ||
+    t.includes("군신") ||
+    t.includes("주종")
   )
     return "충성과 헌신의 군신 관계";
-  if (t.includes("trust") || t.includes("신뢰")) return "흔들림 없는 깊은 신뢰";
-  if (t.includes("mentor") || t.includes("스승")) return "나를 이끌어주는 멘토";
-  if (t.includes("admiration") || t.includes("흠모"))
+
+  // 6. Neutral / Knows
+  if (
+    t.includes("neutral") ||
+    t.includes("중립") ||
+    t.includes("knows") ||
+    t.includes("면식")
+  )
+    return "아직은 낯선 묘한 거리감";
+
+  // 7. Classmate
+  if (t.includes("classmate") || t.includes("동창") || t.includes("동기"))
+    return "함께 추억을 쌓는 동기";
+
+  // 8. Complex / Mixed
+  if (t.includes("complex") || t.includes("복합") || t.includes("mixed"))
+    return "많은 감정이 섞인 복잡한 마음";
+
+  // 9. Emotional Factors (Admiration, Trust, etc.)
+  if (t.includes("admiration") || t.includes("흠모") || t.includes("존경"))
     return "존경과 흠모의 마음";
-  if (t.includes("friend") || t.includes("친구"))
-    return "서로 믿고 의지하는 친구";
-  if (t.includes("romantic") || t.includes("lover"))
-    return "설렘 가득한 로맨스";
-  if (t.includes("hostile") || t.includes("enemy") || t.includes("rival"))
-    return "서로의 성장을 자극하는 라이벌";
-  if (t.includes("coworker") || t.includes("ally"))
-    return "목표를 함께하는 든든한 동료";
-  if (t.includes("family") || t.includes("집안"))
-    return "피보다 진한 유대, 가족";
-  if (t.includes("complex")) return "많은 감정이 섞인 복잡한 마음";
+  if (t.includes("trust") || t.includes("신뢰")) return "흔들림 없는 깊은 신뢰";
+  if (t.includes("protection") || t.includes("protects") || t.includes("보호"))
+    return "끝까지 지켜주고픈 마음";
+  if (t.includes("betrayal") || t.includes("betrayed") || t.includes("배신"))
+    return "지워지지 않는 배신의 상처";
+
   return term;
 };
 
@@ -94,6 +143,13 @@ const getRelationColor = (type: string | string[]) => {
   if (t.includes("mentor") || t.includes("스승") || t.includes("멘토"))
     return "#7C3AED"; // Violet 600
   if (t.includes("family") || t.includes("가족")) return "#4F5861"; // Blue-Gray
+  if (t.includes("classmate") || t.includes("동창") || t.includes("동기"))
+    return "#F59E0B"; // Amber 500
+  if (t.includes("master_servant") || t.includes("군신") || t.includes("주종"))
+    return "#1E293B"; // Slate 800
+  if (t.includes("betrayal") || t.includes("배신")) return "#450A0A"; // Red 950
+  if (t.includes("protection") || t.includes("보호")) return "#3B82F6"; // Blue 500
+  if (t.includes("neutral") || t.includes("중립")) return "#94A3B8"; // Slate 400
 
   if (t.includes("complex") || t.includes("복합")) return "#7C3AED";
   return "#A47764";
@@ -123,6 +179,12 @@ const getRelationIcon = (type: string) => {
     return <Star className="w-[18px] h-[18px]" fill="currentColor" />;
   if (t.includes("family") || t.includes("가족"))
     return <Users className="w-[18px] h-[18px]" />;
+  if (t.includes("classmate") || t.includes("동창"))
+    return <Users className="w-[18px] h-[18px]" />;
+  if (t.includes("betrayal") || t.includes("배신"))
+    return <Sword className="w-[18px] h-[18px] text-red-900" />;
+  if (t.includes("protection") || t.includes("보호"))
+    return <Heart className="w-[18px] h-[18px]" fill="none" />;
   if (t.includes("complex") || t.includes("복합"))
     return <Info className="w-[18px] h-[18px]" />;
   return <HelpCircle className="w-[18px] h-[18px]" />;
@@ -263,57 +325,87 @@ const CharacterPerspective = ({
 
   return (
     <div
-      className={cn("flex flex-col gap-12", side === "right" && "items-end")}
+      className={cn(
+        "flex flex-col gap-10",
+        side === "right" ? "items-end" : "items-start",
+      )}
     >
-      {/* Header with Name and Portrait */}
+      {/* Header with Name and Portrait - Vertical Stack Design */}
       <div
         className={cn(
-          "flex items-center gap-12 relative",
-          side === "right" && "flex-row-reverse text-right"
+          "flex flex-col relative z-10 w-full",
+          side === "right" ? "items-end text-right" : "items-start",
         )}
       >
-        {/* Ambient Aurora in the empty space between name/portrait and card */}
+        {/* Ambient Aurora - Now positioned behind the portrait-name group */}
         <div
           className={cn(
             "absolute z-0",
-            side === "left" ? "left-[140%] top-0" : "right-[140%] top-0"
+            side === "left"
+              ? "left-1/2 -translate-x-1/2 top-10"
+              : "right-1/2 translate-x-1/2 top-10",
           )}
         >
           <AsymmetryAurora sourceColor={myColor} targetColor={otherSideColor} />
         </div>
 
-        <motion.div className="relative z-10" whileHover={{ scale: 1.05 }}>
-          <div className="absolute inset-0 bg-espresso-900/5 rounded-full blur-2xl opacity-20" />
+        {/* Portrait - Large and Centered within the header scope */}
+        <motion.div
+          className="relative z-10 mb-8"
+          whileHover={{ scale: 1.05 }}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <div className="absolute inset-0 bg-espresso-900/10 rounded-full blur-3xl opacity-30" />
           {char.imageUrl ? (
             <img
               src={char.imageUrl}
               alt={char.name}
-              className="w-24 h-24 md:w-36 md:h-36 rounded-full object-cover border-4 border-white shadow-2xl relative z-10"
+              className="w-28 h-28 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative z-10"
             />
           ) : (
-            <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-mocha-400 to-mocha-600 flex items-center justify-center border-4 border-white shadow-2xl relative z-10">
-              <span className="text-[36px] md:text-[44px] font-bold text-white font-serif">
+            <div className="w-28 h-28 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-mocha-400 to-mocha-600 flex items-center justify-center border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative z-10">
+              <span className="text-[40px] md:text-[52px] font-bold text-white font-serif">
                 {getInitials(char.name)}
               </span>
             </div>
           )}
         </motion.div>
 
-        <div className="space-y-0 relative z-10">
-          <h2 className="text-[52px] md:text-[68px] font-serif font-black text-espresso-900 tracking-tight leading-none">
+        {/* Name and Tags Area */}
+        <div className="space-y-4 relative z-10 w-full">
+          <h2
+            className={cn(
+              "font-serif font-black text-espresso-900 tracking-tight leading-[1.1] break-keep",
+              char.name.length > 12
+                ? "text-[28px] md:text-[36px]"
+                : char.name.length > 8
+                  ? "text-[36px] md:text-[48px]"
+                  : char.name.length > 4
+                    ? "text-[44px] md:text-[56px]"
+                    : "text-[52px] md:text-[68px]",
+            )}
+          >
             {char.name}
           </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
+
+          <div
+            className={cn(
+              "flex flex-wrap gap-2.5",
+              side === "right" ? "justify-end" : "justify-start",
+            )}
+          >
             {perspectiveData.factors.slice(0, 3).map((f, i) => (
               <span
                 key={i}
-                className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-600 backdrop-blur-sm whitespace-nowrap"
+                className="px-4 py-1.5 rounded-full bg-white/60 border border-espresso-900/5 text-[11px] font-bold text-espresso-600 backdrop-blur-md shadow-sm whitespace-nowrap"
               >
                 # {simplifyTerm(f.type)}
               </span>
             ))}
             {perspectiveData.factors.length > 3 && (
-              <span className="px-3 py-1 rounded-full bg-white/60 border border-espresso-900/5 text-xs font-bold text-espresso-400 backdrop-blur-sm">
+              <span className="px-4 py-1.5 rounded-full bg-white/60 border border-espresso-900/5 text-[11px] font-bold text-espresso-400 backdrop-blur-md shadow-sm">
                 + {perspectiveData.factors.length - 3}
               </span>
             )}
@@ -325,7 +417,7 @@ const CharacterPerspective = ({
       <div
         className={cn(
           "w-full max-w-[420px] bg-white/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-white/60 shadow-2xl relative overflow-hidden",
-          side === "right" ? "rounded-tr-none" : "rounded-tl-none"
+          side === "right" ? "rounded-tr-none" : "rounded-tl-none",
         )}
       >
         {/* Emotion Blobs inside card */}
@@ -402,10 +494,10 @@ export function DeepAnalysisHero({
 }: DeepAnalysisHeroProps) {
   // Note: _relationshipTypes is passed for future use but currently colors are derived from factors
   const sourceColor = getRelationColor(
-    asymmetricStrength.sourceToTarget.factors[0]?.type
+    asymmetricStrength.sourceToTarget.factors[0]?.type,
   );
   const targetColor = getRelationColor(
-    asymmetricStrength.targetToSource.factors[0]?.type
+    asymmetricStrength.targetToSource.factors[0]?.type,
   );
 
   return (
@@ -416,28 +508,86 @@ export function DeepAnalysisHero({
         animate={{ opacity: 1 }}
         className="max-w-[1400px] mx-auto relative"
       >
-        {/* Analysis Header */}
-        <div className="flex items-center gap-6 mb-20 px-4">
-          <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-white/60 border border-espresso-900/5 shadow-xl backdrop-blur-xl">
-            <span className="w-2 h-2 rounded-full bg-mocha-500 animate-pulse" />
-            <span className="text-sm font-black text-espresso-800 uppercase tracking-[0.4em]">
-              Deep Discovery Analysis
-            </span>
+        {/* Intelligence Briefing Card - Structured & Aesthetic */}
+        <div className="bg-white/40 backdrop-blur-2xl rounded-[3rem] p-8 md:p-10 border border-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.05)] mb-16 flex flex-col lg:flex-row items-center gap-10 lg:gap-16 relative overflow-hidden group">
+          {/* Subtle Decorative Gradient */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-mocha-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+          {/* Left: Summary Section */}
+          <div className="flex-1 flex flex-col md:flex-row gap-6 md:gap-10 items-start w-full">
+            <div className="shrink-0 flex flex-col items-center">
+              <div className="px-4 py-1.5 bg-espresso-900 rounded-full mb-3 shadow-lg">
+                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] whitespace-nowrap">
+                  Briefing No.{" "}
+                  {Math.abs(
+                    sourceCharacter.name.length * 7 +
+                      targetCharacter.name.length,
+                  )
+                    .toString()
+                    .padStart(3, "0")}
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-1 opacity-40">
+                <div className="w-1.5 h-1.5 rounded-full bg-mocha-500 animate-pulse" />
+                <div className="w-0.5 h-12 bg-gradient-to-b from-mocha-500 to-transparent" />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 w-full max-w-[550px]">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-black text-mocha-400 uppercase tracking-widest">
+                  Intelligence Summary
+                </span>
+                <div className="flex-1 h-px bg-mocha-200/30" />
+              </div>
+
+              <div className="space-y-2">
+                {(description || "관계 심층 분석 데이터")
+                  .split(/[.?!]/)
+                  .map((sentence, idx) => {
+                    const trimmed = sentence.trim();
+                    if (!trimmed) return null;
+                    return (
+                      <h1
+                        key={idx}
+                        className="text-xl md:text-2xl font-serif font-black text-espresso-900 tracking-tight leading-tight first-letter:capitalize"
+                      >
+                        {trimmed}.
+                      </h1>
+                    );
+                  })}
+              </div>
+            </div>
           </div>
-          {description && (
-            <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-mocha-500/10 border border-mocha-500/20 shadow-sm backdrop-blur-xl">
-              <Star className="w-4 h-4 text-mocha-500 fill-mocha-500" />
-              <span className="text-sm font-black text-mocha-700">
-                {description}
-              </span>
+
+          {/* Vertical Separator */}
+          <div className="hidden lg:block w-px h-24 bg-espresso-900/10 shrink-0" />
+
+          {/* Right: Metadata Section */}
+          <div className="flex flex-row lg:flex-col items-center lg:items-end gap-10 lg:gap-4 shrink-0 w-full lg:w-auto justify-between lg:justify-start px-4 lg:px-0">
+            {since && (
+              <div className="text-right">
+                <div className="text-[10px] font-black text-espresso-300 uppercase tracking-widest mb-1">
+                  Established In
+                </div>
+                <div className="flex items-center gap-3 text-espresso-900 font-serif font-black text-lg md:text-xl">
+                  <span className="text-mocha-400 font-bold select-none text-sm">
+                    ✦
+                  </span>
+                  {since}
+                </div>
+              </div>
+            )}
+
+            <div className="text-right">
+              <div className="text-[10px] font-black text-espresso-300 uppercase tracking-widest mb-1">
+                Classification
+              </div>
+              <div className="px-3 py-1 bg-mocha-50 rounded-lg border border-mocha-100 text-[11px] font-bold text-mocha-700 uppercase tracking-tight shadow-inner">
+                Confidential
+              </div>
             </div>
-          )}
-          {since && (
-            <div className="flex items-center gap-2.5 text-base text-espresso-400 font-serif italic">
-              <span className="text-mocha-300">✦</span>
-              <span>인연의 시작 : {since}</span>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Main Side-by-Side Content */}

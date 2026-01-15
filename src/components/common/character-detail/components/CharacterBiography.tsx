@@ -70,7 +70,7 @@ export function CharacterBiography({
             <Textarea
               value={backstory}
               onChange={(e) => onBackstoryChange(e.target.value)}
-              className="w-full h-full min-h-[300px] leading-relaxed  text-lg p-8 bg-[#FDFCFB] shadow-sm border-cloud-200 focus:border-mocha-400 focus:ring-cloud-200 resize-none selection:bg-cloud-200 rounded-xl"
+              className="w-full h-full min-h-[300px] leading-relaxed text-lg p-8 bg-[#FDFCFB] shadow-sm border-cloud-200 focus:border-mocha-400 focus:ring-cloud-200 resize-none selection:bg-cloud-200 rounded-xl font-serif"
               placeholder="캐릭터의 과거, 성장 배경, 중요한 사건들을 상세하게 기록해보세요."
             />
             {/* Paper Texture Overlay */}

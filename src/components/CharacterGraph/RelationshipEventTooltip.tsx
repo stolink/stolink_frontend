@@ -66,44 +66,69 @@ export function RelationshipEventTooltip({
   const badgeLabel = types && types.length >= 5 ? "복합" : type;
 
   // Smart Positioning to prevent overflow
-  const tooltipWidth = 360; // Increased width
-  const tooltipHeight = 400; // Estimated max height
+  const tooltipWidth = 360;
   const padding = 20;
+  const HEADER_OFFSET = 64; // Safe top margin
+  const CURSOR_GAP = 3; // Closer gap for better hover stability
 
-  let leftPos = x + 20;
-  let topPos = y + 20;
+  let leftPos = x + CURSOR_GAP;
 
-  // Check right edge
+  // Vertical Logic
+  const viewportHeight =
+    typeof window !== "undefined" ? window.innerHeight : 1000;
+  const spaceBelow = viewportHeight - y - padding;
+  const spaceAbove = y - HEADER_OFFSET - padding;
+  const PREFERRED_HEIGHT = 500;
+
+  let useBottom = true;
+  let availableHeight = spaceBelow;
+
+  // If space below is insufficient, and space above is better, flip.
+  if (spaceBelow < PREFERRED_HEIGHT && spaceAbove > spaceBelow) {
+    useBottom = false;
+    availableHeight = spaceAbove;
+  } else {
+    // Keep bottom, but clamp locally if needed
+    availableHeight = Math.min(PREFERRED_HEIGHT, spaceBelow);
+    // Strict flip check if bottom is extremely tight (<200px) and top is ample
+    if (spaceBelow < 200 && spaceAbove > 200) {
+      useBottom = false;
+      availableHeight = spaceAbove;
+    }
+  }
+
+  // Horizontal edge check
   if (typeof window !== "undefined") {
     if (leftPos + tooltipWidth + padding > window.innerWidth) {
-      leftPos = x - tooltipWidth - 20;
-    }
-    // Check bottom edge
-    if (topPos + tooltipHeight + padding > window.innerHeight) {
-      topPos = y - tooltipHeight - 10;
+      leftPos = x - tooltipWidth - CURSOR_GAP;
     }
   }
 
   return createPortal(
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        initial={{ opacity: 0, scale: 0.95, y: useBottom ? 10 : -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="fixed z-50 pointer-events-auto"
         style={{
           left: leftPos,
-          top: topPos,
+          top: useBottom ? y + CURSOR_GAP : undefined,
+          bottom: useBottom ? undefined : viewportHeight - y + CURSOR_GAP,
         }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         <Card
           className={cn(
-            "w-[360px] shadow-2xl border-none bg-white/95 backdrop-blur-md overflow-hidden font-sans",
+            "w-[360px] shadow-2xl border-none bg-white/95 backdrop-blur-md font-sans",
             "ring-1 ring-black/5",
+            "overflow-y-auto scrollbar-thin scrollbar-thumb-mocha-200 scrollbar-track-transparent",
           )}
+          style={{
+            maxHeight: Math.min(PREFERRED_HEIGHT, availableHeight),
+          }}
         >
           {/* Header: Narrative Thread (Avatars + Tension) */}
           <div className="relative pt-6 pb-4 px-6 bg-gradient-to-b from-cloud-50 to-white">
@@ -243,8 +268,13 @@ export function RelationshipEventTooltip({
                           </span>
                         </div>
                         <Badge
-                          variant="outline"
-                          className="text-[9px] px-1.5 py-0 h-4 border-cloud-200 text-espresso-500"
+                          className="text-[9px] px-1.5 py-0 min-h-[16px] border-none text-white shrink-0 ml-2 shadow-sm font-bold tracking-wide uppercase"
+                          style={{
+                            backgroundColor: getRelationshipColor(
+                              toUIRelationType(event.type),
+                              4,
+                            ),
+                          }}
                         >
                           {event.type}
                         </Badge>

@@ -61,9 +61,9 @@ const ROLE_WEIGHTS: Record<CharacterRole, number> = {
 
 // 관계 유형별 가중치 (갈등 중심 인물 강조)
 const RELATION_TYPE_WEIGHTS: Partial<Record<UIRelationType, number>> = {
-  hostile: 1.2, // 갈등의 중심
+  enemy: 1.2, // 갈등의 중심
   romantic: 1.1, // 서사적 중요도
-  friendly: 1.0, // 기본
+  ally: 1.0, // 기본
   family: 1.0,
   neutral: 0.8,
   complex: 1.1,

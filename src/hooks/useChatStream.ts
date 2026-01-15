@@ -65,7 +65,11 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
-    async (message: string, projectId: string) => {
+    async (
+      message: string,
+      projectId: string,
+      contextData?: Record<string, unknown>,
+    ) => {
       if (!message.trim() || streaming) return;
 
       const { user } = useAuthStore.getState();
@@ -112,10 +116,11 @@ export function useChatStream(options?: UseChatStreamOptions) {
           method: "POST",
           headers,
           body: JSON.stringify({
-            message,
+            message: `${message}\n\n[SYSTEM_INSTRUCTION: Respond in a sophisticated, literary, and professional tone suitable for a senior editor. Analyze the subtext and themes deeply. Provide constructive and specific feedback.]`,
             project_id: projectId,
             user_id: userId,
             session_id: currentSessionId,
+            context_data: contextData, // Injected Context
           }),
           signal: abortControllerRef.current.signal,
           credentials: "include", // 쿠키 자동 전송
