@@ -580,7 +580,7 @@ function MessageBubble({
               if (part.startsWith("[@") && part.endsWith("]")) {
                 const label = part.slice(2, -1);
                 const char = characters.find(
-                  (c) => c.profile?.name === label || c.profile?.name === label, // Simplified check
+                  (c) => c.profile?.name === label, // Simplified check
                 );
                 const imageUrl = char?.imageUrl;
 
