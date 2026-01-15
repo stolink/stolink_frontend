@@ -74,6 +74,20 @@ export interface BackendConsistencyStats {
   medium_severity_count?: number;
 }
 
+export interface BackendResolutionSummary {
+  auto_fixable?: number;
+  ready_for_update?: number;
+  needs_human_review?: number;
+  total_conflicts?: number;
+  high_severity_count?: number;
+}
+
+export interface BackendConsistencyStats {
+  auto_fixable_count?: number;
+  high_severity_count?: number;
+  medium_severity_count?: number;
+}
+
 export interface BackendConsistencyReport {
   job_id?: string;
   created_at?: string;
@@ -127,6 +141,12 @@ export interface Conflict {
     documentId?: string;
   };
   relatedEventIds?: string[];
+}
+
+export interface ConsistencyStats {
+  fixable: number;
+  critical: number;
+  warning: number;
 }
 
 export interface ConsistencyStats {

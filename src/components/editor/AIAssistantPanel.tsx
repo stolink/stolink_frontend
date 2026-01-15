@@ -47,6 +47,7 @@ export default function AIAssistantPanel({
     sendMessage,
     cancelStream,
     resetSession,
+    loadHistory,
     clearAnalysisComplete,
     loadHistory,
   } = useChatStream({
