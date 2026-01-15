@@ -44,6 +44,7 @@ export interface EditorContentHandle {
   } | null;
   saveAll: () => Promise<void>; // 통합 뷰 저장 강제 호출용
   getContent: () => string;
+  scrollToLine: (line: number) => void;
 }
 
 /**
@@ -107,9 +108,6 @@ export const EditorContent = forwardRef<
           if (viewMode === "editor" && editorRef.current) {
             return editorRef.current.getContent();
           }
-          // Scrivenings mode doesn't support single content retrieval easily
-          // It manages multiple documents.
-          // For now, return empty string or handle if needed.
           // Typically forceSave is called with content from onContentChange,
           // but if we need immediate content, we might be out of luck for Scrivenings without
           // implementing it there too.
@@ -117,6 +115,12 @@ export const EditorContent = forwardRef<
           // Let's assume Scrivenings is fine or we fallback to existing behavior.
           // Actually, ScriveningsEditor might not have a single buffer.
           return "";
+        },
+        scrollToLine: (line: number) => {
+          if (viewMode === "editor" && editorRef.current) {
+            editorRef.current.scrollToLine(line);
+          }
+          // Scrivenings scrollToLine not implemented yet (complexity)
         },
       }),
       [viewMode],

@@ -153,7 +153,7 @@ export default function InspectorPanel({ documentId }: InspectorPanelProps) {
   return (
     <div className="flex flex-col h-full bg-cloud-50/30">
       {/* 헤더 */}
-      <div className="px-4 py-3 border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="h-[52px] px-4 flex items-center border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-mocha-100 rounded-lg">
             <BookOpen className="w-3.5 h-3.5 text-mocha-700" />

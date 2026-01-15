@@ -47,6 +47,7 @@ import { useToast } from "@/hooks/useToast";
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
+import { useUIStore } from "@/stores/useUIStore";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Types
@@ -145,6 +146,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   const isDemo = isDemoProp ?? projectId === DEMO_PROJECT_ID;
 
   // Project Data
+
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
   const { toast } = useToast();
@@ -528,6 +530,13 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     },
   });
 
+  const onNavigateToPosition = useCallback(
+    (docId: string) => {
+      handleSelectSection(docId);
+    },
+    [handleSelectSection],
+  );
+
   // Modal Handlers
   const handleCreateSection = () => setCreateSectionModalOpen(true);
   /*
@@ -603,16 +612,15 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     initialStateFromRedirect,
   ]);
 
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-  const [rightSidebarTab, setRightSidebarTab] =
-    useState<import("@/components/editor/EditorRightSidebar").RightSidebarTab>(
-      "ai",
-    );
+  const isRightSidebarOpen = useUIStore((state) => state.rightSidebarOpen);
+  const setIsRightSidebarOpen = useUIStore(
+    (state) => state.setRightSidebarOpen,
+  );
 
   return (
     <div
       className={cn(
-        "flex flex-col bg-background text-foreground",
+        "flex flex-col bg-cloud-50/50 text-foreground", // Unified Desk Background
         isDemo ? "h-screen" : "h-full",
       )}
     >
@@ -622,7 +630,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         </header>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Desk Texture/Gradient Overlay (Optional) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-stone-100/30 pointer-events-none" />
+
         <AnimatePresence>
           {isSidebarOpen && (
             <EditorLeftSidebar
@@ -636,15 +647,23 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               onReorderChapter={handleReorderChapter}
               isOpen={isSidebarOpen}
               onToggle={() => setIsSidebarOpen(false)}
+              projectTitle={projectTitle}
+              totalChars={
+                Object.values(documents).reduce(
+                  (acc, doc) => acc + (doc.content?.length || 0),
+                  0,
+                ) || 0
+              }
             />
           )}
         </AnimatePresence>
 
         <main
           className={cn(
-            "flex-1 flex flex-col transition-all duration-300",
+            "flex-1 flex flex-col transition-all duration-300 relative z-10",
             isTypewriterMode ? "items-center" : "",
             isFocusMode && "bg-cloud-50",
+            // Main area is transparent to show Desk, unless Focus Mode
           )}
         >
           <EditorToolbar
@@ -705,10 +724,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         </main>
 
         <EditorRightSidebar
-          isOpen={isRightSidebarOpen}
-          onClose={() => setIsRightSidebarOpen(false)}
-          activeTab={rightSidebarTab}
-          onTabChange={setRightSidebarTab}
           documentId={selectedSectionId}
           projectId={projectId}
           sectionTitle={
@@ -717,6 +732,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           consistencyReport={consistencyReport}
           isAnalyzing={analysisStatus === "analyzing"}
           onRefreshAnalysis={handleStartAnalysisWrapper}
+          onNavigateToPosition={onNavigateToPosition}
         />
       </div>
 

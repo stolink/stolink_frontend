@@ -95,10 +95,10 @@ export function CharacterPortraitPanel({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: animationDelay + 0.2 }}
       >
-        <h3 className="text-2xl font-bold text-espresso-900 font-serif">
+        <h3 className="text-2xl font-bold text-espresso-900 font-serif break-keep">
           {character.name}
         </h3>
-        <p className="text-sm text-espresso-500 mt-1 whitespace-nowrap">
+        <p className="text-sm text-espresso-500 mt-1 break-keep">
           → {targetName}에 대한 마음
         </p>
       </motion.div>

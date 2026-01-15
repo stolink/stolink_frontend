@@ -522,7 +522,36 @@ export default function CharacterDetailDialog({
           : undefined;
 
         // Get character data to sync with backend during generation
-        const characterData = getCleanPayload();
+        let characterData = getCleanPayload();
+
+        // If in View Mode (characterData is null), we still need to pass the imageUrl for valid modification
+        // This ensures the backend receives the correct source image URL
+        if (!characterData && targetChar?.imageUrl) {
+          characterData = { imageUrl: targetChar.imageUrl };
+        }
+
+        // [Fix] Backend (Docker) cannot access host-mapped domain 'stolink-minio-local' OR 'localhost:9001'
+        // We must replace it with the internal service name 'minio:9000'
+        if (characterData && typeof characterData.imageUrl === "string") {
+          // 1. Handle stolink-minio-local -> minio
+          if (characterData.imageUrl.includes("stolink-minio-local")) {
+            characterData.imageUrl = characterData.imageUrl.replace(
+              "stolink-minio-local",
+              "minio",
+            );
+          }
+          // 2. Handle localhost:9001 -> minio:9000 (standard dev environment)
+          if (characterData.imageUrl.includes("localhost:9001")) {
+            characterData.imageUrl = characterData.imageUrl.replace(
+              "localhost:9001",
+              "minio:9000",
+            );
+          }
+
+          // 3. Ensure snake_case key is present for backend compatibility
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (characterData as any).image_url = characterData.imageUrl;
+        }
 
         const { jobId } = await imageService.generateCharacterImage(
           effectiveProjectId,
@@ -756,7 +785,7 @@ export default function CharacterDetailDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Custom Dialog Content with Modern Glassmorphism */}
-      <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-transparent border-none shadow-none ring-0 sm:rounded-3xl duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
+      <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-background border shadow-2xl sm:rounded-3xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
         {/* Accessibility: Hidden title and description for screen readers */}
         <VisuallyHidden>
           <DialogTitle>
@@ -768,20 +797,10 @@ export default function CharacterDetailDialog({
           </DialogDescription>
         </VisuallyHidden>
 
-        {/* Main Container Wrapper - Warm Liquid Glass (Aligned with Tone & Manner) */}
-        <div className="relative w-full h-full flex flex-col lg:flex-row bg-gradient-to-br from-paper/95 via-card/90 to-card/85 backdrop-blur-3xl rounded-none sm:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(60,40,30,0.12)] border border-cloud-200/60 ring-1 ring-espresso-900/5 isolate">
-          {/* 🌊 Living Background (Warm Aurora Blobs) */}
-          <div className="absolute inset-0 -z-10 bg-paper/40 opacity-50">
-            {/* Primary Tone (Mocha/Warm) */}
-            <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-b from-primary/10 to-orange-100/20 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
-            {/* Neutral Warm Stone */}
-            <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-cloud-200/20 to-amber-100/10 rounded-full blur-[100px] mix-blend-multiply animate-pulse-slow delay-700" />
-            {/* Soft Cloud Highlight */}
-            <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-[#F5F5F0]/30 rounded-full blur-[80px] mix-blend-overlay animate-pulse-slow delay-1000" />
-          </div>
-
-          {/* Paper Texture Overlay for "Warm & Soft" Feel */}
-          <div className="absolute inset-0 -z-0 opacity-[0.4] pointer-events-none mix-blend-soft-light bg-[url('https://grainy-gradients.vercel.app/noise.svg')] contrast-125" />
+        {/* Main Container Wrapper - Clean & SolId */}
+        <div className="relative w-full h-full flex flex-col lg:flex-row bg-background isolate">
+          {/* Subtle Background (Optional: Very faint pattern or gradient) */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-cloud-50 to-cloud-100/50" />
 
           {/* Left Sidebar (Character Identity) - Warm Frosted Panel */}
           <div className="w-full lg:w-[380px] xl:w-[420px] bg-gradient-to-b from-paper/80 to-paper/70 backdrop-filter border-b lg:border-b-0 lg:border-r border-cloud-200/50 p-6 lg:p-8 flex flex-col overflow-y-auto shrink-0 scrollbar-hide z-10 shadow-[4px_0_24px_rgba(60,40,30,0.03)]">

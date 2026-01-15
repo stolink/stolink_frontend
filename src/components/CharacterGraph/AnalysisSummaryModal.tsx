@@ -293,16 +293,10 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                   </VisuallyHidden>
 
                   {/* Subtle top highlight */}
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-                  {/* Organic texture overlay */}
-                  <div
-                    className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                    style={{
-                      backgroundImage:
-                        "url('https://www.transparenttextures.com/patterns/cream-paper.png')",
-                    }}
-                  />
+                  {/* Clean Background - No Texture */}
+                  <div className="absolute inset-0 bg-background rounded-[2rem]" />
 
                   {/* ═══════════════════════════════════════════════════════════════
                       HEADER: Premium Glassmorphic Design

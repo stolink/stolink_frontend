@@ -219,3 +219,30 @@
   box-shadow: 0 4px 8px rgba(125, 90, 75, 0.15);
   transform: translateY(-1px);
 }
+
+/* =====================================================
+   Conflict Navigation & Highlight Effects
+   ===================================================== */
+
+@keyframes wobble-highlight {
+  0%,
+  100% {
+    transform: translateY(0);
+    background-color: rgba(164, 119, 100, 0.4);
+  }
+  25% {
+    transform: translateY(-2px);
+    background-color: rgba(164, 119, 100, 0.6);
+  }
+  75% {
+    transform: translateY(2px);
+    background-color: rgba(164, 119, 100, 0.5);
+  }
+}
+
+.wobble-highlight {
+  animation: wobble-highlight 0.5s ease-in-out 3;
+  border-radius: 4px;
+  padding: 0 4px;
+  display: inline-block;
+}

@@ -13,7 +13,7 @@ function mapEventTypeToRelationType(
   if (!eventType) return defaultType;
   const et = eventType.toLowerCase();
   if (["conflict", "betrayal", "attack", "argument"].includes(et))
-    return "hostile";
+    return "enemy";
   if (["confession", "romance", "kiss", "date"].includes(et)) return "romantic";
   if (
     [
@@ -24,7 +24,7 @@ function mapEventTypeToRelationType(
       "help",
     ].includes(et)
   )
-    return "friendly";
+    return "ally";
   return defaultType;
 }
 

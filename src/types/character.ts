@@ -28,7 +28,14 @@ export type RelationType =
   | "romantic"
   | "family"
   | "neutral"
-  | "complex";
+  | "complex"
+  | "ally"
+  | "enemy"
+  | "rival"
+  | "betrayed"
+  | "knows"
+  | "protects"
+  | "mentor";
 
 // Legacy aliases for compatibility
 export type BackendRelationshipType = RelationType;

@@ -322,9 +322,7 @@ export default function ExportModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden rounded-2xl border-0 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] bg-white [&>button]:hidden">
         {/* 헤더: 프리미엄 퍼플 그라데이션 + 전체 디자인 톤 통일 */}
-        <div className="relative flex items-center justify-between px-6 py-5 bg-gradient-to-r from-mocha-500 via-mocha-400 to-mocha-500">
-          {/* Decorative blur accent */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+        <div className="relative flex items-center justify-between px-6 py-5 bg-mocha-500">
           <div className="relative flex items-center gap-3">
             <motion.div
               animate={{ rotate: mode === "export" ? 0 : 360 }}
@@ -338,7 +336,7 @@ export default function ExportModal({
               )}
             </motion.div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white font-heading drop-shadow-sm">
+              <DialogTitle className="text-lg font-bold text-white drop-shadow-sm">
                 {mode === "export" ? "내보내기" : "커뮤니티 배포"}
               </DialogTitle>
               <p className="text-xs text-white/70 mt-0.5">

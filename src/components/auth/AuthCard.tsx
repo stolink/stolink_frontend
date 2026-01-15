@@ -122,7 +122,7 @@ export function AuthCard({
         {/* Left Column: Auth Form */}
         <div className="flex-1 p-8 md:p-10 bg-paper">
           <div className="mb-8">
-            <h2 className="text-2xl font-heading font-bold text-ink tracking-tight mb-1">
+            <h2 className="text-2xl font-bold text-ink tracking-tight mb-1">
               {activeTab === "login" ? "다시 만나서 반갑습니다" : "새로운 시작"}
             </h2>
             <p className="text-sm text-ink/60 font-medium">
@@ -353,49 +353,21 @@ export function AuthCard({
           </div>
         </div>
 
-        {/* Right Column: Brand Visual - Calm Sage Glass Design (Hidden on mobile) */}
-        <div className="hidden md:flex flex-1 p-10 text-white flex-col justify-between relative overflow-hidden">
-          {/* Sage Green Gradient Background - Using new muted palette */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(145deg, #647A53 0%, #4D5E40 50%, #3D5A40 100%)",
-            }}
-          />
-
-          {/* Soft Light Overlay */}
-          <div
-            className="absolute inset-0 opacity-25"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 50% at 30% 20%, rgba(255,255,255,0.25) 0%, transparent 60%)",
-            }}
-          />
-
-          {/* Single Decorative Orb */}
-          <div
-            className="absolute w-48 h-48 rounded-full blur-3xl opacity-20"
-            style={{
-              background: "#7D9668",
-              top: "-15%",
-              right: "-10%",
-            }}
-          />
-
+        {/* Right Column: Brand Visual - Clean Design */}
+        <div className="hidden md:flex flex-1 p-10 text-white flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#647A53] to-[#3D5A40]">
           {/* Content Layer */}
           <div className="relative z-10">
             {/* Logo */}
             <div className="flex items-center space-x-2.5 mb-10">
-              <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center font-heading font-black text-white border border-white/20">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-black text-white border border-white/20">
                 S
               </div>
-              <span className="font-heading font-bold text-xl tracking-tight text-white">
+              <span className="font-bold text-xl tracking-tight text-white">
                 StoLink
               </span>
             </div>
 
-            <h3 className="text-3xl font-heading font-bold mb-4 leading-tight text-white">
+            <h3 className="text-3xl font-bold mb-4 leading-tight text-white">
               당신의 세계관이
               <br />
               데이터로 피어납니다

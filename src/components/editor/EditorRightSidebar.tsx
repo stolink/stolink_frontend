@@ -15,11 +15,9 @@ export type RightSidebarTab =
 
 import { useResizable } from "@/hooks/useResizable";
 
+import { useUIStore } from "@/stores/useUIStore";
+
 interface EditorRightSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  activeTab: RightSidebarTab;
-  onTabChange: (tab: RightSidebarTab) => void;
   documentId?: string | null;
   /** AI 챗봇에서 사용할 프로젝트 ID */
   projectId?: string | null;
@@ -37,10 +35,6 @@ interface EditorRightSidebarProps {
 }
 
 export default function EditorRightSidebar({
-  isOpen,
-  onClose: _onClose,
-  activeTab,
-  onTabChange,
   documentId = null,
   projectId = null,
   sectionTitle = "",
@@ -50,6 +44,9 @@ export default function EditorRightSidebar({
   isAnalyzing,
   onRefreshAnalysis,
 }: EditorRightSidebarProps) {
+  const isOpen = useUIStore((state) => state.rightSidebarOpen);
+  const activeTab = useUIStore((state) => state.rightSidebarTab);
+  const onTabChange = useUIStore((state) => state.setRightSidebarTab);
   // Resizable Logic
   const { width, startResizing, isResizing } = useResizable({
     initialWidth: 320,
@@ -79,17 +76,17 @@ export default function EditorRightSidebar({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-cloud-50/50">
-        {/* Header with Tabs - Grid Layout to prevent overflow */}
-        <div className="px-2 pt-3 pb-2 shrink-0 bg-transparent z-10">
+        {/* Header - Aligned with EditorToolbar (h-[52px]) */}
+        <div className="h-[52px] min-h-[52px] px-3 flex items-center shrink-0 border-b border-mocha-100/50 bg-transparent z-10">
           <Tabs
             value={activeTab}
             onValueChange={(v) => onTabChange(v as RightSidebarTab)}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-4 h-10 bg-mocha-50/40 p-1 rounded-xl border border-mocha-100/30 backdrop-blur-md">
+            <TabsList className="grid w-full grid-cols-4 h-9 bg-mocha-50/40 p-1 rounded-lg border border-mocha-100/30 backdrop-blur-md">
               <TabsTrigger
                 value="foreshadowing"
-                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                className="text-[11px] font-semibold h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 data-tour="foreshadowing-panel"
                 title="복선 관리"
               >
@@ -98,7 +95,7 @@ export default function EditorRightSidebar({
               </TabsTrigger>
               <TabsTrigger
                 value="ai"
-                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                className="text-[11px] font-semibold h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 data-tour="ai-panel"
                 title="AI 체크봇"
               >
@@ -107,7 +104,7 @@ export default function EditorRightSidebar({
               </TabsTrigger>
               <TabsTrigger
                 value="consistency"
-                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                className="text-[11px] font-semibold h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 title="개연성 검증"
               >
                 <Lightbulb className="h-3.5 w-3.5 shrink-0" />
@@ -115,7 +112,7 @@ export default function EditorRightSidebar({
               </TabsTrigger>
               <TabsTrigger
                 value="inspector"
-                className="text-[11px] font-semibold h-8 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
+                className="text-[11px] font-semibold h-7 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-mocha-700 text-mocha-400/80 transition-all duration-300 gap-1 hover:text-mocha-500 overflow-hidden"
                 title="문서 정보"
               >
                 <Info className="h-3.5 w-3.5 shrink-0" />
@@ -126,32 +123,62 @@ export default function EditorRightSidebar({
         </div>
 
         {/* Panel Content */}
-        <div
-          className={cn(
-            "flex-1",
-            activeTab === "ai" ? "overflow-hidden" : "overflow-y-auto",
-          )}
-        >
-          {activeTab === "inspector" && (
+        <div className="flex-1 relative overflow-hidden">
+          {/* Inspector Panel */}
+          <div
+            className={cn(
+              "absolute inset-0 overflow-y-auto",
+              activeTab !== "inspector" &&
+                "pointer-events-none opacity-0 invisible",
+            )}
+          >
             <InspectorPanel documentId={documentId} />
-          )}
-          {activeTab === "foreshadowing" && (
+          </div>
+
+          {/* Foreshadowing Panel */}
+          <div
+            className={cn(
+              "absolute inset-0 overflow-y-auto",
+              activeTab !== "foreshadowing" &&
+                "pointer-events-none opacity-0 invisible",
+            )}
+          >
             <ForeshadowingPanel
               newForeshadowingId={newForeshadowingId}
               documentId={documentId}
               sectionTitle={sectionTitle}
               onNavigateToPosition={onNavigateToPosition}
             />
-          )}
-          {activeTab === "ai" && <AIAssistantPanel projectId={projectId} />}
-          {activeTab === "consistency" && (
+          </div>
+
+          {/* AI Assistant Panel */}
+          <div
+            className={cn(
+              "absolute inset-0",
+              activeTab !== "ai" && "pointer-events-none opacity-0 invisible",
+            )}
+          >
+            <AIAssistantPanel
+              projectId={projectId}
+              consistencyReport={consistencyReport}
+            />
+          </div>
+
+          {/* Insights Panel */}
+          <div
+            className={cn(
+              "absolute inset-0 overflow-y-auto",
+              activeTab !== "consistency" &&
+                "pointer-events-none opacity-0 invisible",
+            )}
+          >
             <InsightsPanel
               projectId={projectId}
               consistencyReport={consistencyReport}
               isAnalyzing={isAnalyzing}
               onRefresh={onRefreshAnalysis}
             />
-          )}
+          </div>
         </div>
       </div>
     </aside>

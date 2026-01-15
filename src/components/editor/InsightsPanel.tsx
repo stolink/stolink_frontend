@@ -1,10 +1,10 @@
+import { useMemo } from "react";
 import {
   RefreshCw,
   FileText,
   Lightbulb,
   Loader2,
   Sparkles,
-  Pencil,
   Check,
   Ban,
   Trash2,
@@ -14,14 +14,14 @@ import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ConsistencyReport, Conflict } from "@/types/analysisResult";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUIStore } from "@/stores/useUIStore";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 interface InsightsPanelProps {
   projectId: string | null;
@@ -48,14 +48,11 @@ const CONFLICT_TYPE_MAP: Record<string, string> = {
 
 /**
  * Helper to get the user-friendly Korean label.
- * Checks if the category ends with "_CONFLICT" and maps it,
- * otherwise returns the category as-is or falls back to "기타".
  */
 const getConflictLabel = (category: string) => {
   if (CONFLICT_TYPE_MAP[category]) {
     return CONFLICT_TYPE_MAP[category];
   }
-  // If backend sends "PERSONALITY" instead of "PERSONALITY_CONFLICT", try matching
   const keyWithSuffix = `${category}_CONFLICT`;
   if (CONFLICT_TYPE_MAP[keyWithSuffix]) {
     return CONFLICT_TYPE_MAP[keyWithSuffix];
@@ -152,85 +149,131 @@ function ScoreGauge({ score }: { score: number }) {
 }
 
 // ------------------------------------------------------------------
-// 3. Conflict Card Component (Redesigned)
+// 3. Conflict Card Component (AI-first Flow)
 // ------------------------------------------------------------------
 function ConflictCard({
   conflict,
-  index,
-  onNavigate,
+  displayIndex,
+  originalIndex,
 }: {
   conflict: Conflict;
-  index: number;
-  onNavigate?: (location: Conflict["location"]) => void;
+  displayIndex: number;
+  originalIndex: number;
 }) {
   const isError = conflict.severity === "critical";
   const mappedCategory = getConflictLabel(conflict.category);
 
-  // Todo: Implement logic handlers
-  const handleEdit = () => {
-    if (conflict.location) {
-      onNavigate?.(conflict.location);
-    }
+  const status = useAnalysisBufferStore(
+    (state) => state.processedConflicts[conflict.id],
+  );
+  const markStatus = useAnalysisBufferStore(
+    (state) => state.markConflictStatus,
+  );
+  const setPendingMessage = useUIStore(
+    (state) => state.setPendingAIChatMessage,
+  );
+  const setTab = useUIStore((state) => state.setRightSidebarTab);
+  const setOpen = useUIStore((state) => state.setRightSidebarOpen);
+
+  const handleAIAsk = () => {
+    const prompt = `[#개연성리포트_${originalIndex + 1}] 이 모순에 대해 너가 아는 모든 작품 설정을 바탕으로 구체적인 해결책을 제안해줘.`;
+
+    setPendingMessage(prompt);
+    setTab("ai");
+    setOpen(true);
   };
-  const handleResolve = () => {};
-  const handleIgnore = () => {};
-  const handleDelete = () => {};
+
+  const handleResolve = () => {
+    markStatus(conflict.id, "resolved");
+  };
+
+  const handleIgnore = () => {
+    markStatus(conflict.id, "ignored");
+  };
+
+  const handleDelete = () => {
+    markStatus(conflict.id, "deleted");
+  };
+
+  const isResolved = status === "resolved";
+  const isDeletedOrIgnored = status === "deleted" || status === "ignored";
+
+  if (isDeletedOrIgnored) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: displayIndex * 0.05 }}
       className={cn(
         "group relative bg-white border rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden",
         isError
           ? "border-rose-100 hover:border-rose-200"
           : "border-amber-100 hover:border-amber-200",
+        isResolved && "opacity-60 grayscale-[0.3]",
       )}
     >
-      {/* Accent Bar */}
       <div
         className={cn(
           "absolute left-0 top-0 bottom-0 w-1 transition-colors",
-          isError ? "bg-rose-400" : "bg-amber-400",
+          isResolved
+            ? "bg-emerald-400"
+            : isError
+              ? "bg-rose-400"
+              : "bg-amber-400",
         )}
       />
 
       <div className="p-4 pl-5">
-        {/* Header: Badge & Location */}
         <div className="flex items-center justify-between mb-3">
-          <span
-            className={cn(
-              "text-[11px] font-bold px-2 py-0.5 rounded-md border",
-              isError
-                ? "bg-rose-50 text-rose-700 border-rose-100"
-                : "bg-amber-50 text-amber-700 border-amber-100",
-            )}
-          >
-            {mappedCategory}
-          </span>
-
-          {/* Location (if available) */}
-          {conflict.location && (
-            <div className="flex items-center gap-1 text-[11px] text-mocha-400 bg-cloud-50 px-1.5 py-0.5 rounded border border-cloud-100">
-              <FileText className="w-3 h-3" />
-              <span>Here</span>
-              {conflict.location.line && (
-                <span className="text-mocha-300">|</span>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-[11px] font-bold px-2 py-0.5 rounded-md border",
+                isResolved
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : isError
+                    ? "bg-rose-50 text-rose-700 border-rose-100"
+                    : "bg-amber-50 text-amber-700 border-amber-100",
               )}
+            >
+              #{originalIndex + 1}
+            </span>
+            <span
+              className={cn(
+                "text-[11px] font-bold px-2 py-0.5 rounded-md border",
+                isResolved
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : isError
+                    ? "bg-rose-50 text-rose-700 border-rose-100"
+                    : "bg-amber-50 text-amber-700 border-amber-100",
+              )}
+            >
+              {isResolved ? "해결됨" : mappedCategory}
+            </span>
+          </div>
+
+          {conflict.location && (
+            <div className="flex items-center gap-1 text-[11px] text-mocha-300 bg-cloud-50/50 px-2 py-0.5 rounded border border-mocha-100/10">
+              <FileText className="w-3 h-3" />
+              <span>{conflict.location.chapter || "본문"}</span>
+              {conflict.location.line && <span className="opacity-30">|</span>}
               {conflict.location.line && <span>L{conflict.location.line}</span>}
             </div>
           )}
         </div>
 
-        {/* Content Description */}
-        <p className="text-[13px] text-espresso-800 leading-relaxed font-medium mb-3">
+        <p
+          className={cn(
+            "text-[13px] text-espresso-800 leading-relaxed font-medium mb-3",
+            isResolved && "line-through text-mocha-400",
+          )}
+        >
           {conflict.description}
         </p>
 
-        {/* AI Suggestion */}
-        {conflict.suggestion && (
+        {conflict.suggestion && !isResolved && (
           <div className="relative pl-3 border-l-2 border-sage-200 py-0.5 mb-4">
             <span className="block text-[10px] font-bold text-sage-600 uppercase tracking-wider mb-0.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> AI Suggestion
@@ -241,63 +284,68 @@ function ConflictCard({
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2 border-t border-cloud-100">
-          {/* Edit (Primary Action) */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleEdit}
-            className="h-7 px-2 text-xs font-medium text-mocha-600 hover:text-mocha-900 hover:bg-mocha-50 gap-1.5"
+            onClick={handleAIAsk}
+            disabled={isResolved}
+            className="flex-1 h-8 text-[11px] font-bold gap-1.5 border border-mocha-100/50 text-mocha-600 hover:bg-mocha-50 hover:text-mocha-700 transition-all duration-300 rounded-lg"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            수정
+            <Sparkles className="w-3.5 h-3.5" />
+            AI에게 질문
           </Button>
 
-          <div className="flex-1" />
-
-          {/* Subtle Actions Group */}
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleResolve}
-              className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-full"
-              title="해결 완료 처리"
+              className={cn(
+                "h-7 w-7 rounded-full transition-colors",
+                isResolved
+                  ? "text-emerald-500 bg-emerald-50"
+                  : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50",
+              )}
+              title={isResolved ? "해결 완료됨" : "해결 완료 처리"}
             >
               <Check className="w-3.5 h-3.5" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleIgnore}
-              className="h-7 w-7 text-mocha-400 hover:text-mocha-600 hover:bg-mocha-50 rounded-full"
-              title="이 이슈 무시"
-            >
-              <Ban className="w-3.5 h-3.5" />
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {!isResolved && (
+              <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-mocha-300 hover:text-rose-600 hover:bg-rose-50 rounded-full"
+                  onClick={handleIgnore}
+                  className="h-7 w-7 text-mocha-400 hover:text-mocha-600 hover:bg-mocha-50 rounded-full"
+                  title="이 이슈 무시"
                 >
-                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  <Ban className="w-3.5 h-3.5" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-32">
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 text-xs gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  삭제
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-mocha-300 hover:text-rose-600 hover:bg-rose-50 rounded-full"
+                    >
+                      <MoreHorizontal className="w-3.5 h-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-32">
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 text-xs gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -343,35 +391,82 @@ function LoadingState() {
   );
 }
 
+function ConflictList({
+  visibleConflicts,
+  fullConflicts = [],
+}: {
+  visibleConflicts: Conflict[];
+  fullConflicts?: Conflict[];
+}) {
+  const processedConflicts = useAnalysisBufferStore(
+    (state) => state.processedConflicts,
+  );
+
+  const conflictsWithIndices = useMemo(() => {
+    return visibleConflicts
+      .map((c) => {
+        const originalIndex = fullConflicts.findIndex((fc) => fc.id === c.id);
+        return {
+          conflict: c,
+          originalIndex: originalIndex >= 0 ? originalIndex : 0,
+        };
+      })
+      .filter(
+        ({ conflict: c }) =>
+          !processedConflicts[c.id] || processedConflicts[c.id] === "resolved",
+      );
+  }, [visibleConflicts, fullConflicts, processedConflicts]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <h4 className="text-xs font-bold text-mocha-500 uppercase tracking-widest">
+          분석 리포트 ({conflictsWithIndices.length})
+        </h4>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            useAnalysisBufferStore.getState().clearProcessedConflicts()
+          }
+          className="h-6 text-[10px] text-mocha-400 hover:text-mocha-600"
+        >
+          내역 초기화
+        </Button>
+      </div>
+
+      <AnimatePresence>
+        {conflictsWithIndices.map(({ conflict, originalIndex }, index) => (
+          <ConflictCard
+            key={conflict.id}
+            conflict={conflict}
+            displayIndex={index}
+            originalIndex={originalIndex}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function InsightsPanel({
   consistencyReport,
   isAnalyzing,
   onRefresh,
 }: InsightsPanelProps) {
-  // stats removed (unused)
-
-  const handleNavigate = (_location: Conflict["location"]) => {
-    // TODO: 에디터에서 해당 위치로 이동하는 로직 이벤트를 상위로 전파하거나 컨텍스트 사용
-  };
+  const visibleConflicts = useMemo(() => {
+    if (!consistencyReport) return [];
+    return consistencyReport.conflicts;
+  }, [consistencyReport]);
 
   return (
     <div className="flex flex-col h-full bg-cloud-50/50">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-mocha-100/50 bg-white/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-bold text-espresso-900 font-serif flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-100" />
-            개연성 검증
-          </h3>
-          {consistencyReport?.analyzedAt && (
-            <p className="text-[11px] text-mocha-400 mt-0.5 pl-6">
-              {formatDistanceToNow(new Date(consistencyReport.analyzedAt), {
-                addSuffix: true,
-                locale: ko,
-              })}{" "}
-              업데이트
-            </p>
-          )}
+      <div className="h-[52px] px-4 flex items-center justify-between border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-mocha-100 rounded-lg">
+            <Lightbulb className="w-3.5 h-3.5 text-mocha-700" />
+          </div>
+          <h3 className="text-sm font-bold text-espresso-900">개연성 검증</h3>
         </div>
         <Button
           variant="outline"
@@ -389,7 +484,6 @@ export default function InsightsPanel({
         </Button>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cloud-200 scrollbar-track-transparent p-4">
         {isAnalyzing ? (
           <LoadingState />
@@ -397,35 +491,15 @@ export default function InsightsPanel({
           <EmptyState />
         ) : (
           <div className="space-y-6 max-w-md mx-auto">
-            {/* Score Gauge */}
             <ScoreGauge score={consistencyReport.score} />
-
-            {/* Conflicts List */}
-            {consistencyReport.conflicts.length > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <h4 className="text-xs font-bold text-mocha-500 uppercase tracking-widest">
-                    분석 리포트 ({consistencyReport.conflicts.length})
-                  </h4>
-                  {/* Filter or Sort could go here */}
-                </div>
-
-                <AnimatePresence>
-                  {consistencyReport.conflicts.map((conflict, index) => (
-                    <ConflictCard
-                      key={`${conflict.category}-${index}`}
-                      conflict={conflict}
-                      index={index}
-                      onNavigate={handleNavigate}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
+            {visibleConflicts.length > 0 ? (
+              <ConflictList
+                visibleConflicts={visibleConflicts}
+                fullConflicts={consistencyReport.conflicts}
+              />
             ) : (
               <EmptyState />
             )}
-
-            {/* Bottom Spacer */}
             <div className="h-10" />
           </div>
         )}

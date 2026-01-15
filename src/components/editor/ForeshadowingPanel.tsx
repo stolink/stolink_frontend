@@ -259,16 +259,13 @@ const ForeshadowingPanel = ({
   return (
     <div className="flex flex-col h-full bg-cloud-50/50">
       {/* 헤더 */}
-      <div className="p-4 border-b border-sage-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="h-[52px] px-4 flex items-center border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-sage-100 rounded-lg">
-            <AlertCircle className="w-3.5 h-3.5 text-sage-600" />
+          <div className="p-1.5 bg-mocha-100 rounded-lg">
+            <AlertCircle className="w-3.5 h-3.5 text-mocha-700" />
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-sm font-bold text-sage-900">미회수 복선</h2>
-            <span className="text-[10px] text-sage-500 font-medium tracking-wide uppercase">
-              Pending Foreshadowings ({foreshadowings.length})
-            </span>
+          <div>
+            <h3 className="text-sm font-bold text-espresso-900">미회수 복선</h3>
           </div>
         </div>
       </div>

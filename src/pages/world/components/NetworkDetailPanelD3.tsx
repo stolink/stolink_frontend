@@ -11,6 +11,11 @@ import {
   Brain,
   Activity,
   Sparkles,
+  Shield,
+  Swords,
+  Eye,
+  HeartCrack,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { Badge } from "@stolink/ui";
@@ -19,23 +24,25 @@ import type { Character, RelationshipLink } from "@/types";
 import {
   RELATION_LABELS,
   ROLE_LABELS,
+  RELATION_BADGE_COLORS,
   type UIRelationType,
 } from "@/components/CharacterGraph/constants";
 import { cn } from "@/lib/utils";
-
-// 관계 타입별 색상 클래스
-// 관계 타입별 색상 클래스
-const RELATION_BADGE_COLORS: Record<string, string> = {
-  friendly: "bg-emerald-500 text-white border-emerald-500",
-  hostile: "bg-rose-500 text-white border-rose-500",
-  romantic: "bg-pink-400 text-white border-pink-400",
-};
+import { useCharacter } from "@/hooks/useCharacters";
 
 // 관계 타입별 아이콘
 const RELATION_ICONS: Record<string, React.ReactNode> = {
-  friendly: <User className="w-3 h-3" />,
-  hostile: <Skull className="w-3 h-3" />,
+  ally: <User className="w-3 h-3" />,
+  enemy: <Skull className="w-3 h-3" />,
+  rival: <Swords className="w-3 h-3" />,
+  family: <Users className="w-3 h-3" />,
+  betrayed: <HeartCrack className="w-3 h-3" />,
+  knows: <Eye className="w-3 h-3" />,
+  protects: <Shield className="w-3 h-3" />,
+  mentor: <Lightbulb className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
+  neutral: <Network className="w-3 h-3" />,
+  complex: <Sparkles className="w-3 h-3" />,
 };
 
 // 역할별 색상
@@ -63,7 +70,15 @@ export function NetworkDetailPanelD3({
   onClose,
   onViewProfile,
 }: NetworkDetailPanelD3Props) {
-  if (!selectedCharacter) return null;
+  // Fetch detailed character data to ensure all personality traits/values are available
+  // (List API might return summarized data)
+  const { data: detailCharacter } = useCharacter(selectedCharacter?._id || "", {
+    enabled: !!selectedCharacter?._id,
+  });
+
+  const displayCharacter = detailCharacter || selectedCharacter;
+
+  if (!displayCharacter) return null;
 
   // 연결된 링크 찾기
   const connectedLinks = links.filter((link) => {
@@ -72,12 +87,12 @@ export function NetworkDetailPanelD3({
     const targetId =
       typeof link.target === "string" ? link.target : link.target.id;
     return (
-      sourceId === selectedCharacter._id || targetId === selectedCharacter._id
+      sourceId === displayCharacter._id || targetId === displayCharacter._id
     );
   });
 
-  const roleLabel = ROLE_LABELS[selectedCharacter.role || "other"];
-  const roleColor = ROLE_COLORS[selectedCharacter.role || "other"];
+  const roleLabel = ROLE_LABELS[displayCharacter.role || "other"];
+  const roleColor = ROLE_COLORS[displayCharacter.role || "other"];
 
   return (
     <div className="absolute right-4 top-4 bottom-4 w-80 z-20 bg-white border border-cloud-200 rounded-2xl overflow-hidden flex flex-col editorial-fade-in shadow-paper-floating">
@@ -103,17 +118,17 @@ export function NetworkDetailPanelD3({
         <div className="flex items-center gap-4">
           {/* Profile Image - Larger */}
           <div className="w-20 h-20 rounded-2xl bg-cloud-50 border border-cloud-200 flex items-center justify-center text-3xl shadow-sm overflow-hidden">
-            {selectedCharacter.imageUrl ? (
+            {displayCharacter.imageUrl ? (
               <img
-                src={selectedCharacter.imageUrl}
-                alt={selectedCharacter.profile?.name || ""}
+                src={displayCharacter.imageUrl}
+                alt={displayCharacter.profile?.name || ""}
                 className="w-full h-full object-cover"
               />
-            ) : selectedCharacter.role === "protagonist" ? (
+            ) : displayCharacter.role === "protagonist" ? (
               "🦸"
-            ) : selectedCharacter.role === "antagonist" ? (
+            ) : displayCharacter.role === "antagonist" ? (
               "🦹"
-            ) : selectedCharacter.role === "mentor" ? (
+            ) : displayCharacter.role === "mentor" ? (
               "🧙"
             ) : (
               "👤"
@@ -121,11 +136,11 @@ export function NetworkDetailPanelD3({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-bold text-espresso-900 truncate tracking-tight">
-              {selectedCharacter.profile?.name || "이름 없음"}
+              {displayCharacter.profile?.name || "이름 없음"}
             </h3>
-            {selectedCharacter.profile?.faction?.name && (
+            {displayCharacter.profile?.faction?.name && (
               <p className="magazine-caption text-xs not-italic text-espresso-400 mt-1">
-                {selectedCharacter.profile.faction.name}
+                {displayCharacter.profile.faction.name}
               </p>
             )}
           </div>
@@ -162,17 +177,18 @@ export function NetworkDetailPanelD3({
       <div className="px-5 py-5 border-b border-cloud-50 space-y-5 bg-gradient-to-b from-cloud-50/30 to-white">
         {(() => {
           const personality =
-            selectedCharacter.profile?.personality ||
-            selectedCharacter.personality;
-          const traits = Array.isArray(personality?.coreTraits)
-            ? personality.coreTraits
-            : Array.isArray(personality)
-              ? personality
-              : [];
-          const mood = selectedCharacter.currentMood;
+            displayCharacter.profile?.personality ||
+            displayCharacter.personality;
+          const traits = [
+            ...(Array.isArray(personality?.coreTraits)
+              ? personality.coreTraits
+              : []),
+            ...(Array.isArray(personality?.values) ? personality.values : []),
+          ];
+          const mood = displayCharacter.currentMood;
           const archetypeSelection =
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (selectedCharacter as any).archetype || "Unknown";
+            (displayCharacter as any).archetype || "Unknown";
 
           return (
             <>
@@ -275,14 +291,14 @@ export function NetworkDetailPanelD3({
               </div>
 
               {/* Character Motive / Secret (if available) */}
-              {selectedCharacter.motivation && (
+              {displayCharacter.motivation && (
                 <div className="p-3 bg-mocha-50/30 border border-mocha-100 rounded-xl relative overflow-hidden group">
                   <h4 className="text-[9px] font-bold text-mocha-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
                     <Sparkles className="w-2.5 h-2.5" />
                     행동 동기
                   </h4>
                   <p className="text-xs text-mocha-700 leading-relaxed italic line-clamp-2">
-                    "{selectedCharacter.motivation}"
+                    "{displayCharacter.motivation}"
                   </p>
                 </div>
               )}
@@ -311,7 +327,7 @@ export function NetworkDetailPanelD3({
                     ? link.target
                     : link.target.id;
                 const otherId =
-                  sourceId === selectedCharacter._id ? targetId : sourceId;
+                  sourceId === displayCharacter._id ? targetId : sourceId;
                 const otherChar = characters.find((c) => c._id === otherId);
                 const relType = link.type;
 

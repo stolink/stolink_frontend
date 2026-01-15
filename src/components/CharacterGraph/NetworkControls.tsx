@@ -28,8 +28,8 @@ import { cn } from "@/lib/utils";
 
 // 관계 타입별 아이콘 (컴팩트)
 const RELATION_ICONS: Partial<Record<UIRelationType, React.ReactNode>> = {
-  friendly: <Users className="w-3 h-3" />,
-  hostile: <Skull className="w-3 h-3" />,
+  ally: <Users className="w-3 h-3" />,
+  enemy: <Skull className="w-3 h-3" />,
   romantic: <Heart className="w-3 h-3" />,
   family: <Users className="w-3 h-3" />,
   neutral: <Users className="w-3 h-3" />,
@@ -393,7 +393,7 @@ export function NetworkControls({
                     className="w-6 h-0.5 rounded-full"
                     style={{
                       backgroundColor: RELATION_COLORS_HEX[type],
-                      ...(type === "hostile" && {
+                      ...(type === "enemy" && {
                         background: `repeating-linear-gradient(90deg, ${RELATION_COLORS_HEX[type]} 0px, ${RELATION_COLORS_HEX[type]} 3px, transparent 3px, transparent 6px)`,
                       }),
                     }}

@@ -55,6 +55,7 @@ export interface TiptapEditorProps {
 export interface TiptapEditorHandle {
   getSplitContent: () => { before: string; after: string } | null;
   getContent: () => string;
+  scrollToLine: (line: number) => void;
 }
 
 const DEFAULT_CONTENT = `
@@ -397,6 +398,45 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         tempEditor.destroy();
 
         return { before, after };
+      },
+      scrollToLine: (line: number) => {
+        if (!editor || line <= 0) return;
+
+        // Tiptap doesn't have a direct "line" concept in ProseMirror,
+        // so we find the N-th block node that isn't the document itself.
+        let currentLine = 0;
+        let pos = -1;
+
+        editor.state.doc.descendants((node, nodePos) => {
+          // Only count top-level blocks or meaningful blocks
+          // We want to avoid counting every single list item AND the list itself if possible,
+          // but matches what typical AI line counting does (usually counts by \n separator)
+          if (node.isBlock && node.type.name !== "doc") {
+            // Only count nodes that are direct children of doc or nested meaningful blocks
+            // This is a heuristic that works for most simple documents
+            currentLine++;
+            if (currentLine === line) {
+              pos = nodePos;
+              return false; // Found it
+            }
+          }
+        });
+
+        if (pos !== -1) {
+          editor.commands.focus();
+          editor.commands.setTextSelection(pos);
+
+          // Use Tiptap's built-in scrollIntoView which is more reliable for ProseMirror
+          editor.commands.scrollIntoView();
+
+          // Fallback if the built-in doesn't work well with our container
+          setTimeout(() => {
+            const dom = editor.view.nodeDOM(pos) as HTMLElement;
+            if (dom && typeof dom.scrollIntoView === "function") {
+              dom.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+          }, 50);
+        }
       },
     }));
 

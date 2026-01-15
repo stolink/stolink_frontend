@@ -124,7 +124,7 @@ export function EditorToolbar({
   // page, setPage, totalPages removed
 }: EditorToolbarProps) {
   return (
-    <div className="!h-9 min-h-[36px] max-h-[36px] border-b border-border flex items-center justify-between px-3 shrink-0 bg-card overflow-hidden">
+    <div className="!h-[52px] min-h-[52px] max-h-[52px] border-b border-border flex items-center justify-between px-4 shrink-0 bg-card overflow-hidden">
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}

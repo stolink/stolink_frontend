@@ -56,6 +56,8 @@ export interface BackendConflict {
     line?: number;
     document_id?: string;
   };
+  related_events?: string[]; // Potential hidden field in JSON
+  event_id?: string; // Single event reference
 }
 
 export interface BackendResolutionSummary {
@@ -114,6 +116,7 @@ export interface BackendMetadata {
 // ============================================
 
 export interface Conflict {
+  id: string; // Stable unique identifier
   severity: "critical" | "warning";
   category: string;
   description: string;
@@ -123,6 +126,7 @@ export interface Conflict {
     line?: number;
     documentId?: string;
   };
+  relatedEventIds?: string[];
 }
 
 export interface ConsistencyStats {
@@ -195,10 +199,23 @@ export function transformConflict(
     severity = "critical";
   }
 
+  const category = backend.type || backend.category || "Unknown";
+  const description = backend.description;
+  const docId = backend.location?.document_id || "";
+  const line = backend.location?.line || 0;
+
+  // Generate a stable ID based on key fields
+  const id =
+    `conf-${category}-${docId}-${line}-${description.slice(0, 20)}`.replace(
+      /\s+/g,
+      "_",
+    );
+
   return {
+    id,
     severity,
-    category: backend.type || backend.category || "Unknown",
-    description: backend.description,
+    category,
+    description,
     suggestion: backend.suggestion || backend.resolution || undefined,
     location: backend.location
       ? {
@@ -207,6 +224,8 @@ export function transformConflict(
           documentId: backend.location.document_id,
         }
       : undefined,
+    relatedEventIds:
+      backend.related_events || (backend.event_id ? [backend.event_id] : []),
   };
 }
 

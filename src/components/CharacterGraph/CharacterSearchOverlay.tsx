@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Character } from "@/types";
 import { ROLE_LABELS } from "./constants";
 import { matchesSearch, getInitial, ROLE_GRADIENTS } from "./utils";
+import { getKoreanRegex } from "@/lib/korean-search";
 
 interface CharacterSearchOverlayProps {
   characters: Character[];
@@ -314,7 +315,39 @@ export function CharacterSearchOverlay({
                               : "text-espresso-700",
                           )}
                         >
-                          {char.profile?.name || "이름 없음"}
+                          {(() => {
+                            const name = char.profile?.name || "이름 없음";
+                            if (!deferredQuery.trim()) return name;
+
+                            try {
+                              const regex = getKoreanRegex(deferredQuery);
+                              const match = regex.exec(name);
+                              if (!match) return name;
+
+                              // Simple highlight of the *first* match
+                              // For global highlighting, we'd need loop.
+                              // But Chosung usually matches once for name search.
+                              // We split by match index.
+                              const start = match.index;
+                              const end = start + match[0].length;
+
+                              const before = name.slice(0, start);
+                              const target = name.slice(start, end);
+                              const after = name.slice(end);
+
+                              return (
+                                <>
+                                  {before}
+                                  <span className="text-mocha-600 font-bold bg-mocha-100/50 rounded-[1px]">
+                                    {target}
+                                  </span>
+                                  {after}
+                                </>
+                              );
+                            } catch (_e) {
+                              return name;
+                            }
+                          })()}
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                           <span

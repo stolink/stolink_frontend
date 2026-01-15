@@ -73,7 +73,7 @@ export default {
         sans: ['"Pretendard"', "system-ui", "sans-serif"],
         serif: ['"Spectral"', "serif"],
         display: ['"DM Serif Display"', "serif"],
-        body: ['"Spectral"', "serif"],
+        body: ['"Pretendard"', "sans-serif"],
       },
       fontSize: {
         body: "16px",
