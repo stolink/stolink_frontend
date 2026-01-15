@@ -223,7 +223,7 @@ export const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   rival: "bg-orange-500 text-white border-orange-500",
   family: "bg-teal-600 text-white border-teal-600",
   betrayed: "bg-rose-700 text-white border-rose-700",
-  knows: "bg-stone-400 text-white border-stone-400",
+  knows: "bg-zinc-400 text-white border-zinc-400",
   protects: "bg-sky-500 text-white border-sky-500",
   mentor: "bg-amber-500 text-white border-amber-500",
   romantic: "bg-pink-400 text-white border-pink-400",

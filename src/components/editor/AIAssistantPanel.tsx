@@ -49,7 +49,6 @@ export default function AIAssistantPanel({
     resetSession,
     loadHistory,
     clearAnalysisComplete,
-    loadHistory,
   } = useChatStream({
     onError: (error) => {
       console.error("AI Chat error:", error);
