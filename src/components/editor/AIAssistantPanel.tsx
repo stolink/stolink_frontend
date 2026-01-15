@@ -39,6 +39,7 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
     sendMessage,
     cancelStream,
     resetSession,
+    loadHistory,
     clearAnalysisComplete,
   } = useChatStream({
     onError: (error) => {
@@ -47,11 +48,11 @@ export default function AIAssistantPanel({ projectId }: AIAssistantPanelProps) {
   });
 
   // 페이지 진입 시 히스토리 로드
-  // useEffect(() => {
-  //   if (projectId) {
-  //     loadHistory(projectId);
-  //   }
-  // }, [projectId, loadHistory]);
+  useEffect(() => {
+    if (projectId) {
+      loadHistory(projectId);
+    }
+  }, [projectId, loadHistory]);
 
   // 분석 완료 애니메이션 표시 상태
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
