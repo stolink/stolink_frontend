@@ -5,6 +5,7 @@
  * 임계치 도달 또는 페이지 이탈 시 flush하여 분석을 트리거합니다.
  */
 
+import { useState, useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -132,17 +133,26 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.processedConflicts = {}; // 프로젝트 변경 시 초기화
             // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
 
-            if (projectId && state.activeJobs[projectId]?.length > 0) {
-              const jobs = state.activeJobs[projectId];
+            // 새로고침 시 진행 중인 Job이 있으면 상태 유지
+            const hasActiveJobs =
+              projectId &&
+              (state.activeJobs[projectId]?.length > 0 ||
+                state.activeAnalysisJobs[projectId]?.length > 0);
+
+            if (hasActiveJobs) {
+              const jobs =
+                state.activeJobs[projectId!] ||
+                state.activeAnalysisJobs[projectId!];
               state.currentJobId = jobs[jobs.length - 1]; // 가장 최신 Job을 일단 표시
               state.currentJobType = "analysis"; // Default to analysis on reload if unknown
+              // activeJobs가 있으면 isAnalyzing 유지 (새로고침 시 SSE 재연결까지 상태 보존)
+              state.isAnalyzing = true;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;
               state.currentJobTargetId = null;
+              state.isAnalyzing = false;
             }
-            // isAnalyzing은 persist에서 복원되어도 useProjectAnalysis의 mount status check 결과를 따르도록 함
-            state.isAnalyzing = false;
           }
         });
       },
@@ -471,4 +481,28 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 export const ANALYSIS_BUFFER_CONFIG = {
   MIN_CHARS: MIN_CHARS_FOR_AUTO_FLUSH,
   MIN_INTERVAL_MS,
+};
+
+/**
+ * Hydration 완료 여부를 반환하는 훅
+ * IndexedDB에서 상태 복원이 완료되었는지 확인
+ */
+export const useAnalysisBufferHydrated = (): boolean => {
+  const [hydrated, setHydrated] = useState(() => {
+    return useAnalysisBufferStore.persist.hasHydrated();
+  });
+
+  useEffect(() => {
+    // persist 미들웨어의 onFinishHydration 콜백 등록
+    const unsubFinishHydration =
+      useAnalysisBufferStore.persist.onFinishHydration(() => {
+        setHydrated(true);
+      });
+
+    return () => {
+      unsubFinishHydration();
+    };
+  }, []);
+
+  return hydrated;
 };

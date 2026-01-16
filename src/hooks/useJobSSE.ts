@@ -78,12 +78,22 @@ export function useJobSSE<T = unknown>(
   const onTimeoutRef = useRef(onTimeout);
   const onMessageRef = useRef(onMessage);
 
+  // State refs for onerror handler (stale closure 방지)
+  const resultRef = useRef<T | null>(null);
+  const jobStatusRef = useRef<JobStatus | null>(null);
+
   useEffect(() => {
     onCompleteRef.current = onComplete;
     onErrorRef.current = onError;
     onTimeoutRef.current = onTimeout;
     onMessageRef.current = onMessage;
   }, [onComplete, onError, onTimeout, onMessage]);
+
+  // Keep state refs in sync
+  useEffect(() => {
+    resultRef.current = result;
+    jobStatusRef.current = jobStatus;
+  }, [result, jobStatus]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -242,7 +252,8 @@ export function useJobSSE<T = unknown>(
       // readyState 0 (CONNECTING) means it's trying to reconnect. Don't cleanup yet.
       // readyState 2 (CLOSED) means it gave up.
       if (eventSource.readyState === 2) {
-        if (!result && jobStatus !== "completed") {
+        // Use refs to get latest state (stale closure 방지)
+        if (!resultRef.current && jobStatusRef.current !== "completed") {
           setError("SSE 연결이 닫혔습니다.");
           setIsConnected(false);
           // Only cleanup if permanently closed

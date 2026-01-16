@@ -145,6 +145,14 @@ export default function WorldPage() {
   useEffect(() => {
     if (!isPolling || !projectId) return;
 
+    // 만약 이미 확인된 분석이라면 (acknowledged),
+    // 분석 중이더라도 다시 스냅샷을 찍거나 플래그를 리셋하지 않음 (새로고침 루프 방지)
+    if (
+      sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
+    ) {
+      return;
+    }
+
     // 이미 스냅샷이 있으면 무시
     if (snapshotRef.current) return;
 
@@ -234,8 +242,14 @@ export default function WorldPage() {
   // Effect: Calculate Diff when Data Refreshes after Analysis
   useEffect(() => {
     if (isWaitingForRefresh && !isPolling) {
-      // [Fix] Allow diff calculation even if snapshot is missing (treat as fresh start)
-      // Check if data seems "fresh" or different (or just assume it is after query invalidation)
+      // guard: Check acknowledgement or if modal is already open to prevent loop
+      const isAck =
+        projectId &&
+        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
+      if (isAck || isAnalysisModalOpen) {
+        setTimeout(() => setIsWaitingForRefresh(false), 0);
+        return;
+      }
 
       // 1. Try to get snapshot from Ref
       let prev = snapshotRef.current;
@@ -269,8 +283,11 @@ export default function WorldPage() {
         currentLinks,
       );
 
+      // IMPORTANT: Reset wait state IMMEDIATELY to prevent redundant triggers
+      // before the async setStates below can finish.
       // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
       setTimeout(() => {
+        setIsWaitingForRefresh(false);
         setAnalysisDiff(diff);
 
         // Set highlighting
@@ -283,8 +300,6 @@ export default function WorldPage() {
         ].filter(Boolean);
         setPendingHighlightNames(namesToHighlight);
 
-        // Reset wait state
-        setIsWaitingForRefresh(false);
         snapshotRef.current = null; // Clear snapshot ref
         if (projectId) {
           sessionStorage.removeItem(`analysis_snapshot_${projectId}`); // Clear storage
@@ -297,7 +312,14 @@ export default function WorldPage() {
         setIsAnalysisModalOpen(true);
       }, 1500);
     }
-  }, [isWaitingForRefresh, isPolling, characters, links, projectId]);
+  }, [
+    isWaitingForRefresh,
+    isPolling,
+    characters,
+    links,
+    projectId,
+    isAnalysisModalOpen,
+  ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(

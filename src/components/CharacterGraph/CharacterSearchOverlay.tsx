@@ -1,11 +1,4 @@
-import {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useDeferredValue,
-  useCallback,
-} from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -26,7 +19,7 @@ interface CharacterSearchOverlayProps {
  * 캐릭터 검색 오버레이 컴포넌트 (성능 최적화 버전)
  * - CSS Containment로 렌더링 격리
  * - Virtualization으로 DOM 노드 최소화 (590개 → ~10개)
- * - useDeferredValue로 입력 우선순위 분리
+ * - ref 패턴으로 콜백 안정화
  * - GPU 가속 transform 사용
  */
 export function CharacterSearchOverlay({
@@ -35,21 +28,26 @@ export function CharacterSearchOverlay({
   onSearch,
 }: CharacterSearchOverlayProps) {
   const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query); // 검색 결과 렌더링 우선순위 낮춤
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const parentRef = useRef<HTMLDivElement>(null); // Virtualizer parent
 
-  // Search Logic with Fuzzy + Chosung (deferred query 사용)
+  // onSearch 콜백을 ref로 관리 (의존성 배열에서 제외하기 위함)
+  const onSearchRef = useRef(onSearch);
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  // Search Logic with Fuzzy + Chosung
   const matches = useMemo(() => {
-    if (!deferredQuery.trim()) return [];
+    if (!query.trim()) return [];
 
     return characters.filter((c) =>
-      matchesSearch(c.profile?.name || "", deferredQuery),
+      matchesSearch(c.profile?.name || "", query),
     );
-  }, [deferredQuery, characters]);
+  }, [query, characters]);
 
   // [Stability] Virtualizer 옵션 안정화 - 매 렌더링마다 재생성 방지
   const getScrollElement = useCallback(() => parentRef.current, []);
@@ -64,14 +62,27 @@ export function CharacterSearchOverlay({
     overscan: 5, // 버퍼 항목 수
   });
 
-  // Notify parent of matches for highlighting
+  // Notify parent of matches for highlighting (ref 패턴으로 안정화)
   useEffect(() => {
-    if (!deferredQuery.trim()) {
-      onSearch(null);
+    console.log(
+      "[DEBUG SearchOverlay] useEffect triggered, query:",
+      query,
+      "matches:",
+      matches.length,
+    );
+    console.log(
+      "[DEBUG SearchOverlay] onSearchRef.current:",
+      onSearchRef.current,
+    );
+    if (!query.trim()) {
+      console.log("[DEBUG SearchOverlay] calling onSearch(null)");
+      onSearchRef.current?.(null);
     } else {
-      onSearch(matches.map((c) => c._id));
+      const ids = matches.map((c) => c._id);
+      console.log("[DEBUG SearchOverlay] calling onSearch with ids:", ids);
+      onSearchRef.current?.(ids);
     }
-  }, [matches, deferredQuery, onSearch]);
+  }, [matches, query]);
 
   // Click outside handler
   useEffect(() => {
@@ -317,10 +328,10 @@ export function CharacterSearchOverlay({
                         >
                           {(() => {
                             const name = char.profile?.name || "이름 없음";
-                            if (!deferredQuery.trim()) return name;
+                            if (!query.trim()) return name;
 
                             try {
-                              const regex = getKoreanRegex(deferredQuery);
+                              const regex = getKoreanRegex(query);
                               const match = regex.exec(name);
                               if (!match) return name;
 

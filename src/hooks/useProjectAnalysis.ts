@@ -13,7 +13,10 @@ import {
   startTransition,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import {
+  useAnalysisBufferStore,
+  useAnalysisBufferHydrated,
+} from "@/stores/useAnalysisBufferStore";
 import { aiService } from "@/services/aiService";
 import { imageService } from "@/services/imageService";
 import type { AnalysisResultData, ConsistencyReport } from "@/types";
@@ -40,6 +43,8 @@ interface UseProjectAnalysisReturn {
   lastConsistencyReport: ConsistencyReport | null;
   isStuck: boolean;
   currentJobType: "analysis" | "image" | null;
+  /** 새로고침 후 백엔드에서 job 상태 확인 중 (true면 분석 버튼 비활성화) */
+  isCheckingJobStatus: boolean;
 }
 
 export function useProjectAnalysis(
@@ -49,9 +54,14 @@ export function useProjectAnalysis(
   const { enabled = true, onAnalysisComplete, onAnalysisError } = options;
   const queryClient = useQueryClient();
 
+  // IndexedDB에서 상태 복원 완료 여부 (새로고침 시 SSE 재연결에 필요)
+  const isHydrated = useAnalysisBufferHydrated();
+
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isStuck, setIsStuck] = useState(false);
+  // 새로고침 후 백엔드 job 상태 확인 중 (hydration 완료 전 또는 API 호출 중)
+  const [isCheckingJobStatus, setIsCheckingJobStatus] = useState(true);
 
   // Callbacks refs (to avoid effect re-runs)
   const onCompleteRef = useRef(onAnalysisComplete);
@@ -260,18 +270,20 @@ export function useProjectAnalysis(
     clearStoreJobs,
   ]);
 
-  // 프로젝트 ID 설정
+  // 프로젝트 ID 설정 (hydration 완료 후에만 - 복원된 상태 보존)
   useEffect(() => {
-    if (projectId) {
+    if (projectId && isHydrated) {
       setProjectId(projectId);
     }
-  }, [projectId, setProjectId]);
+  }, [projectId, isHydrated, setProjectId]);
 
   // 프로젝트 초기 로드 시 백엔드에서 job 상태 확인
+  // isHydrated: IndexedDB 복원 완료 후에만 실행 (새로고침 시 스토어 상태와 동기화)
   useEffect(() => {
-    if (!projectId || !enabled) return;
+    if (!projectId || !enabled || !isHydrated) return;
 
     const checkProjectJobStatus = async () => {
+      setIsCheckingJobStatus(true);
       try {
         const jobStatus = await aiService.getProjectAnalysisJob(projectId);
 
@@ -295,7 +307,9 @@ export function useProjectAnalysis(
         }
 
         // 이미 스토어에 분석 Job이 있으면 백엔드 Job을 추가하지 않음
+        // 단, isAnalyzing 상태는 true로 설정 (UI 표시용)
         if (currentStoreJobs.length > 0) {
+          setBufferAnalyzing(true);
           return;
         }
 
@@ -350,11 +364,20 @@ export function useProjectAnalysis(
           // 404 for analysis job status should only clear analysis jobs, not image jobs
           clearAnalysisJobs(projectId);
         }
+      } finally {
+        setIsCheckingJobStatus(false);
       }
     };
 
     checkProjectJobStatus();
-  }, [projectId, enabled, addStoreJobId, clearStoreJobs, clearAnalysisJobs]);
+  }, [
+    projectId,
+    enabled,
+    isHydrated,
+    addStoreJobId,
+    clearStoreJobs,
+    clearAnalysisJobs,
+  ]);
 
   // Note: SSE connection is managed by useJobSSE hook, so cleanup is handled there.
 
@@ -367,7 +390,11 @@ export function useProjectAnalysis(
     projectId,
     aiService.getProjectStatusStreamUrl,
     {
-      enabled: !!projectId && (activeAnalysisJobs[projectId]?.length ?? 0) > 0,
+      // isHydrated: IndexedDB에서 상태 복원 완료 후에만 SSE 시작 (새로고침 시 연결 끊김 방지)
+      enabled:
+        !!projectId &&
+        isHydrated &&
+        (activeAnalysisJobs[projectId]?.length ?? 0) > 0,
       onMessage: async (data) => {
         // SSE 이벤트 파싱
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -950,5 +977,6 @@ export function useProjectAnalysis(
     lastConsistencyReport,
     isStuck,
     currentJobType,
+    isCheckingJobStatus,
   };
 }
