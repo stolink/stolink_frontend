@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { debounce } from "lodash-es";
+import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Core Components
@@ -262,6 +262,43 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   );
   const setDocumentCharCounts = useWritingStatsStore(
     (s) => s.setDocumentCharCounts
+  );
+
+  // 스로틀링된 통계 업데이트 함수 (1초에 한 번만 실행하여 렉 방지)
+  const throttledUpdateStats = useMemo(
+    () =>
+      throttle(
+        (
+          id: string,
+          count: number,
+          updateFn: (id: string, count: number) => void
+        ) => {
+          updateFn(id, count);
+        },
+        1000,
+        { leading: true, trailing: true }
+      ),
+    []
+  );
+
+  // 스로틀링된 UI 업데이트 함수 (300ms에 한 번만 실행하여 리렌더링 방지)
+  const throttledUIUpdate = useMemo(
+    () =>
+      throttle(
+        (
+          count: number,
+          callback: (
+            count: number,
+            setState: React.Dispatch<React.SetStateAction<number>>
+          ) => void,
+          setter: React.Dispatch<React.SetStateAction<number>>
+        ) => {
+          callback(count, setter);
+        },
+        300,
+        { leading: true, trailing: true }
+      ),
+    []
   );
 
   // 초기 로드 시 모든 문서의 글자수를 스토어에 설정
@@ -742,10 +779,20 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               currentContent={documentContent}
               currentSectionTitle={document?.title || ""}
               onCharacterCountChange={(count: number) => {
-                handleCharacterCountChange(count, setCharacterCount);
-                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화)
+                // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
+                throttledUIUpdate(
+                  count,
+                  handleCharacterCountChange,
+                  setCharacterCount
+                );
+
+                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
                 if (!isDemo && selectedSectionId) {
-                  updateDocumentCharCount(selectedSectionId, count);
+                  throttledUpdateStats(
+                    selectedSectionId,
+                    count,
+                    updateDocumentCharCount
+                  );
                 }
               }}
               onContentChange={handleContentChange}

@@ -9,6 +9,29 @@
   outline: none;
 }
 
+/* =====================================================
+   Smooth Caret Animation
+   ===================================================== */
+.ProseMirror-cursormirror {
+  transition:
+    left 100ms ease-out,
+    top 100ms ease-out;
+}
+
+/* Note: Standard caret styling is handled by browser behavior,
+   but we can style custom carets if needed using plugins.
+   For now, we accept browser default but ensure clean rendering.
+*/
+.ProseMirror {
+  caret-color: #bd9b8d; /* Mocha 400 */
+}
+
+/* 타이핑 시 미세한 부드러움을 위한 하드웨어 가속 힌트 */
+.ProseMirror * {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Typography - Premium Serif for Body */
 .ProseMirror p {
   font-family: "Spectral", "Pretendard", serif;
