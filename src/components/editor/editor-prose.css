@@ -246,3 +246,194 @@
   padding: 0 4px;
   display: inline-block;
 }
+
+/* =====================================================
+   Theme Styles - Dark Mode & Eye-Care
+   ===================================================== */
+
+/* Dark Mode */
+.theme-dark .ProseMirror {
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror h1,
+.theme-dark .ProseMirror h2,
+.theme-dark .ProseMirror h3,
+.theme-dark .ProseMirror h4,
+.theme-dark .ProseMirror h5,
+.theme-dark .ProseMirror h6 {
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror blockquote {
+  border-left-color: #7d5a4b;
+  color: #bd9b8d;
+  background-color: rgba(125, 90, 75, 0.1);
+}
+
+.theme-dark .ProseMirror mark {
+  background-color: rgba(164, 119, 100, 0.4) !important;
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror .foreshadowing-tag {
+  background: linear-gradient(135deg, #3e4c3e 0%, #2d382d 100%);
+  border-color: #5f7d5f;
+  color: #c3d3c1;
+}
+
+.theme-dark .ProseMirror .character-mention {
+  background: linear-gradient(135deg, #4a3c35 0%, #3d302a 100%);
+  border-color: #7d5a4b;
+  color: #bd9b8d;
+}
+
+.theme-dark .ProseMirror ::selection {
+  background-color: rgba(164, 119, 100, 0.4);
+}
+
+.theme-dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #7d5a4b;
+}
+
+/* True Black Mode (OLED) */
+.theme-true-black .ProseMirror {
+  color: #f1f0ec;
+}
+
+.theme-true-black .ProseMirror h1,
+.theme-true-black .ProseMirror h2,
+.theme-true-black .ProseMirror h3 {
+  color: #f1f0ec;
+}
+
+/* Sepia Mode */
+.theme-sepia .ProseMirror {
+  color: #3d302a;
+}
+
+/* Eye-Care Mode */
+.theme-eye-care .ProseMirror {
+  color: #5b7b4b;
+}
+
+/* =====================================================
+   Focus Mode Styles
+   ===================================================== */
+
+.focus-mode-active .unfocused-node {
+  opacity: 0.25;
+  filter: blur(0.5px);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.focus-mode-active .focused-node {
+  opacity: 1;
+  filter: none;
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.focus-mode-active .unfocused-node:hover {
+  opacity: 0.5;
+  filter: none;
+}
+
+/* =====================================================
+   Heading 4-6 Styles
+   ===================================================== */
+
+.ProseMirror h4 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.2em;
+  font-weight: 400;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+  text-indent: 0;
+  color: #8b6b5a;
+}
+
+.ProseMirror h5 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.1em;
+  font-weight: 400;
+  margin-top: 0.8em;
+  margin-bottom: 0.3em;
+  text-indent: 0;
+  color: #9b7b6a;
+}
+
+.ProseMirror h6 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1em;
+  font-weight: 400;
+  margin-top: 0.6em;
+  margin-bottom: 0.2em;
+  text-indent: 0;
+  color: #ab8b7a;
+}
+
+/* Dark mode heading 4-6 */
+.theme-dark .ProseMirror h4,
+.theme-dark .ProseMirror h5,
+.theme-dark .ProseMirror h6 {
+  color: #d4c4b4;
+}
+
+/* =====================================================
+   Reader/Preview Mode Styles
+   ===================================================== */
+
+/* Ensure empty paragraphs create visible line breaks */
+.reader-content p:empty,
+.reader-content p:only-child:empty {
+  min-height: 1.5em;
+  display: block;
+}
+
+/* Match editor styling in reader mode */
+.reader-content p {
+  margin-bottom: 0.5em;
+  line-height: 1.8;
+}
+
+.reader-content h1,
+.reader-content h2,
+.reader-content h3,
+.reader-content h4,
+.reader-content h5,
+.reader-content h6 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-weight: 400;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.reader-content blockquote {
+  border-left: 3px solid #bd9b8d;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #7d5a4b;
+}
+
+.reader-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.reader-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.reader-content mark {
+  background-color: rgba(164, 119, 100, 0.3);
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+}
