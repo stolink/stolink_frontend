@@ -90,7 +90,7 @@ export default function StatsPage() {
 
     // 폴더 또는 챕터 타입인 문서의 수 계산
     const chapterCount = documents.filter(
-      (doc) => doc.type === "folder" || doc.type === "chapter"
+      (doc) => doc.type === "folder" || doc.type === "text"
     ).length;
 
     return {

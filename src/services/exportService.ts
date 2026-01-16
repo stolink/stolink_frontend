@@ -486,7 +486,7 @@ export async function exportToPdf(
       /^- (.+)$/gm,
       '<div style="margin-left: 1.5rem; text-indent: -1rem;">• $1</div>'
     );
-    html = html.replace(/^\d+\. (.+)$/gm, (match, content, offset, string) => {
+    html = html.replace(/^\d+\. (.+)$/gm, (_match, content, offset, string) => {
       // Count which number this is by looking at surrounding context
       const before = string.substring(0, offset);
       const listItemsBefore = (before.match(/^\d+\. /gm) || []).length;

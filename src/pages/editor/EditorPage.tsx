@@ -247,14 +247,8 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     [localDocuments]
   );
 
-  // 총 글자수 계산 (모든 문서 합산)
-  const totalChars = useMemo(() => {
-    if (isDemo) return 0;
-    return documents.reduce(
-      (acc, doc) => acc + getPlainTextLength(doc.content),
-      0
-    );
-  }, [documents, isDemo]);
+  // 통계 스토어 연결
+  const currentTotalChars = useWritingStatsStore((s) => s.currentTotalChars);
 
   // 통계 스토어 연결
   const updateDocumentCharCount = useWritingStatsStore(
@@ -718,7 +712,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isOpen={isSidebarOpen}
               onToggle={() => setIsSidebarOpen(false)}
               projectTitle={projectTitle}
-              totalChars={totalChars}
+              totalChars={currentTotalChars}
             />
           )}
         </AnimatePresence>
