@@ -64,7 +64,10 @@ export function useEditorHandlers({
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const lastContentRef = useRef<string>("");
+  const lastContentRef = useRef<{
+    documentId: string | null;
+    content: string;
+  }>({ documentId: null, content: "" });
   const saveContentRef = useRef(saveContent);
   const selectedSectionIdRef = useRef(selectedSectionId);
 
@@ -102,16 +105,20 @@ export function useEditorHandlers({
 
   // Force save current content
   const forceSave = useCallback(async () => {
-    if (isDemo || !selectedSectionIdRef.current) return;
+    if (isDemo) return;
 
+    // Cancel any pending auto-save timer
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
 
-    if (lastContentRef.current && saveContentRef.current) {
+    // Save using the stored document ID (not current selection)
+    const { documentId, content } = lastContentRef.current;
+    if (documentId && content && saveContentRef.current) {
       try {
-        await saveContentRef.current(lastContentRef.current);
+        await saveContentRef.current(content);
+        console.log(`[forceSave] Saved content for document: ${documentId}`);
       } catch (error) {
         console.error("[EditorPage] Force save failed:", error);
       }
@@ -184,7 +191,17 @@ export function useEditorHandlers({
   const handleSelectSection = useCallback(
     async (id: string) => {
       if (selectedSectionId !== id) {
+        // Cancel any pending auto-save timer before switching
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
+
+        // Force save content to the ORIGINAL document (not new selection)
         await forceSave();
+
+        // Reset content ref for new document
+        lastContentRef.current = { documentId: null, content: "" };
       }
       setSelectedSectionId(id);
     },
@@ -194,7 +211,13 @@ export function useEditorHandlers({
   // Content change with debounce
   const handleContentChange = useCallback(
     (content: string) => {
-      lastContentRef.current = content;
+      // Store both document ID and content together
+      const currentDocId = selectedSectionIdRef.current;
+      lastContentRef.current = {
+        documentId: currentDocId,
+        content: content,
+      };
+
       if (isDemo) return;
 
       // 🔴 Fix: ref를 통해 setSaveStatus 호출 (React 렌더링 사이클 호환)
@@ -205,6 +228,17 @@ export function useEditorHandlers({
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
+        // Validate: only save if still on the same document
+        const savedDocId = lastContentRef.current.documentId;
+        const nowDocId = selectedSectionIdRef.current;
+
+        if (savedDocId !== nowDocId) {
+          console.log(
+            `[Auto-save] Cancelled: Document changed from ${savedDocId} to ${nowDocId}`,
+          );
+          return; // Don't save to wrong document!
+        }
+
         setSaveStatusRef.current("saving");
         try {
           await saveContentRef.current(content);
@@ -268,6 +302,11 @@ export function useEditorHandlers({
 
       // 1. 섹션 전환 전 현재 콘텐츠 저장 (데이터 손실 방지)
       try {
+        // Cancel any pending timer and force save immediately
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
         await forceSave();
       } catch (error) {
         console.error(
@@ -298,7 +337,7 @@ export function useEditorHandlers({
       });
       if (newDoc) {
         // 2. 새 문서 전환 시 lastContentRef 초기화 (이전 콘텐츠 오염 방지)
-        lastContentRef.current = "";
+        lastContentRef.current = { documentId: null, content: "" };
         setSelectedSectionId(newDoc.id);
       }
       return newDoc;
