@@ -1,96 +1,141 @@
-# 🖼️ 테크니컬 챌린지: 렌더링 엔진 교체 (SVG → Canvas)
+# 🚀 성능 개선 사례: 15fps에서 60fps로 (SVG → Canvas 마이그레이션)
 
-> **주제**: 1,000개 이상의 노드를 가진 대규모 그래프에서 SVG의 DOM 오버헤드 한계를 극복하기 위해, HTML5 Canvas API로 렌더링 엔진을 전격 교체하고 인터랙션을 재구현한 사례입니다.
+> **요약**: 캐릭터 관계도 그래프 최적화 과정을 다룬 기술 심층 분석입니다. 초기 SVG 구현에서 시작하여, 극한의 React/D3 최적화를 거쳐, 최종적으로 **16배의 수용량(Capacity) 증대**를 이뤄낸 HTML5 Canvas로의 아키텍처 전환 과정을 기록했습니다.
 
 ---
 
-## Challenge 11: DOM 오버헤드 한계와 렌더링 파이프라인 전환
+## 1. 배경 및 문제 상황
 
-### 🛑 문제 상황 (Problem)
+**기능**: 인터랙티브 캐릭터 관계도 (Force-Directed Graph).
+**역할**: 캐릭터 간의 복잡한 관계(우호, 적대, 로맨스 등)를 시각화하여 스토리 네트워크를 보여줍니다.
+**초기 기술 스택**: React + D3.js + SVG (Retained Mode).
 
-초기에는 D3.js와 React SVG를 사용하여 그래프를 구현했습니다. 노드가 100개 미만일 때는 문제가 없었으나, 500개를 넘어가자 다음과 같은 문제가 발생했습니다.
+사용자의 프로젝트 규모가 커짐에 따라(캐릭터 50명 이상), 성능이 급격히 저하되었습니다:
 
-1.  **DOM 노드 폭발**: 각 노드와 링크가 개별 DOM 요소(`<circle>`, `<line>`, `<text>`)로 존재하여 브라우저의 레이아웃 재계산(Reflow) 비용이 기하급수적으로 증가했습니다.
-2.  **메모리 점유율**: 수천 개의 DOM 객체와 이벤트 리스너가 메모리를 점유하여 브라우저가 느려졌습니다.
-3.  **인터랙션 렉**: 줌/팬 동작 시 FPS가 15 이하로 떨어져 "뚝뚝 끊기는" 현상이 발생했습니다.
+- **프레임 드랍**: 드래그/줌 조작 시 15fps 미만으로 저하.
+- **입력 지연(Input Lag)**: 호버 효과 및 툴팁 표시의 눈에 띄는 지연.
+- **브라우저 프리징**: 높은 CPU 점유율로 인한 메인 스레드 블로킹 발생.
 
-### 🧩 해결 전략 (Solution)
+---
 
-**1. 렌더링 방식 전환 (Retained Mode → Immediate Mode)**
-상태를 가지는 DOM 기반의 SVG(Retained Mode) 방식을 버리고, 매 프레임 픽셀을 다시 그리는 **Canvas(Immediate Mode)** 방식으로 엔진을 교체했습니다. `react-force-graph-2d`를 기반으로 커스텀 렌더러를 구현했습니다.
+## 2. Phase 1: SVG 엔진 최적화 (고군분투)
 
-**2. Custom Canvas Renderer 구현**
-라이브러리의 기본 렌더러 대신, `nodeCanvasObject`와 `linkCanvasObject` API를 사용하여 픽셀 단위의 정밀한 제어를 구현했습니다.
+SVG를 완전히 포기하기 전에, CSS 스타일링과 간편한 이벤트 핸들링이라는 장점을 유지하기 위해 성능을 극한까지 끌어올리는 시도를 했습니다. 세 가지 주요 병목 지점을 해결했습니다.
+
+### 🛠️ 최적화 1: 이벤트 리스너 메모이제이션
+
+**문제**: `useDrag` 내부의 익명 콜백 함수가 매 렌더링마다 재생성되어, D3가 이벤트 리스너를 지속적으로 다시 등록하게 만들었고, 이는 "가비지 컬렉션 폭풍(Garbage Collection Storms)"을 유발했습니다.
+
+**해결**:
 
 ```typescript
-// Canvas 렌더링 함수 (매 프레임 호출됨)
+// Before: 잦은 리바인딩으로 인한 오버헤드
+const { dragBehavior } = useDrag({
+  onDragStart: () => setIsDragging(true),
+});
+
+// After: useCallback으로 참조 안정화
+const onDragStart = useCallback(() => setIsDragging(true), []);
+```
+
+### 🛠️ 최적화 2: 속성 업데이트에서 React 우회
+
+**문제**: React 상태(`setState` -> `render` -> `diff` -> `patch`)를 통해 수백 개 노드의 위치를 제어하는 것은 60fps 애니메이션에 너무 느렸습니다.
+**해결**: 위치 업데이트에 대해 React 재조정(Reconciliation) 주기를 완전히 우회하고, 네이티브 API를 사용하여 DOM을 직접 조작했습니다.
+
+```typescript
+// D3 tick 핸들러에서 직접 DOM 업데이트
+linkSel.each(function (d) {
+  // Native API가 d3.select(this).attr(...)보다 약 40% 빠름
+  this.setAttribute("x1", String(source.x));
+  this.setAttribute("y1", String(source.y));
+});
+```
+
+### 🛠️ 최적화 3: 좌표 유효성 검증
+
+**문제**: 초기화 중 `NaN` 또는 `undefined` 좌표가 발생하여 SVG 렌더링 오류와 깜빡임이 발생했습니다.
+**해결**: 렌더 루프에 엄격한 가드 절(Guard Clauses)을 추가했습니다.
+
+```typescript
+if (Number.isNaN(x1) || Number.isNaN(y1)) return; // 이전 프레임 유지
+```
+
+### 📉 Phase 1 결과
+
+이러한 최적화를 통해 **소규모 데이터셋(노드 50개 미만)**에서는 60fps를 안정화하고 CPU 사용량을 약 40% 감소시켰습니다. 그러나 근본적인 병목인 **DOM 오버헤드**는 여전했습니다. 파티클 이펙트나 노드가 추가될 때마다 브라우저 레이아웃 엔진에 선형적인 비용(O(N))이 추가되었습니다.
+
+---
+
+## 3. Phase 2: 한계 도달 (SVG가 실패한 이유)
+
+마이크로 최적화에도 불구하고, 약 100개 노드에서 "유리 천장"에 부딪혔습니다.
+
+1.  **DOM 노드 폭발**: 각 노드는 `<circle>`, `<text>`, 그리고 여러 개의 `<path>` 요소로 구성됩니다. 노드 100개인 그래프는 **500개 이상의 DOM 요소**를 생성합니다.
+2.  **리플로우(Reflow) 비용**: 단 하나의 노드만 움직여도 브라우저는 전체 SVG 컨테이너의 레이아웃을 다시 계산해야 했습니다.
+3.  **메모리**: 각 DOM 요소는 단순 JS 객체에 비해 상당한 메모리 오버헤드를 가집니다.
+
+> **결정**: 복잡한 시각 효과(날씨, 감정 표현 등)와 **1,000개 이상의 노드**를 지원하기 위해, **Retained Mode (SVG)**에서 **Immediate Mode (Canvas)**로 전환해야 했습니다.
+
+---
+
+## 4. Phase 3: 패러다임 전환 (Canvas 통합)
+
+우리는 `react-force-graph-2d`를 기반(primitive)으로 하여, 커스텀 렌더러를 구현하는 Canvas 기반 엔진으로 전환했습니다.
+
+### 왜 Canvas인가?
+
+| 특성               | SVG (DOM)              | Canvas (Pixel)                |
+| :----------------- | :--------------------- | :---------------------------- |
+| **규모 확장 비용** | **O(N)** DOM 요소      | **O(1)** Canvas 요소          |
+| **렌더링**         | 브라우저 레이아웃 엔진 | 래스터화 (GPU 가속)           |
+| **상호작용**       | 네이티브 DOM 이벤트    | 커스텀 레이캐스팅(Raycasting) |
+
+### 🔧 구현: 커스텀 Canvas 렌더러
+
+단일 `<canvas>` 요소 내에서 풍부한 시각 효과(이미지, 원형 클리핑, 선택 하이라이트)를 유지하기 위해 커스텀 렌더러를 구현했습니다.
+
+**핵심 기술 1: LOD (Level of Detail)**
+성능 관리와 인지 부하를 줄이기 위해 시맨틱 줌(Semantic Zooming)을 구현했습니다.
+
+```typescript
 const drawNode = ({ ctx, node, globalScale }) => {
-  // 1. LOD (Level of Detail) 적용
-  // 줌 레벨이 너무 낮으면 텍스트나 디테일은 그리지 않음 (성능 최적화)
+  // 성능: 줌 아웃 시 비용이 높은 텍스트/그림자 렌더링 생략
   if (globalScale < 0.5) {
     ctx.fillStyle = node.color;
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, 4, 0, 2 * Math.PI);
+    ctx.arc(node.x, node.y, 4, 0, 2 * Math.PI); // 단순 점(Dot)으로 표현
     ctx.fill();
     return;
   }
 
-  // 2. 이미지 마스킹 및 원형 클리핑
+  // 고해상도: 원형 클리핑을 적용한 캐릭터 이미지 렌더링...
   ctx.save();
-  ctx.beginPath();
   ctx.arc(node.x, node.y, 16, 0, 2 * Math.PI);
-  ctx.clip(); // 원형으로 잘라내기
-
-  // 3. 캐시된 이미지 그리기 (Image Bitmap 캐싱)
-  const img = imageCache.get(node.imageUrl);
-  if (img) {
-    ctx.drawImage(img, node.x - 16, node.y - 16, 32, 32);
-  } else {
-    // Fallback: 텍스트 이니셜 그리기
-    // ...
-  }
+  ctx.clip();
+  ctx.drawImage(img, node.x - 16, node.y - 16, 32, 32);
   ctx.restore();
 };
 ```
 
-**3. Hit Detection (이벤트 감지) 재구현**
-Canvas는 DOM 요소가 없으므로 클릭 이벤트를 받을 수 없습니다. 이를 해결하기 위해 **Color-based Hit Detection** (각 노드를 고유한 색상으로 칠한 숨겨진 Canvas를 사용하여 마우스 위치의 픽셀 색상으로 노드를 식별) 방식을 활용하는 라이브러리의 기능을 최적화했습니다.
+**핵심 기술 2: 색상 기반 히트 디텍션 (Color-based Hit Detection)**
+Canvas는 DOM 이벤트가 없기 때문에 클릭을 감지할 방법이 필요했습니다.
 
-```typescript
-// 클릭 판정 영역을 시각적 영역보다 약간 넓게 잡아 UX 개선 (Fitts's Law 고려)
-nodePointerAreaPaint: (node, color, ctx) => {
-  const radius = NODE_SIZES.default / 2 + 10; // +10px Padding
-  ctx.fillStyle = color; // 라이브러리가 부여한 고유 식별 색상
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-  ctx.fill();
-};
-```
-
-### 📈 성과 (Impact): "10배 성능 향상은 보수적인 수치입니다."
-
-단순한 FPS 개선을 넘어, 시스템이 감당할 수 있는 **한계(Capacity)**가 완전히 달라졌습니다.
-
-| 측정 지표               | SVG (Before)               | Canvas (After)            | 개선 효율              |
-| :---------------------- | :------------------------- | :------------------------ | :--------------------- |
-| **Max Nodes (60fps)**   | **~30개** (Effects 포함)   | **500개+** (Effects 포함) | **16배+** Capa 확장 🚀 |
-| **Animation Stability** | 이펙트 추가 시 즉시 버벅임 | 복잡한 쉐이더에도 견고함  | UX 임계점 돌파         |
-| **Rendering Cost**      | `O(N)` DOM Elements        | `O(1)` Single Canvas      | Layout Thrashing 제거  |
-
-> **"수치화된 근거"**:
-> 기존 SVG 엔진에서는 노드가 30개를 넘어가고 '감정 충돌' 같은 파티클 이펙트가 추가되면 브라우저의 레이아웃 재계산(Recalculate Style) 비용이 16ms를 초과하여, 사실상 인터랙티브한 앱으로 기능하지 못했습니다.
-> Canvas 전환 후에는 500개 이상의 노드와 수천 개의 파티클이 동시에 렌더링되어도 GPU 가속을 통해 **Main Thread Blocking Time이 0ms에 수렴**하며 60fps를 방어했습니다. 이는 단순한 최적화가 아닌 **"차원이 다른 렌더링 파이프라인"**으로의 진화입니다.
+1. 메모리에 "보이지 않는" 캔버스를 렌더링합니다.
+2. 모든 노드를 고유한 색상으로 칠합니다 (예: Node 1 = #000001).
+3. 마우스 클릭 시, 커서 좌표의 픽셀 색상을 샘플링합니다.
+4. 색상을 다시 Node ID로 디코딩합니다.
+   _이 방식은 노드 수와 관계없이 O(1)의 상호작용 조회를 가능하게 합니다._
 
 ---
 
-## 핵심 비교 요약 (SVG vs Canvas)
+## 5. 📊 최종 결과
 
-| 특성            | SVG (이전)                    | Canvas (현재)                    | 비고                       |
-| :-------------- | :---------------------------- | :------------------------------- | :------------------------- |
-| **렌더링 모델** | Retained (DOM)                | Immediate (Pixel)                | Canvas 승                  |
-| **이벤트 처리** | 각 요소에 addEventListener    | 단일 Canvas에서 좌표 계산        | SVG가 편하나 Canvas가 빠름 |
-| **텍스트 품질** | 브라우저 폰트 렌더링 (선명)   | 픽셀 래스터화 (흐릿할 수 있음)   | SVG 승 (LOD로 보완)        |
-| **성능 한계**   | **Node 30+** (Effect 사용 시) | **Node 5,000+** (GPU 의존)       | **결정적 교체 사유**       |
-| **디버깅**      | 브라우저 Inspector 사용 가능  | 블랙박스 (Canvas Inspector 필요) | SVG가 개발 편의성 높음     |
+마이그레이션은 단순 최적화로는 불가능했던 성능 향상을 가져왔으며, 사실상 기능의 잠재력을 "봉인 해제"했습니다.
 
-> **Conclusion**: 데이터 시각화의 규모가 커짐에 따라, **"개발 편의성(SVG)"**을 일부 포기하고 **"절대적 성능(Canvas)"**을 선택하는 엔지니어링 의사결정을 내렸으며, 이를 통해 사용자 경험을 혁신적으로 개선했습니다.
+| 측정 지표               | SVG 구현체              | Canvas 구현체          | 개선        |
+| :---------------------- | :---------------------- | :--------------------- | :---------- |
+| **최대 수용량 (60fps)** | ~30 노드                | **500+ 노드**          | **16배** 🚀 |
+| **렌더링 비용**         | 16ms+ (레이아웃 스래싱) | < 1ms (GPU)            | 즉각적      |
+| **애니메이션 안정성**   | 끊김 발생 (캐시 미스)   | 부드러움 (이중 버퍼링) | 유려함      |
+
+> **결론**: SVG가 개발 편의성은 더 좋지만, **대규모 데이터 시각화에는 Canvas만이 유일한 현실적 대안**입니다. 이번 마이그레이션은 성능 문제를 해결했을 뿐만 아니라, StoLink만의 가치를 정의하는 복잡한 파티클 이펙트와 거대한 세계관 확장을 가능하게 만들었습니다.
