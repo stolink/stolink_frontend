@@ -75,7 +75,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -119,7 +119,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[],
+  nodes: DocumentTreeNode[]
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -153,7 +153,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -163,10 +163,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null,
+    isDemo ? "chapter-demo-1" : null
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [viewMode, setViewMode] = useState<
     "editor" | "scrivenings" | "outline"
@@ -187,12 +187,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode,
+    (state) => state.behavior.typewriterMode
+  );
+  const setTypewriterMode = useEditorSettingStore(
+    (state) => state.setTypewriterMode
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode,
+    (state) => state.behavior.focusMode
   );
+  const setFocusMode = useEditorSettingStore((state) => state.setFocusMode);
   /* performanceMode removed */
 
   const initialStateFromRedirect = (
@@ -214,16 +218,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   useDocumentTree(isDemo ? "" : projectId);
 
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents,
+    (state) => (state as { documents: Record<string, Document> }).documents
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
+            (doc) => doc.projectId === projectId
           ),
-    [allDocuments, projectId, isDemo],
+    [allDocuments, projectId, isDemo]
   );
 
   const previewChapters = useMemo(() => {
@@ -239,7 +243,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const documents = useMemo(
     () => Object.values(localDocuments),
-    [localDocuments],
+    [localDocuments]
   );
 
   const sidebarChapters = useMemo(() => {
@@ -296,7 +300,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   const addToBuffer = useAnalysisBufferStore(
     (state) =>
       (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer,
+        .addToBuffer
   );
 
   const readerChapters = useMemo(() => {
@@ -379,7 +383,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer]
   );
 
   const saveWithAnalysis = useCallback(
@@ -388,7 +392,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       await saveContent(content);
       addToBuffer(selectedSectionId, content);
     },
-    [saveContent, selectedSectionId, addToBuffer],
+    [saveContent, selectedSectionId, addToBuffer]
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -454,7 +458,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       try {
         sessionStorage.setItem(
           `analysis_snapshot_${projectId}`,
-          JSON.stringify(snapshot),
+          JSON.stringify(snapshot)
         );
         // Reset flags
         sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
@@ -534,7 +538,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     (docId: string) => {
       handleSelectSection(docId);
     },
-    [handleSelectSection],
+    [handleSelectSection]
   );
 
   // Modal Handlers
@@ -547,12 +551,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section",
+    type: "chapter" | "section"
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section",
+      type === "chapter" ? "chapter" : "section"
     );
     setCreateSectionModalOpen(false);
   };
@@ -614,14 +618,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const isRightSidebarOpen = useUIStore((state) => state.rightSidebarOpen);
   const setIsRightSidebarOpen = useUIStore(
-    (state) => state.setRightSidebarOpen,
+    (state) => state.setRightSidebarOpen
   );
 
   return (
     <div
       className={cn(
         "flex flex-col bg-cloud-50/50 text-foreground", // Unified Desk Background
-        isDemo ? "h-screen" : "h-full",
+        isDemo ? "h-screen" : "h-full"
       )}
     >
       {isDemo && (
@@ -651,7 +655,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               totalChars={
                 Object.values(documents).reduce(
                   (acc, doc) => acc + (doc.content?.length || 0),
-                  0,
+                  0
                 ) || 0
               }
             />
@@ -662,7 +666,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300 relative z-10",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-cloud-50",
+            isFocusMode && "bg-cloud-50"
             // Main area is transparent to show Desk, unless Focus Mode
           )}
         >
@@ -684,10 +688,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => {}}
-            onToggleFocusMode={() => {}}
+            onToggleSplitView={() => {}} // TODO: Implement split view state
+            onToggleFocusMode={() => setFocusMode(!isFocusMode)}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => {}}
+            onToggleTypewriterMode={() =>
+              setTypewriterMode(isTypewriterMode ? "off" : "center")
+            }
             rightSidebarOpen={isRightSidebarOpen}
             onToggleRightSidebar={() =>
               setIsRightSidebarOpen(!isRightSidebarOpen)
