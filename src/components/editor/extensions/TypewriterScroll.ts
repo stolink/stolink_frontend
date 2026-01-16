@@ -44,7 +44,7 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
     return {
       position: "off",
       smoothScroll: true,
-      threshold: 5,
+      threshold: 15,
     };
   },
 
@@ -53,6 +53,10 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
       isAutoScrolling: false,
       // Use storage for runtime-changeable position (options is immutable)
       currentPosition: this.options.position as TypewriterPosition,
+      prevDocSize: 0,
+      rafId: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      debounceTimer: null as any,
     };
   },
 
@@ -116,15 +120,26 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
           update: (view) => {
             // Use storage.currentPosition instead of options.position (runtime changeable)
             if (extension.storage.currentPosition === "off") return;
-            if (extension.storage.isAutoScrolling) return;
 
-            const { selection } = view.state;
-            const { from } = selection;
+            const currentDocSize = view.state.doc.content.size;
+            const isDelete =
+              currentDocSize < (extension.storage.prevDocSize || 0);
+            extension.storage.prevDocSize = currentDocSize;
 
-            requestAnimationFrame(() => {
-              if (extension.storage.isAutoScrolling) return;
+            // Clear existing timers to prevent overlap
+            if (extension.storage.rafId) {
+              cancelAnimationFrame(extension.storage.rafId);
+            }
+            if (extension.storage.debounceTimer) {
+              clearTimeout(extension.storage.debounceTimer);
+            }
 
+            const performScroll = () => {
               try {
+                if (extension.storage.isAutoScrolling) return;
+
+                const { selection } = view.state;
+                const { from } = selection;
                 const coords = view.coordsAtPos(from);
                 const editorElement = view.dom.parentElement;
 
@@ -156,26 +171,40 @@ export const TypewriterScroll = Extension.create<TypewriterScrollOptions>({
                 if (Math.abs(scrollOffset) > extension.options.threshold) {
                   extension.storage.isAutoScrolling = true;
 
-                  if (extension.options.smoothScroll) {
+                  // Debounce 후에는 부드럽게 이동해도 됨 (연타 끝남)
+                  // 하지만 사용자는 널뛰기를 싫어하므로 즉시 이동이 안전할 수 있음
+                  // 여기서는 부드러운 이동을 시도하되, 널뛰기 느낌이 나면 즉시 이동으로 변경 가능
+                  // 일단 부드럽게(smooth) 해보고 락 타임을 짧게 가져감
+                  const useSmooth = extension.options.smoothScroll;
+
+                  if (useSmooth) {
                     container.scrollBy({
                       top: scrollOffset,
                       behavior: "smooth",
                     });
+                    setTimeout(() => {
+                      extension.storage.isAutoScrolling = false;
+                    }, 120);
                   } else {
                     container.scrollTop += scrollOffset;
+                    extension.storage.isAutoScrolling = false;
                   }
-
-                  setTimeout(
-                    () => {
-                      extension.storage.isAutoScrolling = false;
-                    },
-                    extension.options.smoothScroll ? 150 : 50
-                  );
                 }
               } catch {
                 extension.storage.isAutoScrolling = false;
               }
-            });
+            };
+
+            if (isDelete) {
+              // 백스페이스 렉 제거: 150ms Debounce
+              extension.storage.debounceTimer = setTimeout(() => {
+                extension.storage.rafId = requestAnimationFrame(performScroll);
+              }, 150);
+            } else {
+              // 일반 입력은 즉시 반응
+              if (extension.storage.isAutoScrolling) return;
+              extension.storage.rafId = requestAnimationFrame(performScroll);
+            }
           },
         }),
       }),

@@ -39,7 +39,7 @@
   text-indent: var(--st-editor-text-indent, 0);
   word-break: keep-all;
   font-size: 1.1em; /* Slightly larger for readability */
-  line-height: 1.8;
+  line-height: var(--st-editor-line-height, 1.8) !important;
 }
 
 /* Typography - Display Serif for Headings */

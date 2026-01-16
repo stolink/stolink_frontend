@@ -131,7 +131,14 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Destructure behavior settings
     const typewriterMode = behavior?.typewriterMode ?? "off";
-    // Note: focusModeEnabled, smartQuotes, smartDashes, smartEllipsis are intentionally not destructured as they are not yet implemented.
+
+    // useRef for typewriter mode to use in callbacks without dependencies
+    const typewriterModeRef = useRef(typewriterMode);
+    useEffect(() => {
+      typewriterModeRef.current = typewriterMode;
+    }, [typewriterMode]);
+
+    // Note: focusModeEnabled, smartQuotes, smartDashes, maxEmptyLines are intentionally not destructured as they are not yet implemented.
 
     // Get CSS variables and theme class from settings
     const editorSettings = {
@@ -244,6 +251,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       extensions,
       content: sanitizeEditorContent(initialContent ?? DEFAULT_CONTENT),
       editorProps: {
+        handleScrollToSelection: (_view) => {
+          if (typewriterModeRef.current !== "off") {
+            return true; // Prevent default scroll behavior in typewriter mode
+          }
+          return false;
+        },
         attributes: {
           class: cn(
             // Remove prose class - use direct styling for full width
@@ -306,6 +319,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         // Prevent scroll resetting when transactions occur (like clicking/selection)
         // Only force scroll if we have a captured position and content might have jumped
         requestAnimationFrame(() => {
+          // 타자기 모드 사용 중일 때는 스크롤이 자동으로 제어되므로 간섭하지 않음
+          if (typewriterModeRef.current !== "off") return;
+
           if (editorContainerRef.current && scrollPositionRef.current > 0) {
             // If the current scroll is significantly different from what we expect,
             // it means a transaction might have reset it (e.g. setContent)
@@ -861,6 +877,11 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             }}
           >
             <EditorContent editor={editor} className="w-full" />
+            <style>{`
+              .ProseMirror p {
+                line-height: ${editorSettings.typography.lineHeight} !important;
+              }
+            `}</style>
           </div>
         </div>
 
