@@ -217,11 +217,6 @@ export function useProjectAnalysis(
 
       // 3. Trigger completion callback AFTER invalidation (새 데이터 로드 완료 후)
       if (activeType === "analysis") {
-        console.log("[Animation Debug] Finalizing Analysis Callback", {
-          activeJobId,
-          result: !!lastResultRef.current,
-          hasCallback: !!onCompleteRef.current,
-        });
         onCompleteRef.current?.(lastResultRef.current, activeJobId || "");
       }
 

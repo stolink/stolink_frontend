@@ -124,8 +124,6 @@ export default function WorldPage() {
     isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (_result, jobId) => {
-      console.log("[Animation Debug] onAnalysisComplete", { jobId });
-      // Persistent flag will trigger the useEffect below
       setPendingViewJobId(jobId);
     },
   });
@@ -133,23 +131,13 @@ export default function WorldPage() {
   // Check for Pending Analysis View (from Editor)
   useEffect(() => {
     if (projectId) {
-      console.log("[Animation Debug] Pending View Check", { pendingViewJobId });
-
       if (pendingViewJobId && pendingViewJobId !== "") {
         const isAck = isJobAcknowledged(pendingViewJobId);
 
         if (isAck) {
-          console.log(
-            "[Animation Debug] Pending View - Already Ack, skipping",
-            { pendingViewJobId },
-          );
           setPendingViewJobId(null);
           return;
         }
-
-        console.log("[Animation Debug] Pending View - Triggering Animation", {
-          pendingViewJobId,
-        });
 
         // Decouple from render cycle to avoid cascading renders warning
         setTimeout(() => {
@@ -160,9 +148,6 @@ export default function WorldPage() {
 
         // Trigger the completion flow immediately
         setTimeout(() => {
-          console.log(
-            "[Animation Debug] Pending View - Setting isWaitingForRefresh(true)",
-          );
           setIsWaitingForRefresh(true);
         }, 50);
       }
@@ -253,23 +238,9 @@ export default function WorldPage() {
       ? isJobAcknowledged(currentAnalysisJobId)
       : false;
 
-    console.log("[Animation Debug] Diff Effect Check", {
-      isWaitingForRefresh,
-      isPolling,
-      isCheckingJobStatus,
-      currentAnalysisJobId,
-      showCompletionAnimation,
-      isAck,
-      isAnalysisModalOpen,
-      animatingRef: animatingJobIdRef.current,
-    });
-
     if (!isWaitingForRefresh || isPolling || isCheckingJobStatus) return;
 
     if (isAck || isAnalysisModalOpen) {
-      console.log(
-        "[Animation Debug] Diff Effect - Skipping (isAck or isModalOpen)",
-      );
       setTimeout(() => setIsWaitingForRefresh(false), 0);
       return;
     }
@@ -281,10 +252,6 @@ export default function WorldPage() {
       currentAnalysisJobId &&
       animatingJobIdRef.current === currentAnalysisJobId
     ) {
-      console.log(
-        "[Animation Debug] Diff Effect - Already animating this job, ignoring update",
-        currentAnalysisJobId,
-      );
       return;
     }
     animatingJobIdRef.current = currentAnalysisJobId;
@@ -319,15 +286,6 @@ export default function WorldPage() {
     const minDisplayTime = 2000;
 
     const timer = setTimeout(() => {
-      console.log("[Animation Debug] Timer Finished - Opening Modal", {
-        jobId: currentAnalysisJobId,
-        isDiffEmpty:
-          !diff ||
-          (diff.newCharacters.length === 0 &&
-            diff.updatedCharacters.length === 0 &&
-            diff.newRelations.length === 0),
-      });
-
       // Synchronous updates to ensure UI consistency
       setIsWaitingForRefresh(false);
       setAnalysisDiff(diff);
