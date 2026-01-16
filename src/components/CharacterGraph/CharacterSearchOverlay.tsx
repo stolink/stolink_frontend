@@ -64,22 +64,10 @@ export function CharacterSearchOverlay({
 
   // Notify parent of matches for highlighting (ref 패턴으로 안정화)
   useEffect(() => {
-    console.log(
-      "[DEBUG SearchOverlay] useEffect triggered, query:",
-      query,
-      "matches:",
-      matches.length,
-    );
-    console.log(
-      "[DEBUG SearchOverlay] onSearchRef.current:",
-      onSearchRef.current,
-    );
     if (!query.trim()) {
-      console.log("[DEBUG SearchOverlay] calling onSearch(null)");
       onSearchRef.current?.(null);
     } else {
       const ids = matches.map((c) => c._id);
-      console.log("[DEBUG SearchOverlay] calling onSearch with ids:", ids);
       onSearchRef.current?.(ids);
     }
   }, [matches, query]);

@@ -29,7 +29,10 @@ import { characterKeys } from "./useCharacters";
 
 interface UseProjectAnalysisOptions {
   enabled?: boolean;
-  onAnalysisComplete?: (result: AnalysisResultData | null) => void;
+  onAnalysisComplete?: (
+    result: AnalysisResultData | null,
+    jobId: string,
+  ) => void;
   onAnalysisError?: (error: string) => void;
 }
 
@@ -149,126 +152,133 @@ export function useProjectAnalysis(
   }, [currentJobType]);
 
   // Finalize Analysis (Shared logic for all completion paths)
-  const finalizeAnalysis = useCallback(async () => {
-    // Check if component is still mounted
-    if (!isMountedRef.current) {
-      return;
-    }
-    if (isRequestingRef.current) {
-      return;
-    }
-    if (isFinalizingRef.current) {
-      return;
-    }
-
-    isFinalizingRef.current = true;
-
-    // Get current state to check job type (fallback to refs if store was just cleared)
-    const { pendingDocuments } = useAnalysisBufferStore.getState();
-    const activeType =
-      useAnalysisBufferStore.getState().currentJobType ||
-      lastKnownJobTypeRef.current;
-    const activeTargetId =
-      useAnalysisBufferStore.getState().currentJobTargetId ||
-      lastKnownTargetIdRef.current;
-
-    // 1. Analysis-specific state sync
-    if (activeType === "analysis") {
-      // Sync hashes (분석 완료된 문서들)
-      setLastAnalyzedHashes(pendingDocuments);
-
-      // pendingDocuments 클리어
-      useAnalysisBufferStore.getState().clearPendingDocuments();
-    }
-
-    // 2. Cache Invalidation FIRST, then callback (새 데이터 로드 후 diff 계산)
-    if (projectId) {
-      // Always invalidate character list as both jobs might affect it
-      await queryClient.invalidateQueries({
-        queryKey: characterKeys.list(projectId),
-      });
-
-      // Invalidate project events as analysis might update the timeline
-      await queryClient.invalidateQueries({
-        queryKey: ["events", "project", projectId],
-      });
-
-      // Invalidate project stats
-      queryClient.invalidateQueries({
-        queryKey: ["projects", "detail", projectId, "stats"],
-      });
-
-      if (activeType === "image" && activeTargetId) {
-        // Also invalidate detail query for the specific character
-        queryClient.invalidateQueries({
-          queryKey: characterKeys.detail(activeTargetId),
-        });
+  const finalizeAnalysis = useCallback(
+    async (manualJobId?: string) => {
+      // Check if component is still mounted
+      if (!isMountedRef.current) {
+        return;
       }
-    }
+      if (isRequestingRef.current) {
+        return;
+      }
+      if (isFinalizingRef.current) {
+        return;
+      }
 
-    // 3. Trigger completion callback AFTER invalidation (새 데이터 로드 완료 후)
-    if (activeType === "analysis") {
-      onCompleteRef.current?.(lastResultRef.current);
-    }
+      isFinalizingRef.current = true;
 
-    // Logic to ensure consistency report availability
-    if (activeType === "analysis") {
-      let report: ConsistencyReport | null =
-        lastResultRef.current?.consistencyReport || null;
+      // Get current state to check job type (fallback to refs if store was just cleared)
+      const storeState = useAnalysisBufferStore.getState();
+      const { pendingDocuments } = storeState;
+      const activeType =
+        storeState.currentJobType || lastKnownJobTypeRef.current;
+      const activeTargetId =
+        storeState.currentJobTargetId || lastKnownTargetIdRef.current;
 
-      if (!report && projectId) {
-        try {
-          // Try fetching from API first
-          const backendReport = await aiService.getConsistencyReport(projectId);
-          report = transformConsistencyReport(backendReport);
-        } catch (error) {
-          console.warn(
-            "[useProjectAnalysis] Real API failed, trying mock:",
-            error,
-          );
-          // Fallback to mock (simulating backend)
-          try {
-            const mockBackendReport =
-              await aiService.mockGetConsistencyReport(projectId);
-            report = transformConsistencyReport(mockBackendReport);
-          } catch (mockErr) {
-            console.error(
-              "[useProjectAnalysis] Mock fetch also failed:",
-              mockErr,
-            );
-          }
+      // IMPORTANT: Get the jobId that is completing
+      const activeJobId =
+        manualJobId ||
+        storeState.currentJobId ||
+        (projectId ? storeState.activeAnalysisJobs[projectId]?.[0] : null);
+
+      // 1. Analysis-specific state sync
+      if (activeType === "analysis") {
+        // Sync hashes (분석 완료된 문서들)
+        setLastAnalyzedHashes(pendingDocuments);
+
+        // pendingDocuments 클리어
+        useAnalysisBufferStore.getState().clearPendingDocuments();
+      }
+
+      // 2. Cache Invalidation FIRST, then callback (새 데이터 로드 후 diff 계산)
+      if (projectId) {
+        // Always invalidate character list as both jobs might affect it
+        await queryClient.invalidateQueries({
+          queryKey: characterKeys.list(projectId),
+        });
+
+        // Invalidate project events as analysis might update the timeline
+        await queryClient.invalidateQueries({
+          queryKey: ["events", "project", projectId],
+        });
+
+        // Invalidate project stats
+        queryClient.invalidateQueries({
+          queryKey: ["projects", "detail", projectId, "stats"],
+        });
+
+        if (activeType === "image" && activeTargetId) {
+          // Also invalidate detail query for the specific character
+          queryClient.invalidateQueries({
+            queryKey: characterKeys.detail(activeTargetId),
+          });
         }
       }
 
-      if (report) {
-        useAnalysisBufferStore.getState().setLastConsistencyReport(report);
+      // 3. Trigger completion callback AFTER invalidation (새 데이터 로드 완료 후)
+      if (activeType === "analysis") {
+        console.log("[Animation Debug] Finalizing Analysis Callback", {
+          activeJobId,
+          result: !!lastResultRef.current,
+          hasCallback: !!onCompleteRef.current,
+        });
+        onCompleteRef.current?.(lastResultRef.current, activeJobId || "");
       }
-    }
 
-    lastResultRef.current = null;
-    lastKnownJobTypeRef.current = null;
-    lastKnownTargetIdRef.current = null;
+      // Logic to ensure consistency report availability
+      if (activeType === "analysis") {
+        let report: ConsistencyReport | null =
+          lastResultRef.current?.consistencyReport || null;
 
-    // Clear jobs
-    if (projectId) {
-      clearStoreJobs(projectId);
-    }
+        if (!report && projectId) {
+          try {
+            // Try fetching from API first
+            const backendReport =
+              await aiService.getConsistencyReport(projectId);
+            report = transformConsistencyReport(backendReport);
+          } catch (_error) {
+            // Fallback to mock (simulating backend)
+            try {
+              const mockBackendReport =
+                await aiService.mockGetConsistencyReport(projectId);
+              report = transformConsistencyReport(mockBackendReport);
+            } catch (_mockErr) {
+              // ignore
+            }
+          }
+        }
 
-    // 모든 분석 완료 처리 (자동 재분석은 사용자 요청 시에만 수행하도록 루프 제거)
-    setBufferAnalyzing(false);
-    setAnalysisProgress(100);
-    setGlobalProgress(100);
+        if (report) {
+          useAnalysisBufferStore.getState().setLastConsistencyReport(report);
+        }
+      }
 
-    // 완료 처리 끝났으므로 플래그 리셋 (다음 분석을 위해)
-    isFinalizingRef.current = false;
-  }, [
-    projectId,
-    queryClient,
-    setBufferAnalyzing,
-    setGlobalProgress,
-    setLastAnalyzedHashes,
-    clearStoreJobs,
-  ]);
+      lastResultRef.current = null;
+      lastKnownJobTypeRef.current = null;
+      lastKnownTargetIdRef.current = null;
+
+      // Clear jobs
+      if (projectId) {
+        clearStoreJobs(projectId);
+      }
+
+      // 모든 분석 완료 처리 (자동 재분석은 사용자 요청 시에만 수행하도록 루프 제거)
+      setBufferAnalyzing(false);
+      setAnalysisProgress(100);
+      setGlobalProgress(100);
+
+      // 완료 처리 끝났으므로 플래그 리셋 (다음 분석을 위해)
+      isFinalizingRef.current = false;
+    },
+    [
+      projectId,
+      queryClient,
+      setBufferAnalyzing,
+      setGlobalProgress,
+      setLastAnalyzedHashes,
+      clearStoreJobs,
+    ],
+  );
 
   // 프로젝트 ID 설정 (hydration 완료 후에만 - 복원된 상태 보존)
   useEffect(() => {
@@ -292,25 +302,10 @@ export function useProjectAnalysis(
         const currentStoreJobs =
           useAnalysisBufferStore.getState().activeAnalysisJobs[projectId] || [];
 
-        // Debug: 현재 스토어 상태와 백엔드 응답 비교
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Job Status Debug]", {
-            backendJobId: jobStatus.jobId,
-            backendStatus: jobStatus.status,
-            currentStoreJobs,
-            willAddJob:
-              jobStatus.jobId &&
-              (jobStatus.status === "processing" ||
-                jobStatus.status === "pending") &&
-              currentStoreJobs.length === 0, // 스토어가 비어있을 때만 추가
-          });
-        }
-
-        // 이미 스토어에 분석 Job이 있으면 백엔드 Job을 추가하지 않음
-        // 단, isAnalyzing 상태는 true로 설정 (UI 표시용)
+        // 2024-01-16 Fix: Don't return early if store has jobs.
+        // We must proceed to verify backend status to trigger completion if needed.
         if (currentStoreJobs.length > 0) {
           setBufferAnalyzing(true);
-          return;
         }
 
         // 진행 중인 job이 있으면 SSE 연결을 위해 스토어에 추가
@@ -340,21 +335,47 @@ export function useProjectAnalysis(
             // 오래된(Stuck) 작업은 유령 작업으로 간주하여 제거
             clearStoreJobs(projectId);
           } else {
-            addStoreJobId(projectId, jobStatus.jobId, "analysis");
+            // 스토어에 없는 경우에만 추가 (중복 방지)
+            if (!currentStoreJobs.includes(jobStatus.jobId!)) {
+              addStoreJobId(projectId, jobStatus.jobId!, "analysis");
+            }
+
             setJobProgresses((prev) => ({
               ...prev,
               [jobStatus.jobId!]: jobStatus.progress || 0,
             }));
+
+            // 전역 프로그레스도 동기화
+            setAnalysisProgress(jobStatus.progress || 0);
+            setGlobalProgress(jobStatus.progress || 0);
           }
         }
-        // 완료된 상태면 캐릭터/관계 쿼리 무효화 (DB에서 최신 데이터 fetch)
+        // 완료된 상태면 캐릭터/관계 쿼리 무효화 및 완료 처리
         else if (
           jobStatus.status === "failed" ||
           jobStatus.status === "completed"
         ) {
           // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
-          // 클라이언트가 알고 있는 모든 진행 중 작업을 정리합니다. (Ghost Job 방지)
-          clearStoreJobs(projectId);
+          // finalizeAnalysis를 호출하여 onAnalysisComplete 콜백을 트리거합니다.
+          // (WorldPage에서 Acknowledgement 체크 후 모달 표시)
+
+          // 1. 결과가 있으면 ref에 저장 (finalizeAnalysis에서 사용)
+          // Note: getProjectAnalysisJob 응답에는 result가 없을 수도 있음 (가벼운 상태 조회)
+          // finalizeAnalysis 내부에서 fetch 로직이 돌겠지만, 여기서는 trigger만 해줌.
+
+          // 2024-01-16 Fix: 단순히 clearStoreJobs만 하면 콜백이 안 불려서 모달이 안 뜸.
+          // finalizeAnalysis를 통해 정상적인 완료 플로우를 타게 함.
+          if (!isFinalizingRef.current) {
+            // 강제로 100%로 맞춤
+            setAnalysisProgress(100);
+
+            // 만약 현재 스토어에 Job ID가 없다면(새로고침 직후), 잠시 추가해둬야 finalize 로직이 돔
+            if (jobStatus.jobId && currentStoreJobs.length === 0) {
+              addStoreJobId(projectId, jobStatus.jobId, "analysis");
+            }
+
+            await finalizeAnalysis(jobStatus.jobId!);
+          }
         }
       } catch (error) {
         // API가 404라면 해당 프로젝트에 진행 중인 Job이 없다는 뜻이므로 로컬 상태도 클리어
@@ -377,6 +398,9 @@ export function useProjectAnalysis(
     addStoreJobId,
     clearStoreJobs,
     clearAnalysisJobs,
+    finalizeAnalysis,
+    setBufferAnalyzing,
+    setGlobalProgress,
   ]);
 
   // Note: SSE connection is managed by useJobSSE hook, so cleanup is handled there.
@@ -441,16 +465,6 @@ export function useProjectAnalysis(
         }
 
         // Debug log for SSE progress tracking
-        if (process.env.NODE_ENV === "development") {
-          console.log("[SSE Progress Debug]", {
-            eventJobId,
-            eventType,
-            rawProgress: { percent: event.percent, progress: event.progress },
-            totalDocs: event.totalDocuments,
-            completedDocs: event.completedDocuments,
-            calculatedProgress: currentProgress,
-          });
-        }
 
         if (eventType === "progress" || eventType === "processing") {
           setJobProgresses((prev) => ({
@@ -759,15 +773,7 @@ export function useProjectAnalysis(
         if (jobId) {
           // Debug: 문서별 분석 Job ID 추가
           if (process.env.NODE_ENV === "development") {
-            const currentStoreJobs =
-              useAnalysisBufferStore.getState().activeAnalysisJobs[projectId] ||
-              [];
-            console.log("[triggerAnalysis Debug]", {
-              documentId: chunk.documentId,
-              newJobId: jobId,
-              currentStoreJobs,
-              isNewJob: !currentStoreJobs.includes(jobId),
-            });
+            // Log if needed
           }
           addStoreJobId(projectId, jobId);
           setJobProgresses((prev) => ({ ...prev, [jobId]: 0 }));

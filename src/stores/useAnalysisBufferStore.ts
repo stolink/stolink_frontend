@@ -12,6 +12,8 @@ import { immer } from "zustand/middleware/immer";
 import { get, set as idbSet, del } from "idb-keyval";
 import type { StateStorage } from "zustand/middleware";
 import type { ConsistencyReport } from "@/types/analysisResult";
+import type { Character } from "@/types/character";
+import type { RelationshipLink } from "@/types/characterGraph";
 import { calculateContentHash } from "@/utils/hashUtils";
 
 // IndexedDB 스토리지 어댑터
@@ -26,6 +28,11 @@ const storage: StateStorage = {
     await del(name);
   },
 };
+
+export interface AnalysisSnapshot {
+  characters: Character[];
+  links: RelationshipLink[];
+}
 
 // 버퍼 청크 타입
 export interface BufferChunk {
@@ -56,6 +63,9 @@ interface AnalysisBufferStore {
   pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 분석 결과 (일관성 리포트)
   processedConflicts: Record<string, "resolved" | "ignored" | "deleted">; // 처리된 이슈 관리
+  pendingViewJobId: string | null; // 사용자가 아직 확인하지 못한 분석 결과 ID
+  analysisSnapshots: Record<string, AnalysisSnapshot>; // projectId -> snapshot (characters, links)
+  acknowledgedJobIds: string[]; // 확인된 분석 작업 ID 목록
 
   // 액션
   setProjectId: (projectId: string | null) => void;
@@ -97,6 +107,11 @@ interface AnalysisBufferStore {
   clearProcessedConflicts: () => void;
   // 강제 초기화
   resetAnalysis: () => void;
+  setPendingViewJobId: (id: string | null) => void;
+  setAnalysisSnapshot: (projectId: string, snapshot: AnalysisSnapshot) => void;
+  clearAnalysisSnapshot: (projectId: string) => void;
+  acknowledgeJob: (jobId: string) => void;
+  isJobAcknowledged: (jobId: string) => boolean;
 
   // 유틸리티
   getBufferSummary: () => { charCount: number; documentCount: number };
@@ -121,6 +136,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       pendingDocuments: {}, // 분석 요청된 문서 트래킹
       lastConsistencyReport: null,
       processedConflicts: {},
+      pendingViewJobId: null,
+      analysisSnapshots: {},
+      acknowledgedJobIds: [],
 
       setProjectId: (projectId) => {
         set((state) => {
@@ -391,10 +409,41 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           state.isAnalyzing = false;
           state.progress = 0;
           state.pendingDocuments = {};
+          state.pendingViewJobId = null; // 초기화
           if (state.projectId) {
             delete state.activeJobs[state.projectId];
           }
         });
+      },
+
+      setPendingViewJobId: (id) => {
+        set((state) => {
+          state.pendingViewJobId = id;
+        });
+      },
+
+      setAnalysisSnapshot: (projectId, snapshot) => {
+        set((state) => {
+          state.analysisSnapshots[projectId] = snapshot;
+        });
+      },
+
+      clearAnalysisSnapshot: (projectId) => {
+        set((state) => {
+          delete state.analysisSnapshots[projectId];
+        });
+      },
+
+      acknowledgeJob: (jobId) => {
+        set((state) => {
+          if (!state.acknowledgedJobIds.includes(jobId)) {
+            state.acknowledgedJobIds.push(jobId);
+          }
+        });
+      },
+
+      isJobAcknowledged: (jobId) => {
+        return get().acknowledgedJobIds.includes(jobId);
       },
 
       getBufferSummary: () => {
@@ -461,6 +510,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         pendingDocuments: state.pendingDocuments,
         lastConsistencyReport: state.lastConsistencyReport,
         processedConflicts: state.processedConflicts,
+        pendingViewJobId: state.pendingViewJobId,
+        analysisSnapshots: state.analysisSnapshots,
+        acknowledgedJobIds: state.acknowledgedJobIds,
       }),
       // 기존 저장 상태에 새 필드가 없을 때 기본값 적용
       merge: (persistedState, currentState) => {

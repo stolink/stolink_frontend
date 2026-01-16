@@ -80,8 +80,17 @@ export default function WorldPage() {
 
   const updateCharacterMutation = useUpdateCharacter();
 
-  const setJobId = useAnalysisBufferStore((state) => state.setJobId);
-  const setAnalyzing = useAnalysisBufferStore((state) => state.setAnalyzing);
+  const {
+    setJobId,
+    setAnalyzing,
+    pendingViewJobId,
+    setPendingViewJobId,
+    analysisSnapshots,
+    setAnalysisSnapshot,
+    clearAnalysisSnapshot,
+    acknowledgeJob,
+    isJobAcknowledged,
+  } = useAnalysisBufferStore();
 
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -99,6 +108,10 @@ export default function WorldPage() {
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
   >({});
+  const [currentAnalysisJobId, setCurrentAnalysisJobId] = useState<
+    string | null
+  >(null);
+  const animatingJobIdRef = useRef<string | null>(null);
 
   // Polling for analysis status (Global)
   const {
@@ -108,61 +121,65 @@ export default function WorldPage() {
     isStuck,
     currentJobType,
     flushAndAnalyze,
+    isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
-    onAnalysisComplete: (_result) => {
-      // guard: Check acknowledgement
-      if (
-        projectId &&
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
-      ) {
-        return;
-      }
-      // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
-      setShowCompletionAnimation(true);
-
-      // Trigger waiting state for data refresh
-      // Diff calculation will happen in useEffect once data is updated
-      setIsWaitingForRefresh(true);
+    onAnalysisComplete: (_result, jobId) => {
+      console.log("[Animation Debug] onAnalysisComplete", { jobId });
+      // Persistent flag will trigger the useEffect below
+      setPendingViewJobId(jobId);
     },
   });
 
   // Check for Pending Analysis View (from Editor)
   useEffect(() => {
     if (projectId) {
-      const pendingView = sessionStorage.getItem(
-        `analysis_pending_view_${projectId}`,
-      );
-      if (pendingView === "true") {
-        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+      console.log("[Animation Debug] Pending View Check", { pendingViewJobId });
+
+      if (pendingViewJobId && pendingViewJobId !== "") {
+        const isAck = isJobAcknowledged(pendingViewJobId);
+
+        if (isAck) {
+          console.log(
+            "[Animation Debug] Pending View - Already Ack, skipping",
+            { pendingViewJobId },
+          );
+          setPendingViewJobId(null);
+          return;
+        }
+
+        console.log("[Animation Debug] Pending View - Triggering Animation", {
+          pendingViewJobId,
+        });
+
+        // Decouple from render cycle to avoid cascading renders warning
+        setTimeout(() => {
+          setPendingViewJobId(null);
+          setShowCompletionAnimation(true);
+          setCurrentAnalysisJobId(pendingViewJobId);
+        }, 0);
+
         // Trigger the completion flow immediately
-        setTimeout(() => setIsWaitingForRefresh(true), 0);
+        setTimeout(() => {
+          console.log(
+            "[Animation Debug] Pending View - Setting isWaitingForRefresh(true)",
+          );
+          setIsWaitingForRefresh(true);
+        }, 50);
       }
     }
-  }, [projectId]);
+  }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
 
   // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장
   // (에디터에서 분석을 시작한 경우 스냅샷이 없을 수 있음)
   useEffect(() => {
     if (!isPolling || !projectId) return;
 
-    // 만약 이미 확인된 분석이라면 (acknowledged),
-    // 분석 중이더라도 다시 스냅샷을 찍거나 플래그를 리셋하지 않음 (새로고침 루프 방지)
-    if (
-      sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
-    ) {
-      return;
-    }
-
     // 이미 스냅샷이 있으면 무시
     if (snapshotRef.current) return;
 
-    // sessionStorage에 스냅샷이 있는지 확인
-    try {
-      const stored = sessionStorage.getItem(`analysis_snapshot_${projectId}`);
-      if (stored) return; // 이미 저장된 스냅샷이 있음
-    } catch {
-      // ignore
-    }
+    // sessionStorage 대신 store 사용
+    const storedSnapshot = analysisSnapshots[projectId];
+    if (storedSnapshot) return; // 이미 저장된 스냅샷이 있음
 
     // 캐릭터 데이터가 로드된 후에만 스냅샷 저장
     if (characters.length === 0) return;
@@ -174,16 +191,15 @@ export default function WorldPage() {
     };
     snapshotRef.current = snapshot;
 
-    try {
-      sessionStorage.setItem(
-        `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot),
-      );
-      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-    } catch (e) {
-      console.warn("Failed to save snapshot to sessionStorage", e);
-    }
-  }, [isPolling, projectId, characters, links]);
+    setAnalysisSnapshot(projectId, snapshot);
+  }, [
+    isPolling,
+    projectId,
+    characters,
+    links,
+    analysisSnapshots,
+    setAnalysisSnapshot,
+  ]);
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -200,18 +216,10 @@ export default function WorldPage() {
     };
     snapshotRef.current = snapshot;
 
-    // Persist to sessionStorage to survive page reloads
-    try {
-      sessionStorage.setItem(
-        `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot),
-      );
-      // Reset flags for new session
-      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-      sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
-    } catch (e) {
-      console.warn("Failed to save snapshot to sessionStorage", e);
-    }
+    // Persist to store to survive page reloads
+    setAnalysisSnapshot(projectId, snapshot);
+    // Reset pending view for new session
+    setPendingViewJobId(null);
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
@@ -241,84 +249,130 @@ export default function WorldPage() {
 
   // Effect: Calculate Diff when Data Refreshes after Analysis
   useEffect(() => {
-    if (isWaitingForRefresh && !isPolling) {
-      // guard: Check acknowledgement or if modal is already open to prevent loop
-      const isAck =
-        projectId &&
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
-      if (isAck || isAnalysisModalOpen) {
-        setTimeout(() => setIsWaitingForRefresh(false), 0);
-        return;
-      }
+    const isAck = currentAnalysisJobId
+      ? isJobAcknowledged(currentAnalysisJobId)
+      : false;
 
-      // 1. Try to get snapshot from Ref
-      let prev = snapshotRef.current;
+    console.log("[Animation Debug] Diff Effect Check", {
+      isWaitingForRefresh,
+      isPolling,
+      isCheckingJobStatus,
+      currentAnalysisJobId,
+      showCompletionAnimation,
+      isAck,
+      isAnalysisModalOpen,
+      animatingRef: animatingJobIdRef.current,
+    });
 
-      // 2. If missing (e.g. reload), try SessionStorage
-      if (!prev && projectId) {
-        try {
-          const stored = sessionStorage.getItem(
-            `analysis_snapshot_${projectId}`,
-          );
-          if (stored) {
-            prev = JSON.parse(stored);
-          }
-        } catch (e) {
-          console.error("Failed to restore snapshot from storage", e);
-        }
-      }
+    if (!isWaitingForRefresh || isPolling || isCheckingJobStatus) return;
 
-      // 3. Fallback to empty (Fresh Start)
-      if (!prev) {
-        prev = { characters: [], links: [] };
-      }
-
-      const currentChars = characters;
-      const currentLinks = links;
-
-      const diff = calculateDiffFromSnapshot(
-        prev.characters,
-        prev.links,
-        currentChars,
-        currentLinks,
+    if (isAck || isAnalysisModalOpen) {
+      console.log(
+        "[Animation Debug] Diff Effect - Skipping (isAck or isModalOpen)",
       );
-
-      // IMPORTANT: Reset wait state IMMEDIATELY to prevent redundant triggers
-      // before the async setStates below can finish.
-      // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
-      setTimeout(() => {
-        setIsWaitingForRefresh(false);
-        setAnalysisDiff(diff);
-
-        // Set highlighting
-        const namesToHighlight = [
-          ...diff.newCharacters.map((c) => c.profile.name),
-          ...diff.updatedCharacters.map((u) => {
-            const char = currentChars.find((c) => c._id === u.id);
-            return char?.profile.name || "";
-          }),
-        ].filter(Boolean);
-        setPendingHighlightNames(namesToHighlight);
-
-        snapshotRef.current = null; // Clear snapshot ref
-        if (projectId) {
-          sessionStorage.removeItem(`analysis_snapshot_${projectId}`); // Clear storage
-        }
-      }, 0);
-
-      // Open modal
-      setTimeout(() => {
-        setShowCompletionAnimation(false);
-        setIsAnalysisModalOpen(true);
-      }, 1500);
+      setTimeout(() => setIsWaitingForRefresh(false), 0);
+      return;
     }
+
+    // Guard: 만약 이미 이 작업으로 애니메이션 타이머가 돌고 있다면 중복 실행 방지
+    // 데이터 로드 과정에서 characters/links가 변하면서 이 effect가 재실행될 수 있음.
+    // clearTimeout으로 인해 타이머가 초기화되어 결과창이 안 뜨는 문제를 해결.
+    if (
+      currentAnalysisJobId &&
+      animatingJobIdRef.current === currentAnalysisJobId
+    ) {
+      console.log(
+        "[Animation Debug] Diff Effect - Already animating this job, ignoring update",
+        currentAnalysisJobId,
+      );
+      return;
+    }
+    animatingJobIdRef.current = currentAnalysisJobId;
+
+    // 1. Try to get snapshot from Ref
+    let prev = snapshotRef.current;
+
+    // 2. If missing (e.g. reload), try store (persistent)
+    if (!prev && projectId) {
+      prev = analysisSnapshots[projectId];
+    }
+
+    // 3. Fallback to empty (Fresh Start)
+    if (!prev) {
+      prev = { characters: [], links: [] };
+    }
+
+    const currentChars = characters;
+    const currentLinks = links;
+
+    const diff = calculateDiffFromSnapshot(
+      prev.characters,
+      prev.links,
+      currentChars,
+      currentLinks,
+    );
+
+    // IMPORTANT: Reset wait state IMMEDIATELY to prevent redundant triggers
+    // before the async setStates below can finish.
+    // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
+    // Enforce minimum display time for "Analysis Complete" animation (2 seconds)
+    const minDisplayTime = 2000;
+
+    const timer = setTimeout(() => {
+      console.log("[Animation Debug] Timer Finished - Opening Modal", {
+        jobId: currentAnalysisJobId,
+        isDiffEmpty:
+          !diff ||
+          (diff.newCharacters.length === 0 &&
+            diff.updatedCharacters.length === 0 &&
+            diff.newRelations.length === 0),
+      });
+
+      // Synchronous updates to ensure UI consistency
+      setIsWaitingForRefresh(false);
+      setAnalysisDiff(diff);
+
+      // Set highlighting
+      const namesToHighlight = [
+        ...diff.newCharacters.map((c) => c.profile.name),
+        ...diff.updatedCharacters.map((u) => {
+          const char = currentChars.find((c) => c._id === u.id);
+          return char?.profile.name || "";
+        }),
+      ].filter(Boolean);
+      setPendingHighlightNames(namesToHighlight);
+
+      snapshotRef.current = null; // Clear snapshot ref
+      if (projectId) {
+        clearAnalysisSnapshot(projectId); // Clear store
+      }
+
+      // Open modal immediately after the animation delay
+      setShowCompletionAnimation(false);
+      setIsAnalysisModalOpen(true);
+      animatingJobIdRef.current = null; // 타이머 종료 후 초기화
+    }, minDisplayTime);
+
+    return () => {
+      // 2024-01-16 Fix: 데이터 변경으로 인해 Effect가 재실행될 때
+      // 이미 같은 Job으로 애니메이션이 돌고 있다면 타이머를 초기화하지 않음.
+      if (animatingJobIdRef.current !== currentAnalysisJobId) {
+        clearTimeout(timer);
+      }
+    };
   }, [
     isWaitingForRefresh,
     isPolling,
+    isCheckingJobStatus,
     characters,
     links,
     projectId,
     isAnalysisModalOpen,
+    currentAnalysisJobId,
+    analysisSnapshots,
+    clearAnalysisSnapshot,
+    isJobAcknowledged,
+    showCompletionAnimation,
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -469,7 +523,6 @@ export default function WorldPage() {
     const targetChar = characters.find((c) => c._id === targetId);
 
     if (!sourceChar || !targetChar) {
-      console.warn("캐릭터를 찾을 수 없습니다:", sourceId, targetId);
       return;
     }
 
@@ -531,7 +584,8 @@ export default function WorldPage() {
         >
           {/* Analysis Overlay (Scoped to Graph) */}
           <AnimatePresence>
-            {((isPolling && currentJobType !== "image") ||
+            {(isCheckingJobStatus ||
+              (isPolling && currentJobType !== "image") ||
               isDebugAnalyzing ||
               showCompletionAnimation) && (
               <motion.div
@@ -873,13 +927,12 @@ export default function WorldPage() {
           onClose={() => {
             setIsAnalysisModalOpen(false);
             setAnalysisDiff(null);
-            // Mark as acknowledged so notifications stop appearing
-            if (projectId) {
-              sessionStorage.setItem(
-                `analysis_acknowledged_${projectId}`,
-                "true",
-              );
+            // Acknowledge this job to prevent re-animation on reload/navigation
+            if (currentAnalysisJobId) {
+              acknowledgeJob(currentAnalysisJobId);
             }
+            setCurrentAnalysisJobId(null);
+            animatingJobIdRef.current = null;
           }}
           diff={analysisDiff}
           characters={characters}

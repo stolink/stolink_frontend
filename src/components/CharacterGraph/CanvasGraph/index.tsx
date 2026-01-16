@@ -124,27 +124,14 @@ export const CharacterGraphCanvas = forwardRef<
     // 이미지 캐싱
     const imageCache = useImageCache(characters);
 
-    // [DEBUG] highlightedNodeIds 변경 감지
-    useEffect(() => {
-      console.log(
-        "[DEBUG CanvasGraph] highlightedNodeIds changed:",
-        highlightedNodeIds,
-      );
-    }, [highlightedNodeIds]);
+    // [DEBUG] highlightedNodeIds 변경 감지 (Disabled)
 
-    // [DEBUG] selectedNodeId 변경 감지
-    useEffect(() => {
-      console.log(
-        "[DEBUG CanvasGraph] selectedNodeId changed:",
-        selectedNodeId,
-      );
-    }, [selectedNodeId]);
+    // [DEBUG] selectedNodeId 변경 감지 (Disabled)
 
     // ESC 키 핸들러: 선택 해제 및 전체 뷰 복원
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
-          console.log("[DEBUG CanvasGraph] ESC pressed, resetting view");
           // 전체 뷰로 줌 아웃
           if (graphRef.current) {
             graphRef.current.zoomToFit(400, 80);
@@ -459,11 +446,6 @@ export const CharacterGraphCanvas = forwardRef<
         const targetChar = characterMap.get(targetId);
 
         if (!sourceChar || !targetChar) {
-          console.warn(
-            "[DeepAnalysis] Character lookup failed for:",
-            sourceId,
-            targetId,
-          );
           return;
         }
 
@@ -499,8 +481,8 @@ export const CharacterGraphCanvas = forwardRef<
           );
           setDeepAnalysisData(analysisData);
           setHoveredLink(null); // Close tooltip
-        } catch (error) {
-          console.error("[DeepAnalysis] Generation failed:", error);
+        } catch (_error) {
+          // ignore
         }
       },
       [onLinkClick, events, characterMap],
@@ -534,11 +516,6 @@ export const CharacterGraphCanvas = forwardRef<
 
     // 안정적인 검색 콜백 (ref를 통해 최신 함수 호출)
     const handleSearchChange = useCallback((matchingIds: string[] | null) => {
-      console.log("[DEBUG] handleSearchChange called:", matchingIds);
-      console.log(
-        "[DEBUG] onSearchChangeRef.current:",
-        onSearchChangeRef.current,
-      );
       onSearchChangeRef.current?.(matchingIds);
     }, []);
 
@@ -986,17 +963,9 @@ export const CharacterGraphCanvas = forwardRef<
           <CharacterSearchOverlay
             characters={characters}
             onSelect={(character) => {
-              console.log(
-                "[DEBUG] onSelect called:",
-                character.profile?.name,
-                character._id,
-              );
-
               // graphDataRef에서 시뮬레이션이 업데이트한 노드 좌표 가져오기
               const graphNodes = graphDataRef.current.nodes as CharacterNode[];
-              console.log("[DEBUG] graphNodes count:", graphNodes.length);
               const node = graphNodes.find((n) => n.id === character._id);
-              console.log("[DEBUG] found node:", node);
 
               if (
                 graphRef.current &&

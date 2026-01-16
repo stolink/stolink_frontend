@@ -293,11 +293,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
 
   // consistencyReport state removed in favor of store persistence
-  const addToBuffer = useAnalysisBufferStore(
-    (state) =>
-      (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer,
-  );
+  const {
+    addToBuffer,
+    setPendingViewJobId,
+    setAnalysisSnapshot,
+    isJobAcknowledged,
+  } = useAnalysisBufferStore();
 
   const readerChapters = useMemo(() => {
     interface FlatChapter {
@@ -332,19 +333,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     lastConsistencyReport, // Added
   } = useProjectAnalysis(projectId, {
     enabled: !!projectId,
-    onAnalysisComplete: async (result: AnalysisResultData | null) => {
-      if (!result) return;
+    onAnalysisComplete: async (
+      _result: AnalysisResultData | null,
+      jobId: string,
+    ) => {
+      // Note: result might be null if job was found completed on mount
+      // We still want to set the pending view flag so WorldPage can show the result.
 
-      // Check if already acknowledged (Viewed) to prevent loop
-      const isAck =
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
+      // Check if this specific jobId is already acknowledged
+      const isAck = isJobAcknowledged(jobId);
       if (isAck) return;
 
       // Analysis complete.
       // We DO NOT calculate diff here anymore. We defer it to WorldPage.
-      // Flag that we have a pending view for the user.
+      // Flag that we have a pending view for the user using persistent store.
       if (projectId) {
-        sessionStorage.setItem(`analysis_pending_view_${projectId}`, "true");
+        setPendingViewJobId(jobId);
       }
 
       toast({
@@ -449,23 +453,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     };
     snapshotRef.current = snapshot;
 
-    // Persist to sessionStorage to share with WorldPage
+    // Persist to store to share with WorldPage (IDB persistence)
     if (projectId) {
-      try {
-        sessionStorage.setItem(
-          `analysis_snapshot_${projectId}`,
-          JSON.stringify(snapshot),
-        );
-        // Reset flags
-        sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
-      } catch (e) {
-        console.warn("Failed to save snapshot to sessionStorage", e);
-      }
+      setAnalysisSnapshot(projectId, snapshot);
+      // Reset pending view for new session
+      setPendingViewJobId(null);
     }
 
     handleManualAnalysis();
-  }, [handleManualAnalysis, characters, graphLinks, projectId]);
+  }, [
+    handleManualAnalysis,
+    characters,
+    graphLinks,
+    projectId,
+    setAnalysisSnapshot,
+    setPendingViewJobId,
+  ]);
 
   // ============================================================
   // UI & Modals State
