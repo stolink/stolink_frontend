@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { BookOpen, Save, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@stolink/ui";
@@ -42,7 +43,12 @@ export function CharacterBiography({
   }, [events]);
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div
+      className={cn(
+        "space-y-6",
+        isEditMode ? "flex flex-col h-full" : "block h-auto",
+      )}
+    >
       <div className="flex items-center gap-2 px-1 shrink-0">
         <BookOpen className="h-5 w-5 text-mocha-500" />
         <h3 className="text-sm font-bold text-mocha-400 uppercase tracking-widest">

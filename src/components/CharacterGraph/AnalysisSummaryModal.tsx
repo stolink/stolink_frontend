@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AnalysisDiff } from "@/types/analysisTypes";
+import type { Character } from "@/types/character";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -162,6 +163,7 @@ interface AnalysisSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   diff: AnalysisDiff;
+  characters?: Character[];
 }
 
 /**
@@ -172,7 +174,27 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
   isOpen,
   onClose,
   diff,
+  characters = [],
 }) => {
+  // Helper to find character name by ID
+  const getCharName = (id: string | { id: string }) => {
+    const charId = typeof id === "string" ? id : id.id;
+    // 1. Try to find in character list (existing)
+    const existing = characters.find((c) => c._id === charId);
+    if (existing) return existing.profile.name;
+
+    // 2. Try to find in diff.newCharacters
+    const newChar = diff.newCharacters.find((c) => c._id === charId);
+    if (newChar) return newChar.profile.name;
+
+    return "알 수 없는 인물";
+  };
+
+  // Helper to find character avatar letter
+  const getCharAvatar = (id: string | { id: string }) => {
+    const name = getCharName(id);
+    return name.charAt(0);
+  };
   const [activeTab, setActiveTab] = useState<"characters" | "relations">(
     "characters",
   );
@@ -674,7 +696,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       initial="hidden"
                                       animate="visible"
                                       transition={{ delay: idx * 0.05 }}
-                                      className="group p-6 rounded-2xl transition-all duration-300"
+                                      className="group p-5 rounded-2xl transition-all duration-300"
                                       style={{
                                         background:
                                           "linear-gradient(135deg, rgba(var(--paper), 0.9) 0%, rgba(var(--paper), 0.6) 100%)",
@@ -685,24 +707,51 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                           "0 4px 20px rgba(61, 48, 42, 0.04)",
                                       }}
                                     >
-                                      <div className="flex items-center gap-6">
+                                      {/* Relationship Header: Source -> Target */}
+                                      <div className="flex items-center gap-3 mb-4">
+                                        {/* Source */}
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-8 h-8 rounded-full bg-mocha-100 flex items-center justify-center text-sm font-bold text-mocha-700">
+                                            {getCharAvatar(rel.source)}
+                                          </div>
+                                          <span className="text-sm font-bold text-espresso-800">
+                                            {getCharName(rel.source)}
+                                          </span>
+                                        </div>
+
+                                        {/* Arrow */}
+                                        <div className="flex-1 flex items-center justify-center px-2">
+                                          <div className="h-px w-full bg-mocha-200 relative">
+                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 text-mocha-200">
+                                              <ArrowRight className="w-3 h-3" />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Target */}
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-bold text-espresso-800">
+                                            {getCharName(rel.target)}
+                                          </span>
+                                          <div className="w-8 h-8 rounded-full bg-cloud-200 flex items-center justify-center text-sm font-bold text-mocha-600">
+                                            {getCharAvatar(rel.target)}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Tag & Description */}
+                                      <div className="flex items-start gap-4 bg-white/50 p-4 rounded-xl border border-white/60">
                                         <div
-                                          className="px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide shadow-sm"
+                                          className="px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide shadow-sm shrink-0 uppercase"
                                           style={getRelationBadgeStyle(
                                             rel.type,
                                           )}
                                         >
                                           {getRelationLabel(rel.type)}
                                         </div>
-                                        <p className="flex-1 text-lg  text-mocha-700 italic">
+                                        <p className="flex-1 text-sm text-mocha-700 leading-relaxed italic">
                                           "{rel.description}"
                                         </p>
-                                        <motion.div
-                                          whileHover={{ x: 4 }}
-                                          className="w-10 h-10 rounded-full bg-cloud-100 flex items-center justify-center text-mocha-400 group-hover:bg-mocha-500 group-hover:text-white transition-all"
-                                        >
-                                          <ArrowRight className="w-5 h-5" />
-                                        </motion.div>
                                       </div>
                                     </motion.div>
                                   ))}
@@ -731,23 +780,41 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                       initial="hidden"
                                       animate="visible"
                                       transition={{ delay: idx * 0.05 }}
-                                      className="p-5 rounded-xl border-l-4 border-amber-300"
+                                      className="group p-5 rounded-2xl border border-amber-200/50"
                                       style={{
-                                        background: "rgba(var(--paper), 0.5)",
+                                        background: "rgba(255, 251, 235, 0.6)", // Gentle Amber tint
                                         backdropFilter: "blur(10px)",
                                       }}
                                     >
-                                      <ul className="space-y-2">
-                                        {update.changes.map((change, i) => (
-                                          <li
-                                            key={i}
-                                            className="flex items-start gap-3 text-sm text-mocha-600"
-                                          >
-                                            <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                                            <span>{change}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
+                                      <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                          <Activity className="w-5 h-5 text-amber-600" />
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider bg-amber-100 px-2 py-0.5 rounded-md">
+                                              Relationship Update
+                                            </span>
+                                            {/* We can improve this ID display if we parse it, but for now ID is safer */}
+                                            <span className="text-xs text-amber-600/60 font-mono">
+                                              #{update.id.slice(0, 8)}
+                                            </span>
+                                          </div>
+                                          <ul className="space-y-2.5">
+                                            {update.changes.map((change, i) => (
+                                              <li
+                                                key={i}
+                                                className="flex items-start gap-3 text-sm text-mocha-800"
+                                              >
+                                                <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                                                <span className="leading-snug">
+                                                  {change}
+                                                </span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      </div>
                                     </motion.div>
                                   ))}
                                 </div>
