@@ -20,6 +20,14 @@ const turndown = new TurndownService({
   codeBlockStyle: "fenced",
 });
 
+// Custom rule to preserve highlight (mark) tags
+turndown.addRule("highlight", {
+  filter: "mark",
+  replacement: function (content) {
+    return `==${content}==`;
+  },
+});
+
 /**
  * HTML 콘텐츠에서 순수 텍스트 추출
  */
@@ -385,6 +393,7 @@ export async function exportToEpub(
 
 /**
  * 문서 목록을 PDF 파일로 내보내기
+ * Markdown으로 변환 후 깔끔한 HTML로 렌더링하여 PDF 생성
  * @param documents 문서 목록
  * @param projectTitle 프로젝트 제목
  * @param options 내보내기 옵션 (fontSize, lineHeight)
@@ -397,56 +406,122 @@ export async function exportToPdf(
   // Dynamic import for html2pdf
   const html2pdf = (await import("html2pdf.js")).default;
 
-  const textDocs = documents;
   const fontSize = options?.fontSize ?? 14;
   const lineHeight = options?.lineHeight ?? 1.8;
 
-  // Build HTML content with embedded styles
+  // Convert each document: HTML -> Markdown -> Clean Text
+  const convertedDocs = documents.map((doc) => {
+    // Remove foreshadowing tags first
+    const cleanedHtml = removeForeshadowingTags(doc.content);
+    // Convert to markdown for consistent formatting
+    const markdown = turndown.turndown(cleanedHtml);
+    return {
+      title: doc.title,
+      markdown,
+    };
+  });
+
+  // Convert markdown to simple, clean HTML
+  const markdownToSimpleHtml = (md: string): string => {
+    let html = md;
+
+    // Headers
+    html = html.replace(
+      /^###### (.+)$/gm,
+      '<h6 style="font-size: ' +
+        fontSize +
+        'px; font-weight: 600; margin: 0.6em 0 0.2em;">$1</h6>'
+    );
+    html = html.replace(
+      /^##### (.+)$/gm,
+      '<h5 style="font-size: ' +
+        fontSize * 1.1 +
+        'px; font-weight: 600; margin: 0.8em 0 0.3em;">$1</h5>'
+    );
+    html = html.replace(
+      /^#### (.+)$/gm,
+      '<h4 style="font-size: ' +
+        fontSize * 1.25 +
+        'px; font-weight: 600; margin: 1em 0 0.4em;">$1</h4>'
+    );
+    html = html.replace(
+      /^### (.+)$/gm,
+      '<h3 style="font-size: ' +
+        fontSize * 1.5 +
+        'px; font-weight: 600; margin: 1.2em 0 0.4em;">$1</h3>'
+    );
+    html = html.replace(
+      /^## (.+)$/gm,
+      '<h2 style="font-size: ' +
+        fontSize * 1.75 +
+        'px; font-weight: 700; margin: 1.4em 0 0.5em;">$1</h2>'
+    );
+    html = html.replace(
+      /^# (.+)$/gm,
+      '<h1 style="font-size: ' +
+        fontSize * 2 +
+        'px; font-weight: 700; margin: 1.5em 0 0.5em;">$1</h1>'
+    );
+
+    // Bold and Italic
+    html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+    html = html.replace(/~~(.+?)~~/g, "<del>$1</del>");
+    // Highlight (==text==) - just show as plain text to avoid alignment issues
+    html = html.replace(/==(.+?)==/g, "$1");
+    html = html.replace(
+      /`(.+?)`/g,
+      '<code style="background: #f5f5f5; padding: 0 4px; border-radius: 3px;">$1</code>'
+    );
+
+    // Blockquotes
+    html = html.replace(
+      /^> (.+)$/gm,
+      '<blockquote style="border-left: 3px solid #bd9b8d; padding-left: 1rem; margin: 1rem 0; font-style: italic; color: #7d5a4b;">$1</blockquote>'
+    );
+
+    // Lists - convert to plain text with symbols
+    html = html.replace(
+      /^- (.+)$/gm,
+      '<div style="margin-left: 1.5rem; text-indent: -1rem;">• $1</div>'
+    );
+    html = html.replace(/^\d+\. (.+)$/gm, (match, content, offset, string) => {
+      // Count which number this is by looking at surrounding context
+      const before = string.substring(0, offset);
+      const listItemsBefore = (before.match(/^\d+\. /gm) || []).length;
+      return `<div style="margin-left: 1.5rem; text-indent: -1rem;">${listItemsBefore + 1}. ${content}</div>`;
+    });
+
+    // Horizontal rules
+    html = html.replace(
+      /^---$/gm,
+      '<hr style="border: none; border-top: 1px solid #ccc; margin: 1.5rem 0;">'
+    );
+
+    // Paragraphs (lines that aren't already wrapped)
+    html = html
+      .split("\n")
+      .map((line) => {
+        if (line.trim() === "") return "<br>";
+        if (line.startsWith("<")) return line;
+        return `<p style="margin-bottom: 0.5em; line-height: ${lineHeight};">${line}</p>`;
+      })
+      .join("\n");
+
+    return html;
+  };
+
+  // Build HTML content
   const htmlContent = `
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Noto Sans KR', 'Pretendard', sans-serif; line-height: ${lineHeight}; }
-      h1 { font-size: ${fontSize * 2}px; font-weight: 700; margin: 1.5em 0 0.5em; line-height: 1.3; }
-      h2 { font-size: ${fontSize * 1.75}px; font-weight: 700; margin: 1.4em 0 0.5em; line-height: 1.3; }
-      h3 { font-size: ${fontSize * 1.5}px; font-weight: 600; margin: 1.2em 0 0.4em; line-height: 1.3; }
-      h4 { font-size: ${fontSize * 1.25}px; font-weight: 600; margin: 1em 0 0.3em; line-height: 1.3; }
-      h5 { font-size: ${fontSize * 1.1}px; font-weight: 500; margin: 0.8em 0 0.3em; line-height: 1.3; }
-      h6 { font-size: ${fontSize}px; font-weight: 500; margin: 0.6em 0 0.2em; line-height: 1.3; }
-      p { margin-bottom: 0.5em; line-height: ${lineHeight}; }
-      ul { list-style-type: disc; padding-left: 2rem; margin: 0.75rem 0; }
-      ol { list-style-type: decimal; padding-left: 2rem; margin: 0.75rem 0; }
-      li { 
-        margin-bottom: 0.25rem; 
-        line-height: ${lineHeight}; 
-        vertical-align: baseline;
-      }
-      blockquote { 
-        border-left: 3px solid #bd9b8d; 
-        padding: 0.5rem 1rem;
-        margin: 1rem 0; 
-        font-style: italic; 
-        color: #7d5a4b; 
-        background-color: rgba(189, 155, 141, 0.1);
-      }
-      mark { 
-        background-color: rgba(164, 119, 100, 0.3); 
-        padding: 0 0.2em; 
-        border-radius: 0.2em;
-        vertical-align: baseline;
-        display: inline;
-      }
-      mark[data-color] { background-color: attr(data-color); }
-      .foreshadowing-tag { display: none !important; }
-      [data-type='foreshadowingSuggest'] { display: none !important; }
-    </style>
-    <div style="font-family: 'Noto Sans KR', 'Pretendard', sans-serif; padding: 20px;">
-      <h1 style="text-align: center; margin-bottom: 40px; font-size: ${fontSize * 2}px;">${projectTitle}</h1>
-      ${textDocs
+    <div style="font-family: 'Noto Sans KR', 'Pretendard', sans-serif; padding: 20px; font-size: ${fontSize}px; line-height: ${lineHeight};">
+      <h1 style="text-align: center; margin-bottom: 40px; font-size: ${fontSize * 2}px; font-weight: 700;">${projectTitle}</h1>
+      ${convertedDocs
         .map(
           (doc, index) => `
         ${index > 0 ? '<div style="page-break-before: always;"></div>' : ""}
-        <h2 style="font-size: ${fontSize * 1.5}px; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">${doc.title}</h2>
-        <div style="font-size: ${fontSize}px; line-height: ${lineHeight};">${removeForeshadowingTags(doc.content)}</div>
+        <h2 style="font-size: ${fontSize * 1.5}px; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-weight: 700;">${doc.title}</h2>
+        <div>${markdownToSimpleHtml(doc.markdown)}</div>
       `
         )
         .join("")}
