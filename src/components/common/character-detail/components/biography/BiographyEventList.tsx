@@ -24,7 +24,7 @@ export function BiographyEventList({
   // 상위에서 정렬된 events를 넘겨주는 것이 좋음.
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full pb-4">
       <h4 className="text-lg text-espresso-900 border-b-2 border-mocha-200 pb-1 inline-block font-bold">
         사건 목록 ({events.length})
       </h4>

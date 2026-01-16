@@ -51,6 +51,7 @@ export interface BackendConflict {
   description: string;
   suggestion?: string;
   resolution?: string;
+  suggested_action?: "FLAG_FOR_HUMAN" | "AUTO_RESOLVE" | string;
   location?: {
     chapter?: string;
     line?: number;
@@ -135,6 +136,7 @@ export interface Conflict {
   category: string;
   description: string;
   suggestion?: string;
+  suggestedAction?: "FLAG_FOR_HUMAN" | "AUTO_RESOLVE" | string;
   location?: {
     chapter?: string;
     line?: number;
@@ -237,6 +239,7 @@ export function transformConflict(
     category,
     description,
     suggestion: backend.suggestion || backend.resolution || undefined,
+    suggestedAction: backend.suggested_action,
     location: backend.location
       ? {
           chapter: backend.location.chapter,
