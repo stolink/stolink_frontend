@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useEditorStore } from "@/stores";
+import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import type { Document } from "@/types/document";
 
 interface UseEditorHandlersOptions {
@@ -16,7 +17,7 @@ interface UseEditorHandlersOptions {
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
     id: string,
-    updates: Partial<Document>,
+    updates: Partial<Document>
   ) => Promise<unknown>;
   createDocument: (data: {
     type: "folder" | "text";
@@ -27,11 +28,11 @@ interface UseEditorHandlersOptions {
   deleteDocument: (id: string) => Promise<void>;
   reorderDocuments: (
     parentId: string | null,
-    orderedIds: string[],
+    orderedIds: string[]
   ) => Promise<void>;
   moveDocument: (
     itemId: string,
-    targetFolderId: string | null,
+    targetFolderId: string | null
   ) => Promise<void>;
   // 통합 뷰 저장 콜백 (섹션 클릭 전 저장용)
   scriveningsSaveAll?: () => Promise<void>;
@@ -62,7 +63,7 @@ export function useEditorHandlers({
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
   const lastContentRef = useRef<string>("");
   const saveContentRef = useRef(saveContent);
@@ -177,7 +178,7 @@ export function useEditorHandlers({
       setSelectedSectionId,
       setViewMode,
       scriveningsSaveAll,
-    ],
+    ]
   );
 
   // Select section
@@ -188,7 +189,7 @@ export function useEditorHandlers({
       }
       setSelectedSectionId(id);
     },
-    [selectedSectionId, forceSave, setSelectedSectionId],
+    [selectedSectionId, forceSave, setSelectedSectionId]
   );
 
   // Content change with debounce
@@ -215,13 +216,37 @@ export function useEditorHandlers({
         }
       }, 500);
     },
-    [isDemo],
+    [isDemo]
   );
 
   // Character count change with debounce
+  // Also record writing activity for stats tracking
+  const lastCharacterCountRef = useRef<number | null>(null); // null = not initialized
+  // 섹션 ID가 바뀌면 ref 초기화 (중복 카운팅 방지)
+  const lastSectionIdRef = useRef<string | null>(selectedSectionId);
+
+  useEffect(() => {
+    if (selectedSectionId !== lastSectionIdRef.current) {
+      lastCharacterCountRef.current = null;
+      lastSectionIdRef.current = selectedSectionId;
+    }
+  }, [selectedSectionId]);
+
+  const recordActivity = useWritingStatsStore((state) => state.recordActivity);
+
   const handleCharacterCountChange = useCallback(
     (count: number, setCharacterCount: (c: number) => void) => {
       setCharacterCount(count);
+
+      // Record writing activity (only for increases, and skip initial load)
+      if (lastCharacterCountRef.current !== null) {
+        const delta = count - lastCharacterCountRef.current;
+        // 100자 이상의 급격한 변화는 붙여넣기나 문서 전환으로 간주하여 무시할 수도 있음 (선택적)
+        if (delta > 0 && !isDemo) {
+          recordActivity(delta);
+        }
+      }
+      lastCharacterCountRef.current = count;
 
       if (!isDemo && selectedSectionIdRef.current) {
         if (wordCountTimeoutRef.current) {
@@ -230,7 +255,7 @@ export function useEditorHandlers({
         wordCountTimeoutRef.current = setTimeout(() => {
           // Get current metadata and update only wordCount
           const currentDoc = documents.find(
-            (d) => d.id === selectedSectionIdRef.current,
+            (d) => d.id === selectedSectionIdRef.current
           );
           if (currentDoc) {
             const updates: Partial<Document> = {
@@ -241,7 +266,7 @@ export function useEditorHandlers({
         }, 1000);
       }
     },
-    [isDemo, documents],
+    [isDemo, documents, recordActivity]
   );
 
   // Add chapter
@@ -249,7 +274,7 @@ export function useEditorHandlers({
     async (
       title: string,
       parentId?: string,
-      type: "chapter" | "section" = "chapter",
+      type: "chapter" | "section" = "chapter"
     ) => {
       if (isDemo) return null;
       return createDocument({
@@ -258,7 +283,7 @@ export function useEditorHandlers({
         parentId,
       });
     },
-    [isDemo, createDocument],
+    [isDemo, createDocument]
   );
 
   // Add section (형제 섹션만 생성 가능 - 하위 섹션 제거됨)
@@ -272,7 +297,7 @@ export function useEditorHandlers({
       } catch (error) {
         console.error(
           "[handleAddSection] Failed to save before creating section:",
-          error,
+          error
         );
         // 저장 실패해도 섹션 생성은 계속 진행 (사용자 경험 우선)
       }
@@ -311,7 +336,7 @@ export function useEditorHandlers({
       documents,
       setSelectedSectionId,
       forceSave,
-    ],
+    ]
   );
 
   // Rename chapter
@@ -336,7 +361,7 @@ export function useEditorHandlers({
         }
       }
     },
-    [isDemo, updateDocumentMutation],
+    [isDemo, updateDocumentMutation]
   );
 
   // Delete chapter
@@ -362,7 +387,7 @@ export function useEditorHandlers({
       selectedSectionId,
       setSelectedFolderId,
       setSelectedSectionId,
-    ],
+    ]
   );
 
   // Move item to different folder (uses optimistic update)
@@ -371,14 +396,14 @@ export function useEditorHandlers({
       if (isDemo) return;
       await moveDocument(itemId, targetFolderId);
     },
-    [isDemo, moveDocument],
+    [isDemo, moveDocument]
   );
 
   // View mode change with auto-save and state synchronization
   const handleViewModeChange = useCallback(
     async (
       newMode: "editor" | "scrivenings" | "outline",
-      currentMode: "editor" | "scrivenings" | "outline",
+      currentMode: "editor" | "scrivenings" | "outline"
     ) => {
       // 1. 전환 전 자동 저장
       await forceSave();
@@ -439,7 +464,7 @@ export function useEditorHandlers({
       setSelectedSectionId,
       setViewMode,
       scriveningsSaveAll,
-    ],
+    ]
   );
 
   return {

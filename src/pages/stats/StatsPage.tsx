@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import { useProjectStats } from "@/hooks/useProjects";
+import { useDocumentTree } from "@/hooks/useDocuments";
 import { cn } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
@@ -52,7 +53,7 @@ export default function StatsPage() {
     projectId || "",
     {
       enabled: !!projectId,
-    },
+    }
   );
 
   // Real data from IndexedDB
@@ -60,11 +61,33 @@ export default function StatsPage() {
     return getHistory(365).map((h) => ({ date: h.date, count: h.wordCount }));
   }, [getHistory]);
 
-  const displayStats = projectStats || {
-    totalWords: 0,
-    chapterCount: 0,
-    characterCount: 0,
-  };
+  // Real-time data from local documents cache (instantly updates on typing)
+  const { documents } = useDocumentTree(projectId || "");
+
+  const realTimeStats = useMemo(() => {
+    if (!documents || documents.length === 0) return null;
+
+    const wordCount = documents.reduce(
+      (acc, doc) => acc + (doc.metadata?.wordCount || 0),
+      0
+    );
+    // 폴더 또는 챕터 타입인 문서의 수 계산
+    const chapterCount = documents.filter(
+      (doc) => doc.type === "folder" || doc.type === "chapter"
+    ).length;
+
+    return {
+      totalWords: wordCount,
+      chapterCount: chapterCount,
+    };
+  }, [documents]);
+
+  const displayStats = realTimeStats ||
+    projectStats || {
+      totalWords: 0,
+      chapterCount: 0,
+      characterCount: 0,
+    };
 
   const todayCount = getTodayCount();
   const displayStreak = currentStreak;
@@ -234,7 +257,7 @@ export default function StatsPage() {
                         "w-4 h-4",
                         displayStreak > 0
                           ? "text-[#B38B82] fill-[#B38B82]"
-                          : "text-cloud-200",
+                          : "text-cloud-200"
                       )}
                     />
                   </motion.div>
@@ -348,7 +371,7 @@ export default function StatsPage() {
                           <motion.div
                             className={cn(
                               "w-full h-full rounded-[2px] cursor-pointer",
-                              getIntensityColor(day.count),
+                              getIntensityColor(day.count)
                             )}
                             variants={{
                               initial: { opacity: 0, scale: 0.5 },
