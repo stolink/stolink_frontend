@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { debounce } from "lodash-es";
+import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Core Components
@@ -49,6 +49,7 @@ import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useUIStore } from "@/stores/useUIStore";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
@@ -64,7 +65,7 @@ import type { RelationshipLink } from "@/types/characterGraph";
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
 
 import { DEMO_CHAPTERS } from "@/data/demoData";
-import { cn } from "@/lib/utils";
+import { cn, getPlainTextLength } from "@/lib/utils";
 
 // Constants
 const DEMO_PROJECT_ID = "demo";
@@ -75,7 +76,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS,
+  chapters: typeof DEMO_CHAPTERS
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -119,7 +120,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[],
+  nodes: DocumentTreeNode[]
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -153,7 +154,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -163,10 +164,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null,
+    isDemo ? "chapter-demo-1" : null
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null,
+    isDemo ? "chapter-1-1" : null
   );
   const [viewMode, setViewMode] = useState<
     "editor" | "scrivenings" | "outline"
@@ -187,12 +188,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode,
+    (state) => state.behavior.typewriterMode
+  );
+  const setTypewriterMode = useEditorSettingStore(
+    (state) => state.setTypewriterMode
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode,
+    (state) => state.behavior.focusMode
   );
+  const setFocusMode = useEditorSettingStore((state) => state.setFocusMode);
   /* performanceMode removed */
 
   const initialStateFromRedirect = (
@@ -214,16 +219,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   useDocumentTree(isDemo ? "" : projectId);
 
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents,
+    (state) => (state as { documents: Record<string, Document> }).documents
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId,
+            (doc) => doc.projectId === projectId
           ),
-    [allDocuments, projectId, isDemo],
+    [allDocuments, projectId, isDemo]
   );
 
   const previewChapters = useMemo(() => {
@@ -239,8 +244,67 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const documents = useMemo(
     () => Object.values(localDocuments),
-    [localDocuments],
+    [localDocuments]
   );
+
+  // 통계 스토어 연결
+  const currentTotalChars = useWritingStatsStore((s) => s.currentTotalChars);
+
+  // 통계 스토어 연결
+  const updateDocumentCharCount = useWritingStatsStore(
+    (s) => s.updateDocumentCharCount
+  );
+  const setDocumentCharCounts = useWritingStatsStore(
+    (s) => s.setDocumentCharCounts
+  );
+
+  // 스로틀링된 통계 업데이트 함수 (1초에 한 번만 실행하여 렉 방지)
+  const throttledUpdateStats = useMemo(
+    () =>
+      throttle(
+        (
+          id: string,
+          count: number,
+          updateFn: (id: string, count: number) => void
+        ) => {
+          updateFn(id, count);
+        },
+        1000,
+        { leading: true, trailing: true }
+      ),
+    []
+  );
+
+  // 스로틀링된 UI 업데이트 함수 (300ms에 한 번만 실행하여 리렌더링 방지)
+  const throttledUIUpdate = useMemo(
+    () =>
+      throttle(
+        (
+          count: number,
+          callback: (
+            count: number,
+            setState: React.Dispatch<React.SetStateAction<number>>
+          ) => void,
+          setter: React.Dispatch<React.SetStateAction<number>>
+        ) => {
+          callback(count, setter);
+        },
+        500,
+        { leading: true, trailing: true }
+      ),
+    []
+  );
+
+  // 초기 로드 시 모든 문서의 글자수를 스토어에 설정
+  useEffect(() => {
+    if (!isDemo && documents.length > 0) {
+      const counts: Record<string, number> = {};
+      documents.forEach((doc) => {
+        counts[doc.id] = getPlainTextLength(doc.content);
+      });
+      setDocumentCharCounts(counts);
+    }
+  }, [documents.length, isDemo, setDocumentCharCounts]); // documents.length로 첫 로드 시에만 실행
 
   const sidebarChapters = useMemo(() => {
     if (isDemo)
@@ -383,7 +447,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer]
   );
 
   const saveWithAnalysis = useCallback(
@@ -392,7 +456,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       await saveContent(content);
       addToBuffer(selectedSectionId, content);
     },
-    [saveContent, selectedSectionId, addToBuffer],
+    [saveContent, selectedSectionId, addToBuffer]
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -537,7 +601,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     (docId: string) => {
       handleSelectSection(docId);
     },
-    [handleSelectSection],
+    [handleSelectSection]
   );
 
   // Modal Handlers
@@ -550,12 +614,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section",
+    type: "chapter" | "section"
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section",
+      type === "chapter" ? "chapter" : "section"
     );
     setCreateSectionModalOpen(false);
   };
@@ -617,14 +681,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const isRightSidebarOpen = useUIStore((state) => state.rightSidebarOpen);
   const setIsRightSidebarOpen = useUIStore(
-    (state) => state.setRightSidebarOpen,
+    (state) => state.setRightSidebarOpen
   );
 
   return (
     <div
       className={cn(
         "flex flex-col bg-cloud-50/50 text-foreground", // Unified Desk Background
-        isDemo ? "h-screen" : "h-full",
+        isDemo ? "h-screen" : "h-full"
       )}
     >
       {isDemo && (
@@ -651,12 +715,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isOpen={isSidebarOpen}
               onToggle={() => setIsSidebarOpen(false)}
               projectTitle={projectTitle}
-              totalChars={
-                Object.values(documents).reduce(
-                  (acc, doc) => acc + (doc.content?.length || 0),
-                  0,
-                ) || 0
-              }
+              totalChars={currentTotalChars}
             />
           )}
         </AnimatePresence>
@@ -665,7 +724,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300 relative z-10",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-cloud-50",
+            isFocusMode && "bg-cloud-50"
             // Main area is transparent to show Desk, unless Focus Mode
           )}
         >
@@ -687,10 +746,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => {}}
-            onToggleFocusMode={() => {}}
+            onToggleSplitView={() => {}} // TODO: Implement split view state
+            onToggleFocusMode={() => setFocusMode(!isFocusMode)}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => {}}
+            onToggleTypewriterMode={() =>
+              setTypewriterMode(isTypewriterMode ? "off" : "center")
+            }
             rightSidebarOpen={isRightSidebarOpen}
             onToggleRightSidebar={() =>
               setIsRightSidebarOpen(!isRightSidebarOpen)
@@ -714,9 +775,23 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isFocusMode={isFocusMode}
               currentContent={documentContent}
               currentSectionTitle={document?.title || ""}
-              onCharacterCountChange={(count: number) =>
-                handleCharacterCountChange(count, setCharacterCount)
-              }
+              onCharacterCountChange={(count: number) => {
+                // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
+                throttledUIUpdate(
+                  count,
+                  handleCharacterCountChange,
+                  setCharacterCount
+                );
+
+                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
+                if (!isDemo && selectedSectionId) {
+                  throttledUpdateStats(
+                    selectedSectionId,
+                    count,
+                    updateDocumentCharCount
+                  );
+                }
+              }}
               onContentChange={handleContentChange}
               onCreateSection={handleCreateSection}
               onSelectSection={handleSelectSection}
