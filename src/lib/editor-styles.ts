@@ -48,32 +48,60 @@ const THEME_CLASS_MAP: Record<Theme, string> = {
  */
 const THEME_COLORS: Record<
   Theme,
-  { bg: string; text: string; selection: string }
+  {
+    bg: string;
+    text: string;
+    heading: string;
+    border: string;
+    blockquoteBg: string;
+    blockquoteBorder: string;
+    selection: string;
+  }
 > = {
   light: {
     bg: "#FDFCFB",
     text: "#3D302A", // Espresso 900
+    heading: "#3D302A",
+    border: "#E8E4E0",
+    blockquoteBg: "rgba(189, 155, 141, 0.1)",
+    blockquoteBorder: "#BD9B8D",
     selection: "rgba(166, 140, 114, 0.2)",
   },
   dark: {
-    bg: "#3D302A", // Espresso 900 for dark mode background
-    text: "#F1F0EC", // Cloud 50 for text
-    selection: "rgba(164, 119, 100, 0.3)",
+    bg: "#3D302A", // Espresso 900
+    text: "#F1F0EC", // Cloud 50
+    heading: "#FFFFFF",
+    border: "#5D504A",
+    blockquoteBg: "rgba(189, 155, 141, 0.2)",
+    blockquoteBorder: "#A47764",
+    selection: "rgba(164, 119, 100, 0.4)",
   },
   sepia: {
-    bg: "#F1F0EC",
+    bg: "#F1F0EC", // Cloud 50 (warm ish)
     text: "#3D302A",
+    heading: "#5D4A3B",
+    border: "#E0DCD6",
+    blockquoteBg: "rgba(189, 155, 141, 0.1)",
+    blockquoteBorder: "#BD9B8D",
     selection: "rgba(164, 119, 100, 0.2)",
   },
   "eye-care": {
-    bg: "#F1F0EC",
-    text: "#5B7B4B", // Success Green for eye-care
-    selection: "rgba(91, 123, 75, 0.2)",
+    bg: "#F1F0EC", // Sepia background (as requested)
+    text: "#5b7b4b",
+    heading: "#1B5E20",
+    border: "#E0DCD6",
+    blockquoteBg: "rgba(76, 175, 80, 0.1)",
+    blockquoteBorder: "#4CAF50",
+    selection: "rgba(76, 175, 80, 0.2)",
   },
   "true-black": {
     bg: "#1A1A1A", // Softer than pure black
     text: "#F1F0EC",
-    selection: "rgba(255, 255, 255, 0.1)",
+    heading: "#E5E5E5",
+    border: "#333333",
+    blockquoteBg: "rgba(255, 255, 255, 0.1)",
+    blockquoteBorder: "#666666",
+    selection: "rgba(255, 255, 255, 0.2)",
   },
 };
 
@@ -89,7 +117,7 @@ function getIndentValue(indent: number): string {
  * Use this to apply styles via CSS variables for performance
  */
 export function getEditorCSSVariables(
-  settings: EditorSettings,
+  settings: EditorSettings
 ): Record<string, string> {
   const theme = settings.visual?.theme ?? "light";
   const themeColors = THEME_COLORS[theme] ?? THEME_COLORS.light;
@@ -109,6 +137,10 @@ export function getEditorCSSVariables(
     "--st-editor-width": EDITOR_WIDTH_MAP[width] ?? EDITOR_WIDTH_MAP.standard,
     "--st-editor-bg-color": themeColors.bg,
     "--st-editor-text-color": themeColors.text,
+    "--st-editor-heading-color": themeColors.heading,
+    "--st-editor-border-color": themeColors.border,
+    "--st-editor-blockquote-bg": themeColors.blockquoteBg,
+    "--st-editor-blockquote-border": themeColors.blockquoteBorder,
     "--st-editor-selection-color": themeColors.selection,
   };
 }
