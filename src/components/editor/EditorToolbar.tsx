@@ -59,7 +59,7 @@ function ToolbarButton({
       className={cn(
         "rounded-lg",
         "text-mocha-500 hover:text-espresso-900 hover:bg-mocha-400/20",
-        isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm",
+        isActive && "bg-mocha-400/30 text-mocha-900 shadow-sm"
       )}
       title={tooltip}
     >
@@ -107,7 +107,7 @@ export function EditorToolbar({
       isBlockquote: ctx.editor?.isActive("blockquote") ?? false,
       headingLevel:
         [1, 2, 3, 4, 5, 6].find((level) =>
-          ctx.editor?.isActive("heading", { level }),
+          ctx.editor?.isActive("heading", { level })
         ) || 0,
       canUndo: ctx.editor?.can().undo() ?? false,
       canRedo: ctx.editor?.can().redo() ?? false,
@@ -133,7 +133,7 @@ export function EditorToolbar({
     <div
       className={cn(
         "relative flex items-center gap-1 px-4 py-[9px] border-b-2 border-mocha-400/30 bg-white shadow-sm sticky top-0 z-10 flex-wrap transition-all",
-        className,
+        className
       )}
     >
       {/* Progress Bar or Decorative Line */}
@@ -144,7 +144,7 @@ export function EditorToolbar({
           <motion.div
             className={cn(
               "h-full",
-              analysisStatus === "completed" ? "bg-green-500" : "bg-mocha-500",
+              analysisStatus === "completed" ? "bg-green-500" : "bg-mocha-500"
             )}
             initial={{ width: 0, opacity: 1 }}
             animate={{
@@ -187,7 +187,7 @@ export function EditorToolbar({
               "px-3 text-small font-bold",
               currentHeadingLevel > 0
                 ? "bg-mocha-400/30 text-mocha-900"
-                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
             )}
           >
             <Type className="h-3.5 w-3.5" />
@@ -255,20 +255,52 @@ export function EditorToolbar({
       </ToolbarButton>
 
       {/* Highlight Button */}
-      <Button
-        intent="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHighlight().run()}
-        className={cn(
-          "rounded-lg",
-          editorState.isHighlight
-            ? "bg-mocha-400/30 text-mocha-900"
-            : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900",
-        )}
-        title="하이라이트"
-      >
-        <Highlighter className="h-4 w-4" />
-      </Button>
+      {/* Highlight Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            intent="ghost"
+            size="icon-sm"
+            className={cn(
+              "rounded-lg",
+              editorState.isHighlight
+                ? "bg-mocha-400/30 text-mocha-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
+            )}
+            title="하이라이트 색상 선택"
+          >
+            <Highlighter className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-auto p-2">
+          <div className="flex gap-1.5">
+            {[
+              { color: "#fef08a", label: "노랑" }, // yellow-200
+              { color: "#bbf7d0", label: "초록" }, // green-200
+              { color: "#bfdbfe", label: "파랑" }, // blue-200
+              { color: "#fbcfe8", label: "분홍" }, // pink-200
+              { color: "#e9d5ff", label: "보라" }, // purple-200
+              { color: "transparent", label: "지우기", icon: Minus },
+            ].map(({ color, label, icon: Icon }) => (
+              <button
+                key={color}
+                onClick={() => {
+                  if (color === "transparent") {
+                    editor.chain().focus().unsetHighlight().run();
+                  } else {
+                    editor.chain().focus().toggleHighlight({ color }).run();
+                  }
+                }}
+                className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-mocha-400"
+                style={{ backgroundColor: color }}
+                title={label}
+              >
+                {Icon && <Icon className="w-3 h-3 text-gray-500" />}
+              </button>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
