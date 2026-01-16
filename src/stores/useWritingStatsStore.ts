@@ -213,6 +213,7 @@ export const useWritingStatsStore = create<WritingStatsStore>()(
       },
 
       resetStats: () => {
+        // dailyGoal은 사용자 영구 설정값이므로 초기화에서 제외
         set((draft) => {
           draft.dailyBaselines = {};
           draft.dailyEndTotals = {};

@@ -28,12 +28,21 @@ turndown.addRule("highlight", {
   },
 });
 
+const parser = new DOMParser();
+
+/**
+ * Helper: Parse HTML string safely using DOMParser
+ */
+function parseHtmlString(html: string): HTMLElement {
+  const doc = parser.parseFromString(html, "text/html");
+  return doc.body;
+}
+
 /**
  * HTML 콘텐츠에서 순수 텍스트 추출
  */
 function htmlToText(html: string): string {
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
+  const temp = parseHtmlString(html);
   return temp.textContent || temp.innerText || "";
 }
 
@@ -43,8 +52,7 @@ function htmlToText(html: string): string {
  * mark, li 등의 요소에 인라인 스타일 추가
  */
 function removeForeshadowingTags(html: string): string {
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
+  const temp = parseHtmlString(html);
 
   // Remove foreshadowingSuggest nodes
   temp
@@ -132,8 +140,7 @@ export function exportToMarkdown(
  * HTML을 DOCX 문단으로 변환
  */
 function htmlToDocxParagraphs(html: string): Paragraph[] {
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
+  const temp = parseHtmlString(html);
   const paragraphs: Paragraph[] = [];
 
   temp.childNodes.forEach((node) => {

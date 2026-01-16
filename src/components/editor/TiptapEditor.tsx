@@ -251,6 +251,11 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       extensions,
       content: sanitizeEditorContent(initialContent ?? DEFAULT_CONTENT),
       editorProps: {
+        /**
+         * 스크롤 동작을 가로채서 제어합니다.
+         * 타자기 모드가 활성화된 경우(off가 아님), 기본 스크롤 동작을 차단(return true)하고
+         * TypewriterScroll 확장이 스크롤을 전담하도록 하여 화면 흔들림(널뛰기)을 방지합니다.
+         */
         handleScrollToSelection: (_view) => {
           if (typewriterModeRef.current !== "off") {
             return true; // Prevent default scroll behavior in typewriter mode
