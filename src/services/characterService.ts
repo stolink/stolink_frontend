@@ -143,6 +143,9 @@ function transformBackendCharacter(backendChar: BackendCharacter): Character {
   ) || {}) as Record<string, unknown>;
 
   const mapRelation = (rel: Record<string, unknown>) => ({
+    id: (rel.id || rel._id || rel.relationship_id || rel.relationshipId) as
+      | string
+      | undefined,
     target: (rel.target || rel.targetId) as string,
     type: (rel.type ||
       rel.relationType ||

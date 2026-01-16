@@ -486,6 +486,7 @@ export default function WorldPage() {
 
     // 분석 데이터 생성
     const analysisData = generateAnalysisData(
+      link.id,
       sourceChar,
       targetChar,
       link.relationTypes || [link.type],

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -499,6 +499,14 @@ export function DeepAnalysisHero({
   const targetColor = getRelationColor(
     asymmetricStrength.targetToSource.factors[0]?.type,
   );
+
+  // Fallback: If shader doesn't load within 500ms (e.g. hidden on small screens), force ready
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onShaderReady?.();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [onShaderReady]);
 
   return (
     <div className={cn("relative z-20 p-8 pb-16 pt-16", className)}>

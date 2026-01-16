@@ -131,6 +131,7 @@ export interface CharacterPersonality {
  * callback_result.json schema: relations.graph[]
  */
 export interface CharacterRelation {
+  id?: string; // Optional UUID from backend
   target: string;
   type: RelationType | string; // @deprecated Use relationTypes
   relationTypes?: string[]; // New: Multiple relation types

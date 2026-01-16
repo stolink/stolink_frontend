@@ -46,12 +46,19 @@ export function useUpdateRelationship(projectId: string) {
     }: {
       id: string;
       payload: Partial<CreateRelationshipInput>;
-    }) => relationshipService.update(id, payload),
+    }) => {
+      console.log(`[RelationUpdate] Sending update for ID: ${id}`, payload);
+      return relationshipService.update(id, payload);
+    },
     // Optimistic update for deprecated API removed
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("[RelationUpdate] Success:", data);
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
       });
+    },
+    onError: (error) => {
+      console.error("[RelationUpdate] Error:", error);
     },
   });
 }
@@ -63,12 +70,19 @@ export function useDeleteRelationship(projectId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => relationshipService.delete(id),
+    mutationFn: (id: string) => {
+      console.log(`[RelationDelete] Deleting ID: ${id}`);
+      return relationshipService.delete(id);
+    },
     // Optimistic update for deprecated API removed
     onSuccess: () => {
+      console.log("[RelationDelete] Success");
       queryClient.invalidateQueries({
         queryKey: characterKeys.list(projectId),
       });
+    },
+    onError: (error) => {
+      console.error("[RelationDelete] Error:", error);
     },
   });
 }
