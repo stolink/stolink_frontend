@@ -209,10 +209,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }).configure({
           multicolor: true,
         }),
-        CharacterCount.configure({
-          // limit removed for backend paging
-          mode: "textSize", // 순수 텍스트만 계산 (HTML 태그 제외)
-        }),
+        CharacterCount.configure({}),
         TextAlign.configure({
           types: ["heading", "paragraph"],
         }),

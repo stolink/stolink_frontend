@@ -38,7 +38,7 @@ export function useChapterBalance(projectId: string): {
       (sum, c) => sum + getWordCount(c.id, c.metadata.wordCount || 0),
       0
     );
-    const average = totalWords / chapters.length;
+    const average = chapters.length > 0 ? totalWords / chapters.length : 0;
 
     // Analyze each chapter
     const analyzedChapters = chapters.map((c) => {

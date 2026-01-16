@@ -1,5 +1,5 @@
 import { BarChart3, Calendar, Trophy, Flame, Target } from "lucide-react";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -11,6 +11,17 @@ import { cn, getPlainTextLength } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { ChapterBalanceCard } from "@/components/stats/ChapterBalanceCard";
 import { WritingPatternsCard } from "@/components/stats/WritingPatternsCard";
 
@@ -46,8 +57,24 @@ const fadeInVariants = {
 
 export default function StatsPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { dailyGoal, currentStreak, longestStreak, getHistory } =
+  const { dailyGoal, currentStreak, longestStreak, getHistory, setDailyGoal } =
     useWritingStatsStore();
+
+  const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+
+  const handleOpenGoalDialog = () => {
+    setGoalInput(dailyGoal.toString());
+    setIsGoalDialogOpen(true);
+  };
+
+  const handleSaveGoal = () => {
+    const newGoal = parseInt(goalInput.replace(/,/g, ""), 10);
+    if (!isNaN(newGoal) && newGoal > 0) {
+      setDailyGoal(newGoal);
+      setIsGoalDialogOpen(false);
+    }
+  };
 
   const { data: projectStats, isLoading: isStatsLoading } = useProjectStats(
     projectId || "",
@@ -228,12 +255,15 @@ export default function StatsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex justify-between items-center text-xs font-bold text-mocha-400 uppercase tracking-widest">
                   일일 목표
-                  <motion.div
+                  <motion.button
                     whileHover={{ scale: 1.2 }}
                     transition={{ type: "spring", stiffness: 400 }}
+                    onClick={handleOpenGoalDialog}
+                    className="focus:outline-none"
+                    aria-label="일일 목표 설정"
                   >
-                    <Target className="w-4 h-4 text-mocha-500/60" />
-                  </motion.div>
+                    <Target className="w-4 h-4 text-mocha-500/60 hover:text-mocha-500 transition-colors" />
+                  </motion.button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -483,6 +513,47 @@ export default function StatsPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>일일 목표 설정</DialogTitle>
+            <DialogDescription>
+              하루에 작성할 목표 글자 수를 설정하세요. 꾸준한 집필의
+              첫걸음입니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="daily-goal" className="text-right">
+                목표 글자 수
+              </Label>
+              <Input
+                id="daily-goal"
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                className="col-span-3"
+                type="number"
+                min="1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsGoalDialogOpen(false)}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSaveGoal}
+              className="bg-mocha-500 hover:bg-mocha-600"
+            >
+              저장하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
