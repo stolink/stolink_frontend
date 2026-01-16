@@ -5,12 +5,15 @@
  * 임계치 도달 또는 페이지 이탈 시 flush하여 분석을 트리거합니다.
  */
 
+import { useState, useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { get, set as idbSet, del } from "idb-keyval";
 import type { StateStorage } from "zustand/middleware";
 import type { ConsistencyReport } from "@/types/analysisResult";
+import type { Character } from "@/types/character";
+import type { RelationshipLink } from "@/types/characterGraph";
 import { calculateContentHash } from "@/utils/hashUtils";
 
 // IndexedDB 스토리지 어댑터
@@ -25,6 +28,11 @@ const storage: StateStorage = {
     await del(name);
   },
 };
+
+export interface AnalysisSnapshot {
+  characters: Character[];
+  links: RelationshipLink[];
+}
 
 // 버퍼 청크 타입
 export interface BufferChunk {
@@ -55,6 +63,9 @@ interface AnalysisBufferStore {
   pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 분석 결과 (일관성 리포트)
   processedConflicts: Record<string, "resolved" | "ignored" | "deleted">; // 처리된 이슈 관리
+  pendingViewJobId: string | null; // 사용자가 아직 확인하지 못한 분석 결과 ID
+  analysisSnapshots: Record<string, AnalysisSnapshot>; // projectId -> snapshot (characters, links)
+  acknowledgedJobIds: string[]; // 확인된 분석 작업 ID 목록
 
   // 액션
   setProjectId: (projectId: string | null) => void;
@@ -96,6 +107,11 @@ interface AnalysisBufferStore {
   clearProcessedConflicts: () => void;
   // 강제 초기화
   resetAnalysis: () => void;
+  setPendingViewJobId: (id: string | null) => void;
+  setAnalysisSnapshot: (projectId: string, snapshot: AnalysisSnapshot) => void;
+  clearAnalysisSnapshot: (projectId: string) => void;
+  acknowledgeJob: (jobId: string) => void;
+  isJobAcknowledged: (jobId: string) => boolean;
 
   // 유틸리티
   getBufferSummary: () => { charCount: number; documentCount: number };
@@ -120,6 +136,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       pendingDocuments: {}, // 분석 요청된 문서 트래킹
       lastConsistencyReport: null,
       processedConflicts: {},
+      pendingViewJobId: null,
+      analysisSnapshots: {},
+      acknowledgedJobIds: [],
 
       setProjectId: (projectId) => {
         set((state) => {
@@ -132,17 +151,26 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.processedConflicts = {}; // 프로젝트 변경 시 초기화
             // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
 
-            if (projectId && state.activeJobs[projectId]?.length > 0) {
-              const jobs = state.activeJobs[projectId];
+            // 새로고침 시 진행 중인 Job이 있으면 상태 유지
+            const hasActiveJobs =
+              projectId &&
+              (state.activeJobs[projectId]?.length > 0 ||
+                state.activeAnalysisJobs[projectId]?.length > 0);
+
+            if (hasActiveJobs) {
+              const jobs =
+                state.activeJobs[projectId!] ||
+                state.activeAnalysisJobs[projectId!];
               state.currentJobId = jobs[jobs.length - 1]; // 가장 최신 Job을 일단 표시
               state.currentJobType = "analysis"; // Default to analysis on reload if unknown
+              // activeJobs가 있으면 isAnalyzing 유지 (새로고침 시 SSE 재연결까지 상태 보존)
+              state.isAnalyzing = true;
             } else {
               state.currentJobId = null;
               state.currentJobType = null;
               state.currentJobTargetId = null;
+              state.isAnalyzing = false;
             }
-            // isAnalyzing은 persist에서 복원되어도 useProjectAnalysis의 mount status check 결과를 따르도록 함
-            state.isAnalyzing = false;
           }
         });
       },
@@ -381,10 +409,41 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           state.isAnalyzing = false;
           state.progress = 0;
           state.pendingDocuments = {};
+          state.pendingViewJobId = null; // 초기화
           if (state.projectId) {
             delete state.activeJobs[state.projectId];
           }
         });
+      },
+
+      setPendingViewJobId: (id) => {
+        set((state) => {
+          state.pendingViewJobId = id;
+        });
+      },
+
+      setAnalysisSnapshot: (projectId, snapshot) => {
+        set((state) => {
+          state.analysisSnapshots[projectId] = snapshot;
+        });
+      },
+
+      clearAnalysisSnapshot: (projectId) => {
+        set((state) => {
+          delete state.analysisSnapshots[projectId];
+        });
+      },
+
+      acknowledgeJob: (jobId) => {
+        set((state) => {
+          if (!state.acknowledgedJobIds.includes(jobId)) {
+            state.acknowledgedJobIds.push(jobId);
+          }
+        });
+      },
+
+      isJobAcknowledged: (jobId) => {
+        return get().acknowledgedJobIds.includes(jobId);
       },
 
       getBufferSummary: () => {
@@ -451,6 +510,9 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         pendingDocuments: state.pendingDocuments,
         lastConsistencyReport: state.lastConsistencyReport,
         processedConflicts: state.processedConflicts,
+        pendingViewJobId: state.pendingViewJobId,
+        analysisSnapshots: state.analysisSnapshots,
+        acknowledgedJobIds: state.acknowledgedJobIds,
       }),
       // 기존 저장 상태에 새 필드가 없을 때 기본값 적용
       merge: (persistedState, currentState) => {
@@ -471,4 +533,28 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
 export const ANALYSIS_BUFFER_CONFIG = {
   MIN_CHARS: MIN_CHARS_FOR_AUTO_FLUSH,
   MIN_INTERVAL_MS,
+};
+
+/**
+ * Hydration 완료 여부를 반환하는 훅
+ * IndexedDB에서 상태 복원이 완료되었는지 확인
+ */
+export const useAnalysisBufferHydrated = (): boolean => {
+  const [hydrated, setHydrated] = useState(() => {
+    return useAnalysisBufferStore.persist.hasHydrated();
+  });
+
+  useEffect(() => {
+    // persist 미들웨어의 onFinishHydration 콜백 등록
+    const unsubFinishHydration =
+      useAnalysisBufferStore.persist.onFinishHydration(() => {
+        setHydrated(true);
+      });
+
+    return () => {
+      unsubFinishHydration();
+    };
+  }, []);
+
+  return hydrated;
 };

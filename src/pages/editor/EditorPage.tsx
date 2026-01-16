@@ -76,7 +76,7 @@ interface DemoChapterTreeNode extends DocumentTreeNode {
 }
 
 function buildDemoChapterTree(
-  chapters: typeof DEMO_CHAPTERS
+  chapters: typeof DEMO_CHAPTERS,
 ): DemoChapterTreeNode[] {
   const map = new Map<string, DemoChapterTreeNode>();
   const roots: DemoChapterTreeNode[] = [];
@@ -120,7 +120,7 @@ function buildDemoChapterTree(
  * Helper to map DocumentTreeNode to ChapterNode for the sidebar
  */
 function mapToChapterNodes(
-  nodes: DocumentTreeNode[]
+  nodes: DocumentTreeNode[],
 ): import("@/components/editor/sidebar/types").ChapterNode[] {
   return nodes.map((node) => ({
     id: node.id,
@@ -154,7 +154,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -164,10 +164,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   }, [debouncedSetCharacterCount]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(
-    isDemo ? "chapter-demo-1" : null
+    isDemo ? "chapter-demo-1" : null,
   );
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    isDemo ? "chapter-1-1" : null
+    isDemo ? "chapter-1-1" : null,
   );
   const [viewMode, setViewMode] = useState<
     "editor" | "scrivenings" | "outline"
@@ -188,14 +188,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   */
 
   const typewriterMode = useEditorSettingStore(
-    (state) => state.behavior.typewriterMode
+    (state) => state.behavior.typewriterMode,
   );
   const setTypewriterMode = useEditorSettingStore(
-    (state) => state.setTypewriterMode
+    (state) => state.setTypewriterMode,
   );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
-    (state) => state.behavior.focusMode
+    (state) => state.behavior.focusMode,
   );
   const setFocusMode = useEditorSettingStore((state) => state.setFocusMode);
   /* performanceMode removed */
@@ -219,16 +219,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   useDocumentTree(isDemo ? "" : projectId);
 
   const allDocuments = useDocumentStore(
-    (state) => (state as { documents: Record<string, Document> }).documents
+    (state) => (state as { documents: Record<string, Document> }).documents,
   );
   const localDocuments = useMemo(
     () =>
       isDemo
         ? []
         : Object.values(allDocuments).filter(
-            (doc) => doc.projectId === projectId
+            (doc) => doc.projectId === projectId,
           ),
-    [allDocuments, projectId, isDemo]
+    [allDocuments, projectId, isDemo],
   );
 
   const previewChapters = useMemo(() => {
@@ -244,7 +244,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const documents = useMemo(
     () => Object.values(localDocuments),
-    [localDocuments]
+    [localDocuments],
   );
 
   // 통계 스토어 연결
@@ -252,10 +252,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   // 통계 스토어 연결
   const updateDocumentCharCount = useWritingStatsStore(
-    (s) => s.updateDocumentCharCount
+    (s) => s.updateDocumentCharCount,
   );
   const setDocumentCharCounts = useWritingStatsStore(
-    (s) => s.setDocumentCharCounts
+    (s) => s.setDocumentCharCounts,
   );
 
   // 스로틀링된 통계 업데이트 함수 (1초에 한 번만 실행하여 렉 방지)
@@ -265,14 +265,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         (
           id: string,
           count: number,
-          updateFn: (id: string, count: number) => void
+          updateFn: (id: string, count: number) => void,
         ) => {
           updateFn(id, count);
         },
         1000,
-        { leading: true, trailing: true }
+        { leading: true, trailing: true },
       ),
-    []
+    [],
   );
 
   // 스로틀링된 UI 업데이트 함수 (300ms에 한 번만 실행하여 리렌더링 방지)
@@ -283,16 +283,16 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           count: number,
           callback: (
             count: number,
-            setState: React.Dispatch<React.SetStateAction<number>>
+            setState: React.Dispatch<React.SetStateAction<number>>,
           ) => void,
-          setter: React.Dispatch<React.SetStateAction<number>>
+          setter: React.Dispatch<React.SetStateAction<number>>,
         ) => {
           callback(count, setter);
         },
         500,
-        { leading: true, trailing: true }
+        { leading: true, trailing: true },
       ),
-    []
+    [],
   );
 
   // 초기 로드 시 모든 문서의 글자수를 스토어에 설정
@@ -304,7 +304,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       });
       setDocumentCharCounts(counts);
     }
-  }, [documents.length, isDemo, setDocumentCharCounts]); // documents.length로 첫 로드 시에만 실행
+  }, [documents, isDemo, setDocumentCharCounts]);
 
   const sidebarChapters = useMemo(() => {
     if (isDemo)
@@ -357,11 +357,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
 
   // consistencyReport state removed in favor of store persistence
-  const addToBuffer = useAnalysisBufferStore(
-    (state) =>
-      (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer
-  );
+  const {
+    addToBuffer,
+    setPendingViewJobId,
+    setAnalysisSnapshot,
+    isJobAcknowledged,
+  } = useAnalysisBufferStore();
 
   const readerChapters = useMemo(() => {
     interface FlatChapter {
@@ -396,19 +397,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     lastConsistencyReport, // Added
   } = useProjectAnalysis(projectId, {
     enabled: !!projectId,
-    onAnalysisComplete: async (result: AnalysisResultData | null) => {
-      if (!result) return;
+    onAnalysisComplete: async (
+      _result: AnalysisResultData | null,
+      jobId: string,
+    ) => {
+      // Note: result might be null if job was found completed on mount
+      // We still want to set the pending view flag so WorldPage can show the result.
 
-      // Check if already acknowledged (Viewed) to prevent loop
-      const isAck =
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
+      // Check if this specific jobId is already acknowledged
+      const isAck = isJobAcknowledged(jobId);
       if (isAck) return;
 
       // Analysis complete.
       // We DO NOT calculate diff here anymore. We defer it to WorldPage.
-      // Flag that we have a pending view for the user.
+      // Flag that we have a pending view for the user using persistent store.
       if (projectId) {
-        sessionStorage.setItem(`analysis_pending_view_${projectId}`, "true");
+        setPendingViewJobId(jobId);
       }
 
       toast({
@@ -443,7 +447,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         // Failed to save content
       }
     },
-    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer]
+    [isDemo, selectedSectionId, saveDocumentContent, addToBuffer],
   );
 
   const saveWithAnalysis = useCallback(
@@ -452,7 +456,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       await saveContent(content);
       addToBuffer(selectedSectionId, content);
     },
-    [saveContent, selectedSectionId, addToBuffer]
+    [saveContent, selectedSectionId, addToBuffer],
   );
 
   const handleManualAnalysis = useCallback(() => {
@@ -513,23 +517,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     };
     snapshotRef.current = snapshot;
 
-    // Persist to sessionStorage to share with WorldPage
+    // Persist to store to share with WorldPage (IDB persistence)
     if (projectId) {
-      try {
-        sessionStorage.setItem(
-          `analysis_snapshot_${projectId}`,
-          JSON.stringify(snapshot)
-        );
-        // Reset flags
-        sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
-      } catch (e) {
-        console.warn("Failed to save snapshot to sessionStorage", e);
-      }
+      setAnalysisSnapshot(projectId, snapshot);
+      // Reset pending view for new session
+      setPendingViewJobId(null);
     }
 
     handleManualAnalysis();
-  }, [handleManualAnalysis, characters, graphLinks, projectId]);
+  }, [
+    handleManualAnalysis,
+    characters,
+    graphLinks,
+    projectId,
+    setAnalysisSnapshot,
+    setPendingViewJobId,
+  ]);
 
   // ============================================================
   // UI & Modals State
@@ -598,7 +601,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     (docId: string) => {
       handleSelectSection(docId);
     },
-    [handleSelectSection]
+    [handleSelectSection],
   );
 
   // Modal Handlers
@@ -611,12 +614,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const handleConfirmCreateSection = async (
     title: string,
-    type: "chapter" | "section"
+    type: "chapter" | "section",
   ) => {
     await handleAddChapter(
       title,
       selectedFolderId || undefined,
-      type === "chapter" ? "chapter" : "section"
+      type === "chapter" ? "chapter" : "section",
     );
     setCreateSectionModalOpen(false);
   };
@@ -678,14 +681,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const isRightSidebarOpen = useUIStore((state) => state.rightSidebarOpen);
   const setIsRightSidebarOpen = useUIStore(
-    (state) => state.setRightSidebarOpen
+    (state) => state.setRightSidebarOpen,
   );
 
   return (
     <div
       className={cn(
         "flex flex-col bg-cloud-50/50 text-foreground", // Unified Desk Background
-        isDemo ? "h-screen" : "h-full"
+        isDemo ? "h-screen" : "h-full",
       )}
     >
       {isDemo && (
@@ -721,7 +724,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           className={cn(
             "flex-1 flex flex-col transition-all duration-300 relative z-10",
             isTypewriterMode ? "items-center" : "",
-            isFocusMode && "bg-cloud-50"
+            isFocusMode && "bg-cloud-50",
             // Main area is transparent to show Desk, unless Focus Mode
           )}
         >
@@ -777,7 +780,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
                 throttledUIUpdate(
                   count,
                   handleCharacterCountChange,
-                  setCharacterCount
+                  setCharacterCount,
                 );
 
                 // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
@@ -785,7 +788,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
                   throttledUpdateStats(
                     selectedSectionId,
                     count,
-                    updateDocumentCharCount
+                    updateDocumentCharCount,
                   );
                 }
               }}

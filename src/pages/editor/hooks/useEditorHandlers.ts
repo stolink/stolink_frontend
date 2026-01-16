@@ -118,9 +118,8 @@ export function useEditorHandlers({
     if (documentId && content && saveContentRef.current) {
       try {
         await saveContentRef.current(content);
-        console.log(`[forceSave] Saved content for document: ${documentId}`);
-      } catch (error) {
-        console.error("[EditorPage] Force save failed:", error);
+      } catch (_error) {
+        // ignore
       }
     }
   }, [isDemo]);
@@ -233,9 +232,6 @@ export function useEditorHandlers({
         const nowDocId = selectedSectionIdRef.current;
 
         if (savedDocId !== nowDocId) {
-          console.log(
-            `[Auto-save] Cancelled: Document changed from ${savedDocId} to ${nowDocId}`,
-          );
           return; // Don't save to wrong document!
         }
 
@@ -243,8 +239,7 @@ export function useEditorHandlers({
         try {
           await saveContentRef.current(content);
           setSaveStatusRef.current("saved");
-        } catch (error) {
-          console.error("[EditorPage] Auto-save failed:", error);
+        } catch (_error) {
           setSaveStatusRef.current("unsaved");
         }
       }, 500);
@@ -308,11 +303,7 @@ export function useEditorHandlers({
           saveTimeoutRef.current = null;
         }
         await forceSave();
-      } catch (error) {
-        console.error(
-          "[handleAddSection] Failed to save before creating section:",
-          error
-        );
+      } catch (_error) {
         // 저장 실패해도 섹션 생성은 계속 진행 (사용자 경험 우선)
       }
 
@@ -367,8 +358,7 @@ export function useEditorHandlers({
       // 2. Sync with Backend
       try {
         await updateDocumentMutation(id, { title: newTitle });
-      } catch (error) {
-        console.error("Failed to rename chapter:", error);
+      } catch (_error) {
         // 3. Rollback on failure: Revert to previous title if API fails
         if (previousTitle !== undefined) {
           _update(id, { title: previousTitle });
