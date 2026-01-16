@@ -472,6 +472,7 @@ export const CharacterGraphCanvas = forwardRef<
 
         try {
           const analysisData = generateAnalysisData(
+            link.id,
             sourceChar,
             targetChar,
             effectiveTypes,

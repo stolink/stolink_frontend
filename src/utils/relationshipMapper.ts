@@ -83,6 +83,8 @@ export function extractRelationshipLinks(
 
     relationGraph.forEach(
       (rel: {
+        id?: string;
+        _id?: string;
         source?: string;
         target?: string;
         relationTypes?: string[];
@@ -171,7 +173,7 @@ export function extractRelationshipLinks(
         }));
 
         links.push({
-          id: `${sourceId}-${targetId}`,
+          id: rel.id || rel._id || `${sourceId}-${targetId}`,
           source: sourceId,
           target: targetId,
           type: relationTypes[0], // Primary type for compatibility

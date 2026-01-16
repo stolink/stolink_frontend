@@ -163,6 +163,10 @@ export interface AnalysisCharacterInfo {
  * 심층 분석 모달 전체 데이터
  */
 export interface RelationshipDeepAnalysisData {
+  /** 관계 고유 ID */
+  relationshipId: string;
+  /** 프로젝트 ID */
+  projectId: string;
   // 캐릭터 정보
   sourceCharacter: AnalysisCharacterInfo;
   targetCharacter: AnalysisCharacterInfo;
@@ -185,6 +189,7 @@ export interface RelationshipDeepAnalysisData {
   // 기본 관계 정보 (LEGACY - 호환성 위해 유지)
   relationshipTypes: string[];
   currentStrength: number;
+  bidirectional?: boolean; // Added
   description?: string; // Added for composite description
   since?: string;
 

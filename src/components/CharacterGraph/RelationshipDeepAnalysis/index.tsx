@@ -17,6 +17,16 @@ import { MoodBackground } from "./components/MoodBackground";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
+import {
+  useUpdateRelationship,
+  useDeleteRelationship,
+} from "@/hooks/useRelationships";
+import {
+  RelationshipEditForm,
+  type RelationshipEditData,
+} from "./components/RelationshipEditForm";
+import { Settings2 } from "lucide-react";
+import type { UIRelationType } from "../constants";
 
 interface RelationshipDeepAnalysisModalProps {
   isOpen: boolean;
@@ -32,15 +42,22 @@ export function RelationshipDeepAnalysisModal({
   onNavigateToEvent,
 }: RelationshipDeepAnalysisModalProps) {
   const [isShaderReady, setIsShaderReady] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { mutate: updateRelationship, isPending: isUpdating } =
+    useUpdateRelationship(data?.projectId || "");
+  const { mutate: deleteRelationship, isPending: isDeleting } =
+    useDeleteRelationship(data?.projectId || "");
 
   // Reset loading state when modal opens with new data
   useEffect(() => {
     if (isOpen) {
       startTransition(() => {
         setIsShaderReady(false);
+        setIsEditing(false);
       });
     }
-  }, [isOpen, data?.sourceCharacter.id, data?.targetCharacter.id]);
+  }, [isOpen, data?.relationshipId, data?.projectId]);
 
   if (!data) return null;
 
@@ -56,7 +73,40 @@ export function RelationshipDeepAnalysisModal({
     since,
     warnings,
     sharedScenes,
+    relationshipId,
+    bidirectional, // Assume added or needed
+    description: currentDescription,
+    currentStrength,
   } = data;
+
+  const handleSave = (editData: RelationshipEditData) => {
+    updateRelationship(
+      {
+        id: relationshipId,
+        payload: {
+          types: editData.types,
+          strength: editData.strength,
+          bidirectional: editData.bidirectional,
+          description: editData.description,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          // onClose(); // Let user see the updated graph if they want, but usually better to close or stay
+        },
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    deleteRelationship(relationshipId, {
+      onSuccess: () => {
+        setIsEditing(false);
+        onClose();
+      },
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -95,14 +145,27 @@ export function RelationshipDeepAnalysisModal({
                     분석
                   </DialogPrimitive.Title>
                   {/* Fixed Close Button for the entire Dossier */}
-                  <Button
-                    intent="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="absolute right-8 top-8 z-[100] rounded-full hover:bg-espresso-50 w-12 h-12 shadow-lg border border-espresso-200/30 bg-white/80 backdrop-blur-md transition-all active:scale-95"
-                  >
-                    <X className="w-6 h-6 text-espresso-900" />
-                  </Button>
+                  <div className="absolute right-8 top-8 z-[160] flex items-center gap-3">
+                    {!isEditing && (
+                      <Button
+                        intent="ghost"
+                        size="icon"
+                        onClick={() => setIsEditing(true)}
+                        className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
+                        title="관계 수정"
+                      >
+                        <Settings2 className="w-6 h-6 text-espresso-900" />
+                      </Button>
+                    )}
+                    <Button
+                      intent="ghost"
+                      size="icon"
+                      onClick={onClose}
+                      className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
+                    >
+                      <X className="w-6 h-6 text-espresso-900" />
+                    </Button>
+                  </div>
 
                   {/* Dynamic Mood Background (Absolute) */}
                   <MoodBackground
@@ -112,143 +175,180 @@ export function RelationshipDeepAnalysisModal({
 
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
-                    {/* Hero Section - Now part of scroll */}
-                    <DeepAnalysisHero
-                      sourceCharacter={sourceCharacter}
-                      targetCharacter={targetCharacter}
-                      asymmetricStrength={asymmetricStrength}
-                      relationshipTypes={relationshipTypes}
-                      description={data.description}
-                      onClose={onClose}
-                      since={since}
-                      onShaderReady={() => setIsShaderReady(true)}
-                    />
-
-                    <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">
-                      {/* 1. WARNINGS */}
-                      {warnings && warnings.length > 0 && (
+                    <AnimatePresence mode="wait">
+                      {isEditing ? (
                         <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 }}
+                          key="edit-form"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="w-full max-w-2xl mx-auto py-20 px-4"
                         >
-                          <RelationshipWarningBanner warnings={warnings} />
+                          <RelationshipEditForm
+                            initialData={{
+                              types: relationshipTypes as UIRelationType[],
+                              strength: currentStrength,
+                              bidirectional: bidirectional ?? true,
+                              description: currentDescription || "",
+                            }}
+                            sourceName={sourceCharacter.name}
+                            targetName={targetCharacter.name}
+                            onSave={handleSave}
+                            onCancel={() => setIsEditing(false)}
+                            onDelete={handleDelete}
+                            isSaving={isUpdating}
+                            isDeleting={isDeleting}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="analysis-view"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          {/* Hero Section - Now part of scroll */}
+                          <DeepAnalysisHero
+                            sourceCharacter={sourceCharacter}
+                            targetCharacter={targetCharacter}
+                            asymmetricStrength={asymmetricStrength}
+                            relationshipTypes={relationshipTypes}
+                            description={currentDescription}
+                            onClose={onClose}
+                            since={since}
+                            onShaderReady={() => setIsShaderReady(true)}
+                          />
+
+                          <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">
+                            {/* 1. WARNINGS */}
+                            {warnings && warnings.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                              >
+                                <RelationshipWarningBanner
+                                  warnings={warnings}
+                                />
+                              </motion.div>
+                            )}
+
+                            {/* 2. CHARACTER DYNAMICS (Side-by-Side Fusion) */}
+                            <section>
+                              <div className="flex items-center gap-4 mb-6">
+                                <span className="h-px flex-1 bg-espresso-900/10" />
+                                <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                                  Character Dynamics
+                                </h3>
+                                <span className="h-px flex-1 bg-espresso-900/10" />
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+                                {/* Source Character */}
+                                <motion.div
+                                  className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-white/40 shadow-sm"
+                                  initial={{ x: -20, opacity: 0 }}
+                                  animate={{ x: 0, opacity: 1 }}
+                                  transition={{ delay: 0.4 }}
+                                >
+                                  <CharacterPortraitPanel
+                                    character={sourceCharacter}
+                                    attributes={sourceToTargetAttributes}
+                                    targetName={targetCharacter.name}
+                                    position="left"
+                                    animationDelay={0.4}
+                                    className="h-full justify-center"
+                                  />
+                                </motion.div>
+
+                                {/* Target Character */}
+                                <motion.div
+                                  className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-white/40 shadow-sm"
+                                  initial={{ x: 20, opacity: 0 }}
+                                  animate={{ x: 0, opacity: 1 }}
+                                  transition={{ delay: 0.5 }}
+                                >
+                                  <CharacterPortraitPanel
+                                    character={targetCharacter}
+                                    attributes={targetToSourceAttributes}
+                                    targetName={sourceCharacter.name}
+                                    position="right"
+                                    animationDelay={0.5}
+                                    className="h-full justify-center"
+                                  />
+                                </motion.div>
+                              </div>
+                            </section>
+
+                            {/* 3. NARRATIVE JOURNEY (Timeline) */}
+                            <section>
+                              <div className="flex items-center gap-4 mb-6">
+                                <span className="h-px flex-1 bg-espresso-900/10" />
+                                <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                                  Narrative Arc
+                                </h3>
+                                <span className="h-px flex-1 bg-espresso-900/10" />
+                              </div>
+
+                              <div className="space-y-8">
+                                {/* Main Timeline Graph */}
+                                <motion.div
+                                  className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/50 shadow-sm min-h-[350px]"
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.6 }}
+                                >
+                                  <RelationshipTimelineGraph
+                                    data={timeline}
+                                    height={300}
+                                    animationDelay={0.7}
+                                  />
+                                </motion.div>
+
+                                {/* Decisive Events & Keywords Panel */}
+                                <motion.div
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.8 }}
+                                >
+                                  <InsightsPanel
+                                    insights={insights}
+                                    asymmetricStrength={asymmetricStrength}
+                                    animationDelay={0.8}
+                                    className="bg-white/60 backdrop-blur-sm border-white/40 h-full w-full"
+                                  />
+                                </motion.div>
+                              </div>
+                            </section>
+
+                            {/* 4. SHARED MOMENTS */}
+                            {sharedScenes && sharedScenes.length > 0 && (
+                              <section>
+                                <div className="flex items-center gap-4 mb-6">
+                                  <span className="h-px flex-1 bg-espresso-900/10" />
+                                  <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
+                                    Shared Moments
+                                  </h3>
+                                  <span className="h-px flex-1 bg-espresso-900/10" />
+                                </div>
+
+                                <motion.div
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.9 }}
+                                >
+                                  <SharedScenesPanel
+                                    scenes={sharedScenes}
+                                    onNavigate={onNavigateToEvent}
+                                    maxVisible={4}
+                                  />
+                                </motion.div>
+                              </section>
+                            )}
+                          </div>
                         </motion.div>
                       )}
-
-                      {/* 2. CHARACTER DYNAMICS (Side-by-Side Fusion) */}
-                      <section>
-                        <div className="flex items-center gap-4 mb-6">
-                          <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
-                            Character Dynamics
-                          </h3>
-                          <span className="h-px flex-1 bg-espresso-900/10" />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-                          {/* Source Character */}
-                          <motion.div
-                            className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-white/40 shadow-sm"
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.4 }}
-                          >
-                            <CharacterPortraitPanel
-                              character={sourceCharacter}
-                              attributes={sourceToTargetAttributes}
-                              targetName={targetCharacter.name}
-                              position="left"
-                              animationDelay={0.4}
-                              className="h-full justify-center"
-                            />
-                          </motion.div>
-
-                          {/* Target Character */}
-                          <motion.div
-                            className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-white/40 shadow-sm"
-                            initial={{ x: 20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.5 }}
-                          >
-                            <CharacterPortraitPanel
-                              character={targetCharacter}
-                              attributes={targetToSourceAttributes}
-                              targetName={sourceCharacter.name}
-                              position="right"
-                              animationDelay={0.5}
-                              className="h-full justify-center"
-                            />
-                          </motion.div>
-                        </div>
-                      </section>
-
-                      {/* 3. NARRATIVE JOURNEY (Timeline) */}
-                      <section>
-                        <div className="flex items-center gap-4 mb-6">
-                          <span className="h-px flex-1 bg-espresso-900/10" />
-                          <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
-                            Narrative Arc
-                          </h3>
-                          <span className="h-px flex-1 bg-espresso-900/10" />
-                        </div>
-
-                        <div className="space-y-8">
-                          {/* Main Timeline Graph */}
-                          <motion.div
-                            className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/50 shadow-sm min-h-[350px]"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                          >
-                            <RelationshipTimelineGraph
-                              data={timeline}
-                              height={300}
-                              animationDelay={0.7}
-                            />
-                          </motion.div>
-
-                          {/* Decisive Events & Keywords Panel */}
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.8 }}
-                          >
-                            <InsightsPanel
-                              insights={insights}
-                              asymmetricStrength={asymmetricStrength}
-                              animationDelay={0.8}
-                              className="bg-white/60 backdrop-blur-sm border-white/40 h-full w-full"
-                            />
-                          </motion.div>
-                        </div>
-                      </section>
-
-                      {/* 4. SHARED MOMENTS */}
-                      {sharedScenes && sharedScenes.length > 0 && (
-                        <section>
-                          <div className="flex items-center gap-4 mb-6">
-                            <span className="h-px flex-1 bg-espresso-900/10" />
-                            <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
-                              Shared Moments
-                            </h3>
-                            <span className="h-px flex-1 bg-espresso-900/10" />
-                          </div>
-
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.9 }}
-                          >
-                            <SharedScenesPanel
-                              scenes={sharedScenes}
-                              onNavigate={onNavigateToEvent}
-                              maxVisible={4}
-                            />
-                          </motion.div>
-                        </section>
-                      )}
-                    </div>
+                    </AnimatePresence>
                   </div>
 
                   {/* 3. Loading Overlay */}

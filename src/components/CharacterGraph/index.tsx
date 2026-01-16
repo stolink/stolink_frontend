@@ -743,6 +743,7 @@ export const CharacterGraph = forwardRef<
         const relTypes = link.relationTypes || [link.type as string];
 
         const mockData = generateAnalysisData(
+          link.id,
           sourceChar,
           targetChar,
           relTypes,
