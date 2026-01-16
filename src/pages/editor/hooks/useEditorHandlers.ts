@@ -1,7 +1,6 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useEditorStore } from "@/stores";
-import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import type { Document } from "@/types/document";
 
 interface UseEditorHandlersOptions {
@@ -220,40 +219,16 @@ export function useEditorHandlers({
   );
 
   // Character count change with debounce
-  // Also record writing activity for stats tracking
-  const lastCharacterCountRef = useRef<number | null>(null); // null = not initialized
-  // 섹션 ID가 바뀌면 ref 초기화 (중복 카운팅 방지)
-  const lastSectionIdRef = useRef<string | null>(selectedSectionId);
-
-  useEffect(() => {
-    if (selectedSectionId !== lastSectionIdRef.current) {
-      lastCharacterCountRef.current = null;
-      lastSectionIdRef.current = selectedSectionId;
-    }
-  }, [selectedSectionId]);
-
-  const recordActivity = useWritingStatsStore((state) => state.recordActivity);
-
   const handleCharacterCountChange = useCallback(
     (count: number, setCharacterCount: (c: number) => void) => {
       setCharacterCount(count);
 
-      // Record writing activity (only for increases, and skip initial load)
-      if (lastCharacterCountRef.current !== null) {
-        const delta = count - lastCharacterCountRef.current;
-        // 100자 이상의 급격한 변화는 붙여넣기나 문서 전환으로 간주하여 무시할 수도 있음 (선택적)
-        if (delta > 0 && !isDemo) {
-          recordActivity(delta);
-        }
-      }
-      lastCharacterCountRef.current = count;
-
+      // 문서 메타데이터 업데이트 (debounced)
       if (!isDemo && selectedSectionIdRef.current) {
         if (wordCountTimeoutRef.current) {
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
-          // Get current metadata and update only wordCount
           const currentDoc = documents.find(
             (d) => d.id === selectedSectionIdRef.current
           );
@@ -266,7 +241,7 @@ export function useEditorHandlers({
         }, 1000);
       }
     },
-    [isDemo, documents, recordActivity]
+    [isDemo, documents]
   );
 
   // Add chapter

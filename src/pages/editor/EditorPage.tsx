@@ -49,6 +49,7 @@ import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useUIStore } from "@/stores/useUIStore";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
@@ -245,6 +246,34 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     () => Object.values(localDocuments),
     [localDocuments]
   );
+
+  // 총 글자수 계산 (모든 문서 합산)
+  const totalChars = useMemo(() => {
+    if (isDemo) return 0;
+    return documents.reduce(
+      (acc, doc) => acc + getPlainTextLength(doc.content),
+      0
+    );
+  }, [documents, isDemo]);
+
+  // 통계 스토어 연결
+  const updateDocumentCharCount = useWritingStatsStore(
+    (s) => s.updateDocumentCharCount
+  );
+  const setDocumentCharCounts = useWritingStatsStore(
+    (s) => s.setDocumentCharCounts
+  );
+
+  // 초기 로드 시 모든 문서의 글자수를 스토어에 설정
+  useEffect(() => {
+    if (!isDemo && documents.length > 0) {
+      const counts: Record<string, number> = {};
+      documents.forEach((doc) => {
+        counts[doc.id] = getPlainTextLength(doc.content);
+      });
+      setDocumentCharCounts(counts);
+    }
+  }, [documents.length, isDemo, setDocumentCharCounts]); // documents.length로 첫 로드 시에만 실행
 
   const sidebarChapters = useMemo(() => {
     if (isDemo)
@@ -652,12 +681,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isOpen={isSidebarOpen}
               onToggle={() => setIsSidebarOpen(false)}
               projectTitle={projectTitle}
-              totalChars={
-                Object.values(documents).reduce(
-                  (acc, doc) => acc + getPlainTextLength(doc.content),
-                  0
-                ) || 0
-              }
+              totalChars={totalChars}
             />
           )}
         </AnimatePresence>
@@ -717,9 +741,13 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isFocusMode={isFocusMode}
               currentContent={documentContent}
               currentSectionTitle={document?.title || ""}
-              onCharacterCountChange={(count: number) =>
-                handleCharacterCountChange(count, setCharacterCount)
-              }
+              onCharacterCountChange={(count: number) => {
+                handleCharacterCountChange(count, setCharacterCount);
+                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화)
+                if (!isDemo && selectedSectionId) {
+                  updateDocumentCharCount(selectedSectionId, count);
+                }
+              }}
               onContentChange={handleContentChange}
               onCreateSection={handleCreateSection}
               onSelectSection={handleSelectSection}
