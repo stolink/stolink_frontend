@@ -3,7 +3,7 @@
 // 캐릭터 관계 심층 분석 메인 모달 컴포넌트
 // =====================================================
 
-import { useState, useEffect, startTransition } from "react";
+import { useState, useEffect, startTransition, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -58,6 +58,11 @@ export function RelationshipDeepAnalysisModal({
       });
     }
   }, [isOpen, data?.relationshipId, data?.projectId]);
+
+  // Optimize shader ready handler
+  const handleShaderReady = useCallback(() => {
+    setIsShaderReady(true);
+  }, []);
 
   if (!data) return null;
 
@@ -216,7 +221,7 @@ export function RelationshipDeepAnalysisModal({
                             description={currentDescription}
                             onClose={onClose}
                             since={since}
-                            onShaderReady={() => setIsShaderReady(true)}
+                            onShaderReady={handleShaderReady}
                           />
 
                           <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">
