@@ -14,22 +14,22 @@
    ===================================================== */
 .ProseMirror-cursormirror {
   transition:
-    left 100ms ease-out,
-    top 100ms ease-out;
-}
-
-/* Note: Standard caret styling is handled by browser behavior,
-   but we can style custom carets if needed using plugins.
-   For now, we accept browser default but ensure clean rendering.
-*/
-.ProseMirror {
-  caret-color: #bd9b8d; /* Mocha 400 */
+    left 120ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    top 120ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: left, top;
 }
 
 /* 타이핑 시 미세한 부드러움을 위한 하드웨어 가속 힌트 */
 .ProseMirror * {
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+.ProseMirror {
+  caret-color: #bd9b8d; /* Mocha 400 */
+  /* 중요: 레이아웃 스래싱 방지 및 GPU 레이어 분리 */
+  will-change: contents, transform;
+  transform: translateZ(0);
 }
 
 /* Typography - Premium Serif for Body */

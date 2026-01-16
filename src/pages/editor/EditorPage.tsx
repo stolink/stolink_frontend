@@ -289,7 +289,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         ) => {
           callback(count, setter);
         },
-        300,
+        500,
         { leading: true, trailing: true }
       ),
     []
