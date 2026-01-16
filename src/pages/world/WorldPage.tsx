@@ -140,6 +140,43 @@ export default function WorldPage() {
     }
   }, [projectId]);
 
+  // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장
+  // (에디터에서 분석을 시작한 경우 스냅샷이 없을 수 있음)
+  useEffect(() => {
+    if (!isPolling || !projectId) return;
+
+    // 이미 스냅샷이 있으면 무시
+    if (snapshotRef.current) return;
+
+    // sessionStorage에 스냅샷이 있는지 확인
+    try {
+      const stored = sessionStorage.getItem(`analysis_snapshot_${projectId}`);
+      if (stored) return; // 이미 저장된 스냅샷이 있음
+    } catch {
+      // ignore
+    }
+
+    // 캐릭터 데이터가 로드된 후에만 스냅샷 저장
+    if (characters.length === 0) return;
+
+    // 스냅샷 저장
+    const snapshot = {
+      characters: [...characters],
+      links: [...links],
+    };
+    snapshotRef.current = snapshot;
+
+    try {
+      sessionStorage.setItem(
+        `analysis_snapshot_${projectId}`,
+        JSON.stringify(snapshot),
+      );
+      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
+    } catch (e) {
+      console.warn("Failed to save snapshot to sessionStorage", e);
+    }
+  }, [isPolling, projectId, characters, links]);
+
   const analyzeMutation = useAnalyzeStory();
 
   const handleStartAnalysis = async () => {
@@ -823,6 +860,7 @@ export default function WorldPage() {
             }
           }}
           diff={analysisDiff}
+          characters={characters}
         />
       )}
 

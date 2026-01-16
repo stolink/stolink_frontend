@@ -6,7 +6,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@stolink/ui";
 import {
@@ -284,7 +284,9 @@ export default function CharacterDetailDialog({
   const [manualPrompt, setManualPrompt] = useState("");
 
   // Load settings (places) using hook
-  const effectiveProjectId = propProjectId || displayCharacter?.projectId || "";
+  // character?.projectId를 fallback으로 추가하여 displayCharacter 로딩 전에도 projectId 사용 가능
+  const effectiveProjectId =
+    propProjectId || displayCharacter?.projectId || character?.projectId || "";
   const { data: settingsData = [] } = useSettings(effectiveProjectId);
 
   // Deduplicate settings to prevent key collisions
@@ -785,7 +787,7 @@ export default function CharacterDetailDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Custom Dialog Content with Modern Glassmorphism */}
-      <DialogContent className="max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-background border shadow-2xl sm:rounded-3xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
+      <DialogContent className="flex flex-col max-w-[90vw] md:max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden bg-background border shadow-2xl sm:rounded-3xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>button]:hidden">
         {/* Accessibility: Hidden title and description for screen readers */}
         <VisuallyHidden>
           <DialogTitle>
@@ -798,7 +800,7 @@ export default function CharacterDetailDialog({
         </VisuallyHidden>
 
         {/* Main Container Wrapper - Clean & SolId */}
-        <div className="relative w-full h-full flex flex-col lg:flex-row bg-background isolate">
+        <div className="relative w-full flex-1 min-h-0 flex flex-col lg:flex-row bg-background isolate">
           {/* Subtle Background (Optional: Very faint pattern or gradient) */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-cloud-50 to-cloud-100/50" />
 
@@ -817,12 +819,12 @@ export default function CharacterDetailDialog({
           </div>
 
           {/* Right Content (Tabs & Details) */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-transparent relative z-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-transparent relative z-0">
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
               defaultValue="overview"
-              className="flex-1 flex flex-col rounded-none h-full"
+              className="flex-1 flex flex-col min-h-0 rounded-none overflow-hidden"
             >
               {/* ✨ Warm Stone Floating Tab Bar */}
               <div className="border-b border-cloud-200/40 px-6 py-3 bg-gradient-to-r from-cloud-50/60 to-white/30 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shadow-sm">
@@ -879,8 +881,8 @@ export default function CharacterDetailDialog({
               </div>
 
               {/* Tab Contents Area */}
-              <ScrollArea className="flex-1 bg-transparent">
-                <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-10 pb-20">
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-10 pb-24">
                   {/* OVERVIEW TAB */}
                   <TabsContent
                     value="overview"
@@ -1229,7 +1231,7 @@ export default function CharacterDetailDialog({
                     />
                   </TabsContent>
                 </div>
-              </ScrollArea>
+              </div>
             </Tabs>
           </div>
         </div>

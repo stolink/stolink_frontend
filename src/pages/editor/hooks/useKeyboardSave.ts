@@ -4,7 +4,10 @@ interface UseKeyboardSaveOptions {
   isDemo: boolean;
   selectedSectionId: string | null;
   saveContentRef: React.RefObject<(content: string) => Promise<void>>;
-  lastContentRef: React.RefObject<string>;
+  lastContentRef: React.RefObject<{
+    documentId: string | null;
+    content: string;
+  }>;
   saveTimeoutRef: React.RefObject<ReturnType<typeof setTimeout> | null>;
   getLatestContent?: () => string;
 }
@@ -34,7 +37,7 @@ export function useKeyboardSave({
             // Get content from callback if available (for debounced editors), otherwise use ref
             const contentToSave = getLatestContent
               ? getLatestContent()
-              : lastContentRef.current || "";
+              : lastContentRef.current?.content || "";
 
             // If content is empty strings, we should still save if that's the intention,
             // but usually we want to fallback to lastContentRef if getContent returns empty?
