@@ -20,7 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design-system/components/Button";
 import { Label } from "@/components/ui/label";
 import { ChapterBalanceCard } from "@/components/stats/ChapterBalanceCard";
 import { WritingPatternsCard } from "@/components/stats/WritingPatternsCard";
@@ -80,7 +80,7 @@ export default function StatsPage() {
     projectId || "",
     {
       enabled: !!projectId,
-    }
+    },
   );
 
   // Real data from IndexedDB
@@ -105,19 +105,19 @@ export default function StatsPage() {
       // 스토어 값 사용 (에디터에서 실시간 업데이트됨)
       wordCount = Object.values(documentCharCounts).reduce(
         (acc, count) => acc + count,
-        0
+        0,
       );
     } else {
       // 폴백: 문서에서 직접 계산
       wordCount = documents.reduce(
         (acc, doc) => acc + getPlainTextLength(doc.content),
-        0
+        0,
       );
     }
 
     // 폴더 또는 챕터 타입인 문서의 수 계산
     const chapterCount = documents.filter(
-      (doc) => doc.type === "folder" || doc.type === "text"
+      (doc) => doc.type === "folder" || doc.type === "text",
     ).length;
 
     return {
@@ -319,7 +319,7 @@ export default function StatsPage() {
                         "w-4 h-4",
                         displayStreak > 0
                           ? "text-[#B38B82] fill-[#B38B82]"
-                          : "text-cloud-200"
+                          : "text-cloud-200",
                       )}
                     />
                   </motion.div>
@@ -433,7 +433,7 @@ export default function StatsPage() {
                           <motion.div
                             className={cn(
                               "w-full h-full rounded-[2px] cursor-pointer",
-                              getIntensityColor(day.count)
+                              getIntensityColor(day.count),
                             )}
                             variants={{
                               initial: { opacity: 0, scale: 0.5 },
@@ -539,16 +539,10 @@ export default function StatsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsGoalDialogOpen(false)}
-            >
+            <Button intent="outline" onClick={() => setIsGoalDialogOpen(false)}>
               취소
             </Button>
-            <Button
-              onClick={handleSaveGoal}
-              className="bg-mocha-500 hover:bg-mocha-600"
-            >
+            <Button onClick={handleSaveGoal} intent="primary">
               저장하기
             </Button>
           </DialogFooter>
