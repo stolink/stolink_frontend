@@ -37,7 +37,7 @@ export function WritingPatternsCard() {
 
     const maxDay = Object.entries(byDayOfWeek).reduce(
       (max, [day, count]) => (count > max.count ? { day, count } : max),
-      { day: "mon", count: 0 },
+      { day: "mon", count: 0 }
     );
 
     const dayLabels: Record<string, string> = {
@@ -104,7 +104,7 @@ export function WritingPatternsCard() {
           </div>
           {Object.entries(patterns.byDayOfWeek).map(([day, count], index) => {
             const dayLabels: Record<string, string> = {
-              mom: "월",
+              mon: "월",
               tue: "화",
               wed: "수",
               thu: "목",
