@@ -1,12 +1,12 @@
 import { BarChart3, Calendar, Trophy, Flame, Target } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import { useProjectStats } from "@/hooks/useProjects";
 import { useDocumentTree } from "@/hooks/useDocuments";
-import { cn } from "@/lib/utils";
+import { cn, getPlainTextLength } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
 import { Progress } from "@/components/ui/progress";
@@ -46,7 +46,7 @@ const fadeInVariants = {
 
 export default function StatsPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { dailyGoal, currentStreak, longestStreak, getTodayCount, getHistory } =
+  const { dailyGoal, currentStreak, longestStreak, getHistory } =
     useWritingStatsStore();
 
   const { data: projectStats, isLoading: isStatsLoading } = useProjectStats(
@@ -64,13 +64,30 @@ export default function StatsPage() {
   // Real-time data from local documents cache (instantly updates on typing)
   const { documents } = useDocumentTree(projectId || "");
 
+  // 스토어에서 문서별 글자수 구독 (실시간 동기화)
+  const documentCharCounts = useWritingStatsStore((s) => s.documentCharCounts);
+  const dailyBaselines = useWritingStatsStore((s) => s.dailyBaselines);
+  const currentTotalChars = useWritingStatsStore((s) => s.currentTotalChars);
+
   const realTimeStats = useMemo(() => {
     if (!documents || documents.length === 0) return null;
 
-    const wordCount = documents.reduce(
-      (acc, doc) => acc + (doc.metadata?.wordCount || 0),
-      0
-    );
+    // 스토어에 글자수가 있으면 그걸 사용, 없으면 문서에서 계산
+    let wordCount = 0;
+    if (Object.keys(documentCharCounts).length > 0) {
+      // 스토어 값 사용 (에디터에서 실시간 업데이트됨)
+      wordCount = Object.values(documentCharCounts).reduce(
+        (acc, count) => acc + count,
+        0
+      );
+    } else {
+      // 폴백: 문서에서 직접 계산
+      wordCount = documents.reduce(
+        (acc, doc) => acc + getPlainTextLength(doc.content),
+        0
+      );
+    }
+
     // 폴더 또는 챕터 타입인 문서의 수 계산
     const chapterCount = documents.filter(
       (doc) => doc.type === "folder" || doc.type === "chapter"
@@ -80,7 +97,7 @@ export default function StatsPage() {
       totalWords: wordCount,
       chapterCount: chapterCount,
     };
-  }, [documents]);
+  }, [documents, documentCharCounts]);
 
   const displayStats = realTimeStats ||
     projectStats || {
@@ -89,7 +106,22 @@ export default function StatsPage() {
       characterCount: 0,
     };
 
-  const todayCount = getTodayCount();
+  // 오늘의 baseline 직접 구독 (상태 변경 시 리렌더링 보장)
+  const updateTotalChars = useWritingStatsStore((s) => s.updateTotalChars);
+
+  // Stats 페이지 마운트 시 총 글자수 업데이트 (에디터에서 오지 않은 경우를 위해)
+  useEffect(() => {
+    if (displayStats.totalWords > 0 && currentTotalChars === 0) {
+      updateTotalChars(displayStats.totalWords);
+    }
+  }, [displayStats.totalWords, currentTotalChars, updateTotalChars]);
+
+  // 오늘의 작성량 계산 (스토어의 currentTotalChars 사용)
+  const todayString = new Date().toISOString().split("T")[0];
+  const todayBaseline = dailyBaselines[todayString] ?? 0;
+  const effectiveTotalChars = currentTotalChars || displayStats.totalWords;
+  const todayCount = Math.max(0, effectiveTotalChars - todayBaseline);
+
   const displayStreak = currentStreak;
   const displayLongest = longestStreak;
   const progress = Math.min(100, Math.round((todayCount / dailyGoal) * 100));
