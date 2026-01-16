@@ -284,7 +284,9 @@ export default function CharacterDetailDialog({
   const [manualPrompt, setManualPrompt] = useState("");
 
   // Load settings (places) using hook
-  const effectiveProjectId = propProjectId || displayCharacter?.projectId || "";
+  // character?.projectId를 fallback으로 추가하여 displayCharacter 로딩 전에도 projectId 사용 가능
+  const effectiveProjectId =
+    propProjectId || displayCharacter?.projectId || character?.projectId || "";
   const { data: settingsData = [] } = useSettings(effectiveProjectId);
 
   // Deduplicate settings to prevent key collisions

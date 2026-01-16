@@ -61,89 +61,92 @@ const getConflictLabel = (category: string) => {
 };
 
 // ------------------------------------------------------------------
-// 2. Score Gauge Component
+// 2. Validation Summary Component (Replaces ScoreGauge)
 // ------------------------------------------------------------------
-function ScoreGauge({ score }: { score: number }) {
-  const getScoreColor = (s: number) => {
-    if (s >= 71) return "bg-emerald-500";
-    if (s >= 41) return "bg-amber-500";
-    return "bg-rose-500";
+import { AlertTriangle, AlertCircle, ShieldCheck } from "lucide-react";
+import type { ConsistencyStats } from "@/types/analysisResult";
+
+function ValidationSummary({ stats }: { stats: ConsistencyStats }) {
+  const hasCritical = stats.critical > 0;
+  const hasWarning = stats.warning > 0;
+  const isHealthy = !hasCritical && !hasWarning;
+
+  const getStatusColor = () => {
+    if (hasCritical) return "bg-rose-50 border-rose-100";
+    if (hasWarning) return "bg-amber-50 border-amber-100";
+    return "bg-emerald-50 border-emerald-100";
   };
 
-  const getScoreLabel = (s: number) => {
-    if (s >= 90) return "우수";
-    if (s >= 71) return "양호";
-    if (s >= 41) return "주의";
-    return "위험";
+  const getStatusIcon = () => {
+    if (hasCritical) return <AlertCircle className="w-5 h-5 text-rose-600" />;
+    if (hasWarning) return <AlertTriangle className="w-5 h-5 text-amber-600" />;
+    return <ShieldCheck className="w-5 h-5 text-emerald-600" />;
   };
 
-  const getScoreBgColor = (s: number) => {
-    if (s >= 71) return "bg-emerald-50 border-emerald-100";
-    if (s >= 41) return "bg-amber-50 border-amber-100";
-    return "bg-rose-50 border-rose-100";
+  const getStatusTitle = () => {
+    if (hasCritical) return "수정이 필요한 항목이 있습니다";
+    if (hasWarning) return "검토가 필요한 항목이 있습니다";
+    return "설정 충돌이 발견되지 않았습니다";
   };
 
-  const getScoreTextColor = (s: number) => {
-    if (s >= 71) return "text-emerald-700";
-    if (s >= 41) return "text-amber-700";
-    return "text-rose-700";
+  const getStatusDescription = () => {
+    if (hasCritical)
+      return "스토리 진행에 영향을 줄 수 있는 중대한 설정 오류가 발견되었습니다.";
+    if (hasWarning)
+      return "사소한 설정 불일치가 발견되었습니다. 내용을 확인해보세요.";
+    return "현재까지 작성된 내용에서 설정 오류가 발견되지 않았습니다.";
   };
 
   return (
     <div
       className={cn(
-        "p-4 rounded-xl border bg-white shadow-sm",
-        getScoreBgColor(score),
+        "p-5 rounded-xl border shadow-sm transition-colors duration-300",
+        getStatusColor(),
       )}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className={cn("w-4 h-4", getScoreTextColor(score))} />
-          <span className="text-sm font-semibold text-espresso-700">
-            일관성 점수
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              "text-2xl font-bold font-serif",
-              getScoreTextColor(score),
-            )}
-          >
-            {score}
-          </span>
-          <span className="text-sm text-mocha-500 font-medium">/100</span>
-        </div>
-      </div>
-
-      <div className="relative h-2.5 bg-white/60 rounded-full overflow-hidden border border-black/5">
-        <motion.div
-          className={cn("h-full rounded-full", getScoreColor(score))}
-          initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        />
-      </div>
-
-      <div className="mt-3 flex items-center justify-between">
-        <span
+      <div className="flex items-start gap-4">
+        <div
           className={cn(
-            "text-[11px] font-bold px-2 py-0.5 rounded-full border",
-            getScoreBgColor(score),
-            getScoreTextColor(score),
-            "border-current/20",
+            "p-3 rounded-full flex items-center justify-center shrink-0",
+            hasCritical
+              ? "bg-rose-100"
+              : hasWarning
+                ? "bg-amber-100"
+                : "bg-emerald-100",
           )}
         >
-          {getScoreLabel(score)}
-        </span>
-        <span className="text-[11px] text-mocha-600 font-medium">
-          {score >= 71
-            ? "설정 오류가 거의 없습니다"
-            : score >= 41
-              ? "몇 가지 검토가 필요합니다"
-              : "주요 설정 오류가 발견되었습니다"}
-        </span>
+          {getStatusIcon()}
+        </div>
+        <div className="flex-1 pt-1">
+          <h4 className="text-sm font-bold text-espresso-800 mb-1">
+            {getStatusTitle()}
+          </h4>
+          <p className="text-xs text-mocha-600 leading-relaxed">
+            {getStatusDescription()}
+          </p>
+        </div>
       </div>
+
+      {!isHealthy && (
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="bg-white/60 rounded-lg p-3 border border-rose-100/50 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1">
+              Critical
+            </span>
+            <span className="text-xl font-bold text-rose-700">
+              {stats.critical}
+            </span>
+          </div>
+          <div className="bg-white/60 rounded-lg p-3 border border-amber-100/50 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1">
+              Warning
+            </span>
+            <span className="text-xl font-bold text-amber-700">
+              {stats.warning}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -471,6 +474,17 @@ export default function InsightsPanel({
     );
   }, [consistencyReport]);
 
+  // [UX Fix]Backend stats may include hidden/internal conflicts, causing "low score" confusion.
+  // We strictly calculate stats based on what the USER SEES (visibleConflicts).
+  const derivedStats = useMemo(() => {
+    return {
+      critical: visibleConflicts.filter((c) => c.severity === "critical")
+        .length,
+      warning: visibleConflicts.filter((c) => c.severity === "warning").length,
+      fixable: 0, // FLAG_FOR_HUMAN implies manual review needed
+    };
+  }, [visibleConflicts]);
+
   return (
     <div className="flex flex-col h-full bg-cloud-50/50">
       <div className="h-[52px] px-4 flex items-center justify-between border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
@@ -503,7 +517,7 @@ export default function InsightsPanel({
           <EmptyState />
         ) : (
           <div className="space-y-6 max-w-md mx-auto">
-            <ScoreGauge score={consistencyReport.score} />
+            <ValidationSummary stats={derivedStats} />
             {visibleConflicts.length > 0 ? (
               <ConflictList
                 visibleConflicts={visibleConflicts}
