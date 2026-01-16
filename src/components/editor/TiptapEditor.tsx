@@ -191,7 +191,37 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         Highlight.extend({
           addAttributes() {
             return {
-              ...this.parent?.(),
+              color: {
+                default: null,
+                parseHTML: (element) =>
+                  element.getAttribute("data-color") ||
+                  element.style.backgroundColor,
+                renderHTML: (attributes) => {
+                  if (!attributes.color) {
+                    return {};
+                  }
+
+                  let color = attributes.color;
+                  const isDarkMode =
+                    editorSettings.visual.theme === "dark" ||
+                    editorSettings.visual.theme === "true-black";
+
+                  // Dark Mode: Add 40% opacity to preserve white text readability
+                  // Pastel colors on dark background can be too bright/low-contrast against white text.
+                  // Making them semi-transparent allows the dark background to dim them.
+                  if (
+                    isDarkMode &&
+                    color.startsWith("#") &&
+                    color.length === 7
+                  ) {
+                    color = `${color}66`; // Hex alpha for ~40% opacity
+                  }
+
+                  return {
+                    style: `background-color: ${color} !important; color: inherit;`,
+                  };
+                },
+              },
               id: {
                 default: null,
                 parseHTML: (element) => element.getAttribute("data-id"),
@@ -826,9 +856,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           )}
           style={
             {
-              backgroundColor:
-                cssVariables["--st-editor-bg-color"] || "#FAFAF9", // Theme-aware background
-              color: cssVariables["--st-editor-text-color"] || "#3D302A",
+              //cssVariables["--st-editor-bg-color"] ||
+              backgroundColor: "#FAFAF9", // Theme-aware background
+              // color: cssVariables["--st-editor-text-color"] || "#3D302A",
               "--st-editor-text-indent":
                 cssVariables["--st-editor-text-indent"],
               "--st-editor-paragraph-spacing":
