@@ -64,7 +64,7 @@ import type { RelationshipLink } from "@/types/characterGraph";
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
 
 import { DEMO_CHAPTERS } from "@/data/demoData";
-import { cn } from "@/lib/utils";
+import { cn, getPlainTextLength } from "@/lib/utils";
 
 // Constants
 const DEMO_PROJECT_ID = "demo";
@@ -654,7 +654,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               projectTitle={projectTitle}
               totalChars={
                 Object.values(documents).reduce(
-                  (acc, doc) => acc + (doc.content?.length || 0),
+                  (acc, doc) => acc + getPlainTextLength(doc.content),
                   0
                 ) || 0
               }

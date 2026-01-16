@@ -204,6 +204,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }),
         CharacterCount.configure({
           // limit removed for backend paging
+          mode: "textSize", // 순수 텍스트만 계산 (HTML 태그 제외)
         }),
         TextAlign.configure({
           types: ["heading", "paragraph"],
@@ -265,8 +266,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       },
       onUpdate: ({ editor }) => {
         // Immediate update for character count (lightweight)
+        // 순수 텍스트만 계산 (줄바꿈 제외, 띄어쓰기 포함)
         if (onUpdateRef.current) {
-          onUpdateRef.current(editor.storage.characterCount.characters());
+          const textContent = editor.state.doc.textContent;
+          // 줄바꿈만 제외 (띄어쓰기는 포함)
+          const pureCharCount = textContent.replace(/[\r\n]/g, "").length;
+          onUpdateRef.current(pureCharCount);
         }
 
         // Trigger debounced heavy updates
@@ -534,7 +539,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     useEffect(() => {
       if (editor && onUpdateRef.current) {
         requestAnimationFrame(() => {
-          onUpdateRef.current?.(editor.storage.characterCount.characters());
+          const textContent = editor.state.doc.textContent;
+          const pureCharCount = textContent.replace(/[\r\n]/g, "").length;
+          onUpdateRef.current?.(pureCharCount);
         });
       }
     }, [editor]);
