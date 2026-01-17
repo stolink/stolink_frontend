@@ -63,7 +63,6 @@ export function RelationshipDeepAnalysisModal({
       });
     }
   }, [isOpen, data?.relationshipId, data?.projectId]);
-
   // Optimize shader ready handler
   const handleShaderReady = useCallback(() => {
     setIsShaderReady(true);
@@ -90,7 +89,6 @@ export function RelationshipDeepAnalysisModal({
   } = data;
 
   const handleSave = (editData: RelationshipEditData) => {
-    // 1. Forward Update (Always exists)
     updateRelationship(
       {
         id: relationshipId,
