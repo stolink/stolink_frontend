@@ -32,7 +32,7 @@ import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 import type { ConsistencyReport } from "@/types/analysisResult";
 import type { Character } from "@/types/character";
 import { ChatRelationshipCard } from "./ai-chat/ChatRelationshipCard";
-import type { CardData } from "@/hooks/useChatStream";
+// Unused CardData import removed
 
 interface AIAssistantPanelProps {
   projectId: string | null;
@@ -77,13 +77,20 @@ export default function AIAssistantPanel({
   // 분석 완료 시 애니메이션 트리거
   useEffect(() => {
     if (analysisComplete) {
-      setShowCompleteAnimation(true);
-      // 0.8초 후 애니메이션 숨기고 응답 표시
+      // Use setTimeout 0 to avoid setState synchronously in effect body
       const timer = setTimeout(() => {
+        setShowCompleteAnimation(true);
+      }, 0);
+
+      // 0.8초 후 애니메이션 숨기고 응답 표시
+      const secondTimer = setTimeout(() => {
         setShowCompleteAnimation(false);
         clearAnalysisComplete();
       }, 800);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(secondTimer);
+      };
     }
   }, [analysisComplete, clearAnalysisComplete]);
 

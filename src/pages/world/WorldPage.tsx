@@ -476,17 +476,11 @@ export default function WorldPage() {
     bidirectional: boolean;
     description: string;
   }) => {
-    createRelationshipMutation.mutate(
-      {
-        ...data,
-        projectId: projectId || "",
+    createRelationshipMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateRelationshipDialogOpen(false);
       },
-      {
-        onSuccess: () => {
-          setIsCreateRelationshipDialogOpen(false);
-        },
-      },
-    );
+    });
   };
 
   const handleLinkClick = (link: RelationshipLink | null) => {
@@ -791,6 +785,7 @@ export default function WorldPage() {
                   ref={graphRef as React.RefObject<CharacterGraphCanvasRef>}
                   nodeChanges={analysisChanges}
                   onCreateRelationship={handleCreateRelationship}
+                  projectId={projectId}
                 />
               ) : (
                 <CharacterGraph
@@ -821,6 +816,7 @@ export default function WorldPage() {
                   showSearch={true}
                   onCreateRelationship={handleCreateRelationship}
                   ref={graphRef as React.RefObject<CharacterGraphRef>}
+                  projectId={projectId}
                 />
               )}
             </div>
@@ -994,7 +990,7 @@ export default function WorldPage() {
         onClose={() => setIsCreateRelationshipDialogOpen(false)}
         onCreate={handleConfirmCreateRelationship}
         characters={characters}
-        isSubmitting={createRelationshipMutation.isPending}
+        isCreating={createRelationshipMutation.isPending}
       />
     </div>
   );

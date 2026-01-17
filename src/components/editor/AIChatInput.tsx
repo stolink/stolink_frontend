@@ -11,14 +11,6 @@ import {
   useState,
   type ForwardedRef,
 } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import { Send, Square, Sparkles, BookOpen, User, Feather } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { createSuggestionConfig } from "./ai-chat/mentionSuggestion";
@@ -145,8 +137,8 @@ export const AIChatInput = forwardRef(
           id: action.label,
           label: action.label,
           subLabel: action.description,
-          type: "action" as any, // Using 'action' as a temporary type or casting
-          data: action as any,
+          type: "action",
+          data: action as unknown as Character | Event | Conflict,
         })),
       [],
     );
@@ -154,8 +146,7 @@ export const AIChatInput = forwardRef(
     // 2. Configure Extensions
     const extensions = useMemo(() => {
       return [
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        StarterKit.configure({ history: false } as any),
+        StarterKit.configure({}),
         Placeholder.configure({
           placeholder:
             props.placeholder ||
@@ -166,7 +157,8 @@ export const AIChatInput = forwardRef(
             char: "/",
             command: ({ editor, range, props }) => {
               // Custom command to insert text instead of node
-              const prompt = props.data?.prompt || "";
+              const prompt =
+                (props as { data?: { prompt?: string } }).data?.prompt || "";
               editor
                 .chain()
                 .focus()
@@ -216,7 +208,7 @@ export const AIChatInput = forwardRef(
           },
         }),
       ];
-    }, [props.placeholder, props.characters]);
+    }, [props.placeholder, props.characters, slashOptions]);
 
     const handleSend = () => {
       if (!editor || editor.isEmpty) return;

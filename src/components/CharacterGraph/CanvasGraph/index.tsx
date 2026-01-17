@@ -60,6 +60,7 @@ interface CharacterGraphCanvasProps {
   onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
   onCreateRelationship?: () => void;
+  projectId: string;
 }
 
 export interface CharacterGraphCanvasRef {

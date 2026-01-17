@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { resolveImageUrl } from "@/utils/imageUtils";
 import type { Character } from "@/types/character";

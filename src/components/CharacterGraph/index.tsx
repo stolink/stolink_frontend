@@ -1244,7 +1244,6 @@ export const CharacterGraph = forwardRef<
           onToggleTension={setShowTension}
           showLogicCheck={showLogicCheck}
           onToggleLogicCheck={setShowLogicCheck}
-          onToggleLogicCheck={setShowLogicCheck}
           enableGrouping={enableGrouping}
           onGroupingChange={setEnableGrouping}
           onCreateRelationship={
