@@ -15,12 +15,18 @@ import type { UIRelationType } from "@/components/CharacterGraph/constants";
 import { RelationshipTypeSelector } from "./RelationshipTypeSelector";
 import { StrengthSlider } from "./StrengthSlider";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export interface RelationshipEditData {
   types: UIRelationType[];
   strength: number;
   bidirectional: boolean;
   description: string;
+  reverse?: {
+    types: UIRelationType[];
+    strength: number;
+    description: string;
+  };
 }
 
 interface RelationshipEditFormProps {
@@ -44,20 +50,58 @@ export function RelationshipEditForm({
   isSaving = false,
   isDeleting = false,
 }: RelationshipEditFormProps) {
+  // Forward Relationship State
   const [types, setTypes] = useState<UIRelationType[]>(
     initialData.types.map((t) => toUIRelationType(t)),
   );
   const [strength, setStrength] = useState(initialData.strength);
-  const [bidirectional, setBidirectional] = useState(initialData.bidirectional);
   const [description, setDescription] = useState(initialData.description);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const isValid = types.length > 0;
+  // Reverse Relationship State
+  const [reverseTypes, setReverseTypes] = useState<UIRelationType[]>(
+    initialData.reverse?.types.map((t) => toUIRelationType(t)) || types, // Default to forward if undefined
+  );
+  const [reverseStrength, setReverseStrength] = useState(
+    initialData.reverse?.strength ?? strength,
+  );
+  const [reverseDescription, setReverseDescription] = useState(
+    initialData.reverse?.description ?? description,
+  );
+
+  const [bidirectional, setBidirectional] = useState(initialData.bidirectional);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
+
+  const isValid =
+    types.length > 0 && (bidirectional || reverseTypes.length > 0);
 
   const handleSave = useCallback(() => {
     if (!isValid) return;
-    onSave({ types, strength, bidirectional, description });
-  }, [types, strength, bidirectional, description, isValid, onSave]);
+
+    onSave({
+      types,
+      strength,
+      bidirectional,
+      description,
+      reverse: bidirectional
+        ? undefined
+        : {
+            types: reverseTypes,
+            strength: reverseStrength,
+            description: reverseDescription,
+          },
+    });
+  }, [
+    types,
+    strength,
+    bidirectional,
+    description,
+    reverseTypes,
+    reverseStrength,
+    reverseDescription,
+    isValid,
+    onSave,
+  ]);
 
   const handleDelete = useCallback(() => {
     setShowDeleteDialog(false);
@@ -97,50 +141,123 @@ export function RelationshipEditForm({
         </div>
 
         {/* Form Fields */}
-        <div className="space-y-8">
-          {/* 1. 관계 유형 선택 */}
-          <RelationshipTypeSelector
-            selectedTypes={types}
-            onChange={setTypes}
+        {/* 1. 양방향 여부 (Moved to top for better flow) */}
+        <div className="flex items-center justify-between p-4 bg-cloud-50 rounded-2xl">
+          <div>
+            <label className="text-sm font-bold text-espresso-700">
+              양방향 관계
+            </label>
+            <p className="text-xs text-espresso-400 mt-0.5">
+              {bidirectional
+                ? "두 캐릭터가 서로 동일한 관계를 가집니다"
+                : "캐릭터별로 각각의 관계를 설정합니다"}
+            </p>
+          </div>
+          <Switch
+            checked={bidirectional}
+            onChange={setBidirectional}
             disabled={isSaving}
           />
-
-          {/* 2. 관계 강도 */}
-          <StrengthSlider
-            value={strength}
-            onChange={setStrength}
-            disabled={isSaving}
-          />
-
-          {/* 3. 양방향 여부 */}
-          <div className="flex items-center justify-between p-4 bg-cloud-50 rounded-2xl">
-            <div>
-              <label className="text-sm font-bold text-espresso-700">
-                양방향 관계
-              </label>
-              <p className="text-xs text-espresso-400 mt-0.5">
-                두 캐릭터가 서로 동일한 관계를 가집니다
-              </p>
-            </div>
-            <Switch
-              checked={bidirectional}
-              onChange={setBidirectional}
-              disabled={isSaving}
-            />
-          </div>
-
-          {/* 4. 설명 */}
-          <div className="space-y-3">
-            <label className="text-sm font-bold text-espresso-700">설명</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="이 관계에 대한 설명을 입력하세요..."
-              className="min-h-[100px] resize-none bg-cloud-50 border-cloud-200 focus:border-mocha-400 rounded-xl"
-              disabled={isSaving}
-            />
-          </div>
         </div>
+
+        {!bidirectional ? (
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "forward" | "reverse")}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="forward">
+                {sourceName} → {targetName}
+              </TabsTrigger>
+              <TabsTrigger value="reverse">
+                {targetName} → {sourceName}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="forward" className="space-y-8 mt-0">
+              {/* Forward Editors */}
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <RelationshipTypeSelector
+                  selectedTypes={types}
+                  onChange={setTypes}
+                  disabled={isSaving}
+                />
+                <StrengthSlider
+                  value={strength}
+                  onChange={setStrength}
+                  disabled={isSaving}
+                />
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-espresso-700">
+                    설명 ({sourceName} 입장에서)
+                  </label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={`${sourceName}가 ${targetName}에게 느끼는 감정이나 관계 설명...`}
+                    className="min-h-[100px] resize-none bg-cloud-50 border-cloud-200 focus:border-mocha-400 rounded-xl"
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="reverse" className="space-y-8 mt-0">
+              {/* Reverse Editors */}
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <RelationshipTypeSelector
+                  selectedTypes={reverseTypes}
+                  onChange={setReverseTypes}
+                  disabled={isSaving}
+                />
+                <StrengthSlider
+                  value={reverseStrength}
+                  onChange={setReverseStrength}
+                  disabled={isSaving}
+                />
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-espresso-700">
+                    설명 ({targetName} 입장에서)
+                  </label>
+                  <Textarea
+                    value={reverseDescription}
+                    onChange={(e) => setReverseDescription(e.target.value)}
+                    placeholder={`${targetName}가 ${sourceName}에게 느끼는 감정이나 관계 설명...`}
+                    className="min-h-[100px] resize-none bg-cloud-50 border-cloud-200 focus:border-mocha-400 rounded-xl"
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Unified Editors */}
+            <RelationshipTypeSelector
+              selectedTypes={types}
+              onChange={setTypes}
+              disabled={isSaving}
+            />
+            <StrengthSlider
+              value={strength}
+              onChange={setStrength}
+              disabled={isSaving}
+            />
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-espresso-700">
+                설명
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="이 관계에 대한 설명을 입력하세요..."
+                className="min-h-[100px] resize-none bg-cloud-50 border-cloud-200 focus:border-mocha-400 rounded-xl"
+                disabled={isSaving}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-espresso-100">

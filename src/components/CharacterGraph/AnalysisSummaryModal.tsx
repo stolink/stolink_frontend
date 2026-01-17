@@ -632,14 +632,30 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                               #{update.id.slice(-6)}
                                             </span>
                                           </div>
-                                          <ul className="space-y-2">
+                                          <ul className="space-y-3">
                                             {update.changes.map((change, i) => (
                                               <li
                                                 key={i}
                                                 className="flex items-start gap-3 text-sm text-mocha-600"
                                               >
                                                 <CheckCircle2 className="w-4 h-4 text-mocha-400 mt-0.5 shrink-0" />
-                                                <span>{change}</span>
+                                                <div className="flex flex-col">
+                                                  {change.description ? (
+                                                    <span>
+                                                      {change.description}
+                                                    </span>
+                                                  ) : (
+                                                    <span>
+                                                      <span className="font-semibold text-mocha-700">
+                                                        {change.field}
+                                                      </span>
+                                                      :{" "}
+                                                      {String(change.oldValue)}{" "}
+                                                      →{" "}
+                                                      {String(change.newValue)}
+                                                    </span>
+                                                  )}
+                                                </div>
                                               </li>
                                             ))}
                                           </ul>
@@ -795,24 +811,63 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                             <span className="text-xs font-bold text-amber-700 uppercase tracking-wider bg-amber-100 px-2 py-0.5 rounded-md">
                                               Relationship Update
                                             </span>
-                                            {/* We can improve this ID display if we parse it, but for now ID is safer */}
                                             <span className="text-xs text-amber-600/60 font-mono">
                                               #{update.id.slice(0, 8)}
                                             </span>
                                           </div>
-                                          <ul className="space-y-2.5">
+
+                                          <div className="space-y-2 pl-1">
                                             {update.changes.map((change, i) => (
-                                              <li
+                                              <div
                                                 key={i}
-                                                className="flex items-start gap-3 text-sm text-mocha-800"
+                                                className="flex items-center gap-3 text-sm text-mocha-700"
                                               >
-                                                <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                                                <span className="leading-snug">
-                                                  {change}
-                                                </span>
-                                              </li>
+                                                {change.field === "type" ? (
+                                                  <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-mocha-500 text-xs">
+                                                      관계 변화:
+                                                    </span>
+                                                    <span
+                                                      className="px-2 py-0.5 rounded text-[10px] font-bold uppercase opacity-60 line-through decoration-amber-500/50"
+                                                      style={getRelationBadgeStyle(
+                                                        String(change.oldValue),
+                                                      )}
+                                                    >
+                                                      {getRelationLabel(
+                                                        String(change.oldValue),
+                                                      )}
+                                                    </span>
+                                                    <ArrowRight className="w-3 h-3 text-mocha-400" />
+                                                    <motion.span
+                                                      initial={{ scale: 0.8 }}
+                                                      animate={{ scale: 1 }}
+                                                      className="px-2 py-1 rounded text-[11px] font-bold uppercase shadow-sm"
+                                                      style={getRelationBadgeStyle(
+                                                        String(change.newValue),
+                                                      )}
+                                                    >
+                                                      {getRelationLabel(
+                                                        String(change.newValue),
+                                                      )}
+                                                    </motion.span>
+                                                  </div>
+                                                ) : (
+                                                  <div className="flex items-start gap-2">
+                                                    <Activity className="w-3.5 h-3.5 text-amber-500 mt-1 shrink-0" />
+                                                    {change.description ? (
+                                                      <span>
+                                                        {change.description}
+                                                      </span>
+                                                    ) : (
+                                                      <span>
+                                                        {change.field} update
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
                                             ))}
-                                          </ul>
+                                          </div>
                                         </div>
                                       </div>
                                     </motion.div>

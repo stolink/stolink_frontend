@@ -335,7 +335,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     characters.forEach((char: Character) => {
       char.relations?.graph?.forEach((rel: CharacterRelation) => {
         links.push({
-          id: `${char._id}-${rel.target}`,
+          id: rel.id || `${char._id}-${rel.target}`,
           source: char._id,
           target: rel.target,
           type: rel.type as RelationType,
@@ -722,7 +722,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
         <main
           className={cn(
-            "flex-1 flex flex-col transition-all duration-300 relative z-10",
+            "flex-1 flex flex-col transition-all duration-300 relative z-10 min-w-0",
             isTypewriterMode ? "items-center" : "",
             isFocusMode && "bg-cloud-50",
             // Main area is transparent to show Desk, unless Focus Mode

@@ -3,7 +3,7 @@
 // 캐릭터 관계 심층 분석 메인 모달 컴포넌트
 // =====================================================
 
-import { useState, useEffect, startTransition } from "react";
+import { useState, useEffect, startTransition, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import {
   useUpdateRelationship,
   useDeleteRelationship,
+  useCreateRelationship,
 } from "@/hooks/useRelationships";
 import {
   RelationshipEditForm,
@@ -33,6 +34,7 @@ interface RelationshipDeepAnalysisModalProps {
   onClose: () => void;
   data: RelationshipDeepAnalysisData | null;
   onNavigateToEvent?: (eventId: string) => void;
+  onRelationshipDeleted?: () => void;
 }
 
 export function RelationshipDeepAnalysisModal({
@@ -40,12 +42,15 @@ export function RelationshipDeepAnalysisModal({
   onClose,
   data,
   onNavigateToEvent,
+  onRelationshipDeleted,
 }: RelationshipDeepAnalysisModalProps) {
   const [isShaderReady, setIsShaderReady] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const { mutate: updateRelationship, isPending: isUpdating } =
     useUpdateRelationship(data?.projectId || "");
+  const { mutate: createRelationship, isPending: isCreating } =
+    useCreateRelationship(data?.projectId || "");
   const { mutate: deleteRelationship, isPending: isDeleting } =
     useDeleteRelationship(data?.projectId || "");
 
@@ -58,6 +63,10 @@ export function RelationshipDeepAnalysisModal({
       });
     }
   }, [isOpen, data?.relationshipId, data?.projectId]);
+  // Optimize shader ready handler
+  const handleShaderReady = useCallback(() => {
+    setIsShaderReady(true);
+  }, []);
 
   if (!data) return null;
 
@@ -92,8 +101,33 @@ export function RelationshipDeepAnalysisModal({
       },
       {
         onSuccess: () => {
+          // 2. Reverse Update (If directional)
+          if (!editData.bidirectional && editData.reverse) {
+            if (data.reverseRelationship?.id) {
+              // Update existing reverse relationship
+              updateRelationship({
+                id: data.reverseRelationship.id,
+                payload: {
+                  types: editData.reverse.types,
+                  strength: editData.reverse.strength,
+                  bidirectional: false, // Ensure it's not bidirectional
+                  description: editData.reverse.description,
+                },
+              });
+            } else {
+              // Create new reverse relationship
+              createRelationship({
+                sourceId: targetCharacter.id,
+                targetId: sourceCharacter.id, // Swap source/target
+                types: editData.reverse.types,
+                strength: editData.reverse.strength,
+                bidirectional: false,
+                description: editData.reverse.description,
+              });
+            }
+          }
+
           setIsEditing(false);
-          // onClose(); // Let user see the updated graph if they want, but usually better to close or stay
         },
       },
     );
@@ -104,6 +138,7 @@ export function RelationshipDeepAnalysisModal({
       onSuccess: () => {
         setIsEditing(false);
         onClose();
+        onRelationshipDeleted?.();
       },
     });
   };
@@ -145,13 +180,13 @@ export function RelationshipDeepAnalysisModal({
                     분석
                   </DialogPrimitive.Title>
                   {/* Fixed Close Button for the entire Dossier */}
-                  <div className="absolute right-8 top-8 z-[160] flex items-center gap-3">
+                  <div className="absolute right-8 top-8 z-[200] flex items-center gap-3">
                     {!isEditing && (
                       <Button
                         intent="ghost"
                         size="icon"
                         onClick={() => setIsEditing(true)}
-                        className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
+                        className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
                         title="관계 수정"
                       >
                         <Settings2 className="w-6 h-6 text-espresso-900" />
@@ -161,7 +196,7 @@ export function RelationshipDeepAnalysisModal({
                       intent="ghost"
                       size="icon"
                       onClick={onClose}
-                      className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
+                      className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-md hover:bg-espresso-50 shadow-lg border border-espresso-200/30 transition-all active:scale-95"
                     >
                       <X className="w-6 h-6 text-espresso-900" />
                     </Button>
@@ -190,13 +225,23 @@ export function RelationshipDeepAnalysisModal({
                               strength: currentStrength,
                               bidirectional: bidirectional ?? true,
                               description: currentDescription || "",
+                              reverse: data.reverseRelationship
+                                ? {
+                                    types: data.reverseRelationship
+                                      .types as UIRelationType[],
+                                    strength: data.reverseRelationship.strength,
+                                    description:
+                                      data.reverseRelationship.description ||
+                                      "",
+                                  }
+                                : undefined,
                             }}
                             sourceName={sourceCharacter.name}
                             targetName={targetCharacter.name}
                             onSave={handleSave}
                             onCancel={() => setIsEditing(false)}
                             onDelete={handleDelete}
-                            isSaving={isUpdating}
+                            isSaving={isUpdating || isCreating}
                             isDeleting={isDeleting}
                           />
                         </motion.div>
@@ -216,7 +261,7 @@ export function RelationshipDeepAnalysisModal({
                             description={currentDescription}
                             onClose={onClose}
                             since={since}
-                            onShaderReady={() => setIsShaderReady(true)}
+                            onShaderReady={handleShaderReady}
                           />
 
                           <div className="p-8 pb-20 max-w-5xl mx-auto space-y-12">

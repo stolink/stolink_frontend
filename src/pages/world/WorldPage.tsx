@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
@@ -21,6 +21,7 @@ import {
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
 import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
+import { CreateRelationshipDialog } from "@/components/CharacterGraph/CreateRelationshipDialog";
 import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -40,6 +41,7 @@ import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 
 import { useProjectEvents } from "@/hooks/useEvents";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
+import { useCreateRelationship } from "@/hooks/useRelationships";
 
 // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
 const USE_CANVAS_GRAPH = true;
@@ -334,10 +336,15 @@ export default function WorldPage() {
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+  const [activeCharacter, setSelectedCharacter] = useState<Character | null>(
     null,
   );
-  // 그래프 하이라이팅용 경량 상태 (즉시 반응)
+
+  // Relationship Create Dialog State
+  const [isCreateRelationshipDialogOpen, setIsCreateRelationshipDialogOpen] =
+    useState(false);
+  const createRelationshipMutation = useCreateRelationship(projectId || "");
+
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
@@ -419,11 +426,11 @@ export default function WorldPage() {
 
   // Sync selectedCharacter with latest data from characters array
   // We use useMemo to derive the active character data to avoid cascading renders
-  const activeCharacter = useMemo(() => {
-    if (!selectedCharacter || characters.length === 0) return selectedCharacter;
-    const updated = characters.find((c) => c._id === selectedCharacter._id);
-    return updated ? updated : selectedCharacter;
-  }, [characters, selectedCharacter]);
+  // const activeCharacter = useMemo(() => { // This was moved to a state variable
+  //   if (!selectedCharacter || characters.length === 0) return selectedCharacter;
+  //   const updated = characters.find((c) => c._id === selectedCharacter._id);
+  //   return updated ? updated : selectedCharacter;
+  // }, [characters, selectedCharacter]);
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -442,21 +449,38 @@ export default function WorldPage() {
       });
       return;
     }
-    const nextChar =
-      selectedCharacter?._id === character._id ? null : character;
-    startTransition(() => {
-      setSelectedCharacter(nextChar);
-      setGraphFocusId(nextChar?._id || null);
-    });
 
-    // Sidebar will open because selectedCharacter is set
-    // Modal will be opened manually from the sidebar's "View Profile" button
+    // Always select and open modal
+    startTransition(() => {
+      setSelectedCharacter(character);
+      setGraphFocusId(character._id);
+    });
+    // setIsModalOpen(true); // User requested side panel only for node clicks
   };
 
   const handleCardClick = (character: Character) => {
     setSelectedCharacter(character);
     setGraphFocusId(character._id);
     setIsModalOpen(true);
+  };
+
+  const handleCreateRelationship = () => {
+    setIsCreateRelationshipDialogOpen(true);
+  };
+
+  const handleConfirmCreateRelationship = async (data: {
+    sourceId: string;
+    targetId: string;
+    types: UIRelationType[];
+    strength: number;
+    bidirectional: boolean;
+    description: string;
+  }) => {
+    createRelationshipMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateRelationshipDialogOpen(false);
+      },
+    });
   };
 
   const handleLinkClick = (link: RelationshipLink | null) => {
@@ -494,6 +518,43 @@ export default function WorldPage() {
       projectEvents,
       link.description,
     );
+
+    // [New] 역방향 관계 찾기 (Target -> Source)
+    // links 배열에서 source와 target이 반대인 링크를 찾음
+    const reverseLink = links.find((l) => {
+      const lSourceId =
+        typeof l.source === "string"
+          ? l.source
+          : (l.source as { id: string }).id;
+      const lTargetId =
+        typeof l.target === "string"
+          ? l.target
+          : (l.target as { id: string }).id;
+      return lSourceId === targetId && lTargetId === sourceId;
+    });
+
+    if (reverseLink) {
+      analysisData.reverseRelationship = {
+        id: reverseLink.id,
+        types: reverseLink.relationTypes || [reverseLink.type],
+        strength: reverseLink.strength || 5,
+        description: reverseLink.description,
+      };
+
+      // 만약 정방향, 역방향이 모두 존재하면 양방향 관계가 아닐 수 있음 (혹은 명시적 양방향일 수도 있음)
+      // 하지만 UI에서는 개별 편집을 지원해야 하므로 데이터만 넘겨줌
+      // bidirectional 플래그는 보통 "동일한 관계 하나"를 공유할 때 true.
+      // 여기서는 "서로 다른 관계 객체"가 두 개 있는 경우를 처리.
+
+      // 만약 link 자체에 bidirectional: true가 있다면, reverseLink는 물리적으로 존재하지 않거나(하나의 링크로 표현),
+      // 혹은 두 개의 링크가 동기화되어 있을 수 있음.
+      // 현재 로직상 links 생성 시 양방향은 하나로 합쳐질 수도, 아닐 수도 있음.
+      // 확인 필요: useRelationships/Graph 에서는 양방향을 어떻게 표현하는가?
+      // 보통 Neo4j는 방향성이 있으므로 두 개의 관계가 생김.
+      // 프론트엔드 links 생성 로직에서 이를 dedupe 하는지 확인 필요.
+      // dedupe 한다면 reverseLink는 undefined일 것임.
+      // dedupe 하지 않는다면 찾을 수 있음.
+    }
 
     setRelationshipAnalysisData(analysisData);
     setIsRelationshipModalOpen(true);
@@ -723,6 +784,8 @@ export default function WorldPage() {
                   showSearch={true}
                   ref={graphRef as React.RefObject<CharacterGraphCanvasRef>}
                   nodeChanges={analysisChanges}
+                  onCreateRelationship={handleCreateRelationship}
+                  projectId={projectId}
                 />
               ) : (
                 <CharacterGraph
@@ -751,7 +814,9 @@ export default function WorldPage() {
                   highlightedNodeIds={searchHighlightedIds}
                   onSearchChange={setSearchHighlightedIds}
                   showSearch={true}
+                  onCreateRelationship={handleCreateRelationship}
                   ref={graphRef as React.RefObject<CharacterGraphRef>}
+                  projectId={projectId}
                 />
               )}
             </div>
@@ -909,6 +974,23 @@ export default function WorldPage() {
         onNavigateToEvent={(_eventId) => {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
         }}
+        onRelationshipDeleted={() => {
+          // 관계 삭제 후 필요한 추가 로직이 있다면 여기에 작성
+          // useDeleteRelationship에서 이미 query invalidation을 수행하므로
+          // 여기서는 별도의 데이터 페칭 로직이 필요 없음
+          console.log(
+            "[WorldPage] Relationship deleted, UI will refresh via cache invalidation",
+          );
+        }}
+      />
+
+      {/* Create Relationship Dialog */}
+      <CreateRelationshipDialog
+        isOpen={isCreateRelationshipDialogOpen}
+        onClose={() => setIsCreateRelationshipDialogOpen(false)}
+        onCreate={handleConfirmCreateRelationship}
+        characters={characters}
+        isCreating={createRelationshipMutation.isPending}
       />
     </div>
   );

@@ -19,7 +19,7 @@ import {
   RELATION_BADGE_COLORS,
 } from "@/components/CharacterGraph/constants";
 
-export type TagType = "conflict" | "character" | "event";
+export type TagType = "conflict" | "character" | "event" | "action";
 
 interface TagPreviewCardProps {
   type: TagType;
@@ -159,7 +159,12 @@ function CharacterCard({
     const found = allCharacters.find(
       (c) => c._id === idOrName || c.profile?.name === idOrName,
     );
-    return found ? found.profile.name : idOrName;
+    if (found) return found.profile.name;
+    // Fallback for UUIDs
+    if (idOrName.length > 20) {
+      return `Unknown (${idOrName.slice(0, 6)})`;
+    }
+    return idOrName;
   };
 
   return (
