@@ -6,20 +6,31 @@ import type { AnalysisDiff } from "@/types/analysisTypes";
 /**
  * Compare current project data with analysis result to generate a diff report.
  */
+import type { ChangeItem } from "@/types/analysisTypes";
+
+/**
+ * Compare current project data with analysis result to generate a diff report.
+ */
 export function calculateAnalysisDiff(
   currentCharacters: Character[],
   currentLinks: RelationshipLink[],
   analysisResult: AnalysisResultData,
 ): AnalysisDiff {
   const newCharacters: Character[] = [];
-  const updatedCharacters: { id: string; changes: string[] }[] = [];
+  const updatedCharacters: { id: string; changes: ChangeItem[] }[] = [];
   const newRelations: RelationshipLink[] = [];
-  const updatedRelations: { id: string; changes: string[] }[] = [];
+  const updatedRelations: { id: string; changes: ChangeItem[] }[] = [];
   const removedRelations: string[] = [];
 
   // Helper to normalize names for comparison
   const normalizeName = (name: string) =>
     name.trim().toLowerCase().replace(/\s+/g, " ");
+
+  // Helper to normalize relation types (e.g. "ALLY" -> "friendly")
+  const normalizeValues = (val: string) => {
+    if (!val) return "";
+    return val.toLowerCase().trim();
+  };
 
   // Helper to find existing character by name (case-insensitive, normalized)
   const findCharacter = (name: string) =>
@@ -30,11 +41,6 @@ export function calculateAnalysisDiff(
   // 1. Process Characters
   analysisResult.characters.forEach((backendChar) => {
     const existing = findCharacter(backendChar.name);
-
-    // Convert BackendCharacter to partial frontend Character for comparison/display
-    // Note: We don't have full Character structure from BackendCharacter usually,
-    // but we can construct enough for the Diff.
-    // Assuming backendChar has name, role, etc. matching BackendCharacter interface.
 
     if (!existing) {
       // Create a temporary Character object for the "New" display
@@ -98,18 +104,28 @@ export function calculateAnalysisDiff(
       newCharacters.push(newChar);
     } else {
       // Check for updates
-      const changes: string[] = [];
+      const changes: ChangeItem[] = [];
 
       // Check basic fields
       if (backendChar.role && backendChar.role !== existing.role) {
-        changes.push(`Role changed: ${existing.role} -> ${backendChar.role}`);
+        changes.push({
+          field: "role",
+          oldValue: existing.role,
+          newValue: backendChar.role,
+          description: `Role changed: ${existing.role} -> ${backendChar.role}`,
+        });
       }
 
       // Check Faction
       const newFaction = backendChar.faction?.name || "무소속";
       const oldFaction = existing.profile.faction?.name || "무소속";
       if (newFaction !== oldFaction) {
-        changes.push(`Faction: ${oldFaction} -> ${newFaction}`);
+        changes.push({
+          field: "faction",
+          oldValue: oldFaction,
+          newValue: newFaction,
+          description: `Faction: ${oldFaction} -> ${newFaction}`,
+        });
       }
 
       // Check Personality (Core Traits - Array comparison)
@@ -120,7 +136,12 @@ export function calculateAnalysisDiff(
         !newTraits.every((t) => oldTraits.includes(t));
 
       if (traitsChanged && newTraits.length > 0) {
-        changes.push(`Personality updated`);
+        changes.push({
+          field: "personality",
+          oldValue: oldTraits,
+          newValue: newTraits,
+          description: `Personality updated`,
+        });
       }
 
       // Check Appearance (Key fields)
@@ -137,20 +158,13 @@ export function calculateAnalysisDiff(
           appearanceChanges.push("eyes");
 
         if (appearanceChanges.length > 0) {
-          changes.push(`Appearance updated: ${appearanceChanges.join(", ")}`);
+          changes.push({
+            field: "appearance",
+            oldValue: "Various",
+            newValue: appearanceChanges.join(", "),
+            description: `Appearance updated: ${appearanceChanges.join(", ")}`,
+          });
         }
-      }
-
-      if (
-        backendChar.backstory &&
-        existing.profile.backstory &&
-        !existing.profile.backstory.includes(
-          backendChar.backstory.substring(0, 20),
-        )
-      ) {
-        // Simple heuristic check or exact match
-        // Text comparison is tricky. Maybe length check or simple diff?
-        // For now, let's skip deep textual diff unless logic is improved.
       }
 
       if (changes.length > 0) {
@@ -217,13 +231,34 @@ export function calculateAnalysisDiff(
         );
       } else {
         // Update check
-        const changes: string[] = [];
-        if (rel.relation_type !== existingLink.type) {
-          changes.push(`Type: ${existingLink.type} -> ${rel.relation_type}`);
+        const changes: ChangeItem[] = [];
+
+        // CASE SENSITIVE FIX: Normalize both sides
+        const newType = normalizeValues(rel.relation_type);
+        const oldType = normalizeValues(existingLink.type);
+
+        // Map generic "ALLY" to "friendly" equivalent if needed, but project usually uses lowercase.
+        // Assuming backend might send UPPERCASE, frontend uses lowercase.
+        // Also handling 'ally' vs 'friendly' mapping if feasible, but normalization covers case.
+        if (newType !== oldType) {
+          // Double check for known aliases if needed (e.g. ALLY == friendly)
+          // But simply lowercasing solves "ALLY" != "ally"
+          changes.push({
+            field: "type",
+            oldValue: existingLink.type,
+            newValue: rel.relation_type, // Keep original casing for display if desired, or normalized
+            description: `Type: ${existingLink.type} -> ${rel.relation_type}`,
+          });
         }
+
         if (Math.abs(rel.strength - existingLink.strength) > 1) {
           // Threshold 1
-          changes.push(`Strength: ${existingLink.strength} -> ${rel.strength}`);
+          changes.push({
+            field: "strength",
+            oldValue: existingLink.strength,
+            newValue: rel.strength,
+            description: `Strength: ${existingLink.strength} -> ${rel.strength}`,
+          });
         }
 
         if (changes.length > 0) {
@@ -256,9 +291,9 @@ export function calculateDiffFromSnapshot(
   nextLinks: RelationshipLink[],
 ): AnalysisDiff {
   const newCharacters: Character[] = [];
-  const updatedCharacters: { id: string; changes: string[] }[] = [];
+  const updatedCharacters: { id: string; changes: ChangeItem[] }[] = [];
   const newRelations: RelationshipLink[] = [];
-  const updatedRelations: { id: string; changes: string[] }[] = [];
+  const updatedRelations: { id: string; changes: ChangeItem[] }[] = [];
   const removedRelations: string[] = [];
 
   // Helper to normalize names
@@ -281,17 +316,27 @@ export function calculateDiffFromSnapshot(
       newCharacters.push(nextChar);
     } else {
       // Check for updates
-      const changes: string[] = [];
+      const changes: ChangeItem[] = [];
 
       // Check key fields
       if (prevChar.role !== nextChar.role) {
-        changes.push(`Role changed: ${prevChar.role} -> ${nextChar.role}`);
+        changes.push({
+          field: "role",
+          oldValue: prevChar.role,
+          newValue: nextChar.role,
+          description: `Role changed: ${prevChar.role} -> ${nextChar.role}`,
+        });
       }
 
       const prevFaction = prevChar.profile.faction?.name || "무소속";
       const nextFaction = nextChar.profile.faction?.name || "무소속";
       if (prevFaction !== nextFaction) {
-        changes.push(`Faction: ${prevFaction} -> ${nextFaction}`);
+        changes.push({
+          field: "faction",
+          oldValue: prevFaction,
+          newValue: nextFaction,
+          description: `Faction: ${prevFaction} -> ${nextFaction}`,
+        });
       }
 
       // Personality (Array comparison)
@@ -300,7 +345,14 @@ export function calculateDiffFromSnapshot(
       const traitsChanged =
         prevTraits.length !== nextTraits.length ||
         !nextTraits.every((t) => prevTraits.includes(t));
-      if (traitsChanged) changes.push(`Personality updated`);
+      if (traitsChanged) {
+        changes.push({
+          field: "personality",
+          oldValue: prevTraits,
+          newValue: nextTraits,
+          description: `Personality updated`,
+        });
+      }
 
       // Appearance
       const prevApp = prevChar.appearance;
@@ -312,7 +364,12 @@ export function calculateDiffFromSnapshot(
         appearanceChanges.push("hair");
       if (prevApp.eyes !== nextApp.eyes) appearanceChanges.push("eyes");
       if (appearanceChanges.length > 0) {
-        changes.push(`Appearance updated: ${appearanceChanges.join(", ")}`);
+        changes.push({
+          field: "appearance",
+          oldValue: "Various",
+          newValue: appearanceChanges.join(", "),
+          description: `Appearance updated: ${appearanceChanges.join(", ")}`,
+        });
       }
 
       if (changes.length > 0) {
@@ -336,15 +393,30 @@ export function calculateDiffFromSnapshot(
       newRelations.push(nextLink);
     } else {
       // Check for updates
-      const changes: string[] = [];
+      const changes: ChangeItem[] = [];
       if (prevLink.type !== nextLink.type) {
-        changes.push(`Type: ${prevLink.type} -> ${nextLink.type}`);
+        changes.push({
+          field: "type",
+          oldValue: prevLink.type,
+          newValue: nextLink.type,
+          description: `Type: ${prevLink.type} -> ${nextLink.type}`,
+        });
       }
       if (Math.abs((prevLink.strength || 0) - (nextLink.strength || 0)) > 1) {
-        changes.push(`Strength: ${prevLink.strength} -> ${nextLink.strength}`);
+        changes.push({
+          field: "strength",
+          oldValue: prevLink.strength,
+          newValue: nextLink.strength,
+          description: `Strength: ${prevLink.strength} -> ${nextLink.strength}`,
+        });
       }
       if (prevLink.description !== nextLink.description) {
-        changes.push("Description updated");
+        changes.push({
+          field: "description",
+          oldValue: prevLink.description,
+          newValue: nextLink.description,
+          description: "Description updated",
+        });
       }
 
       if (changes.length > 0) {

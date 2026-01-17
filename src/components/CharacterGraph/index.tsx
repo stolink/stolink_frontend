@@ -28,6 +28,8 @@ import { TimelineSlider } from "./TimelineSlider";
 import { RelationshipDeepAnalysisModal } from "./RelationshipDeepAnalysis";
 import { generateAnalysisData } from "./RelationshipDeepAnalysis/utils/analysisCalculations";
 import { RelationshipEventTooltip } from "./RelationshipEventTooltip";
+import { CreateRelationshipDialog } from "./CreateRelationshipDialog";
+import { useCreateRelationship } from "@/hooks/useRelationships";
 
 export { GROUP_COLORS } from "./constants";
 
@@ -48,6 +50,8 @@ interface CharacterGraphProps {
   showSearch?: boolean;
   /** 노드 드래그 종료 시 콜백 (위치 저장용) */
   onNodeDragEnd?: (node: CharacterNode) => void;
+  projectId: string; // Required for mutations
+  onCreateRelationship?: () => void;
 }
 
 export interface CharacterGraphRef {
@@ -73,6 +77,8 @@ export const CharacterGraph = forwardRef<
       className,
       showSearch = true,
       onNodeDragEnd,
+      projectId,
+      onCreateRelationship,
     },
     ref,
   ) => {
@@ -96,6 +102,11 @@ export const CharacterGraph = forwardRef<
     // --- Deep Analysis Modal State ---
     const [deepAnalysisData, setDeepAnalysisData] =
       useState<RelationshipDeepAnalysisData | null>(null);
+
+    // --- Create Relationship State ---
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const { mutate: createRelationship, isPending: isCreating } =
+      useCreateRelationship(projectId);
 
     // --- Timeline State (4D Visualization) ---
     const [currentChapter, setCurrentChapter] = useState(1);
@@ -1233,8 +1244,12 @@ export const CharacterGraph = forwardRef<
           onToggleTension={setShowTension}
           showLogicCheck={showLogicCheck}
           onToggleLogicCheck={setShowLogicCheck}
+          onToggleLogicCheck={setShowLogicCheck}
           enableGrouping={enableGrouping}
           onGroupingChange={setEnableGrouping}
+          onCreateRelationship={
+            onCreateRelationship || (() => setIsCreateDialogOpen(true))
+          }
         />
 
         {/* 캐릭터 검색 오버레이 */}
@@ -1251,7 +1266,26 @@ export const CharacterGraph = forwardRef<
           isOpen={deepAnalysisData !== null}
           onClose={() => setDeepAnalysisData(null)}
           data={deepAnalysisData}
+          onRelationshipDeleted={() => {
+            setDeepAnalysisData(null);
+          }}
         />
+
+        {!onCreateRelationship && (
+          <CreateRelationshipDialog
+            isOpen={isCreateDialogOpen}
+            onClose={() => setIsCreateDialogOpen(false)}
+            characters={characters}
+            isCreating={isCreating}
+            onCreate={(data) => {
+              createRelationship(data, {
+                onSuccess: () => {
+                  setIsCreateDialogOpen(false);
+                },
+              });
+            }}
+          />
+        )}
       </div>
     );
   },

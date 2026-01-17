@@ -22,7 +22,7 @@ export interface SuggestionItem {
 
 export interface MentionListProps {
   items: SuggestionItem[];
-  command: (item: { id: string; label: string; type: TagType }) => void;
+  command: (item: SuggestionItem) => void;
   allCharacters?: Character[];
 }
 
@@ -32,7 +32,7 @@ export const MentionList = forwardRef((props: MentionListProps, ref) => {
   const selectItem = (index: number) => {
     const item = props.items[index];
     if (item) {
-      props.command({ id: item.id, label: item.label, type: item.type });
+      props.command(item);
     }
   };
 
@@ -98,19 +98,29 @@ export const MentionList = forwardRef((props: MentionListProps, ref) => {
 
   const selectedItem = props.items[selectedIndex];
 
+  const isActionContext = props.items[0]?.type === "action";
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -10 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="flex bg-white/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(164,119,100,0.15)] border-2 border-mocha-200 z-50 overflow-hidden ring-1 ring-white/20"
+      className={cn(
+        "bg-white/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(164,119,100,0.15)] border-2 border-mocha-200 z-50 overflow-hidden ring-1 ring-white/20",
+        isActionContext ? "w-[340px]" : "flex",
+      )}
     >
       {/* List Section */}
-      <div className="w-[300px] flex flex-col bg-white/50">
+      <div
+        className={cn(
+          "flex flex-col bg-white/50",
+          isActionContext ? "w-full" : "w-[300px]",
+        )}
+      >
         <div className="px-5 py-3.5 bg-gradient-to-r from-mocha-50/60 to-white/20 border-b border-mocha-100/50">
           <div className="flex justify-between items-center text-[12px] uppercase tracking-[0.15em] font-black text-[#7D5A4B]">
-            <span>Suggestions</span>
+            <span>{isActionContext ? "Actions" : "Suggestions"}</span>
             <span className="opacity-50 font-sans font-bold text-[10px]">
               ⏎ select
             </span>
@@ -155,9 +165,11 @@ export const MentionList = forwardRef((props: MentionListProps, ref) => {
                     : "scale-90 -rotate-3",
                   item.type === "conflict"
                     ? "bg-rose-100 text-rose-600 ring-1 ring-rose-200/50"
-                    : item.type === "character"
-                      ? "bg-[#F1F0EC] text-[#A47764] ring-1 ring-[#A47764]/20"
-                      : "bg-amber-50 text-amber-600 ring-1 ring-amber-200/50",
+                    : item.type === "action"
+                      ? "bg-sky-50 text-sky-600 ring-1 ring-sky-200/50"
+                      : item.type === "character"
+                        ? "bg-[#F1F0EC] text-[#A47764] ring-1 ring-[#A47764]/20"
+                        : "bg-amber-50 text-amber-600 ring-1 ring-amber-200/50",
                 )}
               >
                 {item.type === "character" &&
@@ -169,11 +181,15 @@ export const MentionList = forwardRef((props: MentionListProps, ref) => {
                   />
                 ) : (
                   <>
-                    {item.type === "conflict"
-                      ? "#"
-                      : item.type === "character"
-                        ? "@"
-                        : "!"}
+                    {item.type === "conflict" ? (
+                      "#"
+                    ) : item.type === "action" ? (
+                      <span className="text-xl">✨</span>
+                    ) : item.type === "character" ? (
+                      "@"
+                    ) : (
+                      "!"
+                    )}
                   </>
                 )}
               </div>
@@ -215,7 +231,7 @@ export const MentionList = forwardRef((props: MentionListProps, ref) => {
       </div>
 
       {/* Preview Section - Integrated */}
-      {selectedItem && (
+      {selectedItem && !isActionContext && (
         <div className="w-[360px] border-l-2 border-mocha-200 bg-white/50 backdrop-blur-sm p-1">
           <AnimatePresence mode="wait">
             <motion.div

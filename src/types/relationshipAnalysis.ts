@@ -165,6 +165,13 @@ export interface AnalysisCharacterInfo {
 export interface RelationshipDeepAnalysisData {
   /** 관계 고유 ID */
   relationshipId: string;
+  /** 역방향 관계 정보 (비대칭 편집용) */
+  reverseRelationship?: {
+    id: string;
+    types: string[];
+    strength: number;
+    description?: string;
+  };
   /** 프로젝트 ID */
   projectId: string;
   // 캐릭터 정보

@@ -33,7 +33,10 @@ export function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="max-w-[420px]">
+      <AlertDialogContent
+        className="max-w-[420px] z-[201]"
+        overlayClassName="z-[200]"
+      >
         <AlertDialogHeader className="space-y-4">
           <div className="mx-auto w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
             <AlertTriangle className="w-6 h-6 text-rose-600" />

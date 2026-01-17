@@ -8,8 +8,18 @@ import {
   forwardRef,
   useImperativeHandle,
   useRef,
+  useState,
+  type ForwardedRef,
 } from "react";
-import { Send, Square } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Send, Square, Sparkles, BookOpen, User, Feather } from "lucide-react";
 import { Button } from "@stolink/ui";
 import { createSuggestionConfig } from "./ai-chat/mentionSuggestion";
 import { cn } from "@/lib/utils";
@@ -18,6 +28,40 @@ import type { Character } from "@/types/character";
 import type { Event } from "@/types/event";
 import type { Conflict } from "@/types/analysisResult";
 import type { ConsistencyReport } from "@/types/analysisResult";
+
+// Quick Actions Definition
+const QUICK_ACTIONS = [
+  {
+    icon: Sparkles,
+    label: "개연성 체크",
+    description: "논리적 오류와 설정 충돌을 분석합니다.",
+    prompt:
+      "현재 작성된 내용의 개연성을 분석하고, 논리적 오류가 있다면 지적해줘.",
+    color: "text-amber-600",
+  },
+  {
+    icon: BookOpen,
+    label: "다음 전개 제안",
+    description: "흥미로운 스토리 진행 방향을 추천합니다.",
+    prompt:
+      "이 다음 장면으로 이어질 수 있는 흥미로운 전개 방향을 3가지만 제안해줘.",
+    color: "text-blue-600",
+  },
+  {
+    icon: User,
+    label: "캐릭터 심리 분석",
+    description: "등장인물의 숨겨진 의도와 감정을 파악합니다.",
+    prompt: "현재 장면에서 등장인물들의 심리 상태와 숨겨진 의도를 분석해줘.",
+    color: "text-rose-600",
+  },
+  {
+    icon: Feather,
+    label: "문체 교정",
+    description: "더 매끄럽고 문학적인 문장으로 다듬습니다.",
+    prompt: "작성된 문장을 더 매끄럽고 문학적인 표현으로 다듬어줘.",
+    color: "text-emerald-600",
+  },
+];
 
 interface AIChatInputProps {
   characters: Character[] | undefined;
@@ -37,8 +81,8 @@ export interface AIChatInputRef {
   setInput: (text: string) => boolean;
 }
 
-export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
-  (props, ref) => {
+export const AIChatInput = forwardRef(
+  (props: AIChatInputProps, ref: ForwardedRef<AIChatInputRef>) => {
     // 1. Prepare Data Options for Suggestions
     const conflictOptions: SuggestionItem[] = useMemo(() => {
       if (!props.consistencyReport?.conflicts) return [];
@@ -95,19 +139,50 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
       eventOptionsRef.current = eventOptions;
     }, [conflictOptions, characterOptions, eventOptions]);
 
+    const slashOptions: SuggestionItem[] = useMemo(
+      () =>
+        QUICK_ACTIONS.map((action) => ({
+          id: action.label,
+          label: action.label,
+          subLabel: action.description,
+          type: "action" as any, // Using 'action' as a temporary type or casting
+          data: action as any,
+        })),
+      [],
+    );
+
     // 2. Configure Extensions
     const extensions = useMemo(() => {
       return [
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         StarterKit.configure({ history: false } as any),
         Placeholder.configure({
-          placeholder: props.placeholder || "메시지를 입력하세요...",
+          placeholder:
+            props.placeholder ||
+            "메시지를 입력하세요... ('/'를 눌러 빠른 메뉴)",
+        }),
+        Mention.extend({ name: "slashCommand" }).configure({
+          suggestion: {
+            char: "/",
+            command: ({ editor, range, props }) => {
+              // Custom command to insert text instead of node
+              const prompt = props.data?.prompt || "";
+              editor
+                .chain()
+                .focus()
+                .deleteRange(range)
+                .insertContent(prompt)
+                .run();
+            },
+            ...createSuggestionConfig(slashOptions),
+          },
         }),
         Mention.extend({ name: "conflictMention" }).configure({
           HTMLAttributes: {
             class:
-              "inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border-2 border-rose-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default mt-1",
+              "inline-flex items-center px-3 py-1.5 mx-0.5 text-sm font-semibold tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border border-rose-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default",
           },
+          renderLabel: ({ node }) => node.attrs.label,
           suggestion: {
             char: "#",
             // eslint-disable-next-line react-hooks/refs
@@ -117,8 +192,9 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
         Mention.extend({ name: "characterMention" }).configure({
           HTMLAttributes: {
             class:
-              "inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border-2 border-sage-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default mt-1",
+              "inline-flex items-center px-3 py-1.5 mx-0.5 text-sm font-semibold tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border border-sage-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default",
           },
+          renderLabel: ({ node }) => node.attrs.label,
           suggestion: {
             char: "@",
             // eslint-disable-next-line react-hooks/refs
@@ -130,8 +206,9 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
         Mention.extend({ name: "eventMention" }).configure({
           HTMLAttributes: {
             class:
-              "inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border-2 border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default mt-1",
+              "inline-flex items-center px-3 py-1.5 mx-0.5 text-sm font-semibold tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md select-none align-middle box-decoration-clone transition-all hover:shadow-md hover:scale-105 cursor-default",
           },
+          renderLabel: ({ node }) => node.attrs.label,
           suggestion: {
             char: "!",
             // eslint-disable-next-line react-hooks/refs
@@ -201,13 +278,16 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
       propsRef.current = props;
     });
 
+    const [, forceUpdate] = useState({});
+
     const editor = useEditor({
       extensions,
       content: "",
+      onUpdate: () => forceUpdate({}),
       editorProps: {
         attributes: {
           class:
-            "prose prose-sm max-w-none focus:outline-none min-h-[64px] max-h-[160px] overflow-y-auto w-full resize-none bg-white/80 p-5 pr-14 text-[0.95rem] rounded-2xl shadow-paper border border-mocha-200 focus:ring-2 focus:ring-mocha-100 focus:border-mocha-300 backdrop-blur-sm transition-all font-serif italic text-espresso-900 scrollbar-thin scrollbar-thumb-mocha-100 placeholder:text-mocha-300/80",
+            "prose prose-sm max-w-none focus:outline-none min-h-[36px] max-h-[160px] overflow-y-auto w-full resize-none bg-white py-2 pl-3 pr-10 text-[11px] rounded-xl shadow-sm border border-mocha-200 focus:ring-1 focus:ring-mocha-300 focus:border-mocha-400 transition-all font-serif text-espresso-900 scrollbar-thin scrollbar-thumb-mocha-100 placeholder:text-mocha-300/80 placeholder:italic placeholder:font-sans leading-relaxed",
         },
         handleKeyDown: (view, event) => {
           if (event.key === "Enter" && !event.shiftKey) {
@@ -297,7 +377,9 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
     return (
       <div className="relative group w-full">
         <EditorContent editor={editor} />
-        <div className="absolute right-3 bottom-3 z-10 bg-transparent">
+
+        {/* Right: Send / Cancel Button */}
+        <div className="absolute right-2 bottom-1.5 z-10 bg-transparent">
           {props.streaming ? (
             <Button
               type="button"
@@ -315,15 +397,15 @@ export const AIChatInput = forwardRef<AIChatInputRef, AIChatInputProps>(
               size="icon"
               disabled={props.disabled || editor.isEmpty}
               className={cn(
-                "h-10 w-10 rounded-xl transition-all duration-500 flex items-center justify-center border",
+                "h-9 w-9 rounded-xl transition-all duration-500 flex items-center justify-center border shadow-sm",
                 !editor.isEmpty && !props.disabled
-                  ? "bg-espresso-900 border-espresso-900 text-white shadow-lg shadow-espresso-900/10 hover:bg-black"
+                  ? "bg-espresso-900 border-espresso-900 text-white shadow-espresso-900/10 hover:bg-black"
                   : "bg-white border-mocha-100 text-mocha-200",
               )}
             >
               <Send
                 className={cn(
-                  "h-4.5 w-4.5 transition-transform duration-300",
+                  "h-4 w-4 transition-transform duration-300",
                   !editor.isEmpty && "translate-x-0.5 -translate-y-0.5",
                 )}
               />

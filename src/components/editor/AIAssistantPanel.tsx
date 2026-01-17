@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   RotateCcw,
   Sparkles,
@@ -15,16 +15,24 @@ import {
   useChatStream,
   type SourceChunk,
   type ChatMessage,
+  type ContextCard,
 } from "@/hooks/useChatStream";
+// Removed duplicate import
+
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useUIStore } from "@/stores/useUIStore";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useProjectEvents } from "@/hooks/useEvents";
+import { useEditorStore } from "@/stores/useEditorStore";
 import { AIChatInput, type AIChatInputRef } from "./AIChatInput";
+import { MarkdownRenderer } from "./ai-chat/MarkdownRenderer";
+import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
 
 import type { ConsistencyReport } from "@/types/analysisResult";
 import type { Character } from "@/types/character";
+import { ChatRelationshipCard } from "./ai-chat/ChatRelationshipCard";
+import type { CardData } from "@/hooks/useChatStream";
 
 interface AIAssistantPanelProps {
   projectId: string | null;
@@ -44,6 +52,7 @@ export default function AIAssistantPanel({
     analysisComplete,
     currentResponse,
     currentSources,
+    currentCards,
     sendMessage,
     cancelStream,
     resetSession,
@@ -68,7 +77,6 @@ export default function AIAssistantPanel({
   // 분석 완료 시 애니메이션 트리거
   useEffect(() => {
     if (analysisComplete) {
-      // eslint-disable-next-line
       setShowCompleteAnimation(true);
       // 0.8초 후 애니메이션 숨기고 응답 표시
       const timer = setTimeout(() => {
@@ -126,6 +134,33 @@ export default function AIAssistantPanel({
   // Tag Suggestion Data Sources
   const { data: characters } = useCharacters(projectId ?? "");
   const { data: events } = useProjectEvents(projectId);
+
+  // Character Detail Dialog State
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+    null,
+  );
+  const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
+
+  // Tag Click Handler
+  const handleTagClick = useCallback(
+    (tag: { type: string; label: string; character?: Character }) => {
+      if (tag.type === "character" && tag.character) {
+        setSelectedCharacter(tag.character);
+        setCharacterDialogOpen(true);
+      } else if (tag.type === "character" && !tag.character) {
+        // 캐릭터가 매칭되지 않은 경우, 이름으로 찾기 시도
+        const foundChar = characters?.find(
+          (c) => c.profile?.name === tag.label,
+        );
+        if (foundChar) {
+          setSelectedCharacter(foundChar);
+          setCharacterDialogOpen(true);
+        }
+      }
+      // conflict, event 태그는 추후 확장 가능
+    },
+    [characters],
+  );
 
   return (
     <div className="flex flex-col h-full bg-cloud-50/30 relative overflow-hidden">
@@ -194,6 +229,7 @@ export default function AIAssistantPanel({
                   key={message.id}
                   message={message}
                   characters={characters || []}
+                  onTagClick={handleTagClick}
                 />
               ))}
 
@@ -325,15 +361,27 @@ export default function AIAssistantPanel({
                       check-bot
                     </span>
                   </div>
-                  <div className="bg-white border border-mocha-100/50 text-espresso-900 rounded-2xl shadow-paper p-5 w-full">
-                    <div className="text-[0.95rem] leading-[1.8] font-sans font-normal tracking-normal whitespace-pre-wrap">
-                      {currentResponse}
-                      <motion.span
-                        animate={{ opacity: [0, 1, 0] }}
-                        transition={{ duration: 0.8, repeat: Infinity }}
-                        className="inline-block w-1.5 h-4 bg-mocha-400 align-middle ml-1 rounded-sm"
-                      />
-                    </div>
+                  <div className="bg-white border border-mocha-100/50 text-espresso-900 rounded-2xl shadow-paper rounded-tl-none p-4 w-full max-w-[90%] break-words relative shadow-sm">
+                    <MarkdownRenderer
+                      content={currentResponse + "▍"}
+                      characters={characters}
+                      onTagClick={handleTagClick}
+                    />
+                    {currentCards.length > 0 && (
+                      <div className="mt-4 flex flex-col gap-3">
+                        {currentCards.map((card: ContextCard, idx: number) => {
+                          if (card.cardType === "relationship") {
+                            return (
+                              <ChatRelationshipCard
+                                key={`stream-card-${idx}`}
+                                data={card.data}
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
                     {currentSources.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-mocha-100/30">
                         <SourceList sources={currentSources} />
@@ -488,8 +536,8 @@ export default function AIAssistantPanel({
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      {/* Input Area - Marginalia Style */}
-      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-cloud-50 via-cloud-50 to-transparent">
+      {/* Quick Action Chips & Input Area */}
+      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-cloud-50 via-cloud-50 to-transparent flex flex-col gap-3">
         <AIChatInput
           ref={chatInputRef}
           projectId={projectId}
@@ -507,6 +555,17 @@ export default function AIAssistantPanel({
           disabled={streaming || !projectId}
         />
       </div>
+
+      {/* Character Detail Dialog */}
+      <CharacterDetailDialog
+        character={selectedCharacter}
+        isOpen={characterDialogOpen}
+        onClose={() => {
+          setCharacterDialogOpen(false);
+          setSelectedCharacter(null);
+        }}
+        projectId={projectId ?? undefined}
+      />
     </div>
   );
 }
@@ -517,9 +576,15 @@ export default function AIAssistantPanel({
 function MessageBubble({
   message,
   characters = [],
+  onTagClick,
 }: {
   message: ChatMessage;
   characters?: Character[];
+  onTagClick?: (tag: {
+    type: string;
+    label: string;
+    character?: Character;
+  }) => void;
 }) {
   const isUser = message.role === "user";
 
@@ -547,10 +612,10 @@ function MessageBubble({
 
       <div
         className={cn(
-          "max-w-[95%] p-5 transition-all duration-300 relative",
+          "max-w-[85%] p-4 relative break-words shadow-sm",
           isUser
-            ? "text-espresso-800 font-serif italic text-lg leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
-            : "text-espresso-900 font-sans leading-[1.8] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
+            ? "text-espresso-800 font-serif italic text-[0.95rem] leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
+            : "text-espresso-900 font-sans text-[0.9rem] leading-[1.7] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
         )}
       >
         {!isUser && (
@@ -558,66 +623,90 @@ function MessageBubble({
             <Quote className="w-4 h-4 text-mocha-100 opacity-50" />
           </div>
         )}
-        <div className="whitespace-pre-wrap">
-          {(() => {
-            // Parse and style tags: [#Conflict], [@Character], [!Event]
-            const parts = message.content.split(
-              /(\[#[^\]]+\]|\[@[^\]]+\]|\[![^\]]+\])/g,
-            );
-            return parts.map((part, index) => {
-              if (part.startsWith("[#") && part.endsWith("]")) {
-                const label = part.slice(2, -1);
-                return (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border-2 border-rose-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
-                  >
-                    #{label}
-                  </span>
+        <div className="min-w-0">
+          {isUser ? (
+            <div className="whitespace-pre-wrap">
+              {(() => {
+                // Parse and style tags: [#Conflict], [@Character], [!Event]
+                const parts = message.content.split(
+                  /(\[#[^\]]+\]|\[@[^\]]+\]|\[![^\]]+\])/g,
                 );
-              }
-              if (part.startsWith("[@") && part.endsWith("]")) {
-                const label = part.slice(2, -1);
-                const char = characters.find(
-                  (c) => c.profile?.name === label, // Simplified check
-                );
-                const imageUrl = char?.imageUrl;
+                return parts.map((part, index) => {
+                  if (part.startsWith("[#") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border border-rose-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {label}
+                      </span>
+                    );
+                  }
+                  if (part.startsWith("[@") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    const char = characters.find(
+                      (c) => c.profile?.name === label,
+                    );
+                    const imageUrl = char?.imageUrl;
 
-                return (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 mx-1 text-[15px] font-black tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border-2 border-sage-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
-                  >
-                    {imageUrl && (
-                      <img
-                        src={resolveImageUrl(imageUrl)}
-                        alt={label}
-                        className="w-5 h-5 rounded-full object-cover border border-sage-200/50 -ml-1"
-                      />
-                    )}
-                    @{label}
-                  </span>
-                );
-              }
-              if (part.startsWith("[!") && part.endsWith("]")) {
-                const label = part.slice(2, -1);
-                return (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3.5 py-1.5 mx-1 text-[15px] font-black tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border-2 border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
-                  >
-                    !{label}
-                  </span>
-                );
-              }
-              return part;
-            });
-          })()}
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border border-sage-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {imageUrl && (
+                          <img
+                            src={resolveImageUrl(imageUrl)}
+                            alt={label}
+                            className="w-3 h-3 rounded-full object-cover border border-sage-200/50 -ml-0.5"
+                          />
+                        )}
+                        {label}
+                      </span>
+                    );
+                  }
+                  if (part.startsWith("[!") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {label}
+                      </span>
+                    );
+                  }
+                  return part;
+                });
+              })()}
+            </div>
+          ) : (
+            <MarkdownRenderer
+              content={message.content}
+              characters={characters}
+              onTagClick={onTagClick}
+            />
+          )}
         </div>
 
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="mt-8 pt-6 border-t border-mocha-100/30">
             <SourceList sources={message.sources} />
+          </div>
+        )}
+
+        {/* Card Rendering */}
+        {!isUser && message.cards && message.cards.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3">
+            {message.cards.map((card, idx) => {
+              if (card.cardType === "relationship") {
+                return (
+                  <ChatRelationshipCard key={`card-${idx}`} data={card.data} />
+                );
+              }
+              return null;
+            })}
           </div>
         )}
       </div>
@@ -662,33 +751,57 @@ function SourceList({ sources }: { sources: SourceChunk[] }) {
             className="mt-6 space-y-6 overflow-hidden pl-2"
           >
             {sources.map((source, idx) => (
-              <div
-                key={source.chunkUuid}
-                className="relative pl-6 group/source"
-              >
-                {/* Vertical Line */}
-                <div className="absolute left-[7.5px] top-[14px] bottom-[-24px] w-px bg-mocha-100 last:bottom-0 group-last/source:hidden" />
-                {/* Node */}
-                <div className="absolute left-0 top-1 w-4 h-4 rounded-full border border-mocha-100 bg-white flex items-center justify-center z-10 shadow-sm transition-transform group-hover/source:scale-110">
-                  <div className="w-1.5 h-1.5 rounded-full bg-mocha-400 group-hover/source:bg-sage-600 transition-colors" />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-mocha-300 uppercase tracking-tighter">
-                    Source {idx + 1}
-                  </span>
-                  <span className="text-xs font-bold text-espresso-800 leading-tight">
-                    {source.metadata?.documentTitle || "Untitled Fragment"}
-                  </span>
-                  <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic">
-                    "{source.content}"
-                  </div>
-                </div>
-              </div>
+              <SourceItem key={source.chunkUuid} source={source} idx={idx} />
             ))}
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function SourceItem({ source, idx }: { source: SourceChunk; idx: number }) {
+  const setCurrentChapter = useEditorStore((state) => state.setCurrentChapter);
+  // Optional: Highlight effect on hover
+
+  const handleClick = () => {
+    if (source.metadata?.documentId) {
+      setCurrentChapter(source.metadata.documentId);
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      role="button"
+      className="relative pl-6 group/source cursor-pointer transition-all hover:bg-mocha-50/30 rounded-lg -ml-2 py-2 pr-2"
+    >
+      {/* Vertical Line */}
+      <div className="absolute left-[7.5px] top-[14px] bottom-[-24px] w-px bg-mocha-100 last:bottom-0 group-last/source:hidden" />
+      {/* Node */}
+      <div className="absolute left-0 top-3 w-4 h-4 rounded-full border border-mocha-100 bg-white flex items-center justify-center z-10 shadow-sm transition-transform group-hover/source:scale-110 group-hover/source:border-mocha-300">
+        <div className="w-1.5 h-1.5 rounded-full bg-mocha-400 group-hover/source:bg-mocha-600 transition-colors" />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black text-mocha-300 uppercase tracking-tighter group-hover/source:text-mocha-500 transition-colors">
+            Source {idx + 1}
+          </span>
+          {source.metadata?.documentId && (
+            <span className="text-[10px] text-mocha-400 opacity-0 group-hover/source:opacity-100 transition-opacity">
+              이동하기 →
+            </span>
+          )}
+        </div>
+
+        <span className="text-xs font-bold text-espresso-800 leading-tight group-hover/source:text-mocha-900 group-hover/source:underline decoration-mocha-200 underline-offset-2 transition-all">
+          {source.metadata?.documentTitle || "Untitled Fragment"}
+        </span>
+        <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic group-hover/source:border-mocha-200/50 group-hover/source:bg-white transition-all shadow-sm">
+          "{source.content}"
+        </div>
+      </div>
     </div>
   );
 }

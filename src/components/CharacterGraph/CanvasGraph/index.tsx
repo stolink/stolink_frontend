@@ -59,6 +59,7 @@ interface CharacterGraphCanvasProps {
   showSearch?: boolean;
   onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
+  onCreateRelationship?: () => void;
 }
 
 export interface CharacterGraphCanvasRef {
@@ -89,6 +90,7 @@ export const CharacterGraphCanvas = forwardRef<
       showSearch = true,
       onNodeDragEnd,
       nodeChanges,
+      onCreateRelationship,
     },
     ref,
   ) => {
@@ -957,6 +959,7 @@ export const CharacterGraphCanvas = forwardRef<
           onFilterChange={handleFilterChange}
           showMainOnly={showMainOnly}
           onShowMainOnlyChange={setShowMainOnly}
+          onCreateRelationship={onCreateRelationship}
         />
 
         {/* Search Overlay */}
