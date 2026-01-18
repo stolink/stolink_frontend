@@ -10,7 +10,6 @@ import { useParams, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
-import { type Editor } from "@tiptap/react";
 
 // Core Components
 import {
@@ -152,7 +151,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
-  const [editor, setEditor] = useState<Editor | null>(null);
+
   const { toast } = useToast();
 
   const debouncedSetCharacterCount = useMemo(
@@ -732,7 +731,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
           )}
         >
           <EditorToolbar
-            editor={editor}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             isSidebarVisible={isSidebarOpen}
             currentFolderTitle={projectTitle}
@@ -779,7 +777,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isFocusMode={isFocusMode}
               currentContent={documentContent}
               currentSectionTitle={document?.title || ""}
-              onEditorCreate={setEditor}
               onCharacterCountChange={(count: number) => {
                 // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
                 throttledUIUpdate(
@@ -802,7 +799,6 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               onSelectSection={handleSelectSection}
               documents={documents}
               isDemo={isDemo}
-              onEditorCreate={setEditor}
             />
           </Suspense>
         </main>

@@ -19,7 +19,7 @@ import type {
   AsymmetricStrength,
 } from "@/types/relationshipAnalysis";
 import { DEFAULT_TIMELINE_CONFIG } from "@/types/relationshipAnalysis";
-import { RELATION_PRIORITY, type RelationType } from "../../constants";
+import { RELATION_PRIORITY, toUIRelationType } from "../../constants";
 
 /**
  * 시간 감쇠를 적용한 누적 점수 계산

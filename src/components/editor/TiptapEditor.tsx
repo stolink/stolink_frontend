@@ -845,8 +845,12 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           </BubbleMenu>
         )}
 
-        {/* Toolbar */}
-        {!hideToolbar && !readOnly && <EditorToolbar editor={editor} />}
+        {/* Internal Formatting Toolbar */}
+        {!readOnly && (
+          <div className="sticky top-0 z-50">
+            <EditorToolbar editor={editor} />
+          </div>
+        )}
 
         {/* Editor Content - Apply settings from store */}
         <div

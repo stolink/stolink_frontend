@@ -27,7 +27,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/design-system/components/Button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,8 +52,8 @@ function ToolbarButton({
 }: ToolbarButtonProps) {
   return (
     <Button
-      intent="ghost"
-      size="icon-sm"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -78,8 +78,6 @@ interface EditorToolbarProps {
   onExport?: () => void;
   onToggleRightSidebar?: () => void;
   rightSidebarOpen?: boolean;
-  onToggleSettings?: () => void;
-  isSettingsOpen?: boolean;
 }
 
 export function EditorToolbar({
@@ -92,8 +90,6 @@ export function EditorToolbar({
   onExport,
   onToggleRightSidebar,
   rightSidebarOpen = false,
-  onToggleSettings,
-  isSettingsOpen = false,
 }: EditorToolbarProps) {
   // Subscribe to editor state changes for immediate re-render on formatting changes
   // This fixes the ~0.5s delay in button active state updates
@@ -185,7 +181,7 @@ export function EditorToolbar({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            intent="ghost"
+            variant="ghost"
             size="sm"
             className={cn(
               "px-3 text-small font-bold",
@@ -263,7 +259,7 @@ export function EditorToolbar({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            intent="ghost"
+            variant="ghost"
             size="icon-sm"
             className={cn(
               "rounded-lg",
@@ -357,20 +353,6 @@ export function EditorToolbar({
         {onExport && (
           <ToolbarButton onClick={onExport} tooltip="내보내기">
             <Share2 className="h-4 w-4" />
-          </ToolbarButton>
-        )}
-        {onToggleSettings && (
-          <ToolbarButton
-            onClick={onToggleSettings}
-            isActive={isSettingsOpen}
-            tooltip="화면 설정"
-          >
-            <div className="flex items-center gap-1.5">
-              <Settings2 className="h-4 w-4" />
-              <span className="text-xs font-medium hidden sm:inline-block">
-                설정
-              </span>
-            </div>
           </ToolbarButton>
         )}
       </div>
