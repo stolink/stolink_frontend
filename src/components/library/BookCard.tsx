@@ -180,8 +180,9 @@ export function BookCard({
                 <PerformanceImage
                   src={coverImage}
                   alt={title}
-                  className="h-full w-full object-contain rounded-sm"
+                  className="h-full w-full rounded-sm"
                   aspectRatio={3 / 4}
+                  objectFit="contain"
                 />
               </div>
             </div>

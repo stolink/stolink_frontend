@@ -6,6 +6,8 @@ interface PerformanceImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   fallbackSrc?: string;
   lowResSrc?: string;
   priority?: boolean;
+  imgClassName?: string;
+  objectFit?: "contain" | "cover" | "fill" | "none" | "scale-down";
 }
 
 /**
@@ -24,6 +26,8 @@ export const PerformanceImage: React.FC<PerformanceImageProps> = ({
   lowResSrc,
   priority = false,
   style,
+  imgClassName,
+  objectFit = "cover",
   ...props
 }) => {
   const [currentSrc, setCurrentSrc] = useState<string | undefined>(
@@ -65,6 +69,15 @@ export const PerformanceImage: React.FC<PerformanceImageProps> = ({
     ...style,
   };
 
+  // Determine object-fit class
+  const objectFitClass = {
+    contain: "object-contain",
+    cover: "object-cover",
+    fill: "object-fill",
+    none: "object-none",
+    "scale-down": "object-scale-down",
+  }[objectFit];
+
   return (
     <div className={cn("overflow-hidden", className)} style={containerStyle}>
       <img
@@ -74,8 +87,10 @@ export const PerformanceImage: React.FC<PerformanceImageProps> = ({
         onLoad={handleLoad}
         onError={handleError}
         className={cn(
-          "w-full h-full object-cover transition-opacity duration-500",
+          "w-full h-full transition-opacity duration-500",
+          objectFitClass,
           isLoaded ? "opacity-100" : "opacity-0",
+          imgClassName,
         )}
         {...props}
       />
