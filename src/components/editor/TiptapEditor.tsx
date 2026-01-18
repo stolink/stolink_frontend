@@ -91,7 +91,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       hasNextPage,
       isFetchingNextPage,
     },
-    ref,
+    ref
   ) => {
     const { id: projectId } = useParams<{ id: string }>();
     const [zoom, setZoom] = useState(DEFAULT_ZOOM);
@@ -131,7 +131,14 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Destructure behavior settings
     const typewriterMode = behavior?.typewriterMode ?? "off";
-    // Note: focusModeEnabled, smartQuotes, smartDashes, smartEllipsis are intentionally not destructured as they are not yet implemented.
+
+    // useRef for typewriter mode to use in callbacks without dependencies
+    const typewriterModeRef = useRef(typewriterMode);
+    useEffect(() => {
+      typewriterModeRef.current = typewriterMode;
+    }, [typewriterMode]);
+
+    // Note: focusModeEnabled, smartQuotes, smartDashes, maxEmptyLines are intentionally not destructured as they are not yet implemented.
 
     // Get CSS variables and theme class from settings
     const editorSettings = {
@@ -174,7 +181,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       const exts = [
         StarterKit.configure({
           heading: {
-            levels: [1, 2, 3],
+            levels: [1, 2, 3, 4, 5, 6],
           },
         }),
         Placeholder.configure({
@@ -184,7 +191,37 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         Highlight.extend({
           addAttributes() {
             return {
-              ...this.parent?.(),
+              color: {
+                default: null,
+                parseHTML: (element) =>
+                  element.getAttribute("data-color") ||
+                  element.style.backgroundColor,
+                renderHTML: (attributes) => {
+                  if (!attributes.color) {
+                    return {};
+                  }
+
+                  let color = attributes.color;
+                  const isDarkMode =
+                    editorSettings.visual.theme === "dark" ||
+                    editorSettings.visual.theme === "true-black";
+
+                  // Dark Mode: Add 40% opacity to preserve white text readability
+                  // Pastel colors on dark background can be too bright/low-contrast against white text.
+                  // Making them semi-transparent allows the dark background to dim them.
+                  if (
+                    isDarkMode &&
+                    color.startsWith("#") &&
+                    color.length === 7
+                  ) {
+                    color = `${color}66`; // Hex alpha for ~40% opacity
+                  }
+
+                  return {
+                    style: `background-color: ${color} !important; color: inherit;`,
+                  };
+                },
+              },
               id: {
                 default: null,
                 parseHTML: (element) => element.getAttribute("data-id"),
@@ -202,9 +239,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }).configure({
           multicolor: true,
         }),
-        CharacterCount.configure({
-          // limit removed for backend paging
-        }),
+        CharacterCount.configure({}),
         TextAlign.configure({
           types: ["heading", "paragraph"],
         }),
@@ -243,12 +278,23 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       extensions,
       content: sanitizeEditorContent(initialContent ?? DEFAULT_CONTENT),
       editorProps: {
+        /**
+         * 스크롤 동작을 가로채서 제어합니다.
+         * 타자기 모드가 활성화된 경우(off가 아님), 기본 스크롤 동작을 차단(return true)하고
+         * TypewriterScroll 확장이 스크롤을 전담하도록 하여 화면 흔들림(널뛰기)을 방지합니다.
+         */
+        handleScrollToSelection: (_view) => {
+          if (typewriterModeRef.current !== "off") {
+            return true; // Prevent default scroll behavior in typewriter mode
+          }
+          return false;
+        },
         attributes: {
           class: cn(
             // Remove prose class - use direct styling for full width
             "w-full",
             "focus:outline-none min-h-[500px] px-6 py-6",
-            readOnly && "pointer-events-none opacity-80",
+            readOnly && "pointer-events-none opacity-80"
           ),
           spellcheck: "false",
         },
@@ -265,18 +311,49 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       },
       onUpdate: ({ editor }) => {
         // Immediate update for character count (lightweight)
+        // 순수 텍스트만 계산 (줄바꿈 제외, 띄어쓰기 포함)
         if (onUpdateRef.current) {
-          onUpdateRef.current(editor.storage.characterCount.characters());
+          const textContent = editor.state.doc.textContent;
+          // 줄바꿈만 제외 (띄어쓰기는 포함)
+          const pureCharCount = textContent.replace(/[\r\n]/g, "").length;
+          onUpdateRef.current(pureCharCount);
         }
 
         // Trigger debounced heavy updates
         debouncedUpdates(editor);
       },
       // Note: Typewriter scroll now handled by TypewriterScroll extension
-      onTransaction: () => {
+      onTransaction: ({ transaction, editor }) => {
+        // Detect Undo/Redo (history transactions) and sync foreshadowing immediately
+        const isHistoryTransaction = transaction.getMeta("history$");
+        if (isHistoryTransaction && !editor.isDestroyed) {
+          // Immediately sync foreshadowing state on Undo/Redo
+          const currentIds = new Set<string>();
+          editor.state.doc.descendants((node) => {
+            if (node.type.name === "foreshadowingSuggest" && node.attrs.id) {
+              currentIds.add(node.attrs.id);
+            }
+          });
+
+          const store = useForeshadowingStore.getState();
+          // Check for removed tags (Undo of add)
+          prevForeshadowingIdsRef.current.forEach((id) => {
+            if (!currentIds.has(id)) {
+              const fs = store.foreshadowings[id];
+              if (fs?.status === "recovered") {
+                store.markAsPending(id);
+              }
+            }
+          });
+          prevForeshadowingIdsRef.current = currentIds;
+        }
+
         // Prevent scroll resetting when transactions occur (like clicking/selection)
         // Only force scroll if we have a captured position and content might have jumped
         requestAnimationFrame(() => {
+          // 타자기 모드 사용 중일 때는 스크롤이 자동으로 제어되므로 간섭하지 않음
+          if (typewriterModeRef.current !== "off") return;
+
           if (editorContainerRef.current && scrollPositionRef.current > 0) {
             // If the current scroll is significantly different from what we expect,
             // it means a transaction might have reset it (e.g. setContent)
@@ -329,7 +406,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             onContentChangeRef.current(html);
           }
         }, 500),
-      [],
+      []
     );
 
     // Cancel debounce on unmount
@@ -358,6 +435,26 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         }
       }
     }, [editor, typewriterMode]);
+
+    // Apply focus mode setting when it changes
+    const focusModeEnabled = behavior?.focusMode ?? false;
+    useEffect(() => {
+      if (
+        editor &&
+        !editor.isDestroyed &&
+        editor.view &&
+        editor.view.dom &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor.commands as any).setFocusMode
+      ) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.commands as any).setFocusMode(focusModeEnabled);
+        } catch (_e) {
+          /* Ignored */
+        }
+      }
+    }, [editor, focusModeEnabled]);
 
     // Expose split functionality via ref
     useImperativeHandle(ref, () => ({
@@ -452,7 +549,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     const handleZoomIn = useCallback(() => adjustZoom(ZOOM_STEP), [adjustZoom]);
     const handleZoomOut = useCallback(
       () => adjustZoom(-ZOOM_STEP),
-      [adjustZoom],
+      [adjustZoom]
     );
 
     // Hide zoom controls after inactivity
@@ -490,7 +587,9 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     useEffect(() => {
       if (editor && onUpdateRef.current) {
         requestAnimationFrame(() => {
-          onUpdateRef.current?.(editor.storage.characterCount.characters());
+          const textContent = editor.state.doc.textContent;
+          const pureCharCount = textContent.replace(/[\r\n]/g, "").length;
+          onUpdateRef.current?.(pureCharCount);
         });
       }
     }, [editor]);
@@ -566,7 +665,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       const text = editor.state.doc.textBetween(
         editor.state.selection.from,
         editor.state.selection.to,
-        " ",
+        " "
       );
 
       if (!text?.trim() || !projectId) {
@@ -720,7 +819,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("bold")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("bold") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("bold") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Bold className="w-3.5 h-3.5" />
@@ -733,7 +832,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               aria-pressed={editor.isActive("italic")}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-mocha-50 transition-colors",
-                editor.isActive("italic") && "bg-mocha-100 text-mocha-700",
+                editor.isActive("italic") && "bg-mocha-100 text-mocha-700"
               )}
             >
               <Italic className="w-3.5 h-3.5" />
@@ -749,11 +848,17 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           ref={editorContainerRef}
           role="region"
           aria-label="편집 영역"
-          className="flex-1 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-mocha-200 scrollbar-track-transparent hover:scrollbar-thumb-mocha-300 transition-colors"
+          className={cn(
+            "flex-1 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-mocha-200 scrollbar-track-transparent hover:scrollbar-thumb-mocha-300 transition-colors",
+            // Apply theme class for CSS selector support (.theme-dark .ProseMirror)
+            `theme-${editorSettings.visual.theme}`,
+            focusModeEnabled && "focus-mode-active"
+          )}
           style={
             {
-              backgroundColor: "#FAFAF9", // Soft off-white - gentle on eyes
-              color: cssVariables["--st-editor-text-color"] || "#3D302A",
+              //cssVariables["--st-editor-bg-color"] ||
+              backgroundColor: "#FAFAF9", // Theme-aware background
+              // color: cssVariables["--st-editor-text-color"] || "#3D302A",
               "--st-editor-text-indent":
                 cssVariables["--st-editor-text-indent"],
               "--st-editor-paragraph-spacing":
@@ -779,10 +884,10 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             className={cn(
               "px-8 py-10 min-h-screen", // Removed transition-all to prevent focus scroll jumps
               editorSettings.visual.width !== "full" &&
-                "mx-auto my-4 bg-white shadow-sm border border-mocha-100 rounded-lg", // Paper sheet look for non-full width
+                "mx-auto my-4 shadow-sm rounded-lg", // Paper sheet look for non-full width
               editorSettings.visual.width === "full" && "px-12",
               !readOnly &&
-                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md", // Subtle focus effect
+                "focus-within:ring-1 focus-within:ring-mocha-200/50 focus-within:shadow-md" // Subtle focus effect
             )}
             style={{
               maxWidth: editorWidth,
@@ -790,9 +895,25 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               fontSize: `${fontSize}px`,
               lineHeight: editorSettings.typography.lineHeight,
               letterSpacing: `${editorSettings.typography.letterSpacing}em`,
+              // Theme-aware paper styling
+              backgroundColor:
+                editorSettings.visual.width !== "full"
+                  ? cssVariables["--st-editor-bg-color"] || "#FFFFFF"
+                  : "transparent",
+              borderWidth: editorSettings.visual.width !== "full" ? "1px" : "0",
+              borderColor:
+                editorSettings.visual.theme === "dark" ||
+                editorSettings.visual.theme === "true-black"
+                  ? "#5D504A" // Darker border for dark themes
+                  : "#E8E4E0", // Light border for light themes
             }}
           >
             <EditorContent editor={editor} className="w-full" />
+            <style>{`
+              .ProseMirror p {
+                line-height: ${editorSettings.typography.lineHeight} !important;
+              }
+            `}</style>
           </div>
         </div>
 
@@ -803,7 +924,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
               "absolute bottom-3 right-3 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm transition-all duration-200",
               showZoomControls
                 ? "opacity-100 px-2 py-1.5"
-                : "opacity-50 hover:opacity-100 px-2 py-1",
+                : "opacity-50 hover:opacity-100 px-2 py-1"
             )}
             onMouseEnter={() => setShowZoomControls(true)}
             onMouseLeave={() => setShowZoomControls(false)}
@@ -855,7 +976,7 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 TiptapEditor.displayName = "TiptapEditor";

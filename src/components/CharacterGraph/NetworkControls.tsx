@@ -58,6 +58,9 @@ interface NetworkControlsProps {
   onToggleTension?: (val: boolean) => void;
   showLogicCheck?: boolean;
   onToggleLogicCheck?: (val: boolean) => void;
+
+  /** 관계 생성 핸들러 */
+  onCreateRelationship?: () => void;
 }
 
 /**
@@ -84,6 +87,7 @@ export function NetworkControls({
   currentChapter,
   totalChapters,
   onChapterChange,
+  onCreateRelationship,
 }: NetworkControlsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -278,6 +282,35 @@ export function NetworkControls({
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* 좌측 하단 관계 생성 버튼 (범례 위) */}
+      {onCreateRelationship && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="absolute right-6 bottom-44 z-20"
+        >
+          <Button
+            onClick={onCreateRelationship}
+            className="h-11 pl-4 pr-5 rounded-full bg-mocha-600 hover:bg-mocha-700 text-white shadow-paper-floating border border-white/20 active:scale-95 transition-all flex items-center gap-2 group"
+            title="새로운 관계 생성"
+          >
+            <div className="relative">
+              <Heart className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+              <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow-sm">
+                <div className="relative w-2.5 h-2.5 flex items-center justify-center">
+                  <div className="w-1.5 h-0.5 bg-mocha-600 rounded-full absolute" />
+                  <div className="w-0.5 h-1.5 bg-mocha-600 rounded-full absolute" />
+                </div>
+              </div>
+            </div>
+            <span className="font-bold text-sm tracking-tight text-white/90 group-hover:text-white">
+              관계 추가
+            </span>
+          </Button>
+        </motion.div>
+      )}
 
       {/* 우측 상단 Insights Panel Toggle */}
       <div className="absolute right-3 top-3 z-20 flex gap-2">

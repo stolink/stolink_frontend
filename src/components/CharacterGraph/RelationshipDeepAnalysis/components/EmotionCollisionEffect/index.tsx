@@ -166,6 +166,12 @@ function CollisionMesh({
   // Debug logs
   // Debug logs removed for performance
 
+  /*
+   * Optimization Note:
+   * 'viewport' dependency removed from useMemo.
+   * Resolution is updated in useFrame, so we don't need to reconstruct
+   * the entire uniforms object on resize. This prevents stutter.
+   */
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
@@ -199,8 +205,7 @@ function CollisionMesh({
       colorDataB.intensities,
       strengthA,
       strengthB,
-      viewport.width,
-      viewport.height,
+      // viewport removed intentionally
     ],
   );
 
@@ -254,11 +259,16 @@ function CollisionMesh({
       0.05,
     );
 
-    // 해상도 업데이트
-    materialRef.current.uniforms.uResolution.value.set(
-      viewport.width,
-      viewport.height,
-    );
+    // 해상도 업데이트 (Check before set to minimize overhead, though set is cheap)
+    if (
+      materialRef.current.uniforms.uResolution.value.x !== viewport.width ||
+      materialRef.current.uniforms.uResolution.value.y !== viewport.height
+    ) {
+      materialRef.current.uniforms.uResolution.value.set(
+        viewport.width,
+        viewport.height,
+      );
+    }
   });
 
   return (
@@ -311,7 +321,7 @@ export const EmotionCollisionEffect = memo(
             powerPreference: "high-performance",
             depth: false, // Depth buffer not needed for 2D shader
             stencil: false,
-            preserveDrawingBuffer: true, // Prevent buffer clearing during scroll
+            // preserveDrawingBuffer removed for performance
           }}
           camera={{ position: [0, 0, 1], fov: 75 }}
           style={{

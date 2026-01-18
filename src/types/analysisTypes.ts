@@ -1,11 +1,19 @@
 import type { Character } from "./character";
 import type { RelationshipLink } from "./characterGraph";
 
+// Structured change item for better UI rendering
+export interface ChangeItem {
+  field: string; // e.g., "role", "strength"
+  oldValue: unknown;
+  newValue: unknown;
+  description?: string; // Optional user-friendly text
+}
+
 export interface AnalysisDiff {
   newCharacters: Character[];
-  updatedCharacters: { id: string; changes: string[] }[];
+  updatedCharacters: { id: string; changes: ChangeItem[] }[];
   newRelations: RelationshipLink[];
-  updatedRelations: { id: string; changes: string[] }[];
+  updatedRelations: { id: string; changes: ChangeItem[] }[];
   removedRelations: string[]; // IDs
 }
 
@@ -91,7 +99,20 @@ export function generateMockAnalysisData(
   const updatedCharDiff = protagonist
     ? {
         id: protagonist._id,
-        changes: ["심리 상태 변화: 불안 -> 결의", "소속: 시장 -> 도망자"],
+        changes: [
+          {
+            field: "currentMood",
+            oldValue: "unstable",
+            newValue: "determined",
+            description: "심리 상태 변화: 불안 -> 결의",
+          },
+          {
+            field: "faction",
+            oldValue: "Market",
+            newValue: "Fugitive",
+            description: "소속: 시장 -> 도망자",
+          },
+        ],
       }
     : undefined;
 
@@ -111,7 +132,20 @@ export function generateMockAnalysisData(
   const updatedRelDiff = existingLink
     ? {
         id: existingLink.id,
-        changes: ["관계 강도 증가: 3 -> 7", "설명 업데이트: 의심 -> 확신"],
+        changes: [
+          {
+            field: "strength",
+            oldValue: 3,
+            newValue: 7,
+            description: "관계 강도 증가: 3 -> 7",
+          },
+          {
+            field: "description",
+            oldValue: "suspicious",
+            newValue: "confident",
+            description: "설명 업데이트: 의심 -> 확신",
+          },
+        ],
       }
     : undefined;
 

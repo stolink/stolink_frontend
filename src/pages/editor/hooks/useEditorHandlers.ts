@@ -16,7 +16,7 @@ interface UseEditorHandlersOptions {
   updateDocument: (updates: Partial<Document>) => void;
   updateDocumentMutation: (
     id: string,
-    updates: Partial<Document>,
+    updates: Partial<Document>
   ) => Promise<unknown>;
   createDocument: (data: {
     type: "folder" | "text";
@@ -27,11 +27,11 @@ interface UseEditorHandlersOptions {
   deleteDocument: (id: string) => Promise<void>;
   reorderDocuments: (
     parentId: string | null,
-    orderedIds: string[],
+    orderedIds: string[]
   ) => Promise<void>;
   moveDocument: (
     itemId: string,
-    targetFolderId: string | null,
+    targetFolderId: string | null
   ) => Promise<void>;
   // 통합 뷰 저장 콜백 (섹션 클릭 전 저장용)
   scriveningsSaveAll?: () => Promise<void>;
@@ -62,7 +62,7 @@ export function useEditorHandlers({
   // Refs for save management
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordCountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
   const lastContentRef = useRef<{
     documentId: string | null;
@@ -118,9 +118,8 @@ export function useEditorHandlers({
     if (documentId && content && saveContentRef.current) {
       try {
         await saveContentRef.current(content);
-        console.log(`[forceSave] Saved content for document: ${documentId}`);
-      } catch (error) {
-        console.error("[EditorPage] Force save failed:", error);
+      } catch (_error) {
+        // ignore
       }
     }
   }, [isDemo]);
@@ -184,7 +183,7 @@ export function useEditorHandlers({
       setSelectedSectionId,
       setViewMode,
       scriveningsSaveAll,
-    ],
+    ]
   );
 
   // Select section
@@ -205,7 +204,7 @@ export function useEditorHandlers({
       }
       setSelectedSectionId(id);
     },
-    [selectedSectionId, forceSave, setSelectedSectionId],
+    [selectedSectionId, forceSave, setSelectedSectionId]
   );
 
   // Content change with debounce
@@ -233,9 +232,6 @@ export function useEditorHandlers({
         const nowDocId = selectedSectionIdRef.current;
 
         if (savedDocId !== nowDocId) {
-          console.log(
-            `[Auto-save] Cancelled: Document changed from ${savedDocId} to ${nowDocId}`,
-          );
           return; // Don't save to wrong document!
         }
 
@@ -243,13 +239,12 @@ export function useEditorHandlers({
         try {
           await saveContentRef.current(content);
           setSaveStatusRef.current("saved");
-        } catch (error) {
-          console.error("[EditorPage] Auto-save failed:", error);
+        } catch (_error) {
           setSaveStatusRef.current("unsaved");
         }
       }, 500);
     },
-    [isDemo],
+    [isDemo]
   );
 
   // Character count change with debounce
@@ -257,14 +252,14 @@ export function useEditorHandlers({
     (count: number, setCharacterCount: (c: number) => void) => {
       setCharacterCount(count);
 
+      // 문서 메타데이터 업데이트 (debounced)
       if (!isDemo && selectedSectionIdRef.current) {
         if (wordCountTimeoutRef.current) {
           clearTimeout(wordCountTimeoutRef.current);
         }
         wordCountTimeoutRef.current = setTimeout(() => {
-          // Get current metadata and update only wordCount
           const currentDoc = documents.find(
-            (d) => d.id === selectedSectionIdRef.current,
+            (d) => d.id === selectedSectionIdRef.current
           );
           if (currentDoc) {
             const updates: Partial<Document> = {
@@ -275,7 +270,7 @@ export function useEditorHandlers({
         }, 1000);
       }
     },
-    [isDemo, documents],
+    [isDemo, documents]
   );
 
   // Add chapter
@@ -283,7 +278,7 @@ export function useEditorHandlers({
     async (
       title: string,
       parentId?: string,
-      type: "chapter" | "section" = "chapter",
+      type: "chapter" | "section" = "chapter"
     ) => {
       if (isDemo) return null;
       return createDocument({
@@ -292,7 +287,7 @@ export function useEditorHandlers({
         parentId,
       });
     },
-    [isDemo, createDocument],
+    [isDemo, createDocument]
   );
 
   // Add section (형제 섹션만 생성 가능 - 하위 섹션 제거됨)
@@ -308,11 +303,7 @@ export function useEditorHandlers({
           saveTimeoutRef.current = null;
         }
         await forceSave();
-      } catch (error) {
-        console.error(
-          "[handleAddSection] Failed to save before creating section:",
-          error,
-        );
+      } catch (_error) {
         // 저장 실패해도 섹션 생성은 계속 진행 (사용자 경험 우선)
       }
 
@@ -350,7 +341,7 @@ export function useEditorHandlers({
       documents,
       setSelectedSectionId,
       forceSave,
-    ],
+    ]
   );
 
   // Rename chapter
@@ -367,15 +358,14 @@ export function useEditorHandlers({
       // 2. Sync with Backend
       try {
         await updateDocumentMutation(id, { title: newTitle });
-      } catch (error) {
-        console.error("Failed to rename chapter:", error);
+      } catch (_error) {
         // 3. Rollback on failure: Revert to previous title if API fails
         if (previousTitle !== undefined) {
           _update(id, { title: previousTitle });
         }
       }
     },
-    [isDemo, updateDocumentMutation],
+    [isDemo, updateDocumentMutation]
   );
 
   // Delete chapter
@@ -401,7 +391,7 @@ export function useEditorHandlers({
       selectedSectionId,
       setSelectedFolderId,
       setSelectedSectionId,
-    ],
+    ]
   );
 
   // Move item to different folder (uses optimistic update)
@@ -410,14 +400,14 @@ export function useEditorHandlers({
       if (isDemo) return;
       await moveDocument(itemId, targetFolderId);
     },
-    [isDemo, moveDocument],
+    [isDemo, moveDocument]
   );
 
   // View mode change with auto-save and state synchronization
   const handleViewModeChange = useCallback(
     async (
       newMode: "editor" | "scrivenings" | "outline",
-      currentMode: "editor" | "scrivenings" | "outline",
+      currentMode: "editor" | "scrivenings" | "outline"
     ) => {
       // 1. 전환 전 자동 저장
       await forceSave();
@@ -478,7 +468,7 @@ export function useEditorHandlers({
       setSelectedSectionId,
       setViewMode,
       scriveningsSaveAll,
-    ],
+    ]
   );
 
   return {

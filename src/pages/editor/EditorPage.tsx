@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { debounce } from "lodash-es";
+import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Core Components
@@ -49,6 +49,7 @@ import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { useUIStore } from "@/stores/useUIStore";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
+import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
@@ -64,7 +65,7 @@ import type { RelationshipLink } from "@/types/characterGraph";
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
 
 import { DEMO_CHAPTERS } from "@/data/demoData";
-import { cn } from "@/lib/utils";
+import { cn, getPlainTextLength } from "@/lib/utils";
 
 // Constants
 const DEMO_PROJECT_ID = "demo";
@@ -189,10 +190,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   const typewriterMode = useEditorSettingStore(
     (state) => state.behavior.typewriterMode,
   );
+  const setTypewriterMode = useEditorSettingStore(
+    (state) => state.setTypewriterMode,
+  );
   const isTypewriterMode = typewriterMode !== "off";
   const isFocusMode = useEditorSettingStore(
     (state) => state.behavior.focusMode,
   );
+  const setFocusMode = useEditorSettingStore((state) => state.setFocusMode);
   /* performanceMode removed */
 
   const initialStateFromRedirect = (
@@ -242,6 +247,65 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     [localDocuments],
   );
 
+  // 통계 스토어 연결
+  const currentTotalChars = useWritingStatsStore((s) => s.currentTotalChars);
+
+  // 통계 스토어 연결
+  const updateDocumentCharCount = useWritingStatsStore(
+    (s) => s.updateDocumentCharCount,
+  );
+  const setDocumentCharCounts = useWritingStatsStore(
+    (s) => s.setDocumentCharCounts,
+  );
+
+  // 스로틀링된 통계 업데이트 함수 (1초에 한 번만 실행하여 렉 방지)
+  const throttledUpdateStats = useMemo(
+    () =>
+      throttle(
+        (
+          id: string,
+          count: number,
+          updateFn: (id: string, count: number) => void,
+        ) => {
+          updateFn(id, count);
+        },
+        1000,
+        { leading: true, trailing: true },
+      ),
+    [],
+  );
+
+  // 스로틀링된 UI 업데이트 함수 (300ms에 한 번만 실행하여 리렌더링 방지)
+  const throttledUIUpdate = useMemo(
+    () =>
+      throttle(
+        (
+          count: number,
+          callback: (
+            count: number,
+            setState: React.Dispatch<React.SetStateAction<number>>,
+          ) => void,
+          setter: React.Dispatch<React.SetStateAction<number>>,
+        ) => {
+          callback(count, setter);
+        },
+        500,
+        { leading: true, trailing: true },
+      ),
+    [],
+  );
+
+  // 초기 로드 시 모든 문서의 글자수를 스토어에 설정
+  useEffect(() => {
+    if (!isDemo && documents.length > 0) {
+      const counts: Record<string, number> = {};
+      documents.forEach((doc) => {
+        counts[doc.id] = getPlainTextLength(doc.content);
+      });
+      setDocumentCharCounts(counts);
+    }
+  }, [documents, isDemo, setDocumentCharCounts]);
+
   const sidebarChapters = useMemo(() => {
     if (isDemo)
       return previewChapters as unknown as import("@/components/editor/sidebar/types").ChapterNode[];
@@ -271,7 +335,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     characters.forEach((char: Character) => {
       char.relations?.graph?.forEach((rel: CharacterRelation) => {
         links.push({
-          id: `${char._id}-${rel.target}`,
+          id: rel.id || `${char._id}-${rel.target}`,
           source: char._id,
           target: rel.target,
           type: rel.type as RelationType,
@@ -293,11 +357,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
 
   // consistencyReport state removed in favor of store persistence
-  const addToBuffer = useAnalysisBufferStore(
-    (state) =>
-      (state as { addToBuffer: (projectId: string, content: string) => void })
-        .addToBuffer,
-  );
+  const {
+    addToBuffer,
+    setPendingViewJobId,
+    setAnalysisSnapshot,
+    isJobAcknowledged,
+  } = useAnalysisBufferStore();
 
   const readerChapters = useMemo(() => {
     interface FlatChapter {
@@ -332,19 +397,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     lastConsistencyReport, // Added
   } = useProjectAnalysis(projectId, {
     enabled: !!projectId,
-    onAnalysisComplete: async (result: AnalysisResultData | null) => {
-      if (!result) return;
+    onAnalysisComplete: async (
+      _result: AnalysisResultData | null,
+      jobId: string,
+    ) => {
+      // Note: result might be null if job was found completed on mount
+      // We still want to set the pending view flag so WorldPage can show the result.
 
-      // Check if already acknowledged (Viewed) to prevent loop
-      const isAck =
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true";
+      // Check if this specific jobId is already acknowledged
+      const isAck = isJobAcknowledged(jobId);
       if (isAck) return;
 
       // Analysis complete.
       // We DO NOT calculate diff here anymore. We defer it to WorldPage.
-      // Flag that we have a pending view for the user.
+      // Flag that we have a pending view for the user using persistent store.
       if (projectId) {
-        sessionStorage.setItem(`analysis_pending_view_${projectId}`, "true");
+        setPendingViewJobId(jobId);
       }
 
       toast({
@@ -449,23 +517,22 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     };
     snapshotRef.current = snapshot;
 
-    // Persist to sessionStorage to share with WorldPage
+    // Persist to store to share with WorldPage (IDB persistence)
     if (projectId) {
-      try {
-        sessionStorage.setItem(
-          `analysis_snapshot_${projectId}`,
-          JSON.stringify(snapshot),
-        );
-        // Reset flags
-        sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
-      } catch (e) {
-        console.warn("Failed to save snapshot to sessionStorage", e);
-      }
+      setAnalysisSnapshot(projectId, snapshot);
+      // Reset pending view for new session
+      setPendingViewJobId(null);
     }
 
     handleManualAnalysis();
-  }, [handleManualAnalysis, characters, graphLinks, projectId]);
+  }, [
+    handleManualAnalysis,
+    characters,
+    graphLinks,
+    projectId,
+    setAnalysisSnapshot,
+    setPendingViewJobId,
+  ]);
 
   // ============================================================
   // UI & Modals State
@@ -648,19 +715,14 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isOpen={isSidebarOpen}
               onToggle={() => setIsSidebarOpen(false)}
               projectTitle={projectTitle}
-              totalChars={
-                Object.values(documents).reduce(
-                  (acc, doc) => acc + (doc.content?.length || 0),
-                  0,
-                ) || 0
-              }
+              totalChars={currentTotalChars}
             />
           )}
         </AnimatePresence>
 
         <main
           className={cn(
-            "flex-1 flex flex-col transition-all duration-300 relative z-10",
+            "flex-1 flex flex-col transition-all duration-300 relative z-10 min-w-0",
             isTypewriterMode ? "items-center" : "",
             isFocusMode && "bg-cloud-50",
             // Main area is transparent to show Desk, unless Focus Mode
@@ -684,10 +746,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             splitViewEnabled={false}
-            onToggleSplitView={() => {}}
-            onToggleFocusMode={() => {}}
+            onToggleSplitView={() => {}} // TODO: Implement split view state
+            onToggleFocusMode={() => setFocusMode(!isFocusMode)}
             isTypewriterMode={isTypewriterMode}
-            onToggleTypewriterMode={() => {}}
+            onToggleTypewriterMode={() =>
+              setTypewriterMode(isTypewriterMode ? "off" : "center")
+            }
             rightSidebarOpen={isRightSidebarOpen}
             onToggleRightSidebar={() =>
               setIsRightSidebarOpen(!isRightSidebarOpen)
@@ -711,9 +775,23 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
               isFocusMode={isFocusMode}
               currentContent={documentContent}
               currentSectionTitle={document?.title || ""}
-              onCharacterCountChange={(count: number) =>
-                handleCharacterCountChange(count, setCharacterCount)
-              }
+              onCharacterCountChange={(count: number) => {
+                // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
+                throttledUIUpdate(
+                  count,
+                  handleCharacterCountChange,
+                  setCharacterCount,
+                );
+
+                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
+                if (!isDemo && selectedSectionId) {
+                  throttledUpdateStats(
+                    selectedSectionId,
+                    count,
+                    updateDocumentCharCount,
+                  );
+                }
+              }}
               onContentChange={handleContentChange}
               onCreateSection={handleCreateSection}
               onSelectSection={handleSelectSection}
