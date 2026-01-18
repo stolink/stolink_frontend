@@ -132,7 +132,7 @@ export default function LibraryPage() {
   const { mutate: deleteProject, mutateAsync: deleteProjectAsync } =
     useDeleteProject();
   const { mutate: updateProjectStatus } = useUpdateProjectStatus();
-  const { mutate: updateProject } = useUpdateProject();
+  const { mutateAsync: updateProject } = useUpdateProject();
 
   // ========== 원고 비동기 처리 ==========
   const setJob = useManuscriptJobStore((state) => state.setJob);
@@ -410,7 +410,7 @@ export default function LibraryPage() {
           quality: 0.8,
         });
 
-        updateProject({
+        await updateProject({
           id: coverUpdateTargetId,
           payload: { coverImage: compressedBase64 },
         });

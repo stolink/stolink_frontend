@@ -27,6 +27,7 @@ import {
   ZOOM_CONFIG,
   type UIRelationType,
   RELATION_PRIORITY,
+  toUIRelationType,
 } from "../constants";
 import { calculateRelationCounts } from "../utils";
 import { drawNode } from "./CanvasNodeRenderer";
@@ -350,9 +351,17 @@ export const CharacterGraphCanvas = forwardRef<
           // Lower number = Higher priority
           typesArray.sort((a, b) => {
             const pA =
-              RELATION_PRIORITY[a.toLowerCase() as UIRelationType] ?? 99;
+              RELATION_PRIORITY[toUIRelationType(a)] ??
+              Object.values(RELATION_PRIORITY).reduce(
+                (max, p) => Math.max(max, p),
+                0,
+              ) + 1;
             const pB =
-              RELATION_PRIORITY[b.toLowerCase() as UIRelationType] ?? 99;
+              RELATION_PRIORITY[toUIRelationType(b)] ??
+              Object.values(RELATION_PRIORITY).reduce(
+                (max, p) => Math.max(max, p),
+                0,
+              ) + 1;
             return pA - pB;
           });
 
@@ -366,7 +375,7 @@ export const CharacterGraphCanvas = forwardRef<
             flowDepth: base.flowDepth ?? -1,
             isSuperEdge: true,
             originalLinks: group, // Store originals
-            visualPattern: isMixed ? "braided" : "parallel",
+            visualPattern: undefined, // Restore to simple line (User Preference)
             bidirectional: isBidirectional,
           } as const;
           finalLinks.push(superEdge);
@@ -461,7 +470,7 @@ export const CharacterGraphCanvas = forwardRef<
             targetChar.profile?.name?.includes("유비"));
 
         const effectiveTypes = isYubiZhuge
-          ? ["ALLY", "ROMANTIC", "MENTOR", "FAMILY", "RIVAL"]
+          ? ["ROMANTIC", "ALLY", "MENTOR", "FAMILY", "RIVAL"]
           : link.relationTypes || [link.type as string];
 
         // [Debug] Check incoming link data for Radar Chart Attributes
