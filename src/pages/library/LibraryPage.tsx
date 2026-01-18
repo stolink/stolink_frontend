@@ -43,7 +43,7 @@ import {
 
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
-import { compressImage } from "@/utils/imageUtils";
+import { compressImage, resolveImageUrl } from "@/utils/imageUtils";
 import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
 import type { ProjectStatusType } from "@/components/library/StatusChip";
 import { manuscriptService } from "@/services/manuscriptService";
@@ -746,7 +746,7 @@ export default function LibraryPage() {
                     project.status === "completed" ? "Complete" : "Writing"
                   }
                   genre={project.genre}
-                  coverImage={project.coverImage}
+                  coverImage={resolveImageUrl(project.coverImage)}
                   location={`Chapter ${project.stats?.chapterCount || 0}`}
                   length={`${project.stats?.totalWords || 0} W`}
                   progress={0}
