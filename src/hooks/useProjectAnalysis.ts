@@ -350,6 +350,23 @@ export function useProjectAnalysis(
           jobStatus.status === "failed" ||
           jobStatus.status === "completed"
         ) {
+          // [Fix] Check staleness for completed jobs to avoid resurrecting ancient history
+          const statusAny = jobStatus as unknown as Record<string, unknown>;
+          const timestampStr = (statusAny.updatedAt ||
+            statusAny.createdAt) as string;
+          const timestamp = timestampStr
+            ? new Date(timestampStr).getTime()
+            : Date.now();
+          const now = Date.now();
+          const elapsed = now - timestamp;
+
+          if (elapsed > 5 * 60 * 1000) {
+            // 5 min threshold
+            // Ignore stale completed jobs
+            if (currentStoreJobs.length > 0) clearStoreJobs(projectId);
+            return;
+          }
+
           // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
           // finalizeAnalysis를 호출하여 onAnalysisComplete 콜백을 트리거합니다.
           // (WorldPage에서 Acknowledgement 체크 후 모달 표시)
@@ -731,6 +748,10 @@ export function useProjectAnalysis(
     // 분석 상태 시작
     isRequestingRef.current = true;
     isFinalizingRef.current = false; // Reset finalizing flag
+
+    // [Fix] 새 분석 시작 시 이전 Job ID들 제거 (진행률 섞임 방지)
+    useAnalysisBufferStore.getState().clearAnalysisJobs(projectId);
+
     setBufferAnalyzing(true);
     setAnalysisError(null);
     if (!isAnalyzing) {
