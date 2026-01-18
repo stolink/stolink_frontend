@@ -59,6 +59,8 @@ interface CharacterGraphCanvasProps {
   showSearch?: boolean;
   onNodeDragEnd?: (node: CharacterNode) => Promise<void>;
   nodeChanges?: Record<string, "new" | "updated" | null>;
+  onCreateRelationship?: () => void;
+  projectId: string;
 }
 
 export interface CharacterGraphCanvasRef {
@@ -89,6 +91,7 @@ export const CharacterGraphCanvas = forwardRef<
       showSearch = true,
       onNodeDragEnd,
       nodeChanges,
+      onCreateRelationship,
     },
     ref,
   ) => {
@@ -123,6 +126,25 @@ export const CharacterGraphCanvas = forwardRef<
 
     // 이미지 캐싱
     const imageCache = useImageCache(characters);
+
+    // [DEBUG] highlightedNodeIds 변경 감지 (Disabled)
+
+    // [DEBUG] selectedNodeId 변경 감지 (Disabled)
+
+    // ESC 키 핸들러: 선택 해제 및 전체 뷰 복원
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          // 전체 뷰로 줌 아웃
+          if (graphRef.current) {
+            graphRef.current.zoomToFit(400, 80);
+          }
+          // 선택 해제는 부모(WorldPage)에서 처리
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     // Animation Loop
     useEffect(() => {
@@ -163,23 +185,7 @@ export const CharacterGraphCanvas = forwardRef<
       });
     }, [characters, initialLinks]);
 
-    // Ref 핸들 설정 (initialNodes 이후에 선언)
-    useImperativeHandle(
-      ref,
-      () => ({
-        focusNode: async (nodeId: string) => {
-          // react-force-graph-2d의 줌 기능으로 특정 노드 포커스
-          if (graphRef.current) {
-            const node = initialNodes.find((n) => n.id === nodeId);
-            if (node && node.x !== undefined && node.y !== undefined) {
-              graphRef.current.centerAt(node.x, node.y, 1000);
-              graphRef.current.zoom(2, 1000);
-            }
-          }
-        },
-      }),
-      [initialNodes],
-    );
+    // NOTE: useImperativeHandle moved after graphDataRef declaration
 
     // [Curvature Fix] BFS for Flow Depth & Universal Curvature + 4D Timeline Filtering
     const processedLinks = useMemo(() => {
@@ -386,6 +392,35 @@ export const CharacterGraphCanvas = forwardRef<
       [initialNodes, processedLinks],
     ) as ForceGraphData;
 
+    // graphData 참조 유지 (시뮬레이션이 in-place로 수정한 노드 좌표 접근용)
+    const graphDataRef = useRef(graphData);
+    useEffect(() => {
+      graphDataRef.current = graphData;
+    }, [graphData]);
+
+    // Ref 핸들 설정 (graphDataRef 이후에 선언해야 시뮬레이션된 좌표 접근 가능)
+    useImperativeHandle(
+      ref,
+      () => ({
+        focusNode: async (nodeId: string) => {
+          // graphDataRef에서 시뮬레이션이 업데이트한 노드 좌표 가져오기
+          const graphNodes = graphDataRef.current.nodes as CharacterNode[];
+          const node = graphNodes.find((n) => n.id === nodeId);
+
+          if (
+            graphRef.current &&
+            node &&
+            node.x !== undefined &&
+            node.y !== undefined
+          ) {
+            graphRef.current.centerAt(node.x, node.y, 1000);
+            graphRef.current.zoom(2, 1000);
+          }
+        },
+      }),
+      [], // 빈 의존성 - ref를 통해 최신 데이터 접근
+    );
+
     // Character ID → Character 매핑
     const characterMap = useMemo(() => {
       const map = new Map<string, Character>();
@@ -414,11 +449,6 @@ export const CharacterGraphCanvas = forwardRef<
         const targetChar = characterMap.get(targetId);
 
         if (!sourceChar || !targetChar) {
-          console.warn(
-            "[DeepAnalysis] Character lookup failed for:",
-            sourceId,
-            targetId,
-          );
           return;
         }
 
@@ -445,6 +475,7 @@ export const CharacterGraphCanvas = forwardRef<
 
         try {
           const analysisData = generateAnalysisData(
+            link.id,
             sourceChar,
             targetChar,
             effectiveTypes,
@@ -454,8 +485,8 @@ export const CharacterGraphCanvas = forwardRef<
           );
           setDeepAnalysisData(analysisData);
           setHoveredLink(null); // Close tooltip
-        } catch (error) {
-          console.error("[DeepAnalysis] Generation failed:", error);
+        } catch (_error) {
+          // ignore
         }
       },
       [onLinkClick, events, characterMap],
@@ -486,6 +517,11 @@ export const CharacterGraphCanvas = forwardRef<
     useEffect(() => {
       onSearchChangeRef.current = onSearchChange;
     }, [onSearchChange]);
+
+    // 안정적인 검색 콜백 (ref를 통해 최신 함수 호출)
+    const handleSearchChange = useCallback((matchingIds: string[] | null) => {
+      onSearchChangeRef.current?.(matchingIds);
+    }, []);
 
     // 노드 클릭 핸들러 (Ref 패턴으로 안정화)
     const handleNodeClick = useCallback(
@@ -924,6 +960,7 @@ export const CharacterGraphCanvas = forwardRef<
           onFilterChange={handleFilterChange}
           showMainOnly={showMainOnly}
           onShowMainOnlyChange={setShowMainOnly}
+          onCreateRelationship={onCreateRelationship}
         />
 
         {/* Search Overlay */}
@@ -931,12 +968,27 @@ export const CharacterGraphCanvas = forwardRef<
           <CharacterSearchOverlay
             characters={characters}
             onSelect={(character) => {
-              const node = initialNodes.find((n) => n.id === character._id);
-              if (node && onNodeClick) {
+              // graphDataRef에서 시뮬레이션이 업데이트한 노드 좌표 가져오기
+              const graphNodes = graphDataRef.current.nodes as CharacterNode[];
+              const node = graphNodes.find((n) => n.id === character._id);
+
+              if (
+                graphRef.current &&
+                node &&
+                node.x !== undefined &&
+                node.y !== undefined
+              ) {
+                // 부드러운 줌 애니메이션 (1200ms로 천천히)
+                graphRef.current.centerAt(node.x, node.y, 1200);
+                graphRef.current.zoom(1.3, 1200);
+              }
+
+              // 노드 선택 콜백 호출
+              if (onNodeClick) {
                 onNodeClick(character);
               }
             }}
-            onSearch={onSearchChange || (() => {})}
+            onSearch={handleSearchChange}
           />
         )}
 

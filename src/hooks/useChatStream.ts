@@ -18,12 +18,40 @@ export interface SourceChunk {
 }
 
 /**
+ * 관계 카드 데이터 (Neo4j CharacterRelationship 기반)
+ */
+export interface RelationshipCardData {
+  sourceCharacter: { id: string; name: string };
+  targetCharacter: { id: string; name: string };
+  types: string[]; // ["enemy", "rival"] - 복수 관계 타입
+  strength: number; // 1-10
+  description?: string;
+  bidirectional?: boolean;
+  since?: string;
+}
+
+/**
+ * 컨텍스트 카드 (향후 EventCard, CharacterCard 확장 가능)
+ */
+export interface ContextCard {
+  cardType: "relationship" | "event" | "character";
+  data: RelationshipCardData;
+  actionUrl: string;
+}
+
+/**
+ * 카드 데이터 타입 (하위 호환성 유지)
+ */
+export type CardData = ContextCard;
+
+/**
  * SSE 스트림 토큰 타입
  */
 interface StreamToken {
-  type: "token" | "sources" | "done" | "error";
+  type: "token" | "sources" | "cards" | "done" | "error";
   content?: string;
   sources?: SourceChunk[];
+  cards?: CardData[];
   error?: string;
 }
 
@@ -35,6 +63,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: SourceChunk[];
+  cards?: CardData[];
   timestamp: Date;
 }
 
@@ -59,6 +88,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
   const [streaming, setStreaming] = useState(false);
   const [currentResponse, setCurrentResponse] = useState("");
   const [currentSources, setCurrentSources] = useState<SourceChunk[]>([]);
+  const [currentCards, setCurrentCards] = useState<CardData[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
@@ -101,6 +131,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
       setAnalysisComplete(false);
       setCurrentResponse("");
       setCurrentSources([]);
+      setCurrentCards([]);
 
       // AbortController 생성
       abortControllerRef.current = new AbortController();
@@ -116,7 +147,21 @@ export function useChatStream(options?: UseChatStreamOptions) {
           method: "POST",
           headers,
           body: JSON.stringify({
-            message: `${message}\n\n[SYSTEM_INSTRUCTION: Respond in a sophisticated, literary, and professional tone suitable for a senior editor. Analyze the subtext and themes deeply. Provide constructive and specific feedback.]`,
+            message: `${message}\n\n[SYSTEM_INSTRUCTION:
+1. Role: You are a sophisticated literary editor and creative writing partner.
+2. Tone: Professional, insightful, and encouraging.
+3. Formatting:
+   - Use **bold** for key concepts or emphasis.
+   - Use *italics* for book titles, internal monologues, or definitions.
+   - Use bullet points or numbered lists for structured feedback.
+   - Use > blockquotes for citing the user's text.
+4. CRITICAL - Custom Tags (YOU MUST use these exact formats):
+   - For plot holes/contradictions: [#태그명] or [#TagName] (e.g., [#시간순서오류], [#Timeline])
+   - For character mentions: [@캐릭터명] or [@CharacterName] (e.g., [@민수], [@Elara])
+   - For key events: [!이벤트명] or [!EventName] (e.g., [!폭발사건], [!TheExplosion])
+   - IMPORTANT: Always wrap tags in brackets []. Never use bare @, #, ! without brackets.
+   - IMPORTANT: Do NOT include prefixes like "Character:", "Conflict:", "Event:" inside brackets.
+5. Goal: Analyze subtext, themes, and character consistency deeply.]`,
             project_id: projectId,
             user_id: userId,
             session_id: currentSessionId,
@@ -138,6 +183,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         const decoder = new TextDecoder();
         let accumulatedResponse = "";
         let sources: SourceChunk[] = [];
+        let cards: CardData[] = [];
         let isFirstToken = true; // 로컬 플래그로 첫 토큰 감지
 
         while (true) {
@@ -164,6 +210,10 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 } else if (data.type === "sources" && data.sources) {
                   sources = data.sources;
                   setCurrentSources(sources);
+                } else if (data.type === "cards" && data.cards) {
+                  // 카드 데이터 수신 (관계 분석 등)
+                  cards = [...cards, ...data.cards];
+                  setCurrentCards(cards);
                 } else if (data.type === "done") {
                   // 스트리밍 완료 - AI 메시지 추가
                   const aiMessage: ChatMessage = {
@@ -171,12 +221,14 @@ export function useChatStream(options?: UseChatStreamOptions) {
                     role: "assistant",
                     content: accumulatedResponse,
                     sources,
+                    cards: cards.length > 0 ? cards : undefined,
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, aiMessage]);
                   setStreaming(false);
                   setCurrentResponse("");
                   setCurrentSources([]);
+                  setCurrentCards([]);
                 } else if (data.type === "error") {
                   throw new Error(
                     data.error || "알 수 없는 오류가 발생했습니다.",
@@ -280,12 +332,42 @@ export function useChatStream(options?: UseChatStreamOptions) {
       if (res.ok) {
         const data = await res.json();
         const loadedMessages: ChatMessage[] = data.messages.map(
-          (m: { role: string; content: string }, i: number) => ({
-            id: `loaded-${i}`,
-            role: m.role === "ai" ? "assistant" : "user",
-            content: m.content,
-            timestamp: new Date(),
-          }),
+          (
+            m: {
+              role: string;
+              content: string;
+              metadata?: unknown;
+              cards?: CardData[];
+              sources?: SourceChunk[];
+            },
+            i: number,
+          ) => {
+            // metadata가 객체일 수도 있고, 직렬화된 문자열일 수도 있음
+            let metadata = m.metadata;
+            if (typeof metadata === "string") {
+              try {
+                metadata = JSON.parse(metadata);
+              } catch (e) {
+                console.error("Failed to parse message metadata:", e);
+              }
+            }
+
+            const typedMetadata = metadata as {
+              cards?: CardData[];
+              sources?: SourceChunk[];
+            } | null;
+
+            return {
+              id: `loaded-${i}`,
+              role: m.role === "ai" ? "assistant" : "user",
+              content: m.content
+                .replace(/\[SYSTEM_INSTRUCTION:[\s\S]*$/g, "")
+                .trim(),
+              cards: typedMetadata?.cards || m.cards,
+              sources: typedMetadata?.sources || m.sources,
+              timestamp: new Date(),
+            };
+          },
         );
         setMessages(loadedMessages);
       }
@@ -305,6 +387,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
     analysisComplete,
     currentResponse,
     currentSources,
+    currentCards,
     sessionId,
     sendMessage,
     cancelStream,

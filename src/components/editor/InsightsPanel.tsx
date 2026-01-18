@@ -459,15 +459,6 @@ export default function InsightsPanel({
 }: InsightsPanelProps) {
   const visibleConflicts = useMemo(() => {
     if (!consistencyReport) return [];
-    // DEBUG: 데이터 확인용 로그
-    console.log(
-      "[InsightsPanel] conflicts:",
-      consistencyReport.conflicts.map((c) => ({
-        id: c.id,
-        suggestedAction: c.suggestedAction,
-        description: c.description.slice(0, 30),
-      })),
-    );
     // FLAG_FOR_HUMAN만 필터링하여 사용자에게 표시
     return consistencyReport.conflicts.filter(
       (c) => c.suggestedAction === "FLAG_FOR_HUMAN",

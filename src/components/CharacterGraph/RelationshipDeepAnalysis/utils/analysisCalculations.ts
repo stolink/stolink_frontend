@@ -542,6 +542,7 @@ export function estimateAttributesFromRelation(
  * 관계 분석 데이터 생성 (실제 데이터 기반)
  */
 export function generateAnalysisData(
+  relationshipId: string,
   source: Character,
   target: Character,
   initialRelationshipTypes: string[] = ["ALLY"],
@@ -824,6 +825,8 @@ export function generateAnalysisData(
   const warnings = detectRelationshipWarnings(sourceToTarget, targetToSource);
 
   return {
+    relationshipId,
+    projectId: source.projectId,
     sourceCharacter: {
       id: sourceId,
       name: sourceName,
@@ -841,6 +844,7 @@ export function generateAnalysisData(
     insights,
     relationshipTypes: types,
     currentStrength: finalStrength,
+    bidirectional: sourceToTargetRel?.bidirectional ?? true,
     since: firstEncounter?.chapter || sourceToTargetRel?.since || "알 수 없음",
     // NEW fields
     description: finalDescription,

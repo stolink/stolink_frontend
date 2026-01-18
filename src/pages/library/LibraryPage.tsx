@@ -24,6 +24,7 @@ import { Button } from "@stolink/ui";
 import { Input } from "@stolink/ui";
 import { BookCard } from "@/components/library/BookCard";
 import { CreateBookModal } from "@/components/library/CreateBookModal";
+import { CloneProjectDialog } from "@/components/library/CloneProjectDialog";
 import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +32,6 @@ import { useNavigate } from "react-router-dom";
 import {
   useProjects,
   useDeleteProject,
-  useDuplicateProject,
   useUpdateProject,
 } from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
@@ -45,6 +45,7 @@ import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
 import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
 import type { ProjectStatusType } from "@/components/library/StatusChip";
+import type { Project } from "@/types/project";
 import { manuscriptService } from "@/services/manuscriptService";
 import { useManuscriptJobStore } from "@/stores/useManuscriptJobStore";
 import { useManuscriptPolling } from "@/hooks/useManuscriptPolling";
@@ -118,6 +119,10 @@ export default function LibraryPage() {
     null,
   );
 
+  // ========== 프로젝트 복제 상태 ==========
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [cloneTarget, setCloneTarget] = useState<Project | null>(null);
+
   const {
     data: projectsData,
     isLoading,
@@ -126,7 +131,6 @@ export default function LibraryPage() {
   const { mutate: deleteProject, mutateAsync: deleteProjectAsync } =
     useDeleteProject();
   const { mutate: updateProjectStatus } = useUpdateProjectStatus();
-  const { mutate: duplicateProject } = useDuplicateProject();
   const { mutate: updateProject } = useUpdateProject();
 
   // ========== 원고 비동기 처리 ==========
@@ -747,9 +751,10 @@ export default function LibraryPage() {
                       setRenameTarget({ id: project.id, title: project.title });
                       setNewTitle(project.title);
                       setRenameModalOpen(true);
-                    } else if (action === "duplicate") {
+                    } else if (action === "clone") {
                       // 프로젝트 복제
-                      duplicateProject(project.id);
+                      setCloneTarget(project);
+                      setCloneDialogOpen(true);
                     } else if (action === "change_cover") {
                       // 표지 변경
                       setCoverUpdateTargetId(project.id);
@@ -987,6 +992,17 @@ export default function LibraryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ========== 프로젝트 복제 다이얼로그 ========== */}
+      {cloneTarget && (
+        <CloneProjectDialog
+          project={cloneTarget}
+          open={cloneDialogOpen}
+          onOpenChange={setCloneDialogOpen}
+        />
+      )}
+
+      <Footer />
     </div>
   );
 }

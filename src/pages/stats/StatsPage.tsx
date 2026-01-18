@@ -1,15 +1,27 @@
 import { BarChart3, Calendar, Trophy, Flame, Target } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 import { useProjectStats } from "@/hooks/useProjects";
-import { cn } from "@/lib/utils";
+import { useDocumentTree } from "@/hooks/useDocuments";
+import { cn, getPlainTextLength } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@stolink/ui";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/design-system/components/Button";
+import { Label } from "@/components/ui/label";
 import { ChapterBalanceCard } from "@/components/stats/ChapterBalanceCard";
 import { WritingPatternsCard } from "@/components/stats/WritingPatternsCard";
 
@@ -45,8 +57,24 @@ const fadeInVariants = {
 
 export default function StatsPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { dailyGoal, currentStreak, longestStreak, getTodayCount, getHistory } =
+  const { dailyGoal, currentStreak, longestStreak, getHistory, setDailyGoal } =
     useWritingStatsStore();
+
+  const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+
+  const handleOpenGoalDialog = () => {
+    setGoalInput(dailyGoal.toString());
+    setIsGoalDialogOpen(true);
+  };
+
+  const handleSaveGoal = () => {
+    const newGoal = parseInt(goalInput.replace(/,/g, ""), 10);
+    if (!isNaN(newGoal) && newGoal > 0) {
+      setDailyGoal(newGoal);
+      setIsGoalDialogOpen(false);
+    }
+  };
 
   const { data: projectStats, isLoading: isStatsLoading } = useProjectStats(
     projectId || "",
@@ -60,13 +88,67 @@ export default function StatsPage() {
     return getHistory(365).map((h) => ({ date: h.date, count: h.wordCount }));
   }, [getHistory]);
 
-  const displayStats = projectStats || {
-    totalWords: 0,
-    chapterCount: 0,
-    characterCount: 0,
-  };
+  // Real-time data from local documents cache (instantly updates on typing)
+  const { documents } = useDocumentTree(projectId || "");
 
-  const todayCount = getTodayCount();
+  // 스토어에서 문서별 글자수 구독 (실시간 동기화)
+  const documentCharCounts = useWritingStatsStore((s) => s.documentCharCounts);
+  const dailyBaselines = useWritingStatsStore((s) => s.dailyBaselines);
+  const currentTotalChars = useWritingStatsStore((s) => s.currentTotalChars);
+
+  const realTimeStats = useMemo(() => {
+    if (!documents || documents.length === 0) return null;
+
+    // 스토어에 글자수가 있으면 그걸 사용, 없으면 문서에서 계산
+    let wordCount = 0;
+    if (Object.keys(documentCharCounts).length > 0) {
+      // 스토어 값 사용 (에디터에서 실시간 업데이트됨)
+      wordCount = Object.values(documentCharCounts).reduce(
+        (acc, count) => acc + count,
+        0,
+      );
+    } else {
+      // 폴백: 문서에서 직접 계산
+      wordCount = documents.reduce(
+        (acc, doc) => acc + getPlainTextLength(doc.content),
+        0,
+      );
+    }
+
+    // 폴더 또는 챕터 타입인 문서의 수 계산
+    const chapterCount = documents.filter(
+      (doc) => doc.type === "folder" || doc.type === "text",
+    ).length;
+
+    return {
+      totalWords: wordCount,
+      chapterCount: chapterCount,
+    };
+  }, [documents, documentCharCounts]);
+
+  const displayStats = realTimeStats ||
+    projectStats || {
+      totalWords: 0,
+      chapterCount: 0,
+      characterCount: 0,
+    };
+
+  // 오늘의 baseline 직접 구독 (상태 변경 시 리렌더링 보장)
+  const updateTotalChars = useWritingStatsStore((s) => s.updateTotalChars);
+
+  // Stats 페이지 마운트 시 총 글자수 업데이트 (에디터에서 오지 않은 경우를 위해)
+  useEffect(() => {
+    if (displayStats.totalWords > 0 && currentTotalChars === 0) {
+      updateTotalChars(displayStats.totalWords);
+    }
+  }, [displayStats.totalWords, currentTotalChars, updateTotalChars]);
+
+  // 오늘의 작성량 계산 (스토어의 currentTotalChars 사용)
+  const todayString = new Date().toISOString().split("T")[0];
+  const todayBaseline = dailyBaselines[todayString] ?? 0;
+  const effectiveTotalChars = currentTotalChars || displayStats.totalWords;
+  const todayCount = Math.max(0, effectiveTotalChars - todayBaseline);
+
   const displayStreak = currentStreak;
   const displayLongest = longestStreak;
   const progress = Math.min(100, Math.round((todayCount / dailyGoal) * 100));
@@ -173,12 +255,15 @@ export default function StatsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex justify-between items-center text-xs font-bold text-mocha-400 uppercase tracking-widest">
                   일일 목표
-                  <motion.div
+                  <motion.button
                     whileHover={{ scale: 1.2 }}
                     transition={{ type: "spring", stiffness: 400 }}
+                    onClick={handleOpenGoalDialog}
+                    className="focus:outline-none"
+                    aria-label="일일 목표 설정"
                   >
-                    <Target className="w-4 h-4 text-mocha-500/60" />
-                  </motion.div>
+                    <Target className="w-4 h-4 text-mocha-500/60 hover:text-mocha-500 transition-colors" />
+                  </motion.button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -428,6 +513,41 @@ export default function StatsPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>일일 목표 설정</DialogTitle>
+            <DialogDescription>
+              하루에 작성할 목표 글자 수를 설정하세요. 꾸준한 집필의
+              첫걸음입니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="daily-goal" className="text-right">
+                목표 글자 수
+              </Label>
+              <Input
+                id="daily-goal"
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                className="col-span-3"
+                type="number"
+                min="1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button intent="outline" onClick={() => setIsGoalDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleSaveGoal} intent="primary">
+              저장하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

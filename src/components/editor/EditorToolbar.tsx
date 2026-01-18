@@ -1,4 +1,4 @@
-import { type Editor } from "@tiptap/react";
+import { type Editor, useEditorState } from "@tiptap/react";
 import { motion } from "framer-motion";
 import {
   Bold,
@@ -91,13 +91,34 @@ export function EditorToolbar({
   onToggleRightSidebar,
   rightSidebarOpen = false,
 }: EditorToolbarProps) {
-  if (!editor) {
+  // Subscribe to editor state changes for immediate re-render on formatting changes
+  // This fixes the ~0.5s delay in button active state updates
+  const editorState = useEditorState({
+    editor,
+    selector: (ctx) => ({
+      isBold: ctx.editor?.isActive("bold") ?? false,
+      isItalic: ctx.editor?.isActive("italic") ?? false,
+      isStrike: ctx.editor?.isActive("strike") ?? false,
+      isCode: ctx.editor?.isActive("code") ?? false,
+      isHighlight: ctx.editor?.isActive("highlight") ?? false,
+      isParagraph: ctx.editor?.isActive("paragraph") ?? false,
+      isBulletList: ctx.editor?.isActive("bulletList") ?? false,
+      isOrderedList: ctx.editor?.isActive("orderedList") ?? false,
+      isBlockquote: ctx.editor?.isActive("blockquote") ?? false,
+      headingLevel:
+        [1, 2, 3, 4, 5, 6].find((level) =>
+          ctx.editor?.isActive("heading", { level })
+        ) || 0,
+      canUndo: ctx.editor?.can().undo() ?? false,
+      canRedo: ctx.editor?.can().redo() ?? false,
+    }),
+  });
+
+  if (!editor || !editorState) {
     return null;
   }
 
-  const currentHeadingLevel =
-    [1, 2, 3, 4, 5, 6].find((level) => editor.isActive("heading", { level })) ||
-    0;
+  const currentHeadingLevel = editorState.headingLevel;
 
   const headingIcons: { [key: number]: React.ReactNode } = {
     1: <Heading1 className="h-4 w-4" />,
@@ -141,14 +162,14 @@ export function EditorToolbar({
       {/* Undo/Redo */}
       <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().undo()}
+        disabled={!editorState.canUndo}
         tooltip="실행 취소 (Cmd+Z)"
       >
         <Undo className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().redo()}
+        disabled={!editorState.canRedo}
         tooltip="다시 실행 (Cmd+Shift+Z)"
       >
         <Redo className="h-4 w-4" />
@@ -206,55 +227,87 @@ export function EditorToolbar({
       {/* Text Styles */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive("bold")}
+        isActive={editorState.isBold}
         tooltip="굵게 (Cmd+B)"
       >
         <Bold className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive("italic")}
+        isActive={editorState.isItalic}
         tooltip="기울임 (Cmd+I)"
       >
         <Italic className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        isActive={editor.isActive("strike")}
+        isActive={editorState.isStrike}
         tooltip="취소선"
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive("code")}
+        isActive={editorState.isCode}
         tooltip="코드"
       >
         <Code className="h-4 w-4" />
       </ToolbarButton>
 
       {/* Highlight Button */}
-      <Button
-        intent="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHighlight().run()}
-        className={cn(
-          "rounded-lg",
-          editor.isActive("highlight")
-            ? "bg-mocha-400/30 text-mocha-900"
-            : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
-        )}
-        title="하이라이트"
-      >
-        <Highlighter className="h-4 w-4" />
-      </Button>
+      {/* Highlight Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            intent="ghost"
+            size="icon-sm"
+            className={cn(
+              "rounded-lg",
+              editorState.isHighlight
+                ? "bg-mocha-400/30 text-mocha-900"
+                : "text-mocha-500 hover:bg-mocha-400/20 hover:text-espresso-900"
+            )}
+            title="하이라이트 색상 선택"
+          >
+            <Highlighter className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-auto p-2">
+          <div className="flex gap-1.5">
+            {[
+              { color: "#fef08a", label: "노랑" }, // yellow-200
+              { color: "#bbf7d0", label: "초록" }, // green-200
+              { color: "#bfdbfe", label: "파랑" }, // blue-200
+              { color: "#fbcfe8", label: "분홍" }, // pink-200
+              { color: "#e9d5ff", label: "보라" }, // purple-200
+              { color: "transparent", label: "지우기", icon: Minus },
+            ].map(({ color, label, icon: Icon }) => (
+              <button
+                key={color}
+                onClick={() => {
+                  if (color === "transparent") {
+                    editor.chain().focus().unsetHighlight().run();
+                  } else {
+                    editor.chain().focus().toggleHighlight({ color }).run();
+                  }
+                }}
+                className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-mocha-400"
+                style={{ backgroundColor: color }}
+                title={label}
+              >
+                {Icon && <Icon className="w-3 h-3 text-gray-500" />}
+              </button>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="w-px h-6 bg-mocha-400/30 mx-1" />
 
       {/* Paragraph Styles */}
       <ToolbarButton
         onClick={() => editor.chain().focus().setParagraph().run()}
-        isActive={editor.isActive("paragraph")}
+        isActive={editorState.isParagraph}
         tooltip="문단"
       >
         <Pilcrow className="h-4 w-4" />
@@ -263,14 +316,14 @@ export function EditorToolbar({
       {/* Lists */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive("bulletList")}
+        isActive={editorState.isBulletList}
         tooltip="글머리 기호"
       >
         <List className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive("orderedList")}
+        isActive={editorState.isOrderedList}
         tooltip="번호 매기기"
       >
         <ListOrdered className="h-4 w-4" />
@@ -279,7 +332,7 @@ export function EditorToolbar({
       {/* Block Elements */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive("blockquote")}
+        isActive={editorState.isBlockquote}
         tooltip="인용문"
       >
         <Quote className="h-4 w-4" />

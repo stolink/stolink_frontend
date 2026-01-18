@@ -3,6 +3,9 @@
  *
  * 일일 집필량, 스트릭, 목표 관리 기능을 제공합니다.
  * IndexedDB에 persist하여 영구 저장됩니다.
+ *
+ * 새로운 방식: 하루 시작 시 총 글자수(baseline)를 저장하고,
+ * 현재 총 글자수와 비교하여 일일 진행률 계산
  */
 
 import { create } from "zustand";
@@ -15,26 +18,38 @@ import type { StateStorage } from "zustand/middleware";
 // 일일 통계 타입
 export interface DailyStat {
   date: string; // YYYY-MM-DD
-  wordCount: number; // 그날 작성한 단어 수 (순수 증가분)
+  wordCount: number; // 그날 순변화량 (현재 - baseline)
 }
 
 interface WritingStatsStore {
   // 상태
-  dailyStats: Record<string, number>; // 날짜: 작성량
+  dailyBaselines: Record<string, number>; // 날짜: 그날 시작 총 글자수
   dailyGoal: number;
   currentStreak: number;
   longestStreak: number;
   lastActiveDate: string | null;
+  // 히스토리 (하루 끝 총 글자수 기록용)
+  dailyEndTotals: Record<string, number>; // 날짜: 그날 마지막 총 글자수
+  // 현재 총 글자수 (에디터와 분석 페이지 간 동기화용)
+  currentTotalChars: number;
+  // 각 문서별 글자수 (실시간 동기화용)
+  documentCharCounts: Record<string, number>; // documentId: charCount
 
   // 액션
-  // 활동 기록 (글자 수가 증가했을 때 호출)
-  recordActivity: (amount: number) => void;
+  // 현재 총 글자수 업데이트 (에디터에서 호출)
+  updateTotalChars: (totalChars: number) => void;
+  // 특정 문서의 글자수 업데이트 (에디터에서 호출)
+  updateDocumentCharCount: (documentId: string, charCount: number) => void;
+  // 여러 문서의 글자수 일괄 설정 (초기화용)
+  setDocumentCharCounts: (counts: Record<string, number>) => void;
+  // 오늘의 진행률 (스토어에서 직접 계산)
+  getTodayProgress: () => number;
   // 목표 설정
   setDailyGoal: (goal: number) => void;
-  // 오늘의 작성량 조회
-  getTodayCount: () => number;
   // 특정 기간 통계 조회 (히트맵용)
   getHistory: (days: number) => DailyStat[];
+  // 통계 초기화
+  resetStats: () => void;
 }
 
 // IndexedDB 스토리지 어댑터
@@ -61,36 +76,41 @@ const getYesterdayString = () => {
 export const useWritingStatsStore = create<WritingStatsStore>()(
   persist(
     immer((set, get) => ({
-      dailyStats: {},
+      dailyBaselines: {},
+      dailyEndTotals: {},
       dailyGoal: 1000, // 기본 목표 1000자
       currentStreak: 0,
       longestStreak: 0,
       lastActiveDate: null,
+      currentTotalChars: 0,
+      documentCharCounts: {}, // 각 문서별 글자수
 
-      recordActivity: (amount) => {
-        if (amount <= 0) return; // 감소하는 경우는 집필량 통계에 포함하지 않음 (선택 사항)
-
+      updateTotalChars: (totalChars) => {
         const today = getTodayString();
 
         set((draft) => {
-          // 일일 통계 업데이트
-          if (!draft.dailyStats[today]) {
-            draft.dailyStats[today] = 0;
-          }
-          draft.dailyStats[today] += amount;
+          // 현재 총 글자수 업데이트 (항상)
+          draft.currentTotalChars = totalChars;
 
-          // 스트릭 업데이트 로직
-          if (draft.lastActiveDate !== today) {
+          // 오늘 baseline이 없으면 현재 총 글자수를 baseline으로 설정
+          if (draft.dailyBaselines[today] === undefined) {
+            draft.dailyBaselines[today] = totalChars;
+          }
+
+          // 오늘 마지막 총 글자수 업데이트 (히스토리용)
+          draft.dailyEndTotals[today] = totalChars;
+
+          // 스트릭 업데이트 (글자수가 증가했을 때만)
+          const todayProgress = totalChars - draft.dailyBaselines[today];
+          if (todayProgress > 0 && draft.lastActiveDate !== today) {
             const yesterday = getYesterdayString();
 
-            // 어제 활동했으면 스트릭 증가, 아니면 1로 초기화 (오늘 처음 활동)
             if (draft.lastActiveDate === yesterday) {
               draft.currentStreak += 1;
             } else {
               draft.currentStreak = 1;
             }
 
-            // 최장 스트릭 갱신
             if (draft.currentStreak > draft.longestStreak) {
               draft.longestStreak = draft.currentStreak;
             }
@@ -100,39 +120,130 @@ export const useWritingStatsStore = create<WritingStatsStore>()(
         });
       },
 
+      updateDocumentCharCount: (documentId, charCount) => {
+        set((draft) => {
+          draft.documentCharCounts[documentId] = charCount;
+          // 총 글자수도 업데이트
+          const totalChars = Object.values(draft.documentCharCounts).reduce(
+            (acc, count) => acc + count,
+            0
+          );
+          draft.currentTotalChars = totalChars;
+
+          // baseline 및 히스토리 업데이트
+          const today = getTodayString();
+          if (draft.dailyBaselines[today] === undefined) {
+            draft.dailyBaselines[today] = totalChars;
+          }
+          draft.dailyEndTotals[today] = totalChars;
+
+          // 스트릭 업데이트
+          const todayProgress = totalChars - draft.dailyBaselines[today];
+          if (todayProgress > 0 && draft.lastActiveDate !== today) {
+            const yesterday = getYesterdayString();
+            if (draft.lastActiveDate === yesterday) {
+              draft.currentStreak += 1;
+            } else {
+              draft.currentStreak = 1;
+            }
+            if (draft.currentStreak > draft.longestStreak) {
+              draft.longestStreak = draft.currentStreak;
+            }
+            draft.lastActiveDate = today;
+          }
+        });
+      },
+
+      setDocumentCharCounts: (counts) => {
+        set((draft) => {
+          draft.documentCharCounts = counts;
+          const totalChars = Object.values(counts).reduce(
+            (acc, count) => acc + count,
+            0
+          );
+          draft.currentTotalChars = totalChars;
+
+          const today = getTodayString();
+          if (draft.dailyBaselines[today] === undefined) {
+            draft.dailyBaselines[today] = totalChars;
+          }
+          draft.dailyEndTotals[today] = totalChars;
+        });
+      },
+
+      getTodayProgress: () => {
+        const today = getTodayString();
+        const state = get();
+        const baseline = state.dailyBaselines[today];
+        const current = state.currentTotalChars;
+
+        if (baseline === undefined || current === 0) {
+          return 0;
+        }
+
+        return Math.max(0, current - baseline);
+      },
+
       setDailyGoal: (goal) => {
         set((draft) => {
           draft.dailyGoal = goal;
         });
       },
 
-      getTodayCount: () => {
-        const today = getTodayString();
-        return get().dailyStats[today] || 0;
-      },
-
       getHistory: (days) => {
         const history: DailyStat[] = [];
+        const state = get();
         const today = new Date();
-        const stats = get().dailyStats;
 
         for (let i = days - 1; i >= 0; i--) {
           const d = new Date();
           d.setDate(today.getDate() - i);
           const dateStr = d.toISOString().split("T")[0];
 
+          const baseline = state.dailyBaselines[dateStr] || 0;
+          const endTotal = state.dailyEndTotals[dateStr] || baseline;
+
           history.push({
             date: dateStr,
-            wordCount: stats[dateStr] || 0,
+            wordCount: Math.max(0, endTotal - baseline),
           });
         }
 
         return history;
       },
+
+      resetStats: () => {
+        // dailyGoal은 사용자 영구 설정값이므로 초기화에서 제외
+        set((draft) => {
+          draft.dailyBaselines = {};
+          draft.dailyEndTotals = {};
+          draft.currentStreak = 0;
+          draft.lastActiveDate = null;
+          draft.currentTotalChars = 0;
+          draft.documentCharCounts = {};
+        });
+      },
     })),
     {
-      name: "sto-link-stats",
+      name: "sto-link-stats-v4", // 새 버전으로 마이그레이션
       storage: createJSONStorage(() => statsStorage),
-    },
-  ),
+      partialize: (state) => ({
+        // documentCharCounts와 currentTotalChars는 persist하지 않음 (세션마다 새로 계산)
+        dailyBaselines: state.dailyBaselines,
+        dailyEndTotals: state.dailyEndTotals,
+        dailyGoal: state.dailyGoal,
+        currentStreak: state.currentStreak,
+        longestStreak: state.longestStreak,
+        lastActiveDate: state.lastActiveDate,
+      }),
+      // persist에서 로드 시 누락된 필드에 기본값 적용
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState as Partial<WritingStatsStore>),
+        // 이 필드들은 항상 기본값으로 시작
+        currentTotalChars: 0,
+        documentCharCounts: {},
+      }),
+    }
+  )
 );

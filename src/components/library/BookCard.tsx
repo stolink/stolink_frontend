@@ -39,9 +39,7 @@ interface BookCardProps {
   progress: number;
   lastEdited: string;
   onClick?: () => void;
-  onAction?: (
-    action: "rename" | "duplicate" | "delete" | "change_cover",
-  ) => void;
+  onAction?: (action: "rename" | "clone" | "delete" | "change_cover") => void;
 
   // 상태 변경 콜백
   onStatusChange?: (status: ProjectStatusType) => void;
@@ -214,7 +212,7 @@ export function BookCard({
                 <DropdownMenuItem onClick={() => onAction?.("rename")}>
                   <Edit className="mr-2 h-4 w-4" /> 이름 변경
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAction?.("duplicate")}>
+                <DropdownMenuItem onClick={() => onAction?.("clone")}>
                   <Copy className="mr-2 h-4 w-4" /> 복제
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onAction?.("change_cover")}>

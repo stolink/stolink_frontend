@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
@@ -21,6 +21,7 @@ import {
   type CharacterGraphCanvasRef,
 } from "@/components/CharacterGraph/CanvasGraph";
 import { RelationshipDeepAnalysisModal } from "@/components/CharacterGraph/RelationshipDeepAnalysis";
+import { CreateRelationshipDialog } from "@/components/CharacterGraph/CreateRelationshipDialog";
 import { generateAnalysisData } from "@/components/CharacterGraph/RelationshipDeepAnalysis/utils/analysisCalculations";
 import type { AnalysisDiff } from "@/types/analysisTypes";
 import type { RelationshipDeepAnalysisData } from "@/types/relationshipAnalysis";
@@ -40,6 +41,7 @@ import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
 
 import { useProjectEvents } from "@/hooks/useEvents";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
+import { useCreateRelationship } from "@/hooks/useRelationships";
 
 // Feature Flag: Canvas vs SVG 그래프 전환 (Canvas가 기본값)
 const USE_CANVAS_GRAPH = true;
@@ -80,8 +82,17 @@ export default function WorldPage() {
 
   const updateCharacterMutation = useUpdateCharacter();
 
-  const setJobId = useAnalysisBufferStore((state) => state.setJobId);
-  const setAnalyzing = useAnalysisBufferStore((state) => state.setAnalyzing);
+  const {
+    setJobId,
+    setAnalyzing,
+    pendingViewJobId,
+    setPendingViewJobId,
+    analysisSnapshots,
+    setAnalysisSnapshot,
+    clearAnalysisSnapshot,
+    acknowledgeJob,
+    isJobAcknowledged,
+  } = useAnalysisBufferStore();
 
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -99,6 +110,10 @@ export default function WorldPage() {
   const [analysisChanges, setAnalysisChanges] = useState<
     Record<string, "new" | "updated" | null>
   >({});
+  const [currentAnalysisJobId, setCurrentAnalysisJobId] = useState<
+    string | null
+  >(null);
+  const animatingJobIdRef = useRef<string | null>(null);
 
   // Polling for analysis status (Global)
   const {
@@ -108,37 +123,38 @@ export default function WorldPage() {
     isStuck,
     currentJobType,
     flushAndAnalyze,
+    isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
-    onAnalysisComplete: (_result) => {
-      // guard: Check acknowledgement
-      if (
-        projectId &&
-        sessionStorage.getItem(`analysis_acknowledged_${projectId}`) === "true"
-      ) {
-        return;
-      }
-      // 분석 완료 애니메이션 표시 (결과 유무와 관계없이)
-      setShowCompletionAnimation(true);
-
-      // Trigger waiting state for data refresh
-      // Diff calculation will happen in useEffect once data is updated
-      setIsWaitingForRefresh(true);
+    onAnalysisComplete: (_result, jobId) => {
+      setPendingViewJobId(jobId);
     },
   });
 
   // Check for Pending Analysis View (from Editor)
   useEffect(() => {
     if (projectId) {
-      const pendingView = sessionStorage.getItem(
-        `analysis_pending_view_${projectId}`,
-      );
-      if (pendingView === "true") {
-        sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
+      if (pendingViewJobId && pendingViewJobId !== "") {
+        const isAck = isJobAcknowledged(pendingViewJobId);
+
+        if (isAck) {
+          setPendingViewJobId(null);
+          return;
+        }
+
+        // Decouple from render cycle to avoid cascading renders warning
+        setTimeout(() => {
+          setPendingViewJobId(null);
+          setShowCompletionAnimation(true);
+          setCurrentAnalysisJobId(pendingViewJobId);
+        }, 0);
+
         // Trigger the completion flow immediately
-        setTimeout(() => setIsWaitingForRefresh(true), 0);
+        setTimeout(() => {
+          setIsWaitingForRefresh(true);
+        }, 50);
       }
     }
-  }, [projectId]);
+  }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
 
   // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장
   // (에디터에서 분석을 시작한 경우 스냅샷이 없을 수 있음)
@@ -148,13 +164,9 @@ export default function WorldPage() {
     // 이미 스냅샷이 있으면 무시
     if (snapshotRef.current) return;
 
-    // sessionStorage에 스냅샷이 있는지 확인
-    try {
-      const stored = sessionStorage.getItem(`analysis_snapshot_${projectId}`);
-      if (stored) return; // 이미 저장된 스냅샷이 있음
-    } catch {
-      // ignore
-    }
+    // sessionStorage 대신 store 사용
+    const storedSnapshot = analysisSnapshots[projectId];
+    if (storedSnapshot) return; // 이미 저장된 스냅샷이 있음
 
     // 캐릭터 데이터가 로드된 후에만 스냅샷 저장
     if (characters.length === 0) return;
@@ -166,16 +178,15 @@ export default function WorldPage() {
     };
     snapshotRef.current = snapshot;
 
-    try {
-      sessionStorage.setItem(
-        `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot),
-      );
-      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-    } catch (e) {
-      console.warn("Failed to save snapshot to sessionStorage", e);
-    }
-  }, [isPolling, projectId, characters, links]);
+    setAnalysisSnapshot(projectId, snapshot);
+  }, [
+    isPolling,
+    projectId,
+    characters,
+    links,
+    analysisSnapshots,
+    setAnalysisSnapshot,
+  ]);
 
   const analyzeMutation = useAnalyzeStory();
 
@@ -192,18 +203,10 @@ export default function WorldPage() {
     };
     snapshotRef.current = snapshot;
 
-    // Persist to sessionStorage to survive page reloads
-    try {
-      sessionStorage.setItem(
-        `analysis_snapshot_${projectId}`,
-        JSON.stringify(snapshot),
-      );
-      // Reset flags for new session
-      sessionStorage.setItem(`analysis_acknowledged_${projectId}`, "false");
-      sessionStorage.removeItem(`analysis_pending_view_${projectId}`);
-    } catch (e) {
-      console.warn("Failed to save snapshot to sessionStorage", e);
-    }
+    // Persist to store to survive page reloads
+    setAnalysisSnapshot(projectId, snapshot);
+    // Reset pending view for new session
+    setPendingViewJobId(null);
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
@@ -233,77 +236,115 @@ export default function WorldPage() {
 
   // Effect: Calculate Diff when Data Refreshes after Analysis
   useEffect(() => {
-    if (isWaitingForRefresh && !isPolling) {
-      // [Fix] Allow diff calculation even if snapshot is missing (treat as fresh start)
-      // Check if data seems "fresh" or different (or just assume it is after query invalidation)
+    const isAck = currentAnalysisJobId
+      ? isJobAcknowledged(currentAnalysisJobId)
+      : false;
 
-      // 1. Try to get snapshot from Ref
-      let prev = snapshotRef.current;
+    if (!isWaitingForRefresh || isPolling || isCheckingJobStatus) return;
 
-      // 2. If missing (e.g. reload), try SessionStorage
-      if (!prev && projectId) {
-        try {
-          const stored = sessionStorage.getItem(
-            `analysis_snapshot_${projectId}`,
-          );
-          if (stored) {
-            prev = JSON.parse(stored);
-          }
-        } catch (e) {
-          console.error("Failed to restore snapshot from storage", e);
-        }
-      }
-
-      // 3. Fallback to empty (Fresh Start)
-      if (!prev) {
-        prev = { characters: [], links: [] };
-      }
-
-      const currentChars = characters;
-      const currentLinks = links;
-
-      const diff = calculateDiffFromSnapshot(
-        prev.characters,
-        prev.links,
-        currentChars,
-        currentLinks,
-      );
-
-      // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
-      setTimeout(() => {
-        setAnalysisDiff(diff);
-
-        // Set highlighting
-        const namesToHighlight = [
-          ...diff.newCharacters.map((c) => c.profile.name),
-          ...diff.updatedCharacters.map((u) => {
-            const char = currentChars.find((c) => c._id === u.id);
-            return char?.profile.name || "";
-          }),
-        ].filter(Boolean);
-        setPendingHighlightNames(namesToHighlight);
-
-        // Reset wait state
-        setIsWaitingForRefresh(false);
-        snapshotRef.current = null; // Clear snapshot ref
-        if (projectId) {
-          sessionStorage.removeItem(`analysis_snapshot_${projectId}`); // Clear storage
-        }
-      }, 0);
-
-      // Open modal
-      setTimeout(() => {
-        setShowCompletionAnimation(false);
-        setIsAnalysisModalOpen(true);
-      }, 1500);
+    if (isAck || isAnalysisModalOpen) {
+      setTimeout(() => setIsWaitingForRefresh(false), 0);
+      return;
     }
-  }, [isWaitingForRefresh, isPolling, characters, links, projectId]);
+
+    // Guard: 만약 이미 이 작업으로 애니메이션 타이머가 돌고 있다면 중복 실행 방지
+    // 데이터 로드 과정에서 characters/links가 변하면서 이 effect가 재실행될 수 있음.
+    // clearTimeout으로 인해 타이머가 초기화되어 결과창이 안 뜨는 문제를 해결.
+    if (
+      currentAnalysisJobId &&
+      animatingJobIdRef.current === currentAnalysisJobId
+    ) {
+      return;
+    }
+    animatingJobIdRef.current = currentAnalysisJobId;
+
+    // 1. Try to get snapshot from Ref
+    let prev = snapshotRef.current;
+
+    // 2. If missing (e.g. reload), try store (persistent)
+    if (!prev && projectId) {
+      prev = analysisSnapshots[projectId];
+    }
+
+    // 3. Fallback to empty (Fresh Start)
+    if (!prev) {
+      prev = { characters: [], links: [] };
+    }
+
+    const currentChars = characters;
+    const currentLinks = links;
+
+    const diff = calculateDiffFromSnapshot(
+      prev.characters,
+      prev.links,
+      currentChars,
+      currentLinks,
+    );
+
+    // IMPORTANT: Reset wait state IMMEDIATELY to prevent redundant triggers
+    // before the async setStates below can finish.
+    // Fix: Wrap state updates in setTimeout to avoid "set-state-in-effect" warning
+    // Enforce minimum display time for "Analysis Complete" animation (2 seconds)
+    const minDisplayTime = 2000;
+
+    const timer = setTimeout(() => {
+      // Synchronous updates to ensure UI consistency
+      setIsWaitingForRefresh(false);
+      setAnalysisDiff(diff);
+
+      // Set highlighting
+      const namesToHighlight = [
+        ...diff.newCharacters.map((c) => c.profile.name),
+        ...diff.updatedCharacters.map((u) => {
+          const char = currentChars.find((c) => c._id === u.id);
+          return char?.profile.name || "";
+        }),
+      ].filter(Boolean);
+      setPendingHighlightNames(namesToHighlight);
+
+      snapshotRef.current = null; // Clear snapshot ref
+      if (projectId) {
+        clearAnalysisSnapshot(projectId); // Clear store
+      }
+
+      // Open modal immediately after the animation delay
+      setShowCompletionAnimation(false);
+      setIsAnalysisModalOpen(true);
+      animatingJobIdRef.current = null; // 타이머 종료 후 초기화
+    }, minDisplayTime);
+
+    return () => {
+      // 2024-01-16 Fix: 데이터 변경으로 인해 Effect가 재실행될 때
+      // 이미 같은 Job으로 애니메이션이 돌고 있다면 타이머를 초기화하지 않음.
+      if (animatingJobIdRef.current !== currentAnalysisJobId) {
+        clearTimeout(timer);
+      }
+    };
+  }, [
+    isWaitingForRefresh,
+    isPolling,
+    isCheckingJobStatus,
+    characters,
+    links,
+    projectId,
+    isAnalysisModalOpen,
+    currentAnalysisJobId,
+    analysisSnapshots,
+    clearAnalysisSnapshot,
+    isJobAcknowledged,
+    showCompletionAnimation,
+  ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+  const [activeCharacter, setSelectedCharacter] = useState<Character | null>(
     null,
   );
-  // 그래프 하이라이팅용 경량 상태 (즉시 반응)
+
+  // Relationship Create Dialog State
+  const [isCreateRelationshipDialogOpen, setIsCreateRelationshipDialogOpen] =
+    useState(false);
+  const createRelationshipMutation = useCreateRelationship(projectId || "");
+
   const [graphFocusId, setGraphFocusId] = useState<string | null>(null);
 
   const [relationTypeFilter, setRelationTypeFilter] = useState<
@@ -385,11 +426,11 @@ export default function WorldPage() {
 
   // Sync selectedCharacter with latest data from characters array
   // We use useMemo to derive the active character data to avoid cascading renders
-  const activeCharacter = useMemo(() => {
-    if (!selectedCharacter || characters.length === 0) return selectedCharacter;
-    const updated = characters.find((c) => c._id === selectedCharacter._id);
-    return updated ? updated : selectedCharacter;
-  }, [characters, selectedCharacter]);
+  // const activeCharacter = useMemo(() => { // This was moved to a state variable
+  //   if (!selectedCharacter || characters.length === 0) return selectedCharacter;
+  //   const updated = characters.find((c) => c._id === selectedCharacter._id);
+  //   return updated ? updated : selectedCharacter;
+  // }, [characters, selectedCharacter]);
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -408,21 +449,38 @@ export default function WorldPage() {
       });
       return;
     }
-    const nextChar =
-      selectedCharacter?._id === character._id ? null : character;
-    startTransition(() => {
-      setSelectedCharacter(nextChar);
-      setGraphFocusId(nextChar?._id || null);
-    });
 
-    // Sidebar will open because selectedCharacter is set
-    // Modal will be opened manually from the sidebar's "View Profile" button
+    // Always select and open modal
+    startTransition(() => {
+      setSelectedCharacter(character);
+      setGraphFocusId(character._id);
+    });
+    // setIsModalOpen(true); // User requested side panel only for node clicks
   };
 
   const handleCardClick = (character: Character) => {
     setSelectedCharacter(character);
     setGraphFocusId(character._id);
     setIsModalOpen(true);
+  };
+
+  const handleCreateRelationship = () => {
+    setIsCreateRelationshipDialogOpen(true);
+  };
+
+  const handleConfirmCreateRelationship = async (data: {
+    sourceId: string;
+    targetId: string;
+    types: UIRelationType[];
+    strength: number;
+    bidirectional: boolean;
+    description: string;
+  }) => {
+    createRelationshipMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateRelationshipDialogOpen(false);
+      },
+    });
   };
 
   const handleLinkClick = (link: RelationshipLink | null) => {
@@ -447,12 +505,12 @@ export default function WorldPage() {
     const targetChar = characters.find((c) => c._id === targetId);
 
     if (!sourceChar || !targetChar) {
-      console.warn("캐릭터를 찾을 수 없습니다:", sourceId, targetId);
       return;
     }
 
     // 분석 데이터 생성
     const analysisData = generateAnalysisData(
+      link.id,
       sourceChar,
       targetChar,
       link.relationTypes || [link.type],
@@ -460,6 +518,43 @@ export default function WorldPage() {
       projectEvents,
       link.description,
     );
+
+    // [New] 역방향 관계 찾기 (Target -> Source)
+    // links 배열에서 source와 target이 반대인 링크를 찾음
+    const reverseLink = links.find((l) => {
+      const lSourceId =
+        typeof l.source === "string"
+          ? l.source
+          : (l.source as { id: string }).id;
+      const lTargetId =
+        typeof l.target === "string"
+          ? l.target
+          : (l.target as { id: string }).id;
+      return lSourceId === targetId && lTargetId === sourceId;
+    });
+
+    if (reverseLink) {
+      analysisData.reverseRelationship = {
+        id: reverseLink.id,
+        types: reverseLink.relationTypes || [reverseLink.type],
+        strength: reverseLink.strength || 5,
+        description: reverseLink.description,
+      };
+
+      // 만약 정방향, 역방향이 모두 존재하면 양방향 관계가 아닐 수 있음 (혹은 명시적 양방향일 수도 있음)
+      // 하지만 UI에서는 개별 편집을 지원해야 하므로 데이터만 넘겨줌
+      // bidirectional 플래그는 보통 "동일한 관계 하나"를 공유할 때 true.
+      // 여기서는 "서로 다른 관계 객체"가 두 개 있는 경우를 처리.
+
+      // 만약 link 자체에 bidirectional: true가 있다면, reverseLink는 물리적으로 존재하지 않거나(하나의 링크로 표현),
+      // 혹은 두 개의 링크가 동기화되어 있을 수 있음.
+      // 현재 로직상 links 생성 시 양방향은 하나로 합쳐질 수도, 아닐 수도 있음.
+      // 확인 필요: useRelationships/Graph 에서는 양방향을 어떻게 표현하는가?
+      // 보통 Neo4j는 방향성이 있으므로 두 개의 관계가 생김.
+      // 프론트엔드 links 생성 로직에서 이를 dedupe 하는지 확인 필요.
+      // dedupe 한다면 reverseLink는 undefined일 것임.
+      // dedupe 하지 않는다면 찾을 수 있음.
+    }
 
     setRelationshipAnalysisData(analysisData);
     setIsRelationshipModalOpen(true);
@@ -509,7 +604,8 @@ export default function WorldPage() {
         >
           {/* Analysis Overlay (Scoped to Graph) */}
           <AnimatePresence>
-            {((isPolling && currentJobType !== "image") ||
+            {(isCheckingJobStatus ||
+              (isPolling && currentJobType !== "image") ||
               isDebugAnalyzing ||
               showCompletionAnimation) && (
               <motion.div
@@ -688,6 +784,8 @@ export default function WorldPage() {
                   showSearch={true}
                   ref={graphRef as React.RefObject<CharacterGraphCanvasRef>}
                   nodeChanges={analysisChanges}
+                  onCreateRelationship={handleCreateRelationship}
+                  projectId={projectId}
                 />
               ) : (
                 <CharacterGraph
@@ -716,7 +814,9 @@ export default function WorldPage() {
                   highlightedNodeIds={searchHighlightedIds}
                   onSearchChange={setSearchHighlightedIds}
                   showSearch={true}
+                  onCreateRelationship={handleCreateRelationship}
                   ref={graphRef as React.RefObject<CharacterGraphRef>}
+                  projectId={projectId}
                 />
               )}
             </div>
@@ -851,13 +951,12 @@ export default function WorldPage() {
           onClose={() => {
             setIsAnalysisModalOpen(false);
             setAnalysisDiff(null);
-            // Mark as acknowledged so notifications stop appearing
-            if (projectId) {
-              sessionStorage.setItem(
-                `analysis_acknowledged_${projectId}`,
-                "true",
-              );
+            // Acknowledge this job to prevent re-animation on reload/navigation
+            if (currentAnalysisJobId) {
+              acknowledgeJob(currentAnalysisJobId);
             }
+            setCurrentAnalysisJobId(null);
+            animatingJobIdRef.current = null;
           }}
           diff={analysisDiff}
           characters={characters}
@@ -875,6 +974,23 @@ export default function WorldPage() {
         onNavigateToEvent={(_eventId) => {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
         }}
+        onRelationshipDeleted={() => {
+          // 관계 삭제 후 필요한 추가 로직이 있다면 여기에 작성
+          // useDeleteRelationship에서 이미 query invalidation을 수행하므로
+          // 여기서는 별도의 데이터 페칭 로직이 필요 없음
+          console.log(
+            "[WorldPage] Relationship deleted, UI will refresh via cache invalidation",
+          );
+        }}
+      />
+
+      {/* Create Relationship Dialog */}
+      <CreateRelationshipDialog
+        isOpen={isCreateRelationshipDialogOpen}
+        onClose={() => setIsCreateRelationshipDialogOpen(false)}
+        onCreate={handleConfirmCreateRelationship}
+        characters={characters}
+        isCreating={createRelationshipMutation.isPending}
       />
     </div>
   );

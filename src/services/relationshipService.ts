@@ -94,6 +94,7 @@ export const relationshipService = {
   },
 
   update: async (id: string, payload: Partial<CreateRelationshipInput>) => {
+    console.log(`[RelationshipService] PATCH /relationships/${id}`, payload);
     const response = await api.patch<ApiResponse<Relationship>>(
       `/relationships/${id}`,
       payload,
@@ -102,6 +103,7 @@ export const relationshipService = {
   },
 
   delete: async (id: string) => {
+    console.log(`[RelationshipService] DELETE /relationships/${id}`);
     const response = await api.delete<ApiResponse<null>>(
       `/relationships/${id}`,
     );

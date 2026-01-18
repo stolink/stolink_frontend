@@ -205,6 +205,7 @@ export function PublishingWizard({
         if (sourceChar && targetChar) {
           const linkId = String(link.id);
           const analysisData = generateAnalysisData(
+            linkId,
             sourceChar,
             targetChar,
             [link.type],

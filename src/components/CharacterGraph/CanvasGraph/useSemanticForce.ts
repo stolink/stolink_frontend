@@ -96,26 +96,27 @@ export function useSemanticForce(
 
             if (isSourceFocus || isTargetFocus) {
               // Hero와 직접 연결된 노드는 가까이 (위성 궤도)
-              return 200;
+              return 180;
             }
-            return 2000; // 나머지는 멀리
+            return 1500; // 나머지는 멀리 (2000→1500)
           }
 
           // Type-based Distance (관계 타입에 따른 거리만 적용)
           const weight = getRelationWeight(link.type as string, link.strength);
 
           // 인력(양수) = 가까이, 척력(음수) = 멀리
+          // 범위를 좁혀서 극단적 뭉침/흩어짐 방지
           if (weight > 0) {
-            // 인력: 기본 거리에서 줄임
+            // 인력: 기본 거리에서 줄임 (최소 110px로 상향)
             return Math.max(
-              80,
+              110, // 80→110: 최소 거리 상향으로 뭉침 방지
               FORCE_CONFIG.linkDistance -
                 weight * SEMANTIC_FORCE_CONFIG.attractionDistance,
             );
           } else {
-            // 척력: 기본 거리에서 늘림
+            // 척력: 기본 거리에서 늘림 (최대 250px로 하향)
             return Math.min(
-              400,
+              250, // 400→250: 최대 거리 하향으로 과도한 분리 방지
               FORCE_CONFIG.linkDistance +
                 Math.abs(weight) * SEMANTIC_FORCE_CONFIG.repulsionDistance,
             );
@@ -129,18 +130,21 @@ export function useSemanticForce(
           if (layoutMode === "focus" && focusTargetId) {
             const isSourceFocus = source.id === focusTargetId;
             const isTargetFocus = target.id === focusTargetId;
-            if (isSourceFocus || isTargetFocus) return 0.8; // Stronger link attraction
+            if (isSourceFocus || isTargetFocus) return 0.6; // 0.8→0.6: Focus 모드 인력 완화
             return 0; // Hide others links basically
           }
 
           // Link strength: 관계 타입에 따라서만 결정
           const weight = getRelationWeight(link.type as string, link.strength);
 
-          // 인력은 weight에 비례, 척력은 약하게
+          // 인력/척력 모두 균일하게 적당한 강도 유지
+          // 극단적 차이 없이 안정적인 레이아웃
           if (weight > 0) {
-            return FORCE_CONFIG.linkStrength * (1 + weight * 0.5);
+            // 인력: 약간 강하게 (0.3 ~ 0.45 범위)
+            return FORCE_CONFIG.linkStrength * (1 + weight * 0.25); // 0.5→0.25: 배율 완화
           } else {
-            return FORCE_CONFIG.linkStrength * 0.3;
+            // 척력: 비슷한 강도로 (분리된 위치 유지)
+            return FORCE_CONFIG.linkStrength * 0.4; // 0.3→0.4: 척력 링크도 적당한 강도
           }
         });
     }
@@ -207,7 +211,7 @@ export function useSemanticForce(
     });
 
     // D3 Disjoint Pattern: forceX & forceY
-    // 각 노드를 해당 그룹의 중심으로 약하게 당김
+    // 각 노드를 해당 그룹의 중심으로 당기되, 관계 없는 노드는 전체 중앙으로 더 강하게 모음
     const forceXConfig = d3
       .forceX<CharacterNode>()
       .x((node) => {
@@ -215,9 +219,28 @@ export function useSemanticForce(
           return node.id === focusTargetId ? 0 : node.x || 0;
         }
         const center = groupCenters.get(node.group || "");
+        // 그룹이 있으면 그룹 중심, 없으면 전체 중앙(0,0)
         return center ? center.x : 0;
       })
-      .strength(0.05); // 매우 약한 인력 (위치 가이드만)
+      .strength((node) => {
+        if (layoutMode === "focus" && focusTargetId) {
+          return 0.01;
+        }
+        // 관계 수가 적을수록 중앙으로 더 강하게 끌림
+        const relationCount = node.relationCount || 0;
+        const hasGroup = node.group && node.group !== "무소속";
+
+        if (relationCount === 0) {
+          // 관계 없는 노드: 중앙으로 강하게 (0.15)
+          return 0.15;
+        } else if (!hasGroup) {
+          // 그룹 없는 노드: 중앙으로 중간 강도 (0.12)
+          return 0.12;
+        } else {
+          // 그룹 있는 노드: 그룹 중심으로 약하게 (0.08)
+          return 0.08;
+        }
+      });
 
     const forceYConfig = d3
       .forceY<CharacterNode>()
@@ -228,7 +251,21 @@ export function useSemanticForce(
         const center = groupCenters.get(node.group || "");
         return center ? center.y : 0;
       })
-      .strength(0.05); // 매우 약한 인력 (위치 가이드만)
+      .strength((node) => {
+        if (layoutMode === "focus" && focusTargetId) {
+          return 0.01;
+        }
+        const relationCount = node.relationCount || 0;
+        const hasGroup = node.group && node.group !== "무소속";
+
+        if (relationCount === 0) {
+          return 0.15;
+        } else if (!hasGroup) {
+          return 0.12;
+        } else {
+          return 0.08;
+        }
+      });
 
     fg.d3Force("x", forceXConfig);
     fg.d3Force("y", forceYConfig);
