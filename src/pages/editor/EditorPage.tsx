@@ -19,6 +19,7 @@ import {
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import { EditorToolbar } from "@/pages/editor/components/EditorToolbar";
+
 import { EditorSkeleton as EditorLoadingSkeleton } from "@/components/editor/EditorSkeleton";
 
 // Modals & Overlays
@@ -150,6 +151,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
 
   const [characterCount, setCharacterCount] = useState(0);
   const editorContentRef = useRef<EditorContentHandle>(null);
+
   const { toast } = useToast();
 
   const debouncedSetCharacterCount = useMemo(

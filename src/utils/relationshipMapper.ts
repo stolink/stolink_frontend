@@ -52,8 +52,8 @@ export function normalizeRelationType(type: string): RelationType {
 export function extractRelationshipLinks(
   characters: Character[],
 ): RelationshipLink[] {
-  const links: RelationshipLink[] = [];
-  const processedPairs = new Set<string>();
+  // Changed: Use Map to merge duplicate links instead of dropping them
+  const processedLinksMap = new Map<string, RelationshipLink>();
 
   // 0. ID 및 이름 매핑 생성 (Name Resolution용)
   const idSet = new Set<string>();
@@ -103,7 +103,7 @@ export function extractRelationshipLinks(
         privateFeeling?: string;
         private_feeling?: string;
       }) => {
-        // 2. 소스/타겟 ID 추출 (id 또는 _id)
+        // 2. 소스/타겟 ID 추출
         const characterId = char._id || (char as { id?: string }).id;
         const rawSourceId = rel.source || characterId;
         const rawTargetId = rel.target;
@@ -112,76 +112,109 @@ export function extractRelationshipLinks(
           return;
         }
 
-        // 3. ID Resolution (이름인 경우 ID로 변환)
+        // 3. ID Resolution
         let sourceId = rawSourceId;
         let targetId = rawTargetId;
 
-        // Source ID 확인 (이름 → ID 변환)
+        // Source ID Resolution
         if (!idSet.has(sourceId)) {
           if (nameToIdMap.has(sourceId)) {
             sourceId = nameToIdMap.get(sourceId)!;
           } else {
-            return; // ID를 찾을 수 없으면 스킵
+            return;
           }
         }
 
-        // Target ID 확인 (이름 → ID 변환)
+        // Target ID Resolution
         if (!idSet.has(targetId)) {
           if (nameToIdMap.has(targetId)) {
             targetId = nameToIdMap.get(targetId)!;
           } else {
-            return; // ID를 찾을 수 없으면 스킵
+            return;
           }
         }
 
-        // 양방향 중복 방지 (A-B와 B-A를 같은 것으로 취급)
+        // 양방향 중복 방지 Key (A-B == B-A)
         const pairKey =
           sourceId < targetId
             ? `${sourceId}-${targetId}`
             : `${targetId}-${sourceId}`;
 
-        if (processedPairs.has(pairKey)) return;
-        processedPairs.add(pairKey);
-
-        // Handle multi-type support (Super Edge)
-        // 4.1 Extract types array (priority: relationTypes > types > type)
+        // 4.1 Extract types to ADD (priority: relationTypes > types > type)
         const rawTypes =
           rel.relationTypes || rel.relation_types || rel.types || [];
-        let relationTypes: RelationType[] = [];
+        let newTypes: RelationType[] = [];
 
         if (Array.isArray(rawTypes) && rawTypes.length > 0) {
-          relationTypes = rawTypes.map((t) => normalizeRelationType(String(t)));
+          newTypes = rawTypes.map((t) => normalizeRelationType(String(t)));
         } else {
           // Fallback to single type
-          relationTypes = [
+          newTypes = [
             normalizeRelationType(
               rel.relationType || rel.relation_type || rel.type || "ally",
             ),
           ];
         }
 
-        // Ensure unique types
-        relationTypes = Array.from(new Set(relationTypes));
+        // [MERGE LOGIC] If link exists, merge types. Else create new.
+        if (processedLinksMap.has(pairKey)) {
+          const existingLink = processedLinksMap.get(pairKey)!;
 
-        // 4.2 Create Segments for Multi-Type Visualization
-        const segments = relationTypes.map((t, _index) => ({
+          // Merge Types (Set ensures uniqueness)
+          const mergedTypes = Array.from(
+            new Set([...existingLink.relationTypes!, ...newTypes]),
+          );
+          existingLink.relationTypes = mergedTypes;
+
+          // Update primary type if needed (optional logic, keep first encountered or prioritize?)
+          // For now, keep existing primaryType or update if empty.
+          // Let's just update relationTypes list.
+          // Force Graph's Super Edge logic will handle priority sorting.
+
+          // Update Segments
+          existingLink.segments = mergedTypes.map((t) => ({
+            type: t,
+            ratio: 1 / mergedTypes.length,
+            isPast: false,
+            strength: Math.max(existingLink.strength, rel.strength || 5), // Max strength
+            label: t,
+          }));
+
+          // Merge Strength (Max)
+          existingLink.strength = Math.max(
+            existingLink.strength,
+            rel.strength || 5,
+          );
+
+          // Merge Bidirectional
+          existingLink.bidirectional =
+            existingLink.bidirectional || rel.bidirectional;
+
+          return;
+        }
+
+        // Create New Link
+        // Ensure unique types locally
+        newTypes = Array.from(new Set(newTypes));
+
+        const segments = newTypes.map((t) => ({
           type: t,
-          ratio: 1 / relationTypes.length, // Equal distribution for now
-          isPast: false, // Could be derived from history if needed
+          ratio: 1 / newTypes.length,
+          isPast: false,
           strength: rel.strength || 5,
           label: t,
         }));
 
-        links.push({
+        const newLink: RelationshipLink = {
           id: rel.id || rel._id || `${sourceId}-${targetId}`,
           source: sourceId,
           target: targetId,
-          type: relationTypes[0], // Primary type for compatibility
-          primaryType: relationTypes[0],
-          relationTypes: relationTypes,
-          segments: segments.length > 1 ? segments : undefined, // Only use segments if multi-type
+          type: newTypes[0], // Primary type for compatibility (Graph uses this default if no super edge logic)
+          primaryType: newTypes[0],
+          relationTypes: newTypes,
+          segments: segments.length > 1 ? segments : undefined,
           strength: rel.strength || 5,
-          label: rel.description,
+          label: rel.description, // Use first description encountered
           description: rel.description,
           bidirectional: rel.bidirectional,
           evolvedFrom:
@@ -192,10 +225,12 @@ export function extractRelationshipLinks(
               : undefined,
           publicStance: rel.publicStance || rel.public_stance,
           privateFeeling: rel.privateFeeling || rel.private_feeling,
-        });
+        };
+
+        processedLinksMap.set(pairKey, newLink);
       },
     );
   });
 
-  return links;
+  return Array.from(processedLinksMap.values());
 }
