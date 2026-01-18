@@ -64,4 +64,27 @@ export const projectService = {
     );
     return response.data;
   },
+
+  clone: async (id: string, request: ProjectCloneRequest) => {
+    const response = await api.post<ApiResponse<Project>>(
+      `/projects/${id}/clone`,
+      request,
+    );
+    return response.data;
+  },
+};
+
+export interface ProjectCloneRequest {
+  newTitle: string;
+}
+
+export const cloneProject = async (
+  projectId: string,
+  request: ProjectCloneRequest,
+): Promise<ApiResponse<Project>> => {
+  const response = await api.post<ApiResponse<Project>>(
+    `/projects/${projectId}/clone`,
+    request,
+  );
+  return response.data;
 };
