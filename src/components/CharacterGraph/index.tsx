@@ -666,7 +666,7 @@ export const CharacterGraph = forwardRef<
           targetNode.x !== undefined &&
           targetNode.y !== undefined
         ) {
-          centerAt(targetNode.x, targetNode.y, 1.35);
+          centerAt(targetNode.x, targetNode.y, 1.0);
         }
       },
       [onNodeClick, nodes, centerAt],
@@ -698,7 +698,7 @@ export const CharacterGraph = forwardRef<
         focusNode: (nodeId: string) => {
           const node = nodes.find((n) => n.id === nodeId);
           if (node && node.x !== undefined && node.y !== undefined) {
-            return centerAt(node.x, node.y, 1.35);
+            return centerAt(node.x, node.y, 1.0);
           }
           return Promise.resolve();
         },
