@@ -148,8 +148,10 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             state.buffer = [];
             state.bufferCharCount = 0;
             state.lastConsistencyReport = null; // 프로젝트 변경 시 리포트 초기화
-            state.processedConflicts = {}; // 프로젝트 변경 시 초기화
-            // state.lastAnalyzedHashes = {}; // 해시 유지 (새로고침/프로젝트 전환 시 재분석 방지)
+            // [FIX] Do NOT clear processedConflicts on project switch.
+            // Conflict IDs are unique (based on docId), so we can persist status.
+            // state.processedConflicts = {};
+            // state.lastAnalyzedHashes = {}; // 해시 유지
 
             // 새로고침 시 진행 중인 Job이 있으면 상태 유지
             const hasActiveJobs =

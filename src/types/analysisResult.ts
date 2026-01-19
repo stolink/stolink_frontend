@@ -49,6 +49,9 @@ export interface BackendConflict {
   category?: string;
   type?: string;
   description: string;
+  existing?: string; // [FIX] Added to capture evidence
+  new_value?: string; // [FIX] Added to capture evidence (snake_case)
+  newValue?: string; // [FIX] Alternate casing
   suggestion?: string;
   resolution?: string;
   suggested_action?: "FLAG_FOR_HUMAN" | "AUTO_RESOLVE" | string;
@@ -135,6 +138,8 @@ export interface Conflict {
   severity: "critical" | "warning";
   category: string;
   description: string;
+  existing?: string; // [FIX] Preserved evidence
+  newValue?: string; // [FIX] Preserved evidence
   suggestion?: string;
   suggestedAction?: "FLAG_FOR_HUMAN" | "AUTO_RESOLVE" | string;
   location?: {
@@ -143,6 +148,7 @@ export interface Conflict {
     documentId?: string;
   };
   relatedEventIds?: string[];
+  displayIndex?: number; // [FIX] Added for passing UI index to backend
 }
 
 export interface ConsistencyStats {
@@ -238,6 +244,8 @@ export function transformConflict(
     severity,
     category,
     description,
+    existing: backend.existing, // [FIX] Map existing
+    newValue: backend.new_value || backend.newValue, // [FIX] Map new_value
     suggestion: backend.suggestion || backend.resolution || undefined,
     suggestedAction: backend.suggested_action,
     location: backend.location
