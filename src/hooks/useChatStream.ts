@@ -147,7 +147,21 @@ export function useChatStream(options?: UseChatStreamOptions) {
           method: "POST",
           headers,
           body: JSON.stringify({
-            message: message,
+            message: `${message}\n\n[SYSTEM_INSTRUCTION:
+1. Role: You are a sophisticated literary editor and creative writing partner.
+2. Tone: Professional, insightful, and encouraging.
+3. Formatting:
+   - Use **bold** for key concepts or emphasis.
+   - Use *italics* for book titles, internal monologues, or definitions.
+   - Use bullet points or numbered lists for structured feedback.
+   - Use > blockquotes for citing the user's text.
+4. CRITICAL - Custom Tags (YOU MUST use these exact formats):
+   - For plot holes/contradictions: [#태그명] or [#TagName] (e.g., [#시간순서오류], [#Timeline])
+   - For character mentions: [@캐릭터명] or [@CharacterName] (e.g., [@민수], [@Elara])
+   - For key events: [!이벤트명] or [!EventName] (e.g., [!폭발사건], [!TheExplosion])
+   - IMPORTANT: Always wrap tags in brackets []. Never use bare @, #, ! without brackets.
+   - IMPORTANT: Do NOT include prefixes like "Character:", "Conflict:", "Event:" inside brackets.
+5. Goal: Analyze subtext, themes, and character consistency deeply.]`,
             project_id: projectId,
             user_id: userId,
             session_id: currentSessionId,
@@ -170,15 +184,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         let accumulatedResponse = "";
         let sources: SourceChunk[] = [];
         let cards: CardData[] = [];
-        let isFirstData = true; // 첫 데이터 감지 플래그
-
-        const handleFirstData = () => {
-          if (isFirstData) {
-            isFirstData = false;
-            setAnalyzing(false);
-            setAnalysisComplete(true);
-          }
-        };
+        let isFirstToken = true; // 로컬 플래그로 첫 토큰 감지
 
         while (true) {
           const { done, value } = await reader.read();
@@ -193,21 +199,22 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 const data = JSON.parse(line.slice(6)) as StreamToken;
 
                 if (data.type === "token" && data.content) {
-                  // 첫 데이터 도착 처리
-                  handleFirstData();
+                  // 첫 토큰 도착 = 분석 완료
+                  if (isFirstToken) {
+                    isFirstToken = false;
+                    setAnalyzing(false);
+                    setAnalysisComplete(true);
+                  }
                   accumulatedResponse += data.content;
                   setCurrentResponse(accumulatedResponse);
                 } else if (data.type === "sources" && data.sources) {
                   sources = data.sources;
                   setCurrentSources(sources);
-                  handleFirstData();
                 } else if (data.type === "cards" && data.cards) {
                   // 카드 데이터 수신 (관계 분석 등)
                   cards = [...cards, ...data.cards];
                   setCurrentCards(cards);
-                  handleFirstData();
                 } else if (data.type === "done") {
-                  console.log("[useChatStream] Stream done");
                   // 스트리밍 완료 - AI 메시지 추가
                   const aiMessage: ChatMessage = {
                     id: `assistant-${Date.now()}`,
@@ -219,7 +226,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   };
                   setMessages((prev) => [...prev, aiMessage]);
                   setStreaming(false);
-                  setAnalyzing(false);
                   setCurrentResponse("");
                   setCurrentSources([]);
                   setCurrentCards([]);
@@ -270,7 +276,6 @@ export function useChatStream(options?: UseChatStreamOptions) {
         setMessages((prev) => [...prev, errorAiMessage]);
       } finally {
         setStreaming(false);
-        setAnalyzing(false); // Ensure analyzing is false
         abortControllerRef.current = null;
       }
     },
