@@ -184,7 +184,15 @@ export function useChatStream(options?: UseChatStreamOptions) {
         let accumulatedResponse = "";
         let sources: SourceChunk[] = [];
         let cards: CardData[] = [];
-        let isFirstToken = true; // 로컬 플래그로 첫 토큰 감지
+        let isFirstData = true; // 첫 데이터 감지 플래그
+
+        const handleFirstData = () => {
+          if (isFirstData) {
+            isFirstData = false;
+            setAnalyzing(false);
+            setAnalysisComplete(true);
+          }
+        };
 
         while (true) {
           const { done, value } = await reader.read();
@@ -199,33 +207,19 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 const data = JSON.parse(line.slice(6)) as StreamToken;
 
                 if (data.type === "token" && data.content) {
-                  // 첫 토큰 도착 = 분석 완료
-                  if (isFirstToken) {
-                    isFirstToken = false;
-                    setAnalyzing(false);
-                    setAnalysisComplete(true);
-                  }
+                  // 첫 데이터 도착 처리
+                  handleFirstData();
                   accumulatedResponse += data.content;
                   setCurrentResponse(accumulatedResponse);
                 } else if (data.type === "sources" && data.sources) {
                   sources = data.sources;
                   setCurrentSources(sources);
-
-                  if (isFirstToken) {
-                    isFirstToken = false;
-                    setAnalyzing(false);
-                    setAnalysisComplete(true);
-                  }
+                  handleFirstData();
                 } else if (data.type === "cards" && data.cards) {
                   // 카드 데이터 수신 (관계 분석 등)
                   cards = [...cards, ...data.cards];
                   setCurrentCards(cards);
-
-                  if (isFirstToken) {
-                    isFirstToken = false;
-                    setAnalyzing(false);
-                    setAnalysisComplete(true);
-                  }
+                  handleFirstData();
                 } else if (data.type === "done") {
                   console.log("[useChatStream] Stream done");
                   // 스트리밍 완료 - AI 메시지 추가
