@@ -51,7 +51,11 @@ import {
 
 // Hooks & Components & Constants
 import { useCharacterData } from "@/hooks/useCharacterData";
-import { useCharacterEvents } from "@/hooks/useEvents";
+import {
+  useCharacterEvents,
+  useProjectEvents,
+  eventToBiography,
+} from "@/hooks/useEvents";
 import { CharacterHeader } from "./character-detail/components/CharacterHeader";
 import { CharacterTraits } from "./character-detail/components/CharacterTraits";
 
@@ -243,13 +247,60 @@ export default function CharacterDetailDialog({
     displayCharacter, // displayCharacter 사용
   );
 
-  // 캐릭터의 이벤트(일대기) 조회
-  const { data: characterEvents = [] } = useCharacterEvents(
+  // 캐릭터의 이벤트(일대기) 조회 (API)
+  const { data: apiCharacterEvents = [] } = useCharacterEvents(
     displayCharacter?._id ?? null,
     {
       enabled: !!displayCharacter?._id && isOpen,
     },
   );
+
+  // 프로젝트 전체 이벤트 조회 (Fallback용)
+  const { data: projectEvents = [] } = useProjectEvents(
+    propProjectId || displayCharacter?.projectId || null,
+    {
+      enabled:
+        !!(propProjectId || displayCharacter?.projectId) &&
+        isOpen &&
+        (!apiCharacterEvents || apiCharacterEvents.length === 0), // 캐릭터 이벤트가 없을 때만 활성화 (최적화)
+    },
+  );
+
+  // [Fix] API 결과가 없을 경우 eventRefs 또는 이름으로 Fallback
+  const characterEvents = useMemo(() => {
+    // 1. API 결과가 있으면 우선 사용
+    if (apiCharacterEvents && apiCharacterEvents.length > 0) {
+      return apiCharacterEvents;
+    }
+
+    // 2. 프로젝트 이벤트가 로드되지 않았으면 빈배열
+    if (!projectEvents || projectEvents.length === 0) return [];
+
+    // 3. Fallback A: eventRefs (캐릭터가 가지고 있는 이벤트 ID 목록)
+    // displayCharacter.relations?.eventRefs 사용 (타입 가드 필요)
+    const eventRefs: string[] = displayCharacter?.relations?.eventRefs || [];
+    if (eventRefs.length > 0) {
+      const filtered = projectEvents.filter((e) =>
+        eventRefs.includes(e.eventId),
+      );
+      if (filtered.length > 0) {
+        return filtered.map(eventToBiography);
+      }
+    }
+
+    // 4. Fallback B: 참가자 이름 매칭
+    const charName = displayCharacter?.profile?.name;
+    if (charName) {
+      const filtered = projectEvents.filter((e) =>
+        e.participants.includes(charName),
+      );
+      if (filtered.length > 0) {
+        return filtered.map(eventToBiography);
+      }
+    }
+
+    return [];
+  }, [apiCharacterEvents, projectEvents, displayCharacter]);
 
   // 프론트엔드 필터링: 백엔드가 모든 이벤트를 반환하는 경우 대비
   const realAppearances = useMemo(() => {
