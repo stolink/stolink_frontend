@@ -109,9 +109,9 @@ jobs:
           diff_lines = "${{ steps.diff.outputs.diff_lines }}"
           files_count = "${{ steps.diff.outputs.files_count }}"
 
-          # Gemini API 호출 (gemini-2.5-flash-exp)  
+          # Gemini API 호출 (gemini-2.5-flash)  
           api_key = os.environ.get('GEMINI_API_KEY')
-          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-exp:generateContent?key={api_key}"
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
           prompt = f"""당신은 StoLink 프로젝트의 시니어 풀스택 개발자입니다.
 
