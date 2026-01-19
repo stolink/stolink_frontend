@@ -413,6 +413,24 @@ export function useProjectAnalysis(
       } finally {
         setIsCheckingJobStatus(false);
       }
+
+      // Persistence Fix: Ensure report is loaded even if no job is running
+      const hasReport =
+        !!useAnalysisBufferStore.getState().lastConsistencyReport;
+      if (!hasReport && !isAnalyzing) {
+        try {
+          const backendReport = await aiService.getConsistencyReport(projectId);
+          if (backendReport) {
+            const report = transformConsistencyReport(backendReport);
+            useAnalysisBufferStore.getState().setLastConsistencyReport(report);
+          }
+        } catch (e) {
+          console.debug(
+            "[useProjectAnalysis] Failed to restore consistency report:",
+            e,
+          );
+        }
+      }
     };
 
     checkProjectJobStatus();
@@ -420,6 +438,7 @@ export function useProjectAnalysis(
     projectId,
     enabled,
     isHydrated,
+    isAnalyzing,
     addStoreJobId,
     clearStoreJobs,
     clearAnalysisJobs,
