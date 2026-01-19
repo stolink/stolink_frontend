@@ -752,6 +752,9 @@ export function useProjectAnalysis(
     // [Fix] 새 분석 시작 시 이전 Job ID들 제거 (진행률 섞임 방지)
     useAnalysisBufferStore.getState().clearAnalysisJobs(projectId);
 
+    // [Fix] 로컬 진행률 상태도 초기화하여 좀비 진행률 방지
+    setJobProgresses({});
+
     setBufferAnalyzing(true);
     setAnalysisError(null);
     if (!isAnalyzing) {

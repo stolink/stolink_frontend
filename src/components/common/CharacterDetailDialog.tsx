@@ -463,43 +463,10 @@ export default function CharacterDetailDialog({
       }
 
       try {
-        // Construct prompt from character attributes
-        const parts: string[] = [];
-
-        if (targetChar?.profile?.name) {
-          parts.push(`Character: ${targetChar.profile.name}`);
-        }
-        if (targetChar?.appearance?.physique) {
-          parts.push(`Physique: ${targetChar.appearance.physique}`);
-        }
-        if (targetChar?.appearance?.hairColor) {
-          parts.push(
-            `Hair: ${targetChar.appearance.hairColor} ${targetChar.appearance.hairStyle}`,
-          );
-        }
-        if (targetChar?.appearance?.eyes) {
-          parts.push(`Eyes: ${targetChar.appearance.eyes}`);
-        }
-        if (targetChar?.appearance?.attire) {
-          const attire = Array.isArray(targetChar.appearance.attire)
-            ? targetChar.appearance.attire.join(", ")
-            : targetChar.appearance.attire;
-          if (attire) parts.push(`Attire: ${attire}`);
-        }
-        if (targetChar?.appearance?.expression) {
-          parts.push(`Expression: ${targetChar.appearance.expression}`);
-        }
-        if (targetChar?.personality?.coreTraits?.length > 0) {
-          parts.push(`Traits: ${targetChar.personality.coreTraits.join(", ")}`);
-        }
-
         // Add manual prompt if provided
         const finalManualPrompt =
           _promptOverride !== undefined ? _promptOverride : manualPrompt;
-        if (finalManualPrompt) {
-          parts.push(`Note: ${finalManualPrompt}`);
-        }
-
+        // Extract precise prompt fields from setting if available (for backend to use directly)
         // Determine setting
         const selectedSetting =
           settingOverride ||
@@ -507,17 +474,6 @@ export default function CharacterDetailDialog({
             ? settings.find((s) => s.id === selectedSettingId)
             : undefined);
 
-        // Add background description if available
-        if (selectedSetting?.description) {
-          parts.push(`Background Style: ${selectedSetting.description}`);
-        }
-
-        const generatedPrompt =
-          parts.length > 0
-            ? parts.join(", ")
-            : "A high quality character portrait";
-
-        // Extract precise prompt fields from setting if available (for backend to use directly)
         // Extract precise prompt fields from setting if available (for backend to use directly)
         const cleanSetting = selectedSetting
           ? {
@@ -543,31 +499,39 @@ export default function CharacterDetailDialog({
         // [Fix] Backend (Docker) cannot access host-mapped domain 'stolink-minio-local' OR 'localhost:9001'
         // We must replace it with the internal service name 'minio:9000'
         if (characterData && typeof characterData.imageUrl === "string") {
-          // 1. Handle stolink-minio-local -> minio
-          if (characterData.imageUrl.includes("stolink-minio-local")) {
-            characterData.imageUrl = characterData.imageUrl.replace(
-              "stolink-minio-local",
-              "minio",
-            );
-          }
-          // 2. Handle localhost:9001 -> minio:9000 (standard dev environment)
-          if (characterData.imageUrl.includes("localhost:9001")) {
-            characterData.imageUrl = characterData.imageUrl.replace(
-              "localhost:9001",
-              "minio:9000",
-            );
+          let url = characterData.imageUrl.trim();
+
+          // 0. Ensure protocol is present for domain-based URLs (Fix for "Invalid URL ... No scheme supplied")
+          if (
+            !url.startsWith("http://") &&
+            !url.startsWith("https://") &&
+            !url.startsWith("/") &&
+            url.includes(".")
+          ) {
+            url = `https://${url}`;
           }
 
+          // 1. Handle stolink-minio-local -> minio
+          if (url.includes("stolink-minio-local")) {
+            url = url.replace("stolink-minio-local", "minio");
+          }
+          // 2. Handle localhost:9001 -> minio:9000 (standard dev environment)
+          if (url.includes("localhost:9001")) {
+            url = url.replace("localhost:9001", "minio:9000");
+          }
+
+          characterData.imageUrl = url;
           // 3. Ensure snake_case key is present for backend compatibility
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (characterData as any).image_url = characterData.imageUrl;
+          (characterData as any).image_url = url;
         }
 
         const { jobId } = await imageService.generateCharacterImage(
           effectiveProjectId,
           targetChar._id,
           action,
-          generatedPrompt,
+          finalManualPrompt ||
+            `${targetChar.profile?.name || "Character"} portrait`, // Pass manual prompt or safe fallback (Backend requires non-empty description)
           cleanSetting, // Pass clean setting as 5th arg (replaces raw object)
           cleanSetting, // Pass same clean object as 6th arg (for root-level backward compat)
           (characterData as Record<string, unknown>) || undefined,
@@ -579,12 +543,31 @@ export default function CharacterDetailDialog({
           title: action === "create" ? "이미지 생성 시작" : "이미지 수정 시작",
           description: "잠시만 기다려 주세요.",
         });
-      } catch (err) {
-        console.error("[ImageGeneration] API call failed:", err);
+      } catch (error: unknown) {
+        // Safe casting for error handling
+        const err = error as {
+          response?: { data?: { message?: unknown }; status?: number };
+          message?: string;
+        };
+
+        console.error("[ImageGeneration] API call failed full error:", err);
+        if (err.response) {
+          console.error(
+            "[ImageGeneration] API Response Data:",
+            err.response.data,
+          );
+          console.error(
+            "[ImageGeneration] API Response Status:",
+            err.response.status,
+          );
+        }
         toast({
           variant: "destructive",
           title: "실패",
-          description: "이미지 생성 요청 중 오류가 발생했습니다.",
+          description:
+            typeof err.response?.data?.message === "string"
+              ? err.response.data.message
+              : err.message || "이미지 생성 요청 중 오류가 발생했습니다.",
         });
       }
     },
