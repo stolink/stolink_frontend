@@ -226,7 +226,15 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
 
   // Helper: Filter significant changes (ignore case differences in strings)
   const isSignificantChange = (change: ChangeItem) => {
-    const { oldValue, newValue } = change;
+    const { field, oldValue, newValue } = change;
+
+    // Type change: check if localized label changes (e.g., FRIENDLY -> friendly is NOT significant if label is same)
+    if (field === "type") {
+      const oldLabel = getRelationLabel(String(oldValue));
+      const newLabel = getRelationLabel(String(newValue));
+      return oldLabel !== newLabel;
+    }
+
     if (typeof oldValue === "string" && typeof newValue === "string") {
       return oldValue.toLowerCase() !== newValue.toLowerCase();
     }

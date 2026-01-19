@@ -16,7 +16,7 @@ const WorldPage = lazy(() => import("@/pages/world/WorldPage"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics/AnalyticsPage"));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 const CharacterIntegrationTest = lazy(
-  () => import("@/pages/CharacterIntegrationTest")
+  () => import("@/pages/CharacterIntegrationTest"),
 );
 
 const SharedProjectPage = lazy(() => import("@/pages/share/SharedProjectPage"));
@@ -25,6 +25,7 @@ import { TextureOverlay } from "@/components/ui/TextureOverlay";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeSync } from "@stolink/ui";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { GlobalAnalysisWatcher } from "@/components/common/GlobalAnalysisWatcher";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -57,7 +58,7 @@ function App() {
       "theme-dark",
       "theme-sepia",
       "theme-eye-care",
-      "theme-true-black"
+      "theme-true-black",
     );
     // Add current theme class
     root.classList.add(`theme-${theme}`);
@@ -81,6 +82,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeSync />
+        <GlobalAnalysisWatcher />
         <TextureOverlay />
         <Toaster />
         <BrowserRouter>
