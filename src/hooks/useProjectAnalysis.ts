@@ -236,7 +236,23 @@ export function useProjectAnalysis(
               "[useProjectAnalysis] Failed to fetch consistency report:",
               _error,
             );
-            // Fallback removed to avoid showing dummy data
+            // Fallback: Create a dummy report with error message to notify user
+            // This prevents silent failure where user sees nothing
+            report = {
+              score: 0,
+              stats: { fixable: 0, critical: 0, warning: 1 },
+              conflicts: [
+                {
+                  id: "error-fallback",
+                  severity: "warning",
+                  category: "System Error",
+                  description:
+                    "일관성 보고서를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
+                },
+              ],
+              needsReview: false,
+              analyzedAt: new Date().toISOString(),
+            };
           }
         }
 
