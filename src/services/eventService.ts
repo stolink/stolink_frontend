@@ -39,6 +39,14 @@ export const eventService = {
 
       return data.map(transformBackendEvent);
     } catch (error: unknown) {
+      // 404 is expected if character not found (e.g. stale ID) - warn but don't error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((error as any)?.response?.status === 404) {
+        console.warn(
+          `[eventService] Character events not found (404) for id: ${characterId}`,
+        );
+        return [];
+      }
       console.error(`[eventService] Error fetching events:`, error);
       return [];
     }
