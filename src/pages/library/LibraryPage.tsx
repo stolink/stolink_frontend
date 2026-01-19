@@ -1018,8 +1018,6 @@ export default function LibraryPage() {
           onOpenChange={setCloneDialogOpen}
         />
       )}
-
-      <Footer />
     </div>
   );
 }
