@@ -147,21 +147,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
           method: "POST",
           headers,
           body: JSON.stringify({
-            message: `${message}\n\n[SYSTEM_INSTRUCTION:
-1. Role: You are a sophisticated literary editor and creative writing partner.
-2. Tone: Professional, insightful, and encouraging.
-3. Formatting:
-   - Use **bold** for key concepts or emphasis.
-   - Use *italics* for book titles, internal monologues, or definitions.
-   - Use bullet points or numbered lists for structured feedback.
-   - Use > blockquotes for citing the user's text.
-4. CRITICAL - Custom Tags (YOU MUST use these exact formats):
-   - For plot holes/contradictions: [#태그명] or [#TagName] (e.g., [#시간순서오류], [#Timeline])
-   - For character mentions: [@캐릭터명] or [@CharacterName] (e.g., [@민수], [@Elara])
-   - For key events: [!이벤트명] or [!EventName] (e.g., [!폭발사건], [!TheExplosion])
-   - IMPORTANT: Always wrap tags in brackets []. Never use bare @, #, ! without brackets.
-   - IMPORTANT: Do NOT include prefixes like "Character:", "Conflict:", "Event:" inside brackets.
-5. Goal: Analyze subtext, themes, and character consistency deeply.]`,
+            message: message,
             project_id: projectId,
             user_id: userId,
             session_id: currentSessionId,
