@@ -101,7 +101,7 @@ export interface CreateDraftRequest {
   workTitle?: string; // 작품 제목 (프로젝트 제목)
   workSynopsis?: string; // 작품 소개 (프로젝트 설명)
   workGenre?: string; // 작품 장르 (fantasy, romance 등)
-  workCoverUrl?: string; // 작품 표지 이미지 URL
+  workCoverImage?: string; // 작품 표지 이미지 (base64)
 }
 
 // Draft 응답
@@ -135,5 +135,5 @@ export interface CreateBulkDraftRequest {
   workTitle?: string; // 작품 제목 (프로젝트 제목)
   workSynopsis?: string; // 작품 소개 (프로젝트 설명)
   workGenre?: string; // 작품 장르 (fantasy, romance 등)
-  workCoverUrl?: string; // 작품 표지 이미지 URL
+  workCoverImage?: string; // 작품 표지 이미지 (base64)
 }

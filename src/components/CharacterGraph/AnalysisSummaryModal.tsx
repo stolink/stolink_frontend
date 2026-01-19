@@ -64,6 +64,29 @@ const getRelationLabel = (type: string) => {
   }
 };
 
+// Helper: Get Korean label for character roles
+const getRoleLabel = (role: string) => {
+  const lower = role.toLowerCase();
+  switch (lower) {
+    case "protagonist":
+      return "주인공";
+    case "antagonist":
+      return "적대자";
+    case "supporting":
+      return "조연";
+    case "mentor":
+      return "멘토";
+    case "sidekick":
+      return "조력자";
+    case "cameo":
+      return "카메오";
+    case "other":
+      return "기타";
+    default:
+      return role.toUpperCase();
+  }
+};
+
 // Helper function for badge styles, derived from feature branch logic
 const getRelationBadgeStyle = (type: string) => {
   const normalized = normalizeRelationType(type);
@@ -201,10 +224,37 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
     "characters",
   );
 
+  // Helper: Filter significant changes (ignore case differences in strings)
+  const isSignificantChange = (change: ChangeItem) => {
+    const { field, oldValue, newValue } = change;
+
+    // Type change: check if localized label changes (e.g., FRIENDLY -> friendly is NOT significant if label is same)
+    if (field === "type") {
+      const oldLabel = getRelationLabel(String(oldValue));
+      const newLabel = getRelationLabel(String(newValue));
+      return oldLabel !== newLabel;
+    }
+
+    if (typeof oldValue === "string" && typeof newValue === "string") {
+      return oldValue.toLowerCase() !== newValue.toLowerCase();
+    }
+    return oldValue !== newValue;
+  };
+
+  // Filter updatedRelations to only those with significant changes
+  const meaningfulUpdatedRelations = diff.updatedRelations.filter((update) =>
+    update.changes.some(isSignificantChange),
+  );
+
+  // Filter updatedCharacters to only those with significant changes
+  const meaningfulUpdatedCharacters = diff.updatedCharacters.filter((update) =>
+    update.changes.some(isSignificantChange),
+  );
+
   const newCharCount = diff.newCharacters.length;
-  const updatedCharCount = diff.updatedCharacters.length;
+  const updatedCharCount = meaningfulUpdatedCharacters.length;
   const newRelCount = diff.newRelations.length;
-  const updatedRelCount = diff.updatedRelations.length;
+  const updatedRelCount = meaningfulUpdatedRelations.length;
   const removedRelCount = diff.removedRelations?.length || 0;
 
   const totalChanges =
@@ -341,13 +391,15 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
 
     // 5. Faction / Role / Else
     let label = change.field;
-    const oldValDisplay = String(change.oldValue);
-    const newValDisplay = String(change.newValue);
+    let oldValDisplay = String(change.oldValue);
+    let newValDisplay = String(change.newValue);
 
     if (change.field === "faction") {
       label = "소속";
     } else if (change.field === "role") {
       label = "역할";
+      oldValDisplay = getRoleLabel(oldValDisplay);
+      newValDisplay = getRoleLabel(newValDisplay);
     } else if (change.field === "strength") {
       label = "관계 강도";
     }
@@ -686,7 +738,7 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                                 {char.profile.name}
                                               </h4>
                                               <p className="text-xs text-mocha-400 mt-0.5">
-                                                {char.role} ·{" "}
+                                                {getRoleLabel(char.role)} ·{" "}
                                                 {char.profile.faction?.name ||
                                                   "무소속"}
                                               </p>
@@ -722,46 +774,52 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                 </div>
 
                                 <div className="space-y-4">
-                                  {diff.updatedCharacters.map((update, idx) => (
-                                    <motion.div
-                                      variants={itemVariants}
-                                      key={update.id}
-                                      initial="hidden"
-                                      animate="visible"
-                                      transition={{ delay: idx * 0.05 }}
-                                      className="p-5 rounded-xl border-l-4 border-mocha-300"
-                                      style={{
-                                        background: "rgba(var(--paper), 0.5)",
-                                        backdropFilter: "blur(10px)",
-                                      }}
-                                    >
-                                      <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-mocha-50 flex items-center justify-center shrink-0">
-                                          <Activity className="w-5 h-5 text-mocha-400" />
-                                        </div>
-                                        <div className="flex-1 space-y-3">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-mocha-500 uppercase tracking-wider">
-                                              Character Update
-                                            </span>
-                                            <span className="text-xs text-mocha-400">
-                                              {getCharName(update.id)}
-                                            </span>
+                                  {meaningfulUpdatedCharacters.map(
+                                    (update, idx) => (
+                                      <motion.div
+                                        variants={itemVariants}
+                                        key={update.id}
+                                        initial="hidden"
+                                        animate="visible"
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="p-5 rounded-xl border-l-4 border-mocha-300"
+                                        style={{
+                                          background: "rgba(var(--paper), 0.5)",
+                                          backdropFilter: "blur(10px)",
+                                        }}
+                                      >
+                                        <div className="flex items-start gap-4">
+                                          <div className="w-10 h-10 rounded-lg bg-mocha-50 flex items-center justify-center shrink-0">
+                                            <Activity className="w-5 h-5 text-mocha-400" />
                                           </div>
-                                          <div className="space-y-3 pl-1 border-l-2 border-mocha-50">
-                                            {update.changes.map((change, i) => (
-                                              <div
-                                                key={i}
-                                                className="pl-3 py-1"
-                                              >
-                                                {renderChangeContent(change)}
-                                              </div>
-                                            ))}
+                                          <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-xs font-bold text-mocha-500 uppercase tracking-wider">
+                                                Character Update
+                                              </span>
+                                              <span className="text-xs text-mocha-400">
+                                                {getCharName(update.id)}
+                                              </span>
+                                            </div>
+                                            <div className="space-y-3 pl-1 border-l-2 border-mocha-50">
+                                              {update.changes.map(
+                                                (change, i) => (
+                                                  <div
+                                                    key={i}
+                                                    className="pl-3 py-1"
+                                                  >
+                                                    {renderChangeContent(
+                                                      change,
+                                                    )}
+                                                  </div>
+                                                ),
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    </motion.div>
-                                  ))}
+                                      </motion.div>
+                                    ),
+                                  )}
                                 </div>
                               </section>
                             )}
@@ -888,75 +946,82 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                 </div>
 
                                 <div className="space-y-4">
-                                  {diff.updatedRelations.map((update, idx) => {
-                                    const link = links.find(
-                                      (l) => l.id === update.id,
-                                    );
-                                    const sourceName = link
-                                      ? getCharName(link.sourceId)
-                                      : "";
-                                    const targetName = link
-                                      ? getCharName(link.targetId)
-                                      : "";
+                                  {meaningfulUpdatedRelations.map(
+                                    (update, idx) => {
+                                      const link = links.find(
+                                        (l) => l.id === update.id,
+                                      );
+                                      const sourceName = link
+                                        ? getCharName(link.sourceId)
+                                        : "";
+                                      const targetName = link
+                                        ? getCharName(link.targetId)
+                                        : "";
 
-                                    return (
-                                      <motion.div
-                                        variants={itemVariants}
-                                        key={update.id}
-                                        initial="hidden"
-                                        animate="visible"
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="group p-5 rounded-2xl border border-amber-200/50"
-                                        style={{
-                                          background: "rgba(var(--paper), 0.5)",
-                                          backdropFilter: "blur(10px)",
-                                        }}
-                                      >
-                                        <div className="flex flex-col gap-3">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-xs font-bold text-mocha-400">
-                                              RELATIONSHIP UPDATE
-                                            </span>
-                                            {link ? (
-                                              <span className="text-xs text-mocha-600 font-medium">
-                                                {sourceName}{" "}
-                                                <ArrowRight className="inline w-3 h-3 mx-0.5" />{" "}
-                                                {targetName}
+                                      return (
+                                        <motion.div
+                                          variants={itemVariants}
+                                          key={update.id}
+                                          initial="hidden"
+                                          animate="visible"
+                                          transition={{ delay: idx * 0.05 }}
+                                          className="group p-5 rounded-2xl border border-amber-200/50"
+                                          style={{
+                                            background:
+                                              "rgba(var(--paper), 0.5)",
+                                            backdropFilter: "blur(10px)",
+                                          }}
+                                        >
+                                          <div className="flex flex-col gap-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-xs font-bold text-mocha-400">
+                                                RELATIONSHIP UPDATE
                                               </span>
-                                            ) : (
-                                              <span className="text-xs text-mocha-300">
-                                                #{update.id.slice(0, 8)}
-                                              </span>
-                                            )}
-                                          </div>
+                                              {link ? (
+                                                <span className="text-xs text-mocha-600 font-medium">
+                                                  {sourceName}{" "}
+                                                  <ArrowRight className="inline w-3 h-3 mx-0.5" />{" "}
+                                                  {targetName}
+                                                </span>
+                                              ) : (
+                                                <span className="text-xs text-mocha-300">
+                                                  #{update.id.slice(0, 8)}
+                                                </span>
+                                              )}
+                                            </div>
 
-                                          <div className="space-y-2 pl-1 border-l-2 border-amber-100/50">
-                                            {update.changes.map((change, i) => {
-                                              if (
-                                                change.field === "type" &&
-                                                getRelationLabel(
-                                                  String(change.oldValue),
-                                                ) ===
-                                                  getRelationLabel(
-                                                    String(change.newValue),
-                                                  )
-                                              ) {
-                                                return null;
-                                              }
-                                              return (
-                                                <div
-                                                  key={i}
-                                                  className="pl-3 py-1"
-                                                >
-                                                  {renderChangeContent(change)}
-                                                </div>
-                                              );
-                                            })}
+                                            <div className="space-y-2 pl-1 border-l-2 border-amber-100/50">
+                                              {update.changes.map(
+                                                (change, i) => {
+                                                  if (
+                                                    change.field === "type" &&
+                                                    getRelationLabel(
+                                                      String(change.oldValue),
+                                                    ) ===
+                                                      getRelationLabel(
+                                                        String(change.newValue),
+                                                      )
+                                                  ) {
+                                                    return null;
+                                                  }
+                                                  return (
+                                                    <div
+                                                      key={i}
+                                                      className="pl-3 py-1"
+                                                    >
+                                                      {renderChangeContent(
+                                                        change,
+                                                      )}
+                                                    </div>
+                                                  );
+                                                },
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      </motion.div>
-                                    );
-                                  })}
+                                        </motion.div>
+                                      );
+                                    },
+                                  )}
                                 </div>
                               </section>
                             )}
