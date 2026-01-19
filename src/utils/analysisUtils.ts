@@ -394,7 +394,18 @@ export function calculateDiffFromSnapshot(
     } else {
       // Check for updates
       const changes: ChangeItem[] = [];
-      if (prevLink.type !== nextLink.type) {
+
+      // CASE SENSITIVE FIX: Normalize types before comparison
+      const nextType = (nextLink.type || "").toLowerCase().trim();
+      const prevType = (prevLink.type || "").toLowerCase().trim();
+
+      // MAPPING normalization (e.g. ALLY should equal friendly if that's the canonical type)
+      const normalizeRelation = (t: string) => {
+        if (t === "ally") return "friendly";
+        return t;
+      };
+
+      if (normalizeRelation(prevType) !== normalizeRelation(nextType)) {
         changes.push({
           field: "type",
           oldValue: prevLink.type,

@@ -109,14 +109,19 @@ export const createSuggestionConfig = (
             return;
           }
 
-          popup[0].setProps({
-            getReferenceClientRect: props.clientRect,
-          });
+          // Safety check: popup might not be initialized if onStart failed or was skipped
+          if (popup && popup[0]) {
+            popup[0].setProps({
+              getReferenceClientRect: props.clientRect,
+            });
+          }
         },
 
         onKeyDown(props: { event: KeyboardEvent }) {
           if (props.event.key === "Escape") {
-            popup[0].hide();
+            if (popup && popup[0]) {
+              popup[0].hide();
+            }
             return true;
           }
           // Delegate key events to the React component
@@ -124,7 +129,9 @@ export const createSuggestionConfig = (
         },
 
         onExit() {
-          popup[0].destroy();
+          if (popup && popup[0]) {
+            popup[0].destroy();
+          }
           component.destroy();
         },
       };

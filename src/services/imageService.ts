@@ -167,8 +167,15 @@ export const imageService = {
 
     // Apply URL resolution to result
     if (data.result && data.result.imageUrl) {
-      data.result.imageUrl =
-        resolveImageUrl(data.result.imageUrl) || data.result.imageUrl;
+      try {
+        const originalUrl = data.result.imageUrl;
+        const resolvedUrl = resolveImageUrl(originalUrl);
+        // console.log("[ImageService] Resolving URL:", { originalUrl, resolvedUrl });
+        data.result.imageUrl = resolvedUrl || originalUrl;
+      } catch (e) {
+        console.error("[ImageService] URL resolution error:", e);
+        // Don't rethrow, just keep original to avoid crashing polling
+      }
     }
 
     return data;

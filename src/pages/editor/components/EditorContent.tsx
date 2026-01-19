@@ -34,6 +34,7 @@ interface EditorContentProps {
   fetchNextPage?: () => void;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
+  onEditorCreate?: (editor: import("@tiptap/react").Editor) => void;
 }
 
 export interface EditorContentHandle {
@@ -80,6 +81,7 @@ export const EditorContent = forwardRef<
       fetchNextPage,
       hasNextPage,
       isFetchingNextPage,
+      onEditorCreate,
     },
     ref,
   ) => {
@@ -176,6 +178,7 @@ export const EditorContent = forwardRef<
                   fetchNextPage={fetchNextPage}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
+                  onEditorCreate={onEditorCreate}
                 />
               </div>
             </ResizablePanel>
@@ -214,6 +217,7 @@ export const EditorContent = forwardRef<
             fetchNextPage={fetchNextPage}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            onEditorCreate={onEditorCreate}
           />
         </div>
       );

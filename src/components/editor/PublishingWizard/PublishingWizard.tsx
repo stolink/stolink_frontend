@@ -257,7 +257,7 @@ export function PublishingWizard({
           workTitle: projectTitle || mergedTitle || "제목 없음",
           workSynopsis: projectDescription,
           workGenre: projectGenre,
-          workCoverUrl: projectCoverImage,
+          workCoverImage: projectCoverImage,
         });
 
         // Storead로 리다이렉트 (단일 Draft)
@@ -282,7 +282,7 @@ export function PublishingWizard({
             workTitle: projectTitle || doc.title || "제목 없음",
             workSynopsis: projectDescription,
             workGenre: projectGenre,
-            workCoverUrl: projectCoverImage,
+            workCoverImage: projectCoverImage,
           });
           draftIds.push(draft.id);
         }

@@ -4,7 +4,7 @@ import { Badge } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 import { Clock, ChevronRight, Sparkles } from "lucide-react";
 import { getRelationshipColor, type UIRelationType } from "./utils";
-import { toUIRelationType } from "./constants";
+import { toUIRelationType, RELATION_LABELS } from "./constants";
 import { motion, AnimatePresence } from "framer-motion";
 
 import type { RelationType } from "@/types";
@@ -63,13 +63,16 @@ export function RelationshipEventTooltip({
   const primaryColor = getRelationshipColor(type, strength, types);
 
   // Determine Badge Label
-  const badgeLabel = types && types.length >= 5 ? "복합" : type;
+  const badgeLabel =
+    types && types.length >= 5
+      ? "복합"
+      : RELATION_LABELS[toUIRelationType(type)] || type;
 
   // Smart Positioning to prevent overflow
   const tooltipWidth = 360;
   const padding = 20;
   const HEADER_OFFSET = 64; // Safe top margin
-  const CURSOR_GAP = 3; // Closer gap for better hover stability
+  const CURSOR_GAP = 6; // Closer gap for better hover stability
 
   let leftPos = x + CURSOR_GAP;
 

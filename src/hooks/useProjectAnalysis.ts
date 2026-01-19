@@ -232,14 +232,27 @@ export function useProjectAnalysis(
               await aiService.getConsistencyReport(projectId);
             report = transformConsistencyReport(backendReport);
           } catch (_error) {
-            // Fallback to mock (simulating backend)
-            try {
-              const mockBackendReport =
-                await aiService.mockGetConsistencyReport(projectId);
-              report = transformConsistencyReport(mockBackendReport);
-            } catch (_mockErr) {
-              // ignore
-            }
+            console.warn(
+              "[useProjectAnalysis] Failed to fetch consistency report:",
+              _error,
+            );
+            // Fallback: Create a dummy report with error message to notify user
+            // This prevents silent failure where user sees nothing
+            report = {
+              score: 0,
+              stats: { fixable: 0, critical: 0, warning: 1 },
+              conflicts: [
+                {
+                  id: "error-fallback",
+                  severity: "warning",
+                  category: "System Error",
+                  description:
+                    "일관성 보고서를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
+                },
+              ],
+              needsReview: false,
+              analyzedAt: new Date().toISOString(),
+            };
           }
         }
 
@@ -350,6 +363,23 @@ export function useProjectAnalysis(
           jobStatus.status === "failed" ||
           jobStatus.status === "completed"
         ) {
+          // [Fix] Check staleness for completed jobs to avoid resurrecting ancient history
+          const statusAny = jobStatus as unknown as Record<string, unknown>;
+          const timestampStr = (statusAny.updatedAt ||
+            statusAny.createdAt) as string;
+          const timestamp = timestampStr
+            ? new Date(timestampStr).getTime()
+            : Date.now();
+          const now = Date.now();
+          const elapsed = now - timestamp;
+
+          if (elapsed > 5 * 60 * 1000) {
+            // 5 min threshold
+            // Ignore stale completed jobs
+            if (currentStoreJobs.length > 0) clearStoreJobs(projectId);
+            return;
+          }
+
           // 서버가 명시적으로 "완료됨" 혹은 "실패함"이라고 응답하면,
           // finalizeAnalysis를 호출하여 onAnalysisComplete 콜백을 트리거합니다.
           // (WorldPage에서 Acknowledgement 체크 후 모달 표시)
@@ -383,6 +413,24 @@ export function useProjectAnalysis(
       } finally {
         setIsCheckingJobStatus(false);
       }
+
+      // Persistence Fix: Ensure report is loaded even if no job is running
+      const hasReport =
+        !!useAnalysisBufferStore.getState().lastConsistencyReport;
+      if (!hasReport && !isAnalyzing) {
+        try {
+          const backendReport = await aiService.getConsistencyReport(projectId);
+          if (backendReport) {
+            const report = transformConsistencyReport(backendReport);
+            useAnalysisBufferStore.getState().setLastConsistencyReport(report);
+          }
+        } catch (e) {
+          console.debug(
+            "[useProjectAnalysis] Failed to restore consistency report:",
+            e,
+          );
+        }
+      }
     };
 
     checkProjectJobStatus();
@@ -390,6 +438,7 @@ export function useProjectAnalysis(
     projectId,
     enabled,
     isHydrated,
+    isAnalyzing,
     addStoreJobId,
     clearStoreJobs,
     clearAnalysisJobs,
@@ -731,6 +780,13 @@ export function useProjectAnalysis(
     // 분석 상태 시작
     isRequestingRef.current = true;
     isFinalizingRef.current = false; // Reset finalizing flag
+
+    // [Fix] 새 분석 시작 시 이전 Job ID들 제거 (진행률 섞임 방지)
+    useAnalysisBufferStore.getState().clearAnalysisJobs(projectId);
+
+    // [Fix] 로컬 진행률 상태도 초기화하여 좀비 진행률 방지
+    setJobProgresses({});
+
     setBufferAnalyzing(true);
     setAnalysisError(null);
     if (!isAnalyzing) {

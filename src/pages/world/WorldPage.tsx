@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { startTransition, useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
@@ -8,7 +8,11 @@ import { cn } from "@/lib/utils";
 import { Network, Sparkles, UserRound, Users, X } from "lucide-react";
 
 import type { UIRelationType } from "@/components/CharacterGraph/constants";
-import type { Character, RelationshipLink } from "@/types";
+import type {
+  Character,
+  RelationshipLink,
+  CharacterRelationship,
+} from "@/types";
 import { roleLabels } from "./constants";
 
 import {
@@ -70,6 +74,22 @@ export default function WorldPage() {
     characters,
     projectEvents,
   );
+
+  // Relationship mapping for AnalysisSummaryModal
+  const formattedLinks: CharacterRelationship[] = useMemo(() => {
+    return links.map((link) => {
+      // D3 simulation might convert source/target to objects
+      const l = link as unknown as {
+        source: string | { id: string };
+        target: string | { id: string };
+      };
+      return {
+        ...link,
+        sourceId: typeof l.source === "object" ? l.source.id : l.source,
+        targetId: typeof l.target === "object" ? l.target.id : l.target,
+      } as CharacterRelationship;
+    });
+  }, [links]);
 
   // Snapshot Ref for diff calculation
   const snapshotRef = useRef<{
@@ -960,6 +980,7 @@ export default function WorldPage() {
           }}
           diff={analysisDiff}
           characters={characters}
+          links={formattedLinks}
         />
       )}
 

@@ -43,6 +43,7 @@ import {
 
 import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
 import { getApiData } from "@/utils/apiUtils";
+import { compressImage, resolveImageUrl } from "@/utils/imageUtils";
 import { useUpdateProjectStatus } from "@/hooks/useUpdateProjectStatus";
 import type { ProjectStatusType } from "@/components/library/StatusChip";
 import type { Project } from "@/types/project";
@@ -131,7 +132,7 @@ export default function LibraryPage() {
   const { mutate: deleteProject, mutateAsync: deleteProjectAsync } =
     useDeleteProject();
   const { mutate: updateProjectStatus } = useUpdateProjectStatus();
-  const { mutate: updateProject } = useUpdateProject();
+  const { mutateAsync: updateProject } = useUpdateProject();
 
   // ========== 원고 비동기 처리 ==========
   const setJob = useManuscriptJobStore((state) => state.setJob);
@@ -393,25 +394,41 @@ export default function LibraryPage() {
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && coverUpdateTargetId) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "파일 크기 초과",
-          description: "이미지 크기는 5MB 이하여야 합니다.",
+          description: "이미지 크기는 10MB 이하여야 합니다.",
           variant: "destructive",
         });
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        updateProject({
+      try {
+        const compressedBase64 = await compressImage(file, {
+          maxWidth: 800,
+          maxHeight: 1200,
+          quality: 0.8,
+        });
+
+        await updateProject({
           id: coverUpdateTargetId,
-          payload: { coverImage: base64String },
+          payload: { coverImage: compressedBase64 },
         });
         setCoverUpdateTargetId(null);
-      };
-      reader.readAsDataURL(file);
+
+        toast({
+          title: "표지 변경 완료",
+          description: "표지가 성공적으로 변경되었습니다.",
+          variant: "success",
+        });
+      } catch (error) {
+        console.error("Cover compression failed:", error);
+        toast({
+          title: "이미지 처리 실패",
+          description: "이미지를 처리하는 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     }
     // Reset input
     if (coverInputRef.current) {
@@ -733,7 +750,7 @@ export default function LibraryPage() {
                     project.status === "completed" ? "Complete" : "Writing"
                   }
                   genre={project.genre}
-                  coverImage={project.coverImage}
+                  coverImage={resolveImageUrl(project.coverImage)}
                   location={`Chapter ${project.stats?.chapterCount || 0}`}
                   length={`${project.stats?.totalWords || 0} W`}
                   progress={0}
@@ -1001,8 +1018,6 @@ export default function LibraryPage() {
           onOpenChange={setCloneDialogOpen}
         />
       )}
-
-      <Footer />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import type {
   AsymmetricStrength,
 } from "@/types/relationshipAnalysis";
 import { DEFAULT_TIMELINE_CONFIG } from "@/types/relationshipAnalysis";
+import { RELATION_PRIORITY, toUIRelationType } from "../../constants";
 
 /**
  * 시간 감쇠를 적용한 누적 점수 계산
@@ -577,6 +578,18 @@ export function generateAnalysisData(
       ? [targetToSourceRel.type]
       : types; // Fallback to symmetric
 
+  // [Priority Logic] Sort types by RELATION_PRIORITY to ensure consistent primary type selection
+  const sortTypes = (typesList: string[]) => {
+    return [...typesList].sort((a, b) => {
+      const pA = RELATION_PRIORITY[toUIRelationType(a)] ?? 99;
+      const pB = RELATION_PRIORITY[toUIRelationType(b)] ?? 99;
+      return pA - pB;
+    });
+  };
+
+  const sortedTypes = sortTypes(types);
+  const sortedTargetTypes = sortTypes(targetTypes);
+
   // 2. 설명문 결정
   let finalDescription =
     originalDescription || sourceToTargetRel?.description || "";
@@ -584,14 +597,14 @@ export function generateAnalysisData(
   const multiTypeThreshold = 5;
 
   if (!finalDescription) {
-    if (types.length >= multiTypeThreshold) {
-      const typeLabel = types
+    if (sortedTypes.length >= multiTypeThreshold) {
+      const typeLabel = sortedTypes
         .map((t) => formatKeyword(t))
         .filter((l, i, arr) => arr.indexOf(l) === i)
         .join(", ");
       finalDescription = `복합적 관계 (${typeLabel})`;
-    } else if (types.length > 0) {
-      finalDescription = `${formatKeyword(types[0])} 관계`;
+    } else if (sortedTypes.length > 0) {
+      finalDescription = `${formatKeyword(sortedTypes[0])} 관계`;
     }
   }
 
@@ -621,7 +634,7 @@ export function generateAnalysisData(
   const rawSourceToTargetAttrs = estimateAttributesFromRelation(
     sourceToTargetRel ||
       ({
-        type: types[0] as RelationType,
+        type: sortedTypes[0] as RelationType,
         target: targetId,
         strength: finalStrength,
       } as CharacterRelation),
@@ -632,7 +645,7 @@ export function generateAnalysisData(
   const rawTargetToSourceAttrs = estimateAttributesFromRelation(
     targetToSourceRel ||
       ({
-        type: targetTypes[0] as RelationType,
+        type: sortedTargetTypes[0] as RelationType,
         target: sourceId,
         strength: targetStrength,
         history: null,
@@ -707,14 +720,14 @@ export function generateAnalysisData(
     sourceToTarget: {
       total: sourceToTargetRel?.strength ?? finalStrength,
       factors: generateFactors(
-        types,
+        sortedTypes,
         sourceToTargetRel?.strength ?? finalStrength,
       ),
     },
     targetToSource: {
       total: targetToSourceRel?.strength ?? Math.max(0, finalStrength - 1), // Fallback slighly weaker
       factors: generateFactors(
-        targetTypes,
+        sortedTargetTypes,
         targetToSourceRel?.strength ?? finalStrength - 1,
       ),
     },
