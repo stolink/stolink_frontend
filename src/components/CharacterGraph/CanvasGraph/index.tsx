@@ -423,7 +423,7 @@ export const CharacterGraphCanvas = forwardRef<
             node.y !== undefined
           ) {
             graphRef.current.centerAt(node.x, node.y, 1000);
-            graphRef.current.zoom(2, 1000);
+            graphRef.current.zoom(1, 1000); // Zoom level reduced to 1 (User Request)
           }
         },
       }),
