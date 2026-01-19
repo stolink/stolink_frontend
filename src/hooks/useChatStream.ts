@@ -210,11 +210,24 @@ export function useChatStream(options?: UseChatStreamOptions) {
                 } else if (data.type === "sources" && data.sources) {
                   sources = data.sources;
                   setCurrentSources(sources);
+
+                  if (isFirstToken) {
+                    isFirstToken = false;
+                    setAnalyzing(false);
+                    setAnalysisComplete(true);
+                  }
                 } else if (data.type === "cards" && data.cards) {
                   // 카드 데이터 수신 (관계 분석 등)
                   cards = [...cards, ...data.cards];
                   setCurrentCards(cards);
+
+                  if (isFirstToken) {
+                    isFirstToken = false;
+                    setAnalyzing(false);
+                    setAnalysisComplete(true);
+                  }
                 } else if (data.type === "done") {
+                  console.log("[useChatStream] Stream done");
                   // 스트리밍 완료 - AI 메시지 추가
                   const aiMessage: ChatMessage = {
                     id: `assistant-${Date.now()}`,
@@ -226,6 +239,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
                   };
                   setMessages((prev) => [...prev, aiMessage]);
                   setStreaming(false);
+                  setAnalyzing(false);
                   setCurrentResponse("");
                   setCurrentSources([]);
                   setCurrentCards([]);
@@ -276,6 +290,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         setMessages((prev) => [...prev, errorAiMessage]);
       } finally {
         setStreaming(false);
+        setAnalyzing(false); // Ensure analyzing is false
         abortControllerRef.current = null;
       }
     },

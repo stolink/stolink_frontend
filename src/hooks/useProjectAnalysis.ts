@@ -232,14 +232,11 @@ export function useProjectAnalysis(
               await aiService.getConsistencyReport(projectId);
             report = transformConsistencyReport(backendReport);
           } catch (_error) {
-            // Fallback to mock (simulating backend)
-            try {
-              const mockBackendReport =
-                await aiService.mockGetConsistencyReport(projectId);
-              report = transformConsistencyReport(mockBackendReport);
-            } catch (_mockErr) {
-              // ignore
-            }
+            console.warn(
+              "[useProjectAnalysis] Failed to fetch consistency report:",
+              _error,
+            );
+            // Fallback removed to avoid showing dummy data
           }
         }
 
