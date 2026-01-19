@@ -368,6 +368,14 @@ export default function CharacterDetailDialog({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (sanitizeValue(basePayload) as Record<string, any>) || {};
 
+    // [Optimization] Remove heavy graph data causing 500 errors on large projects
+    delete cleanPayload.relations;
+    delete cleanPayload.relationships;
+    delete cleanPayload.participantNodes;
+    delete cleanPayload.participants;
+    delete cleanPayload.eventRefs;
+    delete cleanPayload.related_to; // Just in case
+
     // Standardize to user rule: all camelCase, except project_id
     const effectiveProjectId = charProjectId || propProjectId;
     if (effectiveProjectId) {
