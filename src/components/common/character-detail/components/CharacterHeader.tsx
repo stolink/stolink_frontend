@@ -78,14 +78,28 @@ export function CharacterHeader({
       <div className="magazine-image-container group shadow-xl">
         {displayImageUrl && !imageError ? (
           <>
-            <img
-              src={displayImageUrl}
-              alt={name}
-              className="w-full h-full object-contain bg-cloud-50/50"
-              onError={(_e) => {
-                setImageError(true);
-              }}
-            />
+            {displayImageUrl.includes(".mp4") ? (
+              <video
+                src={displayImageUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain bg-cloud-50/50"
+                onError={(_e) => {
+                  setImageError(true);
+                }}
+              />
+            ) : (
+              <img
+                src={displayImageUrl}
+                alt={name}
+                className="w-full h-full object-contain bg-cloud-50/50"
+                onError={(_e) => {
+                  setImageError(true);
+                }}
+              />
+            )}
             <div className="magazine-image-overlay" />
           </>
         ) : (
