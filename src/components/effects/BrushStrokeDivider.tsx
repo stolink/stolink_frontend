@@ -4,9 +4,6 @@
  * 버전 4: SVG Path 기반 붓터치 구분선
  * 이미지 없이 벡터로 구현되어 무한 확장 가능합니다.
  */
-
-// import { cn } from "@/lib/utils";
-
 interface BrushStrokeDividerProps {
   /** 색상 */
   color?: string;

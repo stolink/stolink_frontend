@@ -444,14 +444,6 @@ export default function WorldPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDebugAnalyzing, showCompletionAnimation, isAnalysisModalOpen]);
 
-  // Sync selectedCharacter with latest data from characters array
-  // We use useMemo to derive the active character data to avoid cascading renders
-  // const activeCharacter = useMemo(() => { // This was moved to a state variable
-  //   if (!selectedCharacter || characters.length === 0) return selectedCharacter;
-  //   const updated = characters.find((c) => c._id === selectedCharacter._id);
-  //   return updated ? updated : selectedCharacter;
-  // }, [characters, selectedCharacter]);
-
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
     return (
@@ -996,12 +988,7 @@ export default function WorldPage() {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
         }}
         onRelationshipDeleted={() => {
-          // 관계 삭제 후 필요한 추가 로직이 있다면 여기에 작성
-          // useDeleteRelationship에서 이미 query invalidation을 수행하므로
-          // 여기서는 별도의 데이터 페칭 로직이 필요 없음
-          console.log(
-            "[WorldPage] Relationship deleted, UI will refresh via cache invalidation",
-          );
+          // 관계 삭제 후 UI는 캐시 무효화를 통해 자동으로 갱신됨
         }}
       />
 

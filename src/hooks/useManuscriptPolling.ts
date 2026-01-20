@@ -82,10 +82,10 @@ export function useManuscriptPolling() {
             data.totalDocuments,
           );
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 404 Not Found Handling
-        if (error.response?.status === 404) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
           console.warn(
             `[ManuscriptPolling] Job ${job.jobId} not found (404). Pausing polling until resumed.`,
           );

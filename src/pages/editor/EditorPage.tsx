@@ -24,10 +24,6 @@ import { EditorSkeleton as EditorLoadingSkeleton } from "@/components/editor/Edi
 
 // Modals & Overlays
 import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal";
-// import { RenameSectionModal } from "@/pages/editor/components/modals/RenameSectionModal";
-// import { DeleteSectionModal } from "@/pages/editor/components/modals/DeleteSectionModal";
-// import { DemoTourModal } from "@/pages/editor/components/DemoTourModal";
-// import { AnalysisSummaryModal } from "@/components/CharacterGraph/AnalysisSummaryModal"; // Removed from Editor
 import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
 import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
 
@@ -355,10 +351,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // Analysis Integration (Polling & Buffer)
   // ============================================================
   const queryClient = useQueryClient();
-  // const [showAnalysisSummary, setShowAnalysisSummary] = useState(false); // Moved to World
-  // const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
 
-  // consistencyReport state removed in favor of store persistence
   const {
     addToBuffer,
     setPendingViewJobId,
