@@ -30,6 +30,7 @@ export function Toaster() {
                 : toast.variant === "success"
                   ? "bg-sage-100/90 text-espresso-900 border-sage-200"
                   : "bg-cloud-50/90 text-espresso-900 border-cloud-100",
+              toast.className, // User-provided class override
             )}
           >
             <div className="flex gap-3 text-left">
@@ -67,6 +68,7 @@ export function Toaster() {
                 )}
               </div>
             </div>
+            {toast.action && <div className="pl-6">{toast.action}</div>}
             <button
               onClick={(e) => {
                 e.stopPropagation();

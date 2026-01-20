@@ -290,7 +290,7 @@ export default function ExportModal({
         workTitle: projectTitle,
         workSynopsis: projectDescription,
         workGenre: projectGenre,
-        workCoverUrl: projectCoverImage,
+        workCoverImage: projectCoverImage,
       });
 
       window.location.href = `${COMMUNITY_URL}/write?draftId=${draft.id}`;

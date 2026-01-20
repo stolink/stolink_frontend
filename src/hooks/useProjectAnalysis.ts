@@ -232,14 +232,27 @@ export function useProjectAnalysis(
               await aiService.getConsistencyReport(projectId);
             report = transformConsistencyReport(backendReport);
           } catch (_error) {
-            // Fallback to mock (simulating backend)
-            try {
-              const mockBackendReport =
-                await aiService.mockGetConsistencyReport(projectId);
-              report = transformConsistencyReport(mockBackendReport);
-            } catch (_mockErr) {
-              // ignore
-            }
+            console.warn(
+              "[useProjectAnalysis] Failed to fetch consistency report:",
+              _error,
+            );
+            // Fallback: Create a dummy report with error message to notify user
+            // This prevents silent failure where user sees nothing
+            report = {
+              score: 0,
+              stats: { fixable: 0, critical: 0, warning: 1 },
+              conflicts: [
+                {
+                  id: "error-fallback",
+                  severity: "warning",
+                  category: "System Error",
+                  description:
+                    "일관성 보고서를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
+                },
+              ],
+              needsReview: false,
+              analyzedAt: new Date().toISOString(),
+            };
           }
         }
 
@@ -400,6 +413,24 @@ export function useProjectAnalysis(
       } finally {
         setIsCheckingJobStatus(false);
       }
+
+      // Persistence Fix: Ensure report is loaded even if no job is running
+      const hasReport =
+        !!useAnalysisBufferStore.getState().lastConsistencyReport;
+      if (!hasReport && !isAnalyzing) {
+        try {
+          const backendReport = await aiService.getConsistencyReport(projectId);
+          if (backendReport) {
+            const report = transformConsistencyReport(backendReport);
+            useAnalysisBufferStore.getState().setLastConsistencyReport(report);
+          }
+        } catch (e) {
+          console.debug(
+            "[useProjectAnalysis] Failed to restore consistency report:",
+            e,
+          );
+        }
+      }
     };
 
     checkProjectJobStatus();
@@ -407,6 +438,7 @@ export function useProjectAnalysis(
     projectId,
     enabled,
     isHydrated,
+    isAnalyzing,
     addStoreJobId,
     clearStoreJobs,
     clearAnalysisJobs,
@@ -751,6 +783,9 @@ export function useProjectAnalysis(
 
     // [Fix] 새 분석 시작 시 이전 Job ID들 제거 (진행률 섞임 방지)
     useAnalysisBufferStore.getState().clearAnalysisJobs(projectId);
+
+    // [Fix] 로컬 진행률 상태도 초기화하여 좀비 진행률 방지
+    setJobProgresses({});
 
     setBufferAnalyzing(true);
     setAnalysisError(null);

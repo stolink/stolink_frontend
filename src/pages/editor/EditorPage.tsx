@@ -563,6 +563,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     handleContentChange,
     handleCharacterCountChange,
     handleAddChapter,
+    handleAddSection,
     handleRenameChapter,
     handleDeleteChapter,
     handleReorderChapter,
@@ -607,7 +608,15 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   );
 
   // Modal Handlers
-  const handleCreateSection = () => setCreateSectionModalOpen(true);
+  const handleCreateSection = (title?: string | React.MouseEvent) => {
+    // If title is a string (from SlashCommand), create immediately
+    if (typeof title === "string") {
+      handleAddSection(title);
+    } else {
+      // Otherwise (from Button click event), open modal
+      setCreateSectionModalOpen(true);
+    }
+  };
   /*
   const handleRenameSection = (id: string, title: string) =>
     setRenameModal({ id, title });

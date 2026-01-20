@@ -5,6 +5,8 @@ interface ToastOptions {
   description?: string;
   variant?: "default" | "destructive" | "success";
   duration?: number;
+  action?: React.ReactNode;
+  className?: string;
 }
 
 interface Toast extends ToastOptions {

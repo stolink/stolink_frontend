@@ -12,7 +12,7 @@ interface UseEventsOptions {
  * Event → BiographyEvent 변환 헬퍼
  * eventService가 반환하는 Event(camelCase)를 BiographyEvent로 변환
  */
-function eventToBiography(event: Event): BiographyEvent {
+export function eventToBiography(event: Event): BiographyEvent {
   return transformEventToBiography({
     event_id: event.eventId,
     event_type: event.eventType,

@@ -140,12 +140,22 @@ export const CharacterGraphCanvas = forwardRef<
           if (graphRef.current) {
             graphRef.current.zoomToFit(400, 80);
           }
-          // 선택 해제는 부모(WorldPage)에서 처리
+
+          // [Fix] 선택 해제 및 검색 초기화 트리거
+          // 부모 컴포넌트에게 상태 초기화를 요청합니다.
+          if (onNodeClickRef.current) onNodeClickRef.current(null);
+          if (onLinkClick) onLinkClick(null);
+          if (onSearchChangeRef.current) onSearchChangeRef.current(null);
+
+          // 내부 호버 상태 등도 초기화
+          setHoveredNodeId(null);
+          setHoveredLink(null);
+          setDeepAnalysisData(null);
         }
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
+    }, [onLinkClick]);
 
     // Animation Loop
     useEffect(() => {
@@ -423,7 +433,7 @@ export const CharacterGraphCanvas = forwardRef<
             node.y !== undefined
           ) {
             graphRef.current.centerAt(node.x, node.y, 1000);
-            graphRef.current.zoom(2, 1000);
+            graphRef.current.zoom(1, 1000); // Zoom level reduced to 1 (User Request)
           }
         },
       }),
@@ -519,11 +529,13 @@ export const CharacterGraphCanvas = forwardRef<
     // [Stability] Ref로 콜백 관리하여 시뮬레이션 드리프트 방지
     const onNodeClickRef = useRef(onNodeClick);
     useEffect(() => {
+      // eslint-disable-next-line
       onNodeClickRef.current = onNodeClick;
     }, [onNodeClick]);
 
     const onSearchChangeRef = useRef(onSearchChange);
     useEffect(() => {
+      // eslint-disable-next-line
       onSearchChangeRef.current = onSearchChange;
     }, [onSearchChange]);
 
