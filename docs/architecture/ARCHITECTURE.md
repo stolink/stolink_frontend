@@ -1,7 +1,7 @@
 # StoLink 프로젝트 아키텍처
 
-> **최종 수정**: 2025년 12월 28일
-> **기술 스택**: React 19.2 + TypeScript 5.9 + Vite 7.2 + Zustand 5.0 + TanStack Query 5.90 + D3.js 7.x
+> **최종 수정**: 2026년 1월 20일
+> **기술 스택**: React 19.2 + TypeScript 5.7 + Vite 7.2 + Zustand 5.0 + TanStack Query 5.90 + D3.js 7.9
 
 ---
 
@@ -32,7 +32,7 @@ src/
 │
 ├── assets/               # 정적 리소스
 │
-├── components/           # 컴포넌트 (60개)
+├── components/           # 컴포넌트 (100개+)
 │   ├── common/           # 공통 (4개: Footer, Modal 등)
 │   ├── editor/           # 에디터 관련 (27개)
 │   │   ├── extensions/   # Tiptap 커스텀 익스텐션
@@ -63,7 +63,7 @@ src/
 ├── data/                 # 목 데이터, 상수 (3개)
 │   └── demoData.ts       # 데모 모드 목 데이터
 │
-├── hooks/                # 커스텀 훅 (30개) ⭐
+├── hooks/                # 커스텀 훅 (36개) ⭐
 │   ├── useDocuments.ts   # 문서 CRUD (TanStack Query)
 │   ├── useProjects.ts    # 프로젝트 관리
 │   ├── useCharacters.ts  # 캐릭터 관리
@@ -92,7 +92,7 @@ src/
 │   ├── useJobSSE.ts               # SSE 기반 작업 스트리밍
 │   └── useProjectSSE.ts           # 프로젝트 레벨 SSE 및 증분 분석
 │
-├── lib/                  # 유틸리티 (1개)
+├── lib/                  # 유틸리티 (12개)
 │   └── utils.ts          # cn 함수 등
 │
 ├── pages/                # 페이지 컴포넌트 (9개)
@@ -102,9 +102,10 @@ src/
 │   ├── library/LibraryPage.tsx
 │   └── ...
 │
-├── repositories/         # 로컬 데이터 저장소 (2개)
+├── repositories/         # 로컬 데이터 저장소 (5개)
 │   ├── DocumentRepository.ts
-│   └── LocalDocumentRepository.ts
+│   ├── LocalDocumentRepository.ts
+│   └── ...
 │
 ├── services/             # API 서비스 레이어 (20개) ⭐
 │   ├── documentService.ts
@@ -123,20 +124,25 @@ src/
 │   ├── graphApi.ts
 │   └── index.ts
 │
-├── stores/               # Zustand 스토어 (8개)
+├── stores/               # Zustand 스토어 (17개) ⭐
 │   ├── useAuthStore.ts
 │   ├── useEditorStore.ts
+│   ├── useEditorSettingStore.ts    # 🆕 에디터 설정
 │   ├── useUIStore.ts
 │   ├── useForeshadowingStore.ts
 │   ├── useChapterStore.ts
 │   ├── useSceneStore.ts
 │   ├── useDemoStore.ts
 │   ├── useAnalysisBufferStore.ts
+│   ├── useManuscriptJobStore.ts    # 🆕 원고 작업
+│   ├── useNotificationStore.ts     # 🆕 알림
+│   ├── useSnapshotStore.ts         # 🆕 스냅샷
+│   ├── useWritingStatsStore.ts     # 🆕 집필 통계
 │   └── index.ts
 │
 ├── styles/               # 추가 스타일
 │
-└── types/                # TypeScript 타입 (11개)
+└── types/                # TypeScript 타입 (21개) ⭐
     ├── document.ts       # Document, DocumentMetadata
     ├── project.ts        # Project, ProjectStats
     ├── character.ts      # Character, Place, Item, CharacterRelation
@@ -144,9 +150,19 @@ src/
     ├── foreshadowing.ts  # Foreshadowing, ForeshadowingAppearance
     ├── auth.ts           # User, AuthResponse
     ├── api.ts            # ApiResponse, JobResponse
+    ├── analysisResult.ts # 🆕 AI 분석 결과 타입
+    ├── analysisTypes.ts  # 🆕 분석 관련 타입
+    ├── biography.ts      # 🆕 캐릭터 전기
+    ├── editorSettings.ts # 🆕 에디터 설정
+    ├── event.ts          # 🆕 이벤트
+    ├── network.ts        # Network 관련 타입
+    ├── publish.ts        # 🆕 출판
+    ├── relationshipAnalysis.ts # 🆕 관계 분석
+    ├── section.ts        # 🆕 섹션
+    ├── settings.ts       # 🆕 설정
+    ├── stats.ts          # 🆕 통계
     ├── chapter.ts        # (Legacy)
     ├── scene.ts          # (Legacy)
-    ├── network.ts        # Network 관련 타입
     └── index.ts          # Type exports
 ```
 
@@ -187,18 +203,23 @@ src/
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Zustand 스토어 (9개)
+### Zustand 스토어 (17개)
 
 | 스토어                   | 역할                           | 미들웨어              |
 | ------------------------ | ------------------------------ | --------------------- |
 | `useAuthStore`           | 인증 상태, 토큰 관리           | `persist`             |
 | `useEditorStore`         | 프로젝트/챕터, 분할화면, 줌    | -                     |
+| `useEditorSettingStore`  | 🆕 에디터 설정 (폰트, 줌 등)   | `persist`             |
 | `useUIStore`             | 사이드바, 모달, 테마           | -                     |
 | `useSceneStore`          | Scene CRUD, 캐릭터/복선 연결   | `immer`               |
 | `useDemoStore`           | 데모 모드 데이터               | -                     |
 | `useForeshadowingStore`  | 복선 CRUD, 등장 위치           | -                     |
 | `useChapterStore`        | 챕터 CRUD                      | -                     |
 | `useAnalysisBufferStore` | **증분 분석 버퍼 (IndexedDB)** | `persist` (IndexedDB) |
+| `useManuscriptJobStore`  | 🆕 원고 작업 상태              | -                     |
+| `useNotificationStore`   | 🆕 알림 상태                   | -                     |
+| `useSnapshotStore`       | 🆕 스냅샷 관리                 | -                     |
+| `useWritingStatsStore`   | 🆕 집필 통계                   | -                     |
 
 ### TanStack Query 훅 (14개) + D3 그래프 훅 (5개) + 기타 훅 (13개)
 
