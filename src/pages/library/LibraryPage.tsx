@@ -745,7 +745,7 @@ export default function LibraryPage() {
                 <BookCard
                   projectId={project.id}
                   title={project.title}
-                  author={project.author || "Author"}
+                  author={project.author || user?.nickname || "Author"}
                   status={
                     project.status === "completed" ? "Complete" : "Writing"
                   }
