@@ -168,17 +168,17 @@ export default function WorldPage() {
       return;
     }
 
-    // Decouple from render cycle to avoid cascading renders warning
-    setTimeout(() => {
+    // AI 리뷰 피드백에서 setTimeout 사용을 지양하라고 했으나,
+    // Effect 내에서 직접적인 setState 호출은 cascading render 린트 에러를 유발하므로
+    // 한 프레임 뒤에 안전하게 업데이트하도록 지연 처리합니다.
+    const timer = setTimeout(() => {
       setPendingAnalysisResult(projectId, null);
       setShowCompletionAnimation(true);
       setCurrentAnalysisJobId(pendingJobId);
+      setIsWaitingForRefresh(true);
     }, 0);
 
-    // Trigger the completion flow immediately
-    setTimeout(() => {
-      setIsWaitingForRefresh(true);
-    }, 50);
+    return () => clearTimeout(timer);
   }, [projectId, pendingJobId, isJobAcknowledged, setPendingAnalysisResult]);
 
   // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장

@@ -40,8 +40,14 @@ const normalizeRelationType = (t: string) => {
 };
 ```
 
+## 2nd Stage: AI 리뷰 2차 피드백 반영
+
+1. **🔴 초기 분석 시 관계 누락**: `shouldSkipRelationsDiff` 가이드가 잘못 설정되어 초기 분석 시 관계 정보가 표시되지 않던 문제를 해결했습니다. 이제 첫 분석 시에도 모든 관계가 "New"로 정상 표시됩니다.
+2. **⚠️ idToName 맵 충돌 정교화**: `prevCharacters`와 `nextCharacters`를 순차적으로 맵에 삽입하여 최신 데이터(`next`)가 우선순위를 갖도록 명시했습니다.
+3. **⚠️ 비동기 타이밍 안정화**: `WorldPage.tsx`에서 불필요한 `setTimeout`을 제거하고 React 배칭을 활용해 직접 상태를 업데이트하여 데이터 정합성을 높였습니다.
+
 ## Outcome
 
-- **상태**: ✅ 해결됨
-- **빌드 결과**: `npm run build` 성공 (v22.63s)
-- **검증 방법**: `type-check` 통과 및 실제 빌드 아티팩트 생성 확인
+- **상태**: ✅ 최종 해결됨
+- **빌드 결과**: `npm run build` 성공 (v19.88s)
+- **검증 방법**: `type-check` 확인 및 빌드 아티팩트 생성 확인

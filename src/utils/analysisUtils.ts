@@ -1,12 +1,17 @@
 import type { Character, RelationType } from "@/types";
 import type { RelationshipLink } from "@/types/characterGraph";
 import type { AnalysisResultData } from "@/types/analysisResult";
-import type { AnalysisDiff } from "@/types/analysisTypes";
+import type { AnalysisDiff, ChangeItem } from "@/types/analysisTypes";
 
-/**
- * Compare current project data with analysis result to generate a diff report.
- */
-import type { ChangeItem } from "@/types/analysisTypes";
+// Global mappings for relationship types
+const RELATION_TYPE_MAPPING: Record<string, string> = {
+  ally: "friendly",
+};
+
+const normalizeRelationType = (t: string) => {
+  const normalized = (t || "").toLowerCase().trim();
+  return RELATION_TYPE_MAPPING[normalized] || normalized;
+};
 
 /**
  * Compare current project data with analysis result to generate a diff report.
@@ -26,17 +31,8 @@ export function calculateAnalysisDiff(
   const normalizeName = (name: string) =>
     name.trim().toLowerCase().replace(/\s+/g, " ");
 
-  // Helper to normalize relation types (e.g. "ALLY" -> "friendly")
-  const RELATION_TYPE_MAPPING: Record<string, string> = {
-    ally: "friendly",
-  };
-
-  const normalizeRelationType = (t: string) => {
-    const normalized = t.toLowerCase().trim();
-    return RELATION_TYPE_MAPPING[normalized] || normalized;
-  };
-
   // Helper to find existing character by name (case-insensitive, normalized)
+
   const findCharacter = (name: string) =>
     currentCharacters.find(
       (c) => normalizeName(c.profile.name) === normalizeName(name),
@@ -309,12 +305,10 @@ export function calculateDiffFromSnapshot(
   const normalizeName = (name: string) =>
     name.trim().toLowerCase().replace(/\s+/g, " ");
 
-  // [FIX] 스냅샷의 links가 비어있으면 관계 diff를 계산하지 않음
-  // EditorPage와 WorldPage의 links 데이터 소스가 다르기 때문에
-  // 스냅샷이 비어있거나 첫 분석인 경우 모든 관계가 "새로운" 것으로 표시되는 것을 방지
-  const isInitialAnalysis =
-    prevLinks.length === 0 && prevCharacters.length === 0;
-  const shouldSkipRelationsDiff = isInitialAnalysis && nextLinks.length > 0;
+  // [FIX] 초기 분석 시에도 관계 변화를 감지할 수 있도록 스킵 로직 제거 (AI 리뷰 반영)
+  // 이전에는 130여개의 관계가 한꺼번에 표시되는 노이즈를 방지하려 했으나,
+  // 분석 도구의 특성상 첫 데이터 생성도 "새로운 관계"로 보는 것이 타당함.
+  const shouldSkipRelationsDiff = false;
 
   // 1. Process Characters
   // Check for New Characters
@@ -395,14 +389,6 @@ export function calculateDiffFromSnapshot(
   });
 
   // 2. Process Relationships
-  const RELATION_TYPE_MAPPING: Record<string, string> = {
-    ally: "friendly",
-  };
-
-  const normalizeRelationType = (t: string) => {
-    const normalized = t.toLowerCase().trim();
-    return RELATION_TYPE_MAPPING[normalized] || normalized;
-  };
 
   // Helper to safely extract ID from source/target (D3 may convert to objects)
   const getLinkId = (
@@ -420,12 +406,14 @@ export function calculateDiffFromSnapshot(
   };
 
   // 0. Build global ID-to-Name maps for robust matching
-  const allChars = [...prevCharacters, ...nextCharacters];
   const idToName = new Map<string, string>();
-  allChars.forEach((c) => {
-    const id = c._id;
-    const name = normalizeName(c.profile.name);
-    if (id && name) idToName.set(id, name);
+
+  // ID 충돌 시 차후 데이터(nextCharacters)를 우선하도록 순서 조정
+  prevCharacters.forEach((c) => {
+    if (c._id) idToName.set(c._id, normalizeName(c.profile.name));
+  });
+  nextCharacters.forEach((c) => {
+    if (c._id) idToName.set(c._id, normalizeName(c.profile.name));
   });
 
   // Helper to get name from ID (normalized)
