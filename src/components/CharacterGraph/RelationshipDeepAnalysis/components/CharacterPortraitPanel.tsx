@@ -65,11 +65,22 @@ export function CharacterPortraitPanel({
         transition={{ duration: 0.4, delay: animationDelay + 0.1 }}
       >
         {character.imageUrl ? (
-          <img
-            src={character.imageUrl}
-            alt={character.name}
-            className="w-32 h-32 rounded-full object-cover border-4 border-cloud-200 shadow-md"
-          />
+          character.imageUrl.includes(".mp4") ? (
+            <video
+              src={character.imageUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-32 h-32 rounded-full object-cover border-4 border-cloud-200 shadow-md"
+            />
+          ) : (
+            <img
+              src={character.imageUrl}
+              alt={character.name}
+              className="w-32 h-32 rounded-full object-cover border-4 border-cloud-200 shadow-md"
+            />
+          )
         ) : (
           <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border-4 border-cloud-200 shadow-md">
             <span className="text-4xl font-bold text-white font-serif">

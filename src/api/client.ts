@@ -111,6 +111,16 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error("[Auth] Refresh process failed:", refreshError);
 
+        // Refresh 실패 시 서버 측 쿠키도 강제로 삭제해야 무한 루프 방지 가능
+        try {
+          // interceptor가 없는 raw axios 사용
+          await axios.post(`${API_URL}/auth/logout`, null, {
+            withCredentials: true,
+          });
+        } catch (logoutError) {
+          console.warn("[Auth] Failed to force logout:", logoutError);
+        }
+
         // 이미 다른 요청에 의해 로그아웃 처리 중일 수 있으므로 중복 실행 방지
         const { isAuthenticated } = useAuthStore.getState();
         if (isAuthenticated) {
