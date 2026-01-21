@@ -80,3 +80,10 @@ smart_split_logo.py
 
 # Temporary files
 .pr_body_temp.md
+
+# .gitignore에 추가
+stats.html
+callback_result.json
+eslint_output*.json
+*.log
+coverage/
