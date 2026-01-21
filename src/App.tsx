@@ -26,6 +26,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeSync } from "@stolink/ui";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { GlobalAnalysisWatcher } from "@/components/common/GlobalAnalysisWatcher";
+import { SkipLink } from "@/components/common/SkipLink";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -86,6 +87,7 @@ function App() {
         <TextureOverlay />
         <Toaster />
         <BrowserRouter>
+          <SkipLink />
           <Suspense
             fallback={
               <div className="h-screen w-screen flex flex-col items-center justify-center bg-paper text-mocha-500 gap-4">
@@ -94,44 +96,46 @@ function App() {
               </div>
             }
           >
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/oauth2/callback" element={<OAuth2Callback />} />
-              <Route path="/share/:shareId" element={<SharedProjectPage />} />
-              <Route
-                path="/test/character-integration"
-                element={<CharacterIntegrationTest />}
-              />
+            <main id="main-content" tabIndex={-1} className="outline-none">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/oauth2/callback" element={<OAuth2Callback />} />
+                <Route path="/share/:shareId" element={<SharedProjectPage />} />
+                <Route
+                  path="/test/character-integration"
+                  element={<CharacterIntegrationTest />}
+                />
 
-              {/* Demo Route - No Auth Required */}
-              <Route path="/demo" element={<EditorPage />} />
+                {/* Demo Route - No Auth Required */}
+                <Route path="/demo" element={<EditorPage />} />
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedLayout />}>
-                <Route path="/library" element={<LibraryPage />} />
+                {/* Protected Routes */}
+                <Route element={<ProtectedLayout />}>
+                  <Route path="/library" element={<LibraryPage />} />
 
-                {/* Project Routes */}
-                <Route path="/projects/:id" element={<ProjectLayout />}>
-                  <Route path="editor" element={<EditorPage />} />
+                  {/* Project Routes */}
+                  <Route path="/projects/:id" element={<ProjectLayout />}>
+                    <Route path="editor" element={<EditorPage />} />
 
-                  <Route path="world" element={<WorldPage />} />
-                  <Route path="stats" element={<AnalyticsPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
+                    <Route path="world" element={<WorldPage />} />
+                    <Route path="stats" element={<AnalyticsPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              {/* 404 */}
-              <Route
-                path="*"
-                element={
-                  <div className="flex items-center justify-center h-screen">
-                    페이지를 찾을 수 없습니다
-                  </div>
-                }
-              />
-            </Routes>
+                {/* 404 */}
+                <Route
+                  path="*"
+                  element={
+                    <div className="flex items-center justify-center h-screen">
+                      페이지를 찾을 수 없습니다
+                    </div>
+                  }
+                />
+              </Routes>
+            </main>
           </Suspense>
         </BrowserRouter>
       </QueryClientProvider>
