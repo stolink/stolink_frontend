@@ -379,15 +379,30 @@ export function calculateDiffFromSnapshot(
   });
 
   // 2. Process Relationships
+  // Helper to safely extract ID from source/target (D3 may convert to objects)
+  const getLinkId = (val: string | { id: string } | unknown): string => {
+    if (typeof val === "string") return val;
+    if (typeof val === "object" && val !== null && "id" in val) {
+      return (val as { id: string }).id;
+    }
+    return String(val);
+  };
+
   // Check for New & Updated Relations
   nextLinks.forEach((nextLink) => {
+    const nextSource = getLinkId(nextLink.source);
+    const nextTarget = getLinkId(nextLink.target);
+
     // Find corresponding link in previous set
     // Relationships are identified by Source-Target pair
-    const prevLink = prevLinks.find(
-      (p) =>
-        (p.source === nextLink.source && p.target === nextLink.target) ||
-        (p.source === nextLink.target && p.target === nextLink.source), // Bidirectional check
-    );
+    const prevLink = prevLinks.find((p) => {
+      const prevSource = getLinkId(p.source);
+      const prevTarget = getLinkId(p.target);
+      return (
+        (prevSource === nextSource && prevTarget === nextTarget) ||
+        (prevSource === nextTarget && prevTarget === nextSource) // Bidirectional check
+      );
+    });
 
     if (!prevLink) {
       newRelations.push(nextLink);
@@ -438,11 +453,17 @@ export function calculateDiffFromSnapshot(
 
   // Check for Removed Relations
   prevLinks.forEach((prevLink) => {
-    const stillExists = nextLinks.some(
-      (n) =>
-        (n.source === prevLink.source && n.target === prevLink.target) ||
-        (n.source === prevLink.target && n.target === prevLink.source),
-    );
+    const prevSource = getLinkId(prevLink.source);
+    const prevTarget = getLinkId(prevLink.target);
+
+    const stillExists = nextLinks.some((n) => {
+      const nSource = getLinkId(n.source);
+      const nTarget = getLinkId(n.target);
+      return (
+        (nSource === prevSource && nTarget === prevTarget) ||
+        (nSource === prevTarget && nTarget === prevSource)
+      );
+    });
 
     if (!stillExists) {
       removedRelations.push(prevLink.id);
