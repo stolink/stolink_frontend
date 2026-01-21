@@ -4,16 +4,13 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+// Components - LCP 최적화를 위해 동기적으로 임포트 (EditorContent 청크에 포함됨)
+import TiptapEditor from "@/components/editor/TiptapEditor";
+import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
+import OutlineView from "@/components/editor/OutlineView";
+import EmptyState from "@/components/editor/EmptyState";
 import type { TiptapEditorHandle } from "@/components/editor/TiptapEditor";
 import type { ScriveningsEditorHandle } from "@/components/editor/ScriveningsEditor";
-import { EditorSkeleton } from "@/components/editor/EditorSkeleton";
-
-const TiptapEditor = lazy(() => import("@/components/editor/TiptapEditor"));
-const ScriveningsEditor = lazy(
-  () => import("@/components/editor/ScriveningsEditor"),
-);
-const OutlineView = lazy(() => import("@/components/editor/OutlineView"));
-import EmptyState from "@/components/editor/EmptyState";
 import type { Document } from "@/types/document";
 
 interface EditorContentProps {

@@ -3,6 +3,54 @@
 @tailwind utilities;
 
 /* ============================================
+   Self-hosted Fonts (LCP Optimization)
+   ============================================ */
+
+/* Pretendard (Body & UI) */
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* DM Serif Display (Headings) */
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("/fonts/DMSerifDisplay-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Spectral (Editor Body) */
+@font-face {
+  font-family: "Spectral";
+  src: url("/fonts/Spectral-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Playfair Display (Alternative Headings) */
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/PlayfairDisplay-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================
    StoLink Global Styles (Terminal Pivot)
    ============================================ */
 
