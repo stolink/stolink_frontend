@@ -146,33 +146,39 @@ export default function WorldPage() {
     isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (_result, jobId) => {
-      setPendingViewJobId(jobId);
+      if (projectId) {
+        setPendingViewJobId(jobId, projectId);
+      }
     },
   });
 
   // Check for Pending Analysis View (from Editor)
   useEffect(() => {
-    if (projectId) {
-      if (pendingViewJobId && pendingViewJobId !== "") {
-        const isAck = isJobAcknowledged(pendingViewJobId);
-
-        if (isAck) {
-          setPendingViewJobId(null);
-          return;
-        }
-
-        // Decouple from render cycle to avoid cascading renders warning
-        setTimeout(() => {
-          setPendingViewJobId(null);
-          setShowCompletionAnimation(true);
-          setCurrentAnalysisJobId(pendingViewJobId);
-        }, 0);
-
-        // Trigger the completion flow immediately
-        setTimeout(() => {
-          setIsWaitingForRefresh(true);
-        }, 50);
+    if (projectId && pendingViewJobId) {
+      // 현재 프로젝트의 분석 결과인지 확인
+      if (pendingViewJobId.projectId !== projectId) {
+        return; // 다른 프로젝트의 분석 결과는 무시
       }
+
+      const jobId = pendingViewJobId.jobId;
+      const isAck = isJobAcknowledged(jobId);
+
+      if (isAck) {
+        setPendingViewJobId(null);
+        return;
+      }
+
+      // Decouple from render cycle to avoid cascading renders warning
+      setTimeout(() => {
+        setPendingViewJobId(null);
+        setShowCompletionAnimation(true);
+        setCurrentAnalysisJobId(jobId);
+      }, 0);
+
+      // Trigger the completion flow immediately
+      setTimeout(() => {
+        setIsWaitingForRefresh(true);
+      }, 50);
     }
   }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
 

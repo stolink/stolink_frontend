@@ -407,14 +407,10 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       // We DO NOT calculate diff here anymore. We defer it to WorldPage.
       // Flag that we have a pending view for the user using persistent store.
       if (projectId) {
-        setPendingViewJobId(jobId);
+        setPendingViewJobId(jobId, projectId);
       }
 
-      toast({
-        title: "분석 완료",
-        description: "세계관 탭에서 결과를 확인해주세요.",
-        variant: "success",
-      });
+      // 토스트 제거: WorldPage에서 모달로 결과를 보여주므로 중복 알림 불필요
 
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       queryClient.invalidateQueries({ queryKey: ["relationships", projectId] });
