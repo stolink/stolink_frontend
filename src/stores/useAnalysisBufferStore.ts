@@ -153,6 +153,15 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             // state.processedConflicts = {};
             // state.lastAnalyzedHashes = {}; // 해시 유지
 
+            // [FIX] 프로젝트 변경 시 다른 프로젝트의 pendingViewJobId는 초기화
+            // 이렇게 해야 다른 프로젝트 World 페이지에서 잘못된 모달이 뜨지 않음
+            if (
+              state.pendingViewJobId &&
+              state.pendingViewJobId.projectId !== projectId
+            ) {
+              state.pendingViewJobId = null;
+            }
+
             // 새로고침 시 진행 중인 Job이 있으면 상태 유지
             const hasActiveJobs =
               projectId &&
