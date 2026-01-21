@@ -27,9 +27,13 @@ export function calculateAnalysisDiff(
     name.trim().toLowerCase().replace(/\s+/g, " ");
 
   // Helper to normalize relation types (e.g. "ALLY" -> "friendly")
-  const normalizeValues = (val: string) => {
-    if (!val) return "";
-    return val.toLowerCase().trim();
+  const RELATION_TYPE_MAPPING: Record<string, string> = {
+    ally: "friendly",
+  };
+
+  const normalizeRelationType = (t: string) => {
+    const normalized = t.toLowerCase().trim();
+    return RELATION_TYPE_MAPPING[normalized] || normalized;
   };
 
   // Helper to find existing character by name (case-insensitive, normalized)
@@ -244,15 +248,10 @@ export function calculateAnalysisDiff(
         const changes: ChangeItem[] = [];
 
         // CASE SENSITIVE FIX: Normalize both sides
-        const newType = normalizeValues(rel.relation_type);
-        const oldType = normalizeValues(existingLink.type);
+        const newType = normalizeRelationType(rel.relation_type);
+        const oldType = normalizeRelationType(existingLink.type);
 
-        // Map generic "ALLY" to "friendly" equivalent if needed, but project usually uses lowercase.
-        // Assuming backend might send UPPERCASE, frontend uses lowercase.
-        // Also handling 'ally' vs 'friendly' mapping if feasible, but normalization covers case.
         if (newType !== oldType) {
-          // Double check for known aliases if needed (e.g. ALLY == friendly)
-          // But simply lowercasing solves "ALLY" != "ally"
           changes.push({
             field: "type",
             oldValue: existingLink.type,
@@ -313,8 +312,9 @@ export function calculateDiffFromSnapshot(
   // [FIX] 스냅샷의 links가 비어있으면 관계 diff를 계산하지 않음
   // EditorPage와 WorldPage의 links 데이터 소스가 다르기 때문에
   // 스냅샷이 비어있거나 첫 분석인 경우 모든 관계가 "새로운" 것으로 표시되는 것을 방지
-  const shouldSkipRelationsDiff =
-    prevLinks.length === 0 && nextLinks.length > 0;
+  const isInitialAnalysis =
+    prevLinks.length === 0 && prevCharacters.length === 0;
+  const shouldSkipRelationsDiff = isInitialAnalysis && nextLinks.length > 0;
 
   // 1. Process Characters
   // Check for New Characters
@@ -395,6 +395,15 @@ export function calculateDiffFromSnapshot(
   });
 
   // 2. Process Relationships
+  const RELATION_TYPE_MAPPING: Record<string, string> = {
+    ally: "friendly",
+  };
+
+  const normalizeRelationType = (t: string) => {
+    const normalized = t.toLowerCase().trim();
+    return RELATION_TYPE_MAPPING[normalized] || normalized;
+  };
+
   // Helper to safely extract ID from source/target (D3 may convert to objects)
   const getLinkId = (
     val: string | { id?: string; _id?: string } | unknown,
@@ -402,9 +411,12 @@ export function calculateDiffFromSnapshot(
     if (typeof val === "string") return val;
     if (typeof val === "object" && val !== null) {
       const obj = val as { id?: string; _id?: string };
-      return obj._id || obj.id || String(val);
+      if (obj._id || obj.id) return (obj._id || obj.id) as string;
+
+      console.warn("Unexpected link object structure:", val);
+      return "";
     }
-    return String(val);
+    return val ? String(val) : "";
   };
 
   // 0. Build global ID-to-Name maps for robust matching
@@ -458,10 +470,10 @@ export function calculateDiffFromSnapshot(
         const changes: ChangeItem[] = [];
         const nextType = (nextLink.type || "").toLowerCase().trim();
         const prevType = (prevLink.type || "").toLowerCase().trim();
-        const normalizeRelation = (t: string) =>
-          t === "ally" ? "friendly" : t;
 
-        if (normalizeRelation(prevType) !== normalizeRelation(nextType)) {
+        if (
+          normalizeRelationType(prevType) !== normalizeRelationType(nextType)
+        ) {
           changes.push({
             field: "type",
             oldValue: prevLink.type,
