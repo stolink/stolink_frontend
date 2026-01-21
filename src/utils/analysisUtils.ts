@@ -20,7 +20,7 @@ export function calculateAnalysisDiff(
   const updatedCharacters: { id: string; changes: ChangeItem[] }[] = [];
   const newRelations: RelationshipLink[] = [];
   const updatedRelations: { id: string; changes: ChangeItem[] }[] = [];
-  const removedRelations: string[] = [];
+  const removedRelations: { id: string; source: string; target: string }[] = [];
 
   // Helper to normalize names for comparison
   const normalizeName = (name: string) =>
@@ -199,7 +199,17 @@ export function calculateAnalysisDiff(
 
     if (!existsInResult) {
       // If it exists in current links but NOT in analysis result, mark as removed
-      removedRelations.push(link.id || `${link.source}-${link.target}`);
+      removedRelations.push({
+        id: link.id || `${link.source}-${link.target}`,
+        source:
+          typeof link.source === "string"
+            ? link.source
+            : (link.source as { id: string }).id,
+        target:
+          typeof link.target === "string"
+            ? link.target
+            : (link.target as { id: string }).id,
+      });
     }
   });
 
@@ -294,7 +304,7 @@ export function calculateDiffFromSnapshot(
   const updatedCharacters: { id: string; changes: ChangeItem[] }[] = [];
   const newRelations: RelationshipLink[] = [];
   const updatedRelations: { id: string; changes: ChangeItem[] }[] = [];
-  const removedRelations: string[] = [];
+  const removedRelations: { id: string; source: string; target: string }[] = [];
 
   // Helper to normalize names
   const normalizeName = (name: string) =>
@@ -397,39 +407,59 @@ export function calculateDiffFromSnapshot(
     return String(val);
   };
 
+  // 0. Build global ID-to-Name maps for robust matching
+  const allChars = [...prevCharacters, ...nextCharacters];
+  const idToName = new Map<string, string>();
+  allChars.forEach((c) => {
+    const id = c._id;
+    const name = normalizeName(c.profile.name);
+    if (id && name) idToName.set(id, name);
+  });
+
+  // Helper to get name from ID (normalized)
+  const getName = (id: string) => idToName.get(id) || id.toLowerCase();
+
   // Check for New & Updated Relations
   // [FIX] 스냅샷 links가 비어있으면 관계 diff를 스킵
   if (!shouldSkipRelationsDiff) {
     nextLinks.forEach((nextLink) => {
       const nextSource = getLinkId(nextLink.source);
       const nextTarget = getLinkId(nextLink.target);
+      const nextSourceNm = getName(nextSource);
+      const nextTargetNm = getName(nextTarget);
 
       // Find corresponding link in previous set
-      // Relationships are identified by Source-Target pair
+      // Relationships are identified by Source-Target pair (ID or Name)
       const prevLink = prevLinks.find((p) => {
         const prevSource = getLinkId(p.source);
         const prevTarget = getLinkId(p.target);
-        return (
+        const prevSourceNm = getName(prevSource);
+        const prevTargetNm = getName(prevTarget);
+
+        // 1. Match by ID
+        const idMatch =
           (prevSource === nextSource && prevTarget === nextTarget) ||
-          (prevSource === nextTarget && prevTarget === nextSource) // Bidirectional check
-        );
+          (prevSource === nextTarget && prevTarget === nextSource);
+
+        if (idMatch) return true;
+
+        // 2. Match by Name (Fallback for when IDs change but identity remains)
+        const nameMatch =
+          (prevSourceNm === nextSourceNm && prevTargetNm === nextTargetNm) ||
+          (prevSourceNm === nextTargetNm && prevTargetNm === nextSourceNm);
+
+        return nameMatch;
       });
 
       if (!prevLink) {
         newRelations.push(nextLink);
       } else {
-        // Check for updates
+        // ... (Check for updates logic remains same)
         const changes: ChangeItem[] = [];
-
-        // CASE SENSITIVE FIX: Normalize types before comparison
         const nextType = (nextLink.type || "").toLowerCase().trim();
         const prevType = (prevLink.type || "").toLowerCase().trim();
-
-        // MAPPING normalization (e.g. ALLY should equal friendly if that's the canonical type)
-        const normalizeRelation = (t: string) => {
-          if (t === "ally") return "friendly";
-          return t;
-        };
+        const normalizeRelation = (t: string) =>
+          t === "ally" ? "friendly" : t;
 
         if (normalizeRelation(prevType) !== normalizeRelation(nextType)) {
           changes.push({
@@ -463,21 +493,61 @@ export function calculateDiffFromSnapshot(
     });
 
     // Check for Removed Relations
-    prevLinks.forEach((prevLink) => {
-      const prevSource = getLinkId(prevLink.source);
-      const prevTarget = getLinkId(prevLink.target);
+    // Use a Set to track "still exists" pairs to prevent duplicates
+    const matchedPrevIds = new Set<string>();
 
-      const stillExists = nextLinks.some((n) => {
-        const nSource = getLinkId(n.source);
-        const nTarget = getLinkId(n.target);
-        return (
-          (nSource === prevSource && nTarget === prevTarget) ||
-          (nSource === prevTarget && nTarget === prevSource)
-        );
+    nextLinks.forEach((n) => {
+      const nSource = getLinkId(n.source);
+      const nTarget = getLinkId(n.target);
+      const nSourceNm = getName(nSource);
+      const nTargetNm = getName(nTarget);
+
+      prevLinks.forEach((p) => {
+        const pSource = getLinkId(p.source);
+        const pTarget = getLinkId(p.target);
+        const pSourceNm = getName(pSource);
+        const pTargetNm = getName(pTarget);
+
+        const isMatch =
+          (nSource === pSource && nTarget === pTarget) ||
+          (nSource === pTarget && nTarget === pSource) ||
+          (nSourceNm === pSourceNm && nTargetNm === pTargetNm) ||
+          (nSourceNm === pTargetNm && nTargetNm === pSourceNm);
+
+        if (isMatch) {
+          matchedPrevIds.add(p.id);
+        }
       });
+    });
 
-      if (!stillExists) {
-        removedRelations.push(prevLink.id);
+    prevLinks.forEach((prevLink) => {
+      if (!matchedPrevIds.has(prevLink.id)) {
+        // Double check by pair to be extra safe
+        const pSource = getLinkId(prevLink.source);
+        const pTarget = getLinkId(prevLink.target);
+        const pSourceNm = getName(pSource);
+        const pTargetNm = getName(pTarget);
+
+        const existsInNext = nextLinks.some((n) => {
+          const nSource = getLinkId(n.source);
+          const nTarget = getLinkId(n.target);
+          const nSourceNm = getName(nSource);
+          const nTargetNm = getName(nTarget);
+          return (
+            (nSource === pSource && nTarget === pTarget) ||
+            (nSource === pTarget && nTarget === pSource) ||
+            (nSourceNm === pSourceNm && nTargetNm === pTargetNm) ||
+            (nSourceNm === pTargetNm && nTargetNm === pSourceNm)
+          );
+        });
+
+        if (!existsInNext) {
+          removedRelations.push({
+            id: prevLink.id,
+            source: pSource,
+            target: pTarget,
+          });
+        }
       }
     });
   } // End of shouldSkipRelationsDiff check
