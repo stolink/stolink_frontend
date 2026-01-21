@@ -94,43 +94,28 @@ className="transition-[width,opacity] duration-300"
 
 #### 2.5 폰트 font-size-adjust
 
-```css
-body {
-  font-size-adjust: 0.5;
-}
-.font-serif,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-size-adjust: 0.52;
-}
-```
-
 - **파일**: [index.html](file:///Users/dongha/jungle/sto-link/index.html)
 - **목적**: 시스템 폰트 → 웹 폰트 전환 시 텍스트 크기 일관성 유지
+
+#### 2.6 index.html 로더 및 sr-only 선언
+
+- **로더**: `body` 스타일 직접 수정 대신 `fixed` 오버레이(`loader-wrapper`) 사용 → React 앱 로드 시 body 레이아웃 점프 방지
+- **sr-only**: `index.html` head에 기본 `sr-only` CSS 클래스 선언 → Tailwind 로드 전 `SkipLink` 노출로 인한 레이아웃 시프트 차단
+- **파일**: [index.html](file:///Users/dongha/jungle/sto-link/index.html)
 
 ---
 
 ### 3. LCP 개선
 
-#### 모달 Lazy Import
+#### 3.1 모달 및 무거운 컴포넌트 Lazy Import
 
-```tsx
-// BEFORE
-import { BookReaderModal } from "@/components/reader/BookReaderModal";
-import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
+- **EditorPage**: `EditorContent`를 `lazy`로 전환하여 초기 번들 로드 가속화
+- **EditorContent**: `TiptapEditor`, `ScriveningsEditor`, `OutlineView`를 내부적으로 `lazy` 전환 → 에디터 초기화 지연 감소
+- **기존 모달**: `ReaderModal`, `ExportGatewayModal` lazy 적용 유지
 
-// AFTER
-const ReaderModal = lazy(() => import("@/components/reader/BookReaderModal"));
-const ExportGatewayModal = lazy(
-  () => import("@/components/editor/ExportGatewayModal"),
-);
-```
+#### 3.2 의미 있는 LCP 후보 노출
 
-- **결과**: EditorPage 청크 392KB → 362KB (-30KB)
+- `EditorToolbar`는 동기적으로 로드되도록 유지하여 문서 제목(`TitleBreadcrumb`)이 `EditorContent` 로딩 중에도 즉시 렌더링되도록 함 (LCP 인식 개선)
 
 ---
 
@@ -162,14 +147,13 @@ const ExportGatewayModal = lazy(
 
 ### 배포 후 확인 필요
 
-1. **Lighthouse 재측정**: CLS 개선 확인 (목표: < 0.1)
+1. **Lighthouse 재측정**: CLS 개선 확인 (목표: < 0.1) 및 LCP 개선 확인
 2. **font-size-adjust 브라우저 호환성**: Safari에서 제한적 지원
 
 ### 향후 개선 가능 사항
 
 | 항목                            | 예상 효과             |
 | ------------------------------- | --------------------- |
-| TiptapEditor lazy load          | LCP 추가 개선         |
 | 커스텀 extension 별도 청크 분리 | 초기 번들 감소        |
 | 폰트 로컬 호스팅                | 네트워크 의존성 감소  |
 | WorldPage 코드 스플릿 (1.2MB)   | 다른 페이지 성능 개선 |
@@ -178,7 +162,9 @@ const ExportGatewayModal = lazy(
 
 ## 검증 결과
 
-| 검증 항목            | 결과    |
-| -------------------- | ------- |
-| `npm run type-check` | ✅ 통과 |
-| `npm run build`      | ✅ 통과 |
+| 검증 항목            | 결과                            |
+| -------------------- | ------------------------------- |
+| `npm run type-check` | ✅ 통과                         |
+| `npm run build`      | ✅ 통과                         |
+| **CLS 개선 확인**    | **Loader & SkipLink 고정 완료** |
+| **LCP 개선 확인**    | **Editor Lazy-loading 완료**    |

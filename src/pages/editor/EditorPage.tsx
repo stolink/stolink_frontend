@@ -12,10 +12,12 @@ import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Core Components
-import {
-  EditorContent,
-  type EditorContentHandle,
-} from "@/pages/editor/components/EditorContent";
+const EditorContent = lazy(() =>
+  import("@/pages/editor/components/EditorContent").then((m) => ({
+    default: m.EditorContent,
+  })),
+);
+import type { EditorContentHandle } from "@/pages/editor/components/EditorContent";
 import EditorLeftSidebar from "@/components/editor/EditorLeftSidebar";
 import EditorRightSidebar from "@/components/editor/EditorRightSidebar";
 import { EditorToolbar } from "@/pages/editor/components/EditorToolbar";
