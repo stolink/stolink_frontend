@@ -111,9 +111,6 @@ const simplifyTerm = (term: string) => {
 const getRelationColor = (type: string | string[]) => {
   if (!type) return "#A47764";
 
-  // 만약 5개 이상의 복합 관계라면 보라색(Complex) 반환 -> REMOVED to allow primary color to show
-  // if (Array.isArray(type) && type.length >= 5) return "#7C3AED";
-
   const rawType = Array.isArray(type) ? type[0] : type;
   if (!rawType) return "#A47764";
 

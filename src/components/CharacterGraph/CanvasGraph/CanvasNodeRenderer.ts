@@ -190,7 +190,6 @@ export function drawNode(options: NodeRenderOptions): void {
   // 10. 이름 라벨 - 줌 반응형
   const showLabel = globalScale > 0.35;
   if (showLabel) {
-    // const labelOpacity = Math.max(0, Math.min(1, (globalScale - 0.35) * 3));
     const displayName = truncateName(node.name, isImportant ? 12 : 8);
 
     ctx.save();

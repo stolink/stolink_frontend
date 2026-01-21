@@ -1,10 +1,19 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({
+      filename: "./stats.html",
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -75,9 +84,6 @@ export default defineConfig({
 
           // Graph visualization (큰 라이브러리)
           "vendor-graph": ["d3", "reactflow"],
-
-          // Export libraries (사용 시에만 로드)
-          "vendor-export": ["docx", "jspdf", "epub-gen-memory", "file-saver"],
 
           // State management
           "vendor-query": ["@tanstack/react-query"],

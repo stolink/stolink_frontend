@@ -24,8 +24,7 @@ interface CharacterHeaderProps {
   onGenerateImage?: () => void;
   isGeneratingImage?: boolean;
   imageGenerationProgress?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onFieldChange?: (field: string, value: any) => void;
+  onFieldChange?: (field: string, value: string | string[]) => void;
 }
 
 export function CharacterHeader({
@@ -78,14 +77,28 @@ export function CharacterHeader({
       <div className="magazine-image-container group shadow-xl">
         {displayImageUrl && !imageError ? (
           <>
-            <img
-              src={displayImageUrl}
-              alt={name}
-              className="w-full h-full object-contain bg-cloud-50/50"
-              onError={(_e) => {
-                setImageError(true);
-              }}
-            />
+            {displayImageUrl.includes(".mp4") ? (
+              <video
+                src={displayImageUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain bg-cloud-50/50"
+                onError={(_e) => {
+                  setImageError(true);
+                }}
+              />
+            ) : (
+              <img
+                src={displayImageUrl}
+                alt={name}
+                className="w-full h-full object-contain bg-cloud-50/50"
+                onError={(_e) => {
+                  setImageError(true);
+                }}
+              />
+            )}
             <div className="magazine-image-overlay" />
           </>
         ) : (

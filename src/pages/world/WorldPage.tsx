@@ -146,33 +146,39 @@ export default function WorldPage() {
     isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (_result, jobId) => {
-      setPendingViewJobId(jobId);
+      if (projectId) {
+        setPendingViewJobId(jobId, projectId);
+      }
     },
   });
 
   // Check for Pending Analysis View (from Editor)
   useEffect(() => {
-    if (projectId) {
-      if (pendingViewJobId && pendingViewJobId !== "") {
-        const isAck = isJobAcknowledged(pendingViewJobId);
-
-        if (isAck) {
-          setPendingViewJobId(null);
-          return;
-        }
-
-        // Decouple from render cycle to avoid cascading renders warning
-        setTimeout(() => {
-          setPendingViewJobId(null);
-          setShowCompletionAnimation(true);
-          setCurrentAnalysisJobId(pendingViewJobId);
-        }, 0);
-
-        // Trigger the completion flow immediately
-        setTimeout(() => {
-          setIsWaitingForRefresh(true);
-        }, 50);
+    if (projectId && pendingViewJobId) {
+      // 현재 프로젝트의 분석 결과인지 확인
+      if (pendingViewJobId.projectId !== projectId) {
+        return; // 다른 프로젝트의 분석 결과는 무시
       }
+
+      const jobId = pendingViewJobId.jobId;
+      const isAck = isJobAcknowledged(jobId);
+
+      if (isAck) {
+        setPendingViewJobId(null);
+        return;
+      }
+
+      // Decouple from render cycle to avoid cascading renders warning
+      setTimeout(() => {
+        setPendingViewJobId(null);
+        setShowCompletionAnimation(true);
+        setCurrentAnalysisJobId(jobId);
+      }, 0);
+
+      // Trigger the completion flow immediately
+      setTimeout(() => {
+        setIsWaitingForRefresh(true);
+      }, 50);
     }
   }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
 
@@ -443,14 +449,6 @@ export default function WorldPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDebugAnalyzing, showCompletionAnimation, isAnalysisModalOpen]);
-
-  // Sync selectedCharacter with latest data from characters array
-  // We use useMemo to derive the active character data to avoid cascading renders
-  // const activeCharacter = useMemo(() => { // This was moved to a state variable
-  //   if (!selectedCharacter || characters.length === 0) return selectedCharacter;
-  //   const updated = characters.find((c) => c._id === selectedCharacter._id);
-  //   return updated ? updated : selectedCharacter;
-  // }, [characters, selectedCharacter]);
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -996,12 +994,7 @@ export default function WorldPage() {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
         }}
         onRelationshipDeleted={() => {
-          // 관계 삭제 후 필요한 추가 로직이 있다면 여기에 작성
-          // useDeleteRelationship에서 이미 query invalidation을 수행하므로
-          // 여기서는 별도의 데이터 페칭 로직이 필요 없음
-          console.log(
-            "[WorldPage] Relationship deleted, UI will refresh via cache invalidation",
-          );
+          // 관계 삭제 후 UI는 캐시 무효화를 통해 자동으로 갱신됨
         }}
       />
 

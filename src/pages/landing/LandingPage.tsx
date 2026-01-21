@@ -18,6 +18,7 @@ import { Footer } from "@/components/common/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { PaperTexture } from "@/components/effects/PaperTexture";
 import { BrushStrokeDivider } from "@/components/effects/BrushStrokeDivider";
+import { useToast } from "@/hooks/useToast";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -39,11 +40,35 @@ const staggerContainer = {
   },
 };
 
+// 모바일 브레이크포인트 (768px 미만)
+const MOBILE_BREAKPOINT = 768;
+
 export default function LandingPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const heroOpacity = useTransform(scrollY, [0, 500], [1, 0.5]);
+  const { toast } = useToast();
+
+  /**
+   * 모바일에서 시작하기 버튼 클릭 시 Toast 표시
+   * 랜딩 페이지는 반응형으로 예쁘게 보이지만, 에디터 기능은 PC 전용
+   */
+  const handleStartClick = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth < MOBILE_BREAKPOINT
+    ) {
+      toast({
+        title: "PC에서 이용해주세요",
+        description: "에디터 기능은 넓은 화면에서 최적의 경험을 제공합니다.",
+        variant: "default",
+        duration: 5000,
+      });
+      return;
+    }
+    setIsAuthModalOpen(true);
+  };
 
   const features = [
     {
@@ -119,7 +144,7 @@ export default function LandingPage() {
               로그인
             </Button>
             <Button
-              onClick={() => setIsAuthModalOpen(true)}
+              onClick={handleStartClick}
               className="bg-mocha-500 hover:bg-mocha-500 text-white shadow-lg shadow-mocha-500/20 hover:shadow-mocha-500/40 transition-all active:scale-95"
             >
               무료로 시작하기
@@ -181,7 +206,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   className="h-14 px-8 text-lg bg-mocha-900 text-paper hover:bg-mocha-900/90 shadow-xl shadow-mocha-900/10 hover:shadow-mocha-900/20 transition-all group"
-                  onClick={() => setIsAuthModalOpen(true)}
+                  onClick={handleStartClick}
                 >
                   집필 시작하기
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -400,7 +425,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   className="w-full sm:w-auto h-16 px-10 text-xl font-bold bg-white hover:bg-cloud-50 text-mocha-700 shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.35)] transition-all transform hover:-translate-y-1"
-                  onClick={() => setIsAuthModalOpen(true)}
+                  onClick={handleStartClick}
                 >
                   무료로 시작하기
                 </Button>

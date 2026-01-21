@@ -3,32 +3,31 @@
  * TXT, Markdown, DOCX 내보내기 및 JSON 가져오기 기능
  */
 
-import { saveAs } from "file-saver";
-import TurndownService from "turndown";
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-} from "docx";
 import type { Document } from "@/types/document";
 
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  bulletListMarker: "-",
-  codeBlockStyle: "fenced",
-});
-
-// Custom rule to preserve highlight (mark) tags
-turndown.addRule("highlight", {
-  filter: "mark",
-  replacement: function (content) {
-    return `==${content}==`;
-  },
-});
-
 const parser = new DOMParser();
+
+/**
+ * Helper: Lazy load TurndownService
+ */
+async function getTurndownService() {
+  const TurndownService = (await import("turndown")).default;
+  const turndown = new TurndownService({
+    headingStyle: "atx",
+    bulletListMarker: "-",
+    codeBlockStyle: "fenced",
+  });
+
+  // Custom rule to preserve highlight (mark) tags
+  turndown.addRule("highlight", {
+    filter: "mark",
+    replacement: function (content) {
+      return `==${content}==`;
+    },
+  });
+
+  return turndown;
+}
 
 /**
  * Helper: Parse HTML string safely using DOMParser
@@ -66,7 +65,7 @@ function removeForeshadowingTags(html: string): string {
       "style",
       "background-color: rgba(164, 119, 100, 0.3); " +
         "padding: 0 2px; " +
-        "border-radius: 2px;"
+        "border-radius: 2px;",
     );
   });
 
@@ -86,7 +85,7 @@ function removeForeshadowingTags(html: string): string {
   temp.querySelectorAll("ol, ul").forEach((el) => {
     el.setAttribute(
       "style",
-      "list-style-position: outside; padding-left: 2rem; margin: 0.75rem 0;"
+      "list-style-position: outside; padding-left: 2rem; margin: 0.75rem 0;",
     );
   });
 
@@ -101,10 +100,11 @@ function removeForeshadowingTags(html: string): string {
 /**
  * 문서 목록을 TXT 파일로 내보내기
  */
-export function exportToTxt(
+export async function exportToTxt(
   documents: Document[],
-  projectTitle: string = "작품"
-): void {
+  projectTitle: string = "작품",
+): Promise<void> {
+  const { saveAs } = await import("file-saver");
   const content = documents
     .map((doc) => {
       // Remove foreshadowing tags before converting to text
@@ -121,10 +121,13 @@ export function exportToTxt(
 /**
  * 문서 목록을 마크다운 파일로 내보내기
  */
-export function exportToMarkdown(
+export async function exportToMarkdown(
   documents: Document[],
-  projectTitle: string = "작품"
-): void {
+  projectTitle: string = "작품",
+): Promise<void> {
+  const { saveAs } = await import("file-saver");
+  const turndown = await getTurndownService();
+
   const content = documents
     .map((doc) => {
       const markdown = turndown.turndown(doc.content);
@@ -139,9 +142,47 @@ export function exportToMarkdown(
 /**
  * HTML을 DOCX 문단으로 변환
  */
-function htmlToDocxParagraphs(html: string): Paragraph[] {
+async function htmlToDocxParagraphs(
+  html: string,
+  docx: typeof import("docx"),
+): Promise<import("docx").Paragraph[]> {
+  const { Paragraph, TextRun, HeadingLevel } = docx;
   const temp = parseHtmlString(html);
-  const paragraphs: Paragraph[] = [];
+  const paragraphs: import("docx").Paragraph[] = [];
+
+  // Helper for inline formatting
+  const parseInlineFormatting = (el: HTMLElement) => {
+    const runs: import("docx").TextRun[] = [];
+    el.childNodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || "";
+        if (text) runs.push(new TextRun(text));
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const child = node as HTMLElement;
+        const tag = child.tagName.toLowerCase();
+        const text = child.textContent || "";
+        switch (tag) {
+          case "strong":
+          case "b":
+            runs.push(new TextRun({ text, bold: true }));
+            break;
+          case "em":
+          case "i":
+            runs.push(new TextRun({ text, italics: true }));
+            break;
+          case "u":
+            runs.push(new TextRun({ text, underline: {} }));
+            break;
+          case "mark":
+            runs.push(new TextRun({ text, highlight: "yellow" }));
+            break;
+          default:
+            runs.push(new TextRun(text));
+        }
+      }
+    });
+    return runs;
+  };
 
   temp.childNodes.forEach((node) => {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -157,64 +198,42 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
       switch (tagName) {
         case "h1":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_1,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_1 }),
           );
           break;
         case "h2":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_2,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_2 }),
           );
           break;
         case "h3":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_3,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_3 }),
           );
           break;
         case "h4":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_4,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_4 }),
           );
           break;
         case "h5":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_5,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_5 }),
           );
           break;
         case "h6":
           paragraphs.push(
-            new Paragraph({
-              text,
-              heading: HeadingLevel.HEADING_6,
-            })
+            new Paragraph({ text, heading: HeadingLevel.HEADING_6 }),
           );
           break;
         case "p":
           paragraphs.push(
-            new Paragraph({
-              children: parseInlineFormatting(el),
-            })
+            new Paragraph({ children: parseInlineFormatting(el) }),
           );
           break;
         case "blockquote":
           paragraphs.push(
-            new Paragraph({
-              children: [new TextRun({ text, italics: true })],
-            })
+            new Paragraph({ children: [new TextRun({ text, italics: true })] }),
           );
           break;
         case "ul":
@@ -223,7 +242,7 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
             paragraphs.push(
               new Paragraph({
                 children: [new TextRun(`• ${li.textContent || ""}`)],
-              })
+              }),
             );
           });
           break;
@@ -239,52 +258,17 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
 }
 
 /**
- * 인라인 서식 파싱 (bold, italic, underline)
- */
-function parseInlineFormatting(el: HTMLElement): TextRun[] {
-  const runs: TextRun[] = [];
-
-  el.childNodes.forEach((node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || "";
-      if (text) runs.push(new TextRun(text));
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const child = node as HTMLElement;
-      const tag = child.tagName.toLowerCase();
-      const text = child.textContent || "";
-
-      switch (tag) {
-        case "strong":
-        case "b":
-          runs.push(new TextRun({ text, bold: true }));
-          break;
-        case "em":
-        case "i":
-          runs.push(new TextRun({ text, italics: true }));
-          break;
-        case "u":
-          runs.push(new TextRun({ text, underline: {} }));
-          break;
-        case "mark":
-          runs.push(new TextRun({ text, highlight: "yellow" }));
-          break;
-        default:
-          runs.push(new TextRun(text));
-      }
-    }
-  });
-
-  return runs;
-}
-
-/**
  * 문서 목록을 DOCX 파일로 내보내기
  */
 export async function exportToDocx(
   documents: Document[],
-  projectTitle: string = "작품"
+  projectTitle: string = "작품",
 ): Promise<void> {
-  const sections: Paragraph[] = [];
+  const docx = await import("docx");
+  const { saveAs } = await import("file-saver");
+  const { Document: DocxDocument, Packer, Paragraph, HeadingLevel } = docx;
+
+  const sections: import("docx").Paragraph[] = [];
 
   // 제목 페이지
   sections.push(
@@ -292,16 +276,17 @@ export async function exportToDocx(
       text: projectTitle,
       heading: HeadingLevel.TITLE,
       spacing: { after: 400 },
-    })
+    }),
   );
 
   // 각 문서를 섹션으로 추가
-  documents.forEach((doc, index) => {
+  for (let index = 0; index < documents.length; index++) {
+    const doc = documents[index];
     // 문서 간 구분선 (첫 번째 제외)
     if (index > 0) {
       sections.push(new Paragraph({ text: "" }));
       sections.push(
-        new Paragraph({ text: "* * *", alignment: "center" as const })
+        new Paragraph({ text: "* * *", alignment: "center" as const }),
       );
       sections.push(new Paragraph({ text: "" }));
     }
@@ -312,13 +297,13 @@ export async function exportToDocx(
         text: doc.title,
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 200, after: 200 },
-      })
+      }),
     );
 
     // 본문
-    const paragraphs = htmlToDocxParagraphs(doc.content);
+    const paragraphs = await htmlToDocxParagraphs(doc.content, docx);
     sections.push(...paragraphs);
-  });
+  }
 
   const docxDoc = new DocxDocument({
     sections: [
@@ -335,10 +320,11 @@ export async function exportToDocx(
 /**
  * JSON 백업 파일로 내보내기
  */
-export function exportToJson(
+export async function exportToJson(
   data: Record<string, unknown>,
-  projectTitle: string = "작품"
-): void {
+  projectTitle: string = "작품",
+): Promise<void> {
+  const { saveAs } = await import("file-saver");
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: "application/json;charset=utf-8" });
   saveAs(blob, `${projectTitle}_backup.json`);
@@ -348,7 +334,7 @@ export function exportToJson(
  * JSON 백업 파일 가져오기
  */
 export async function importFromJson(
-  file: File
+  file: File,
 ): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -377,8 +363,9 @@ export async function importFromJson(
 export async function exportToEpub(
   documents: Document[],
   projectTitle: string = "작품",
-  author: string = "작가"
+  author: string = "작가",
 ): Promise<void> {
+  const { saveAs } = await import("file-saver");
   // Dynamic import for browser compatibility
   const epub = (await import("epub-gen-memory/bundle")).default;
 
@@ -408,10 +395,11 @@ export async function exportToEpub(
 export async function exportToPdf(
   documents: Document[],
   projectTitle: string = "작품",
-  options?: { fontSize?: number; lineHeight?: number }
+  options?: { fontSize?: number; lineHeight?: number },
 ): Promise<void> {
   // Dynamic import for html2pdf
   const html2pdf = (await import("html2pdf.js")).default;
+  const turndown = await getTurndownService();
 
   const fontSize = options?.fontSize ?? 14;
   const lineHeight = options?.lineHeight ?? 1.8;
@@ -437,37 +425,37 @@ export async function exportToPdf(
       /^###### (.+)$/gm,
       '<h6 style="font-size: ' +
         fontSize +
-        'px; font-weight: 600; margin: 0.6em 0 0.2em;">$1</h6>'
+        'px; font-weight: 600; margin: 0.6em 0 0.2em;">$1</h6>',
     );
     html = html.replace(
       /^##### (.+)$/gm,
       '<h5 style="font-size: ' +
         fontSize * 1.1 +
-        'px; font-weight: 600; margin: 0.8em 0 0.3em;">$1</h5>'
+        'px; font-weight: 600; margin: 0.8em 0 0.3em;">$1</h5>',
     );
     html = html.replace(
       /^#### (.+)$/gm,
       '<h4 style="font-size: ' +
         fontSize * 1.25 +
-        'px; font-weight: 600; margin: 1em 0 0.4em;">$1</h4>'
+        'px; font-weight: 600; margin: 1em 0 0.4em;">$1</h4>',
     );
     html = html.replace(
       /^### (.+)$/gm,
       '<h3 style="font-size: ' +
         fontSize * 1.5 +
-        'px; font-weight: 600; margin: 1.2em 0 0.4em;">$1</h3>'
+        'px; font-weight: 600; margin: 1.2em 0 0.4em;">$1</h3>',
     );
     html = html.replace(
       /^## (.+)$/gm,
       '<h2 style="font-size: ' +
         fontSize * 1.75 +
-        'px; font-weight: 700; margin: 1.4em 0 0.5em;">$1</h2>'
+        'px; font-weight: 700; margin: 1.4em 0 0.5em;">$1</h2>',
     );
     html = html.replace(
       /^# (.+)$/gm,
       '<h1 style="font-size: ' +
         fontSize * 2 +
-        'px; font-weight: 700; margin: 1.5em 0 0.5em;">$1</h1>'
+        'px; font-weight: 700; margin: 1.5em 0 0.5em;">$1</h1>',
     );
 
     // Bold and Italic
@@ -479,19 +467,19 @@ export async function exportToPdf(
     html = html.replace(/==(.+?)==/g, "$1");
     html = html.replace(
       /`(.+?)`/g,
-      '<code style="background: #f5f5f5; padding: 0 4px; border-radius: 3px;">$1</code>'
+      '<code style="background: #f5f5f5; padding: 0 4px; border-radius: 3px;">$1</code>',
     );
 
     // Blockquotes
     html = html.replace(
       /^> (.+)$/gm,
-      '<blockquote style="border-left: 3px solid #bd9b8d; padding-left: 1rem; margin: 1rem 0; font-style: italic; color: #7d5a4b;">$1</blockquote>'
+      '<blockquote style="border-left: 3px solid #bd9b8d; padding-left: 1rem; margin: 1rem 0; font-style: italic; color: #7d5a4b;">$1</blockquote>',
     );
 
     // Lists - convert to plain text with symbols
     html = html.replace(
       /^- (.+)$/gm,
-      '<div style="margin-left: 1.5rem; text-indent: -1rem;">• $1</div>'
+      '<div style="margin-left: 1.5rem; text-indent: -1rem;">• $1</div>',
     );
     html = html.replace(/^\d+\. (.+)$/gm, (_match, content, offset, string) => {
       // Count which number this is by looking at surrounding context
@@ -503,7 +491,7 @@ export async function exportToPdf(
     // Horizontal rules
     html = html.replace(
       /^---$/gm,
-      '<hr style="border: none; border-top: 1px solid #ccc; margin: 1.5rem 0;">'
+      '<hr style="border: none; border-top: 1px solid #ccc; margin: 1.5rem 0;">',
     );
 
     // Paragraphs (lines that aren't already wrapped)
@@ -529,7 +517,7 @@ export async function exportToPdf(
         ${index > 0 ? '<div style="page-break-before: always;"></div>' : ""}
         <h2 style="font-size: ${fontSize * 1.5}px; margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-weight: 700;">${doc.title}</h2>
         <div>${markdownToSimpleHtml(doc.markdown)}</div>
-      `
+      `,
         )
         .join("")}
     </div>

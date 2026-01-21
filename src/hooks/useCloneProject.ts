@@ -17,17 +17,13 @@ export const useCloneProject = () => {
       request: ProjectCloneRequest;
     }) => cloneProject(projectId, request),
 
-    onSuccess: (data) => {
+    onSuccess: () => {
       // 프로젝트 목록 캐시 무효화
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-
-      console.log(`프로젝트 "${data.data.title}"가 복제되었습니다.`);
     },
 
-    onError: (error: AxiosError<{ message: string }>) => {
-      const message =
-        error.response?.data?.message || "프로젝트 복제에 실패했습니다.";
-      console.error(message);
+    onError: (_error: AxiosError<{ message: string }>) => {
+      // 에러는 호출하는 컴포넌트에서 처리
     },
   });
 };

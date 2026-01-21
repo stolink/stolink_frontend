@@ -101,9 +101,9 @@ export function useDocumentTree(projectId: string) {
   const storeDocuments = useDocumentStore(
     useShallow((state) =>
       Object.values(state.documents).filter(
-        (doc) => doc.projectId === projectId
-      )
-    )
+        (doc) => doc.projectId === projectId,
+      ),
+    ),
   );
 
   // Use store documents as the primary source of truth to support optimistic updates
@@ -125,7 +125,7 @@ export function useDocumentTree(projectId: string) {
  */
 export function useDocument(id: string | null) {
   const document = useDocumentStore(
-    (state) => (id && state.documents[id]) || null
+    (state) => (id && state.documents[id]) || null,
   );
 
   const updateDocument = useCallback(
@@ -133,7 +133,7 @@ export function useDocument(id: string | null) {
       if (!id) return;
       await localDocumentRepository.update(id, updates);
     },
-    [id]
+    [id],
   );
 
   return {
@@ -152,9 +152,9 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
       Object.values(state.documents).filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined)
-      )
-    )
+          doc.parentId === (parentId ?? undefined),
+      ),
+    ),
   );
 
   const sortedChildren = useMemo(() => {
@@ -230,7 +230,7 @@ export function useDocumentContent(id: string | null) {
 
   // Zustand store content as fallback
   const storeContent = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : ""
+    id ? state.documents[id]?.content || "" : "",
   );
 
   // Aggregate content from all pages
@@ -276,28 +276,41 @@ export function useDocumentContent(id: string | null) {
 
           // Manually update the infinite query cache to avoid a redundant GET request
           // Since saveContent handles the whole document rewrite, we reset pages to reflect the current content
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          queryClient.setQueryData(documentKeys.content(id), (old: any) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: [
-                {
-                  content: newContent,
-                  page: 1,
-                  totalPages: 1, // Full rewrite usually results in 1 page or backend handles re-pagination on next fetch
-                },
-              ],
-              pageParams: [1],
-            };
-          });
+          queryClient.setQueryData(
+            documentKeys.content(id),
+            (
+              old:
+                | {
+                    pages: {
+                      content: string;
+                      page: number;
+                      totalPages: number;
+                    }[];
+                    pageParams: number[];
+                  }
+                | undefined,
+            ) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: [
+                  {
+                    content: newContent,
+                    page: 1,
+                    totalPages: 1, // Full rewrite usually results in 1 page or backend handles re-pagination on next fetch
+                  },
+                ],
+                pageParams: [1],
+              };
+            },
+          );
         }
       } catch (error) {
         console.error("Failed to save content:", error);
         _setContent(id, originalContent);
       }
     },
-    [id, _setContent, queryClient]
+    [id, _setContent, queryClient],
   );
 
   return {
@@ -331,8 +344,8 @@ export function useBulkDocumentContent() {
         // 2. 백엔드 API 호출 (여러 섹션 동시 저장)
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
-            documentService.updateContent(id, content)
-          )
+            documentService.updateContent(id, content),
+          ),
         );
         // 3. 저장 상태 업데이트 (Zustand)
         setSaveStatus("saved");
@@ -342,7 +355,7 @@ export function useBulkDocumentContent() {
         setSaveStatus("saved");
       }
     },
-    [setSaveStatus]
+    [setSaveStatus],
   );
 
   return {
@@ -388,7 +401,7 @@ export function useDocumentMutations(projectId: string) {
       } catch (error: unknown) {
         console.error(
           "[useDocumentMutations] Failed to create document:",
-          error
+          error,
         );
 
         // Fallback to local-only creation if backend fails
@@ -396,7 +409,7 @@ export function useDocumentMutations(projectId: string) {
         if (err?.response?.status === 500 || err?.response?.status === 404) {
           const localDocumentRepository =
             await import("@/repositories/LocalDocumentRepository").then(
-              (m) => m.localDocumentRepository
+              (m) => m.localDocumentRepository,
             );
 
           try {
@@ -409,14 +422,14 @@ export function useDocumentMutations(projectId: string) {
           } catch (localError) {
             console.error(
               "[useDocumentMutations] Local fallback failed:",
-              localError
+              localError,
             );
           }
         }
       }
       return null;
     },
-    [projectId, _create, queryClient]
+    [projectId, _create, queryClient],
   );
 
   const updateDocument = useCallback(
@@ -434,7 +447,7 @@ export function useDocumentMutations(projectId: string) {
       }
       return null;
     },
-    [_update]
+    [_update],
   );
 
   const deleteDocument = useCallback(
@@ -456,7 +469,7 @@ export function useDocumentMutations(projectId: string) {
       // 2.2. Update React Query Cache (Server State)
       if (previousQueryData) {
         queryClient.setQueryData<Document[]>(["documents", projectId], (old) =>
-          old ? old.filter((doc) => doc.id !== id) : []
+          old ? old.filter((doc) => doc.id !== id) : [],
         );
       }
 
@@ -510,7 +523,7 @@ export function useDocumentMutations(projectId: string) {
         idsToRemove.forEach((docId) => removeFromBuffer(docId));
       }
     },
-    [projectId, queryClient]
+    [projectId, queryClient],
   );
 
   const reorderDocuments = useCallback(
@@ -523,7 +536,7 @@ export function useDocumentMutations(projectId: string) {
         .filter(
           (doc) =>
             doc.projectId === projectId &&
-            doc.parentId === (parentId ?? undefined)
+            doc.parentId === (parentId ?? undefined),
         )
         .sort((a, b) => a.order - b.order)
         .map((doc) => doc.id);
@@ -546,7 +559,7 @@ export function useDocumentMutations(projectId: string) {
         }
       }
     },
-    [projectId, queryClient]
+    [projectId, queryClient],
   );
 
   /**
@@ -595,7 +608,7 @@ export function useDocumentMutations(projectId: string) {
         });
       }
     },
-    [projectId, queryClient]
+    [projectId, queryClient],
   );
 
   return {
@@ -612,7 +625,7 @@ export function useDocumentMutations(projectId: string) {
  */
 export function useDescendantDocuments(
   parentId: string | null,
-  projectId: string
+  projectId: string,
 ) {
   const documents = useDocumentStore((state) => state.documents);
 
@@ -653,7 +666,7 @@ export function useDescendantDocuments(
 export function useDescendantDocumentsWithLevel(
   parentId: string | null,
   projectId: string,
-  options?: { textOnly?: boolean }
+  options?: { textOnly?: boolean },
 ) {
   const documents = useDocumentStore((state) => state.documents);
 
