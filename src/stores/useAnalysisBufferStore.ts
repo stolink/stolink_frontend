@@ -63,7 +63,7 @@ interface AnalysisBufferStore {
   pendingDocuments: Record<string, string>; // 분석 요청된 문서: documentId -> contentHash (분석 완료 전까지 유지)
   lastConsistencyReport: ConsistencyReport | null; // 마지막 분석 결과 (일관성 리포트)
   processedConflicts: Record<string, "resolved" | "ignored" | "deleted">; // 처리된 이슈 관리
-  pendingViewJobId: { jobId: string; projectId: string } | null; // 사용자가 아직 확인하지 못한 분석 결과 (프로젝트별)
+  pendingAnalysisResults: Record<string, string>; // projectId -> jobId (프로젝트별 pending 분석 결과)
   analysisSnapshots: Record<string, AnalysisSnapshot>; // projectId -> snapshot (characters, links)
   acknowledgedJobIds: string[]; // 확인된 분석 작업 ID 목록
 
@@ -107,7 +107,8 @@ interface AnalysisBufferStore {
   clearProcessedConflicts: () => void;
   // 강제 초기화
   resetAnalysis: () => void;
-  setPendingViewJobId: (id: string | null, projectId?: string) => void;
+  setPendingAnalysisResult: (projectId: string, jobId: string | null) => void;
+  getPendingAnalysisResult: (projectId: string) => string | null;
   setAnalysisSnapshot: (projectId: string, snapshot: AnalysisSnapshot) => void;
   clearAnalysisSnapshot: (projectId: string) => void;
   acknowledgeJob: (jobId: string) => void;
@@ -136,7 +137,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
       pendingDocuments: {}, // 분석 요청된 문서 트래킹
       lastConsistencyReport: null,
       processedConflicts: {},
-      pendingViewJobId: null as { jobId: string; projectId: string } | null,
+      pendingAnalysisResults: {} as Record<string, string>,
       analysisSnapshots: {},
       acknowledgedJobIds: [],
 
@@ -153,14 +154,8 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
             // state.processedConflicts = {};
             // state.lastAnalyzedHashes = {}; // 해시 유지
 
-            // [FIX] 프로젝트 변경 시 다른 프로젝트의 pendingViewJobId는 초기화
-            // 이렇게 해야 다른 프로젝트 World 페이지에서 잘못된 모달이 뜨지 않음
-            if (
-              state.pendingViewJobId &&
-              state.pendingViewJobId.projectId !== projectId
-            ) {
-              state.pendingViewJobId = null;
-            }
+            // [NOTE] 프로젝트별 pendingAnalysisResults는 Map 구조이므로
+            // 다른 프로젝트의 결과는 그대로 유지됨 - 별도 초기화 불필요
 
             // 새로고침 시 진행 중인 Job이 있으면 상태 유지
             const hasActiveJobs =
@@ -420,21 +415,26 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
           state.isAnalyzing = false;
           state.progress = 0;
           state.pendingDocuments = {};
-          state.pendingViewJobId = null; // 초기화
+          // 현재 프로젝트의 pending result만 초기화
           if (state.projectId) {
+            delete state.pendingAnalysisResults[state.projectId];
             delete state.activeJobs[state.projectId];
           }
         });
       },
 
-      setPendingViewJobId: (id, projectId) => {
+      setPendingAnalysisResult: (projectId, jobId) => {
         set((state) => {
-          if (id && projectId) {
-            state.pendingViewJobId = { jobId: id, projectId };
+          if (jobId) {
+            state.pendingAnalysisResults[projectId] = jobId;
           } else {
-            state.pendingViewJobId = null;
+            delete state.pendingAnalysisResults[projectId];
           }
         });
+      },
+
+      getPendingAnalysisResult: (projectId) => {
+        return get().pendingAnalysisResults[projectId] || null;
       },
 
       setAnalysisSnapshot: (projectId, snapshot) => {
@@ -525,7 +525,7 @@ export const useAnalysisBufferStore = create<AnalysisBufferStore>()(
         pendingDocuments: state.pendingDocuments,
         lastConsistencyReport: state.lastConsistencyReport,
         processedConflicts: state.processedConflicts,
-        pendingViewJobId: state.pendingViewJobId,
+        pendingAnalysisResults: state.pendingAnalysisResults,
         analysisSnapshots: state.analysisSnapshots,
         acknowledgedJobIds: state.acknowledgedJobIds,
       }),

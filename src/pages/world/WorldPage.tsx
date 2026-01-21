@@ -105,14 +105,20 @@ export default function WorldPage() {
   const {
     setJobId,
     setAnalyzing,
-    pendingViewJobId,
-    setPendingViewJobId,
     analysisSnapshots,
     setAnalysisSnapshot,
     clearAnalysisSnapshot,
     acknowledgeJob,
     isJobAcknowledged,
   } = useAnalysisBufferStore();
+
+  // 현재 프로젝트의 pending 분석 결과만 조회 (프로젝트별 격리)
+  const pendingJobId = useAnalysisBufferStore(
+    (s) => s.pendingAnalysisResults[projectId || ""],
+  );
+  const setPendingAnalysisResult = useAnalysisBufferStore(
+    (s) => s.setPendingAnalysisResult,
+  );
 
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -147,40 +153,33 @@ export default function WorldPage() {
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (_result, jobId) => {
       if (projectId) {
-        setPendingViewJobId(jobId, projectId);
+        setPendingAnalysisResult(projectId, jobId);
       }
     },
   });
 
-  // Check for Pending Analysis View (from Editor)
+  // Check for Pending Analysis View (현재 프로젝트만 확인)
   useEffect(() => {
-    if (projectId && pendingViewJobId) {
-      // 현재 프로젝트의 분석 결과인지 확인
-      if (pendingViewJobId.projectId !== projectId) {
-        return; // 다른 프로젝트의 분석 결과는 무시
-      }
+    if (!projectId || !pendingJobId) return;
 
-      const jobId = pendingViewJobId.jobId;
-      const isAck = isJobAcknowledged(jobId);
-
-      if (isAck) {
-        setPendingViewJobId(null);
-        return;
-      }
-
-      // Decouple from render cycle to avoid cascading renders warning
-      setTimeout(() => {
-        setPendingViewJobId(null);
-        setShowCompletionAnimation(true);
-        setCurrentAnalysisJobId(jobId);
-      }, 0);
-
-      // Trigger the completion flow immediately
-      setTimeout(() => {
-        setIsWaitingForRefresh(true);
-      }, 50);
+    const isAck = isJobAcknowledged(pendingJobId);
+    if (isAck) {
+      setPendingAnalysisResult(projectId, null);
+      return;
     }
-  }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
+
+    // Decouple from render cycle to avoid cascading renders warning
+    setTimeout(() => {
+      setPendingAnalysisResult(projectId, null);
+      setShowCompletionAnimation(true);
+      setCurrentAnalysisJobId(pendingJobId);
+    }, 0);
+
+    // Trigger the completion flow immediately
+    setTimeout(() => {
+      setIsWaitingForRefresh(true);
+    }, 50);
+  }, [projectId, pendingJobId, isJobAcknowledged, setPendingAnalysisResult]);
 
   // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장
   // (에디터에서 분석을 시작한 경우 스냅샷이 없을 수 있음)
@@ -232,7 +231,7 @@ export default function WorldPage() {
     // Persist to store to survive page reloads
     setAnalysisSnapshot(projectId, snapshot);
     // Reset pending view for new session
-    setPendingViewJobId(null);
+    setPendingAnalysisResult(projectId, null);
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
