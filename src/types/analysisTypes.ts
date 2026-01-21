@@ -14,7 +14,7 @@ export interface AnalysisDiff {
   updatedCharacters: { id: string; changes: ChangeItem[] }[];
   newRelations: RelationshipLink[];
   updatedRelations: { id: string; changes: ChangeItem[] }[];
-  removedRelations: string[]; // IDs
+  removedRelations: { id: string; source: string; target: string }[]; // Info for display
 }
 
 // Mock Data Generator for verification

@@ -51,15 +51,12 @@ import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
 import type { AnalysisResultData } from "@/types/analysisResult";
-import {
-  type CharacterRelation,
-  type Character,
-  type RelationType,
-} from "@/types/character";
+import { type Character } from "@/types/character";
 import type { RelationshipLink } from "@/types/characterGraph";
 
 // Utils & Data
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
+import { extractRelationshipLinks } from "@/utils/relationshipMapper";
 
 import { DEMO_CHAPTERS } from "@/data/demoData";
 import { cn, getPlainTextLength } from "@/lib/utils";
@@ -320,29 +317,20 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   });
 
   const graphLinks = useMemo(() => {
-    if (isDemo) return [];
-    interface GraphLink {
-      id: string;
-      source: string;
-      target: string;
-      type: RelationType;
-      strength: number;
-      description: string;
-    }
-    const links: GraphLink[] = [];
-    characters.forEach((char: Character) => {
-      char.relations?.graph?.forEach((rel: CharacterRelation) => {
-        links.push({
-          id: rel.id || `${char._id}-${rel.target}`,
-          source: char._id,
-          target: rel.target,
-          type: rel.type as RelationType,
-          strength: rel.strength,
-          description: rel.description,
-        });
-      });
-    });
-    return links;
+    if (isDemo || !characters.length) return [];
+    const extracted = extractRelationshipLinks(characters);
+    // Ensure source/target are strings for compatibility with other components (e.g. ExportGatewayModal)
+    return extracted.map((link) => ({
+      ...link,
+      source:
+        typeof link.source === "string"
+          ? link.source
+          : (link.source as { id: string }).id,
+      target:
+        typeof link.target === "string"
+          ? link.target
+          : (link.target as { id: string }).id,
+    }));
   }, [characters, isDemo]);
 
   // ============================================================
@@ -352,12 +340,12 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   // ============================================================
   const queryClient = useQueryClient();
 
-  const {
-    addToBuffer,
-    setPendingViewJobId,
-    setAnalysisSnapshot,
-    isJobAcknowledged,
-  } = useAnalysisBufferStore();
+  const { addToBuffer, setAnalysisSnapshot, isJobAcknowledged } =
+    useAnalysisBufferStore();
+
+  const setPendingAnalysisResult = useAnalysisBufferStore(
+    (s) => s.setPendingAnalysisResult,
+  );
 
   const readerChapters = useMemo(() => {
     interface FlatChapter {
@@ -407,7 +395,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
       // We DO NOT calculate diff here anymore. We defer it to WorldPage.
       // Flag that we have a pending view for the user using persistent store.
       if (projectId) {
-        setPendingViewJobId(jobId, projectId);
+        setPendingAnalysisResult(projectId, jobId);
       }
 
       // 토스트 제거: WorldPage에서 모달로 결과를 보여주므로 중복 알림 불필요
@@ -512,7 +500,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     if (projectId) {
       setAnalysisSnapshot(projectId, snapshot);
       // Reset pending view for new session
-      setPendingViewJobId(null);
+      setPendingAnalysisResult(projectId, null);
     }
 
     handleManualAnalysis();
@@ -522,7 +510,7 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
     graphLinks,
     projectId,
     setAnalysisSnapshot,
-    setPendingViewJobId,
+    setPendingAnalysisResult,
   ]);
 
   // ============================================================

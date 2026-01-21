@@ -1040,16 +1040,33 @@ export const AnalysisSummaryModal: React.FC<AnalysisSummaryModalProps> = ({
                                 </div>
 
                                 <div className="space-y-3">
-                                  {diff.removedRelations?.map((id) => (
+                                  {diff.removedRelations?.map((rel) => (
                                     <motion.div
                                       variants={itemVariants}
-                                      key={id}
-                                      className="p-4 rounded-xl border border-dashed border-cloud-200 bg-muted/50 flex items-center gap-4"
+                                      key={rel.id}
+                                      className="p-4 rounded-xl border border-dashed border-rose-200/50 bg-rose-50/30 flex items-center justify-between gap-4"
                                     >
-                                      <Trash2 className="w-4 h-4 text-mocha-300" />
-                                      <span className="text-sm text-mocha-400 ">
-                                        Relation #{id.slice(-8)}
-                                      </span>
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-xs font-bold text-rose-600">
+                                          {getCharAvatar(rel.source)}
+                                        </div>
+                                        <span className="text-sm font-semibold text-espresso-800">
+                                          {getCharName(rel.source)}
+                                        </span>
+                                        <ArrowRight className="w-3 h-3 text-rose-300" />
+                                        <span className="text-sm font-semibold text-espresso-800">
+                                          {getCharName(rel.target)}
+                                        </span>
+                                        <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-xs font-bold text-rose-400">
+                                          {getCharAvatar(rel.target)}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                        <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
+                                          Removed
+                                        </span>
+                                      </div>
                                     </motion.div>
                                   ))}
                                 </div>
