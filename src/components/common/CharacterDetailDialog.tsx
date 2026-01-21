@@ -6,7 +6,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-// import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@stolink/ui";
 import {
@@ -109,7 +108,6 @@ export default function CharacterDetailDialog({
   const lastErrorTimeRef = useRef<number>(0);
 
   const { toast } = useToast();
-  // const queryClient = useQueryClient(); // Unused, removing to satisfy lint
 
   // Watch for global image job completion
   const isGlobalAnalyzing = useAnalysisBufferStore(
@@ -786,7 +784,7 @@ export default function CharacterDetailDialog({
 
         // Deep clone and set nested value
         const result = structuredClone(prev);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 중첩 객체 접근 시 타입 단언 필요
         let current: any = result;
         for (let i = 0; i < keys.length - 1; i++) {
           if (!current[keys[i]]) {

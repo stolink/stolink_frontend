@@ -16,6 +16,7 @@ export interface ApiTestCase {
     body?: unknown;
   };
   expectedStatus?: number;
+  // 테스트 코드에서 JSON 응답 검증 시 타입 단언 번거로움 방지
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   verify?: (json: any) => void;
 }

@@ -13,6 +13,7 @@ export interface MentionRendererProps {
   items: SuggestionItem[];
   command: (props: { id: string; label: string }) => void;
   decorationNode: Element | null;
+  // Tippy.js GetReferenceClientRect 타입 호환을 위해 any 사용 (null 허용 필요)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   clientRect?: any;
   event?: KeyboardEvent;

@@ -115,13 +115,8 @@ export function useNetworkSimulation({
       // Simplification for this demo: Just append new links and re-process only those that might be parallel
       // or just re-run standard D3 update pattern
 
-      // const allRawLinks = [...currentLinks, ...newLinks]; // Unused variable removed for linting
       // Note: currentLinks already has source/target as Objects.
-      // newLinks has strings. D3 handles mixed types if we are careful, but safer to re-process carefully.
-
-      // To handle curvature correctly for DYNAMIC additions, we should really re-group.
-      // However, since objects are already bound, we need to be careful not to break references.
-      // For now, let's just add them and let D3 re-bind.
+      // newLinks has strings. D3 handles mixed types if we are careful.
 
       sim.nodes(updatedNodes);
 

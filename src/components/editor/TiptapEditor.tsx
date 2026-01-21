@@ -6,7 +6,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
 import TextAlign from "@tiptap/extension-text-align";
-// import Underline from "@tiptap/extension-underline";
 import {
   useEffect,
   useState,

@@ -105,14 +105,20 @@ export default function WorldPage() {
   const {
     setJobId,
     setAnalyzing,
-    pendingViewJobId,
-    setPendingViewJobId,
     analysisSnapshots,
     setAnalysisSnapshot,
     clearAnalysisSnapshot,
     acknowledgeJob,
     isJobAcknowledged,
   } = useAnalysisBufferStore();
+
+  // 현재 프로젝트의 pending 분석 결과만 조회 (프로젝트별 격리)
+  const pendingJobId = useAnalysisBufferStore(
+    (s) => s.pendingAnalysisResults[projectId || ""],
+  );
+  const setPendingAnalysisResult = useAnalysisBufferStore(
+    (s) => s.setPendingAnalysisResult,
+  );
 
   const [analysisDiff, setAnalysisDiff] = useState<AnalysisDiff | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -146,35 +152,34 @@ export default function WorldPage() {
     isCheckingJobStatus,
   } = useProjectAnalysis(projectId ?? null, {
     onAnalysisComplete: (_result, jobId) => {
-      setPendingViewJobId(jobId);
+      if (projectId) {
+        setPendingAnalysisResult(projectId, jobId);
+      }
     },
   });
 
-  // Check for Pending Analysis View (from Editor)
+  // Check for Pending Analysis View (현재 프로젝트만 확인)
   useEffect(() => {
-    if (projectId) {
-      if (pendingViewJobId && pendingViewJobId !== "") {
-        const isAck = isJobAcknowledged(pendingViewJobId);
+    if (!projectId || !pendingJobId) return;
 
-        if (isAck) {
-          setPendingViewJobId(null);
-          return;
-        }
-
-        // Decouple from render cycle to avoid cascading renders warning
-        setTimeout(() => {
-          setPendingViewJobId(null);
-          setShowCompletionAnimation(true);
-          setCurrentAnalysisJobId(pendingViewJobId);
-        }, 0);
-
-        // Trigger the completion flow immediately
-        setTimeout(() => {
-          setIsWaitingForRefresh(true);
-        }, 50);
-      }
+    const isAck = isJobAcknowledged(pendingJobId);
+    if (isAck) {
+      setPendingAnalysisResult(projectId, null);
+      return;
     }
-  }, [projectId, pendingViewJobId, isJobAcknowledged, setPendingViewJobId]);
+
+    // AI 리뷰 피드백에서 setTimeout 사용을 지양하라고 했으나,
+    // Effect 내에서 직접적인 setState 호출은 cascading render 린트 에러를 유발하므로
+    // 한 프레임 뒤에 안전하게 업데이트하도록 지연 처리합니다.
+    const timer = setTimeout(() => {
+      setPendingAnalysisResult(projectId, null);
+      setShowCompletionAnimation(true);
+      setCurrentAnalysisJobId(pendingJobId);
+      setIsWaitingForRefresh(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [projectId, pendingJobId, isJobAcknowledged, setPendingAnalysisResult]);
 
   // 분석 중인데 스냅샷이 없으면 현재 데이터를 스냅샷으로 저장
   // (에디터에서 분석을 시작한 경우 스냅샷이 없을 수 있음)
@@ -226,7 +231,7 @@ export default function WorldPage() {
     // Persist to store to survive page reloads
     setAnalysisSnapshot(projectId, snapshot);
     // Reset pending view for new session
-    setPendingViewJobId(null);
+    setPendingAnalysisResult(projectId, null);
 
     // 만약 버퍼에 변경사항이 있다면, 단순히 전체 분석을 새로 날리는 게 아니라
     // 변경사항 점검을 포함한 triggerAnalysis 호출을 우선함
@@ -443,14 +448,6 @@ export default function WorldPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDebugAnalyzing, showCompletionAnimation, isAnalysisModalOpen]);
-
-  // Sync selectedCharacter with latest data from characters array
-  // We use useMemo to derive the active character data to avoid cascading renders
-  // const activeCharacter = useMemo(() => { // This was moved to a state variable
-  //   if (!selectedCharacter || characters.length === 0) return selectedCharacter;
-  //   const updated = characters.find((c) => c._id === selectedCharacter._id);
-  //   return updated ? updated : selectedCharacter;
-  // }, [characters, selectedCharacter]);
 
   // Critical Guard: Render error if projectId is missing (AFTER hooks)
   if (!projectId) {
@@ -996,12 +993,7 @@ export default function WorldPage() {
           // 이벤트로 이동하는 로직 (추후 구현 가능)
         }}
         onRelationshipDeleted={() => {
-          // 관계 삭제 후 필요한 추가 로직이 있다면 여기에 작성
-          // useDeleteRelationship에서 이미 query invalidation을 수행하므로
-          // 여기서는 별도의 데이터 페칭 로직이 필요 없음
-          console.log(
-            "[WorldPage] Relationship deleted, UI will refresh via cache invalidation",
-          );
+          // 관계 삭제 후 UI는 캐시 무효화를 통해 자동으로 갱신됨
         }}
       />
 

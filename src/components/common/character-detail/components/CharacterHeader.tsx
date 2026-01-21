@@ -24,8 +24,7 @@ interface CharacterHeaderProps {
   onGenerateImage?: () => void;
   isGeneratingImage?: boolean;
   imageGenerationProgress?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onFieldChange?: (field: string, value: any) => void;
+  onFieldChange?: (field: string, value: string | string[]) => void;
 }
 
 export function CharacterHeader({
