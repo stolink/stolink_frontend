@@ -1,7 +1,20 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Editor } from "@tiptap/core";
 import { BubbleMenu } from "@tiptap/react/menus";
-import StarterKit from "@tiptap/starter-kit";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import Heading from "@tiptap/extension-heading";
+import TiptapBold from "@tiptap/extension-bold";
+import TiptapItalic from "@tiptap/extension-italic";
+import Strike from "@tiptap/extension-strike";
+import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
+import Blockquote from "@tiptap/extension-blockquote";
+import HardBreak from "@tiptap/extension-hard-break";
+import HorizontalRule from "@tiptap/extension-horizontal-rule";
+import Code from "@tiptap/extension-code";
+import CodeBlock from "@tiptap/extension-code-block";
+import { Dropcursor, Gapcursor, UndoRedo } from "@tiptap/extensions";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import CharacterCount from "@tiptap/extension-character-count";
@@ -180,11 +193,26 @@ const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     // Settings are applied via commands after editor creation
     const extensions = useMemo(() => {
       const exts = [
-        StarterKit.configure({
-          heading: {
-            levels: [1, 2, 3, 4, 5, 6],
-          },
+        Document,
+        Paragraph,
+        Text,
+        Heading.configure({
+          levels: [1, 2, 3, 4, 5, 6],
         }),
+        TiptapBold,
+        TiptapItalic,
+        Strike,
+        UndoRedo,
+        BulletList,
+        OrderedList,
+        ListItem,
+        Blockquote,
+        HardBreak,
+        HorizontalRule,
+        Code,
+        CodeBlock,
+        Dropcursor,
+        Gapcursor,
         Placeholder.configure({
           placeholder:
             "마크다운(#, ##, > 등)으로 자유롭게 내용을 입력하세요...",

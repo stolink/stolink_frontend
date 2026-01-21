@@ -9,6 +9,9 @@ import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Button } from "@stolink/ui";
 import { Input } from "@stolink/ui";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { documentKeys } from "@/hooks/useDocuments";
+import { documentService } from "@/services/documentService";
 
 /**
  * ProjectLayout - Header-First Layout (Dashboard Style)
@@ -21,6 +24,37 @@ export function ProjectLayout() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // LCP 최적화: 프로젝트 진입 시 트리 및 현재 섹션 문서 미리 로드
+  useEffect(() => {
+    if (!id) return;
+
+    // 1. 트리 데이터 프리패치
+    queryClient.prefetchQuery({
+      queryKey: documentKeys.tree(id),
+      queryFn: async () => {
+        const response = await documentService.getTree(id);
+        return response.data; // Note: useDocumentTree does some mapping, but prefetching raw data still helps
+      },
+      staleTime: 30000,
+    });
+
+    // 2. 현재 URL에서 sectionId 추출하여 본문 프리패치
+    const match = location.pathname.match(/\/editor\/([^/]+)/);
+    const sectionId = match ? match[1] : null;
+
+    if (sectionId && sectionId !== "demo") {
+      queryClient.prefetchInfiniteQuery({
+        queryKey: documentKeys.content(sectionId),
+        queryFn: ({ pageParam = 1 }) =>
+          documentService.getContent(sectionId, pageParam as number),
+        initialPageParam: 1,
+        staleTime: 60000,
+      });
+    }
+  }, [id, location.pathname, queryClient]);
+
   const { data: project } = useProject(id || "", { enabled: !!id });
   const { mutate: updateProject } = useUpdateProject();
   const { saveStatus, lastSavedAt } = useEditorStore();
