@@ -5,9 +5,9 @@ import {
   useCallback,
   useEffect,
   Suspense,
+  lazy,
 } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import { debounce, throttle } from "lodash-es";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -24,8 +24,18 @@ import { EditorSkeleton as EditorLoadingSkeleton } from "@/components/editor/Edi
 
 // Modals & Overlays
 import { CreateSectionModal } from "@/pages/editor/components/CreateSectionModal";
-import { BookReaderModal as ReaderModal } from "@/components/reader/BookReaderModal";
-import { ExportGatewayModal } from "@/components/editor/ExportGatewayModal";
+
+// Lazy load heavy modals for LCP improvement
+const ReaderModal = lazy(() =>
+  import("@/components/reader/BookReaderModal").then((m) => ({
+    default: m.BookReaderModal,
+  })),
+);
+const ExportGatewayModal = lazy(() =>
+  import("@/components/editor/ExportGatewayModal").then((m) => ({
+    default: m.ExportGatewayModal,
+  })),
+);
 
 // Hooks
 import { useProject } from "@/hooks/useProjects";
@@ -40,6 +50,7 @@ import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
 import { useEditorHandlers } from "@/pages/editor/hooks/useEditorHandlers";
 import { useKeyboardSave } from "@/pages/editor/hooks/useKeyboardSave";
 import { useToast } from "@/hooks/useToast";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // Stores & Repositories
 import { useEditorSettingStore } from "@/stores/useEditorSettingStore";
@@ -146,6 +157,9 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   const editorContentRef = useRef<EditorContentHandle>(null);
 
   const { toast } = useToast();
+
+  // SPA 페이지 제목 (접근성 - KWCAG 2.4.2)
+  useDocumentTitle(isDemo ? "데모 에디터" : "에디터");
 
   const debouncedSetCharacterCount = useMemo(
     () => debounce((count: number) => setCharacterCount(count), 1000),
@@ -689,24 +703,21 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
         {/* Desk Texture/Gradient Overlay (Optional) */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-stone-100/30 pointer-events-none" />
 
-        <AnimatePresence>
-          {isSidebarOpen && (
-            <EditorLeftSidebar
-              chapters={sidebarChapters}
-              selectedChapterId={selectedSectionId}
-              onSelectChapter={handleSelectSection}
-              onAddChapter={handleAddChapter}
-              onRenameChapter={handleRenameChapter}
-              onDeleteChapter={handleDeleteChapter}
-              onMoveToFolder={handleMoveToFolder}
-              onReorderChapter={handleReorderChapter}
-              isOpen={isSidebarOpen}
-              onToggle={() => setIsSidebarOpen(false)}
-              projectTitle={projectTitle}
-              totalChars={currentTotalChars}
-            />
-          )}
-        </AnimatePresence>
+        {/* EditorLeftSidebar - uses internal width transition for CLS prevention */}
+        <EditorLeftSidebar
+          chapters={sidebarChapters}
+          selectedChapterId={selectedSectionId}
+          onSelectChapter={handleSelectSection}
+          onAddChapter={handleAddChapter}
+          onRenameChapter={handleRenameChapter}
+          onDeleteChapter={handleDeleteChapter}
+          onMoveToFolder={handleMoveToFolder}
+          onReorderChapter={handleReorderChapter}
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          projectTitle={projectTitle}
+          totalChars={currentTotalChars}
+        />
 
         <main
           className={cn(
@@ -752,41 +763,44 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
             onResetAnalysis={resetAnalysis}
           />
 
-          <Suspense fallback={<EditorLoadingSkeleton />}>
-            <EditorContent
-              ref={editorContentRef}
-              viewMode={viewMode}
-              selectedFolderId={selectedFolderId}
-              selectedSectionId={selectedSectionId}
-              projectId={projectId}
-              splitView={{ enabled: false, direction: "vertical" }}
-              isFocusMode={isFocusMode}
-              currentContent={documentContent}
-              currentSectionTitle={document?.title || ""}
-              onCharacterCountChange={(count: number) => {
-                // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
-                throttledUIUpdate(
-                  count,
-                  handleCharacterCountChange,
-                  setCharacterCount,
-                );
-
-                // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
-                if (!isDemo && selectedSectionId) {
-                  throttledUpdateStats(
-                    selectedSectionId,
+          {/* CLS 방지: flex-1로 높이 고정, skeleton과 content가 동일한 공간 차지 */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <Suspense fallback={<EditorLoadingSkeleton />}>
+              <EditorContent
+                ref={editorContentRef}
+                viewMode={viewMode}
+                selectedFolderId={selectedFolderId}
+                selectedSectionId={selectedSectionId}
+                projectId={projectId}
+                splitView={{ enabled: false, direction: "vertical" }}
+                isFocusMode={isFocusMode}
+                currentContent={documentContent}
+                currentSectionTitle={document?.title || ""}
+                onCharacterCountChange={(count: number) => {
+                  // UI 및 로컬 메타데이터 업데이트 (300ms 스로틀링)
+                  throttledUIUpdate(
                     count,
-                    updateDocumentCharCount,
+                    handleCharacterCountChange,
+                    setCharacterCount,
                   );
-                }
-              }}
-              onContentChange={handleContentChange}
-              onCreateSection={handleCreateSection}
-              onSelectSection={handleSelectSection}
-              documents={documents}
-              isDemo={isDemo}
-            />
-          </Suspense>
+
+                  // 현재 문서의 글자수를 스토어에 저장 (실시간 동기화 - 1000ms 스로틀링)
+                  if (!isDemo && selectedSectionId) {
+                    throttledUpdateStats(
+                      selectedSectionId,
+                      count,
+                      updateDocumentCharCount,
+                    );
+                  }
+                }}
+                onContentChange={handleContentChange}
+                onCreateSection={handleCreateSection}
+                onSelectSection={handleSelectSection}
+                documents={documents}
+                isDemo={isDemo}
+              />
+            </Suspense>
+          </div>
         </main>
 
         <EditorRightSidebar

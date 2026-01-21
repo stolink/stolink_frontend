@@ -74,6 +74,8 @@
       />
     </noscript>
     <style>
+      /* CLS 방지: 폰트 로딩 시 텍스트 크기 일관성 유지 */
+      /* font-size-adjust로 ascent 비율 맞춤 → 시스템 폰트 → 웹 폰트 전환 시 레이아웃 시프트 최소화 */
       body {
         font-family:
           "Pretendard",
@@ -90,6 +92,19 @@
           "Segoe UI Emoji",
           "Segoe UI Symbol",
           sans-serif;
+        /* Pretendard와 시스템 폰트 간 x-height 비율 조정 */
+        font-size-adjust: 0.5;
+      }
+
+      /* 헤딩 폰트도 동일하게 적용 */
+      .font-serif,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-size-adjust: 0.52;
       }
     </style>
   </head>

@@ -19,6 +19,7 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { PaperTexture } from "@/components/effects/PaperTexture";
 import { BrushStrokeDivider } from "@/components/effects/BrushStrokeDivider";
 import { useToast } from "@/hooks/useToast";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -49,6 +50,7 @@ export default function LandingPage() {
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const heroOpacity = useTransform(scrollY, [0, 500], [1, 0.5]);
   const { toast } = useToast();
+  useDocumentTitle("작가를 위한 스토리 관리 플랫폼");
 
   /**
    * 모바일에서 시작하기 버튼 클릭 시 Toast 표시
