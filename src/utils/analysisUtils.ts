@@ -300,6 +300,12 @@ export function calculateDiffFromSnapshot(
   const normalizeName = (name: string) =>
     name.trim().toLowerCase().replace(/\s+/g, " ");
 
+  // [FIX] 스냅샷의 links가 비어있으면 관계 diff를 계산하지 않음
+  // EditorPage와 WorldPage의 links 데이터 소스가 다르기 때문에
+  // 스냅샷이 비어있거나 첫 분석인 경우 모든 관계가 "새로운" 것으로 표시되는 것을 방지
+  const shouldSkipRelationsDiff =
+    prevLinks.length === 0 && nextLinks.length > 0;
+
   // 1. Process Characters
   // Check for New Characters
   nextCharacters.forEach((nextChar) => {
@@ -380,95 +386,101 @@ export function calculateDiffFromSnapshot(
 
   // 2. Process Relationships
   // Helper to safely extract ID from source/target (D3 may convert to objects)
-  const getLinkId = (val: string | { id: string } | unknown): string => {
+  const getLinkId = (
+    val: string | { id?: string; _id?: string } | unknown,
+  ): string => {
     if (typeof val === "string") return val;
-    if (typeof val === "object" && val !== null && "id" in val) {
-      return (val as { id: string }).id;
+    if (typeof val === "object" && val !== null) {
+      const obj = val as { id?: string; _id?: string };
+      return obj._id || obj.id || String(val);
     }
     return String(val);
   };
 
   // Check for New & Updated Relations
-  nextLinks.forEach((nextLink) => {
-    const nextSource = getLinkId(nextLink.source);
-    const nextTarget = getLinkId(nextLink.target);
+  // [FIX] 스냅샷 links가 비어있으면 관계 diff를 스킵
+  if (!shouldSkipRelationsDiff) {
+    nextLinks.forEach((nextLink) => {
+      const nextSource = getLinkId(nextLink.source);
+      const nextTarget = getLinkId(nextLink.target);
 
-    // Find corresponding link in previous set
-    // Relationships are identified by Source-Target pair
-    const prevLink = prevLinks.find((p) => {
-      const prevSource = getLinkId(p.source);
-      const prevTarget = getLinkId(p.target);
-      return (
-        (prevSource === nextSource && prevTarget === nextTarget) ||
-        (prevSource === nextTarget && prevTarget === nextSource) // Bidirectional check
-      );
+      // Find corresponding link in previous set
+      // Relationships are identified by Source-Target pair
+      const prevLink = prevLinks.find((p) => {
+        const prevSource = getLinkId(p.source);
+        const prevTarget = getLinkId(p.target);
+        return (
+          (prevSource === nextSource && prevTarget === nextTarget) ||
+          (prevSource === nextTarget && prevTarget === nextSource) // Bidirectional check
+        );
+      });
+
+      if (!prevLink) {
+        newRelations.push(nextLink);
+      } else {
+        // Check for updates
+        const changes: ChangeItem[] = [];
+
+        // CASE SENSITIVE FIX: Normalize types before comparison
+        const nextType = (nextLink.type || "").toLowerCase().trim();
+        const prevType = (prevLink.type || "").toLowerCase().trim();
+
+        // MAPPING normalization (e.g. ALLY should equal friendly if that's the canonical type)
+        const normalizeRelation = (t: string) => {
+          if (t === "ally") return "friendly";
+          return t;
+        };
+
+        if (normalizeRelation(prevType) !== normalizeRelation(nextType)) {
+          changes.push({
+            field: "type",
+            oldValue: prevLink.type,
+            newValue: nextLink.type,
+            description: `Type: ${prevLink.type} -> ${nextLink.type}`,
+          });
+        }
+        if (Math.abs((prevLink.strength || 0) - (nextLink.strength || 0)) > 1) {
+          changes.push({
+            field: "strength",
+            oldValue: prevLink.strength,
+            newValue: nextLink.strength,
+            description: `Strength: ${prevLink.strength} -> ${nextLink.strength}`,
+          });
+        }
+        if (prevLink.description !== nextLink.description) {
+          changes.push({
+            field: "description",
+            oldValue: prevLink.description,
+            newValue: nextLink.description,
+            description: "Description updated",
+          });
+        }
+
+        if (changes.length > 0) {
+          updatedRelations.push({ id: nextLink.id, changes });
+        }
+      }
     });
 
-    if (!prevLink) {
-      newRelations.push(nextLink);
-    } else {
-      // Check for updates
-      const changes: ChangeItem[] = [];
+    // Check for Removed Relations
+    prevLinks.forEach((prevLink) => {
+      const prevSource = getLinkId(prevLink.source);
+      const prevTarget = getLinkId(prevLink.target);
 
-      // CASE SENSITIVE FIX: Normalize types before comparison
-      const nextType = (nextLink.type || "").toLowerCase().trim();
-      const prevType = (prevLink.type || "").toLowerCase().trim();
+      const stillExists = nextLinks.some((n) => {
+        const nSource = getLinkId(n.source);
+        const nTarget = getLinkId(n.target);
+        return (
+          (nSource === prevSource && nTarget === prevTarget) ||
+          (nSource === prevTarget && nTarget === prevSource)
+        );
+      });
 
-      // MAPPING normalization (e.g. ALLY should equal friendly if that's the canonical type)
-      const normalizeRelation = (t: string) => {
-        if (t === "ally") return "friendly";
-        return t;
-      };
-
-      if (normalizeRelation(prevType) !== normalizeRelation(nextType)) {
-        changes.push({
-          field: "type",
-          oldValue: prevLink.type,
-          newValue: nextLink.type,
-          description: `Type: ${prevLink.type} -> ${nextLink.type}`,
-        });
+      if (!stillExists) {
+        removedRelations.push(prevLink.id);
       }
-      if (Math.abs((prevLink.strength || 0) - (nextLink.strength || 0)) > 1) {
-        changes.push({
-          field: "strength",
-          oldValue: prevLink.strength,
-          newValue: nextLink.strength,
-          description: `Strength: ${prevLink.strength} -> ${nextLink.strength}`,
-        });
-      }
-      if (prevLink.description !== nextLink.description) {
-        changes.push({
-          field: "description",
-          oldValue: prevLink.description,
-          newValue: nextLink.description,
-          description: "Description updated",
-        });
-      }
-
-      if (changes.length > 0) {
-        updatedRelations.push({ id: nextLink.id, changes });
-      }
-    }
-  });
-
-  // Check for Removed Relations
-  prevLinks.forEach((prevLink) => {
-    const prevSource = getLinkId(prevLink.source);
-    const prevTarget = getLinkId(prevLink.target);
-
-    const stillExists = nextLinks.some((n) => {
-      const nSource = getLinkId(n.source);
-      const nTarget = getLinkId(n.target);
-      return (
-        (nSource === prevSource && nTarget === prevTarget) ||
-        (nSource === prevTarget && nTarget === prevSource)
-      );
     });
-
-    if (!stillExists) {
-      removedRelations.push(prevLink.id);
-    }
-  });
+  } // End of shouldSkipRelationsDiff check
 
   return {
     newCharacters,

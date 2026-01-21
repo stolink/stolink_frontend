@@ -51,15 +51,12 @@ import { useWritingStatsStore } from "@/stores/useWritingStatsStore";
 // Types
 import type { Document, DocumentTreeNode } from "@/types/document";
 import type { AnalysisResultData } from "@/types/analysisResult";
-import {
-  type CharacterRelation,
-  type Character,
-  type RelationType,
-} from "@/types/character";
+import { type Character } from "@/types/character";
 import type { RelationshipLink } from "@/types/characterGraph";
 
 // Utils & Data
 import { buildDocumentTree } from "@/repositories/DocumentRepository";
+import { extractRelationshipLinks } from "@/utils/relationshipMapper";
 
 import { DEMO_CHAPTERS } from "@/data/demoData";
 import { cn, getPlainTextLength } from "@/lib/utils";
@@ -320,29 +317,20 @@ export default function EditorPage({ isDemo: isDemoProp }: EditorPageProps) {
   });
 
   const graphLinks = useMemo(() => {
-    if (isDemo) return [];
-    interface GraphLink {
-      id: string;
-      source: string;
-      target: string;
-      type: RelationType;
-      strength: number;
-      description: string;
-    }
-    const links: GraphLink[] = [];
-    characters.forEach((char: Character) => {
-      char.relations?.graph?.forEach((rel: CharacterRelation) => {
-        links.push({
-          id: rel.id || `${char._id}-${rel.target}`,
-          source: char._id,
-          target: rel.target,
-          type: rel.type as RelationType,
-          strength: rel.strength,
-          description: rel.description,
-        });
-      });
-    });
-    return links;
+    if (isDemo || !characters.length) return [];
+    const extracted = extractRelationshipLinks(characters);
+    // Ensure source/target are strings for compatibility with other components (e.g. ExportGatewayModal)
+    return extracted.map((link) => ({
+      ...link,
+      source:
+        typeof link.source === "string"
+          ? link.source
+          : (link.source as { id: string }).id,
+      target:
+        typeof link.target === "string"
+          ? link.target
+          : (link.target as { id: string }).id,
+    }));
   }, [characters, isDemo]);
 
   // ============================================================
