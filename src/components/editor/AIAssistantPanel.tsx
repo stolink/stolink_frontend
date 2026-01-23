@@ -1,134 +1,813 @@
-import { useState } from "react";
-import { Send, Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  RotateCcw,
+  Sparkles,
+  Network,
+  CheckCircle2,
+  Quote,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { Button } from "@stolink/ui";
 import { cn } from "@/lib/utils";
+import { resolveImageUrl } from "@/utils/imageUtils";
+import {
+  useChatStream,
+  type SourceChunk,
+  type ChatMessage,
+  type ContextCard,
+} from "@/hooks/useChatStream";
+// Removed duplicate import
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
+import { motion, AnimatePresence } from "framer-motion";
+
+import { useUIStore } from "@/stores/useUIStore";
+import { useCharacters } from "@/hooks/useCharacters";
+import { useProjectEvents } from "@/hooks/useEvents";
+import { useEditorStore } from "@/stores/useEditorStore";
+import { AIChatInput, type AIChatInputRef } from "./AIChatInput";
+import { MarkdownRenderer } from "./ai-chat/MarkdownRenderer";
+import CharacterDetailDialog from "@/components/common/CharacterDetailDialog";
+
+import type { ConsistencyReport } from "@/types/analysisResult";
+import type { Character } from "@/types/character";
+import { ChatRelationshipCard } from "./ai-chat/ChatRelationshipCard";
+// Unused CardData import removed
+
+interface AIAssistantPanelProps {
+  projectId: string | null;
+  consistencyReport?: ConsistencyReport | null;
 }
 
-export default function AIAssistantPanel() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "안녕하세요! 스토리 작성을 도와드릴게요. 무엇이 궁금하신가요?",
-      timestamp: new Date(),
+export default function AIAssistantPanel({
+  projectId,
+  consistencyReport,
+}: AIAssistantPanelProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<AIChatInputRef>(null);
+  const {
+    messages,
+    streaming,
+    analyzing,
+    analysisComplete,
+    currentResponse,
+    currentSources,
+    currentCards,
+    sendMessage,
+    cancelStream,
+    resetSession,
+    loadHistory,
+    clearAnalysisComplete,
+  } = useChatStream({
+    onError: (error) => {
+      console.error("AI Chat error:", error);
     },
-  ]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  });
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  // 초기 히스토리 로드
+  useEffect(() => {
+    if (projectId) {
+      loadHistory(projectId);
+    }
+  }, [projectId, loadHistory]);
 
-    const userMessage: Message = {
-      id: new Date().getTime().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
+  // 분석 완료 애니메이션 표시 상태
+  const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
+  // 분석 완료 시 애니메이션 트리거
+  useEffect(() => {
+    if (analysisComplete) {
+      // Use setTimeout 0 to avoid setState synchronously in effect body
+      const timer = setTimeout(() => {
+        setShowCompleteAnimation(true);
+      }, 0);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (new Date().getTime() + 1).toString(),
-        role: "assistant",
-        content: getAIResponse(input),
-        timestamp: new Date(),
+      // 0.8초 후 애니메이션 숨기고 응답 표시
+      const secondTimer = setTimeout(() => {
+        setShowCompleteAnimation(false);
+        clearAnalysisComplete();
+      }, 800);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(secondTimer);
       };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1000);
+    }
+  }, [analysisComplete, clearAnalysisComplete]);
+
+  // 메시지 추가 시 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, currentResponse]);
+
+  // InsightsPanel 등에서 넘어온 자동 발송 메시지 처리
+  const pendingMessage = useUIStore((state) => state.pendingAIChatMessage);
+  const setPendingMessage = useUIStore(
+    (state) => state.setPendingAIChatMessage,
+  );
+
+  useEffect(() => {
+    if (!pendingMessage || streaming) {
+      return;
+    }
+
+    // Attempt to set input. We use a short delay to ensure editor is hydrated.
+    const timer = setTimeout(() => {
+      if (chatInputRef.current) {
+        const success = chatInputRef.current.setInput(pendingMessage);
+        if (success) {
+          setPendingMessage(null);
+          chatInputRef.current.focus();
+        }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [pendingMessage, streaming, setPendingMessage]);
+
+  const handleSend = async (
+    message: string,
+    contextData: Record<string, unknown>,
+  ) => {
+    if (!message.trim() || streaming) return;
+
+    if (!projectId) {
+      console.warn("projectId가 없습니다.");
+      return;
+    }
+
+    await sendMessage(message, projectId, contextData);
   };
 
-  const getAIResponse = (query: string): string => {
-    if (query.includes("다음") || query.includes("뭘")) {
-      return '현재 "전설의 검"이라는 복선이 설정되어 있네요. 몇 가지 방향을 제안드릴게요:\n\n1. 검에 대한 단서를 더 뿌려두기 - 검이 특정 상황에서 반응하는 장면\n2. 멘토 캐릭터 등장 - 검의 역사를 알고 있는 인물\n3. 첫 번째 위기 상황 - 검의 힘이 필요한 순간';
-    }
-    if (query.includes("캐릭터") || query.includes("성격")) {
-      return "현재 주인공의 성격이 용감하고 정의로운 것으로 설정되어 있어요. 일관성을 위해 다음을 참고하세요:\n\n• 위험 앞에서 두려움보다 책임감이 앞선다\n• 약자를 보호하려는 본능이 있다\n• 때로는 무모해 보일 수 있다";
-    }
-    return "좋은 질문이에요! 스토리의 맥락을 고려했을 때, 독자의 흥미를 유지하면서 복선을 자연스럽게 풀어가는 것이 중요합니다. 더 구체적인 질문이 있으시면 말씀해주세요.";
-  };
+  // Tag Suggestion Data Sources
+  const { data: characters } = useCharacters(projectId ?? "");
+  const { data: events } = useProjectEvents(projectId);
+
+  // Character Detail Dialog State
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+    null,
+  );
+  const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
+
+  // Tag Click Handler
+  const handleTagClick = useCallback(
+    (tag: { type: string; label: string; character?: Character }) => {
+      if (tag.type === "character" && tag.character) {
+        setSelectedCharacter(tag.character);
+        setCharacterDialogOpen(true);
+      } else if (tag.type === "character" && !tag.character) {
+        // 캐릭터가 매칭되지 않은 경우, 이름으로 찾기 시도
+        const foundChar = characters?.find(
+          (c) => c.profile?.name === tag.label,
+        );
+        if (foundChar) {
+          setSelectedCharacter(foundChar);
+          setCharacterDialogOpen(true);
+        }
+      }
+      // conflict, event 태그는 추후 확장 가능
+    },
+    [characters],
+  );
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              "flex gap-2",
-              message.role === "user" ? "flex-row-reverse" : "",
-            )}
-          >
-            {message.role === "assistant" && (
-              <div className="w-6 h-6 rounded-full bg-sage-100 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-sage-600" />
-              </div>
-            )}
-            <div
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm max-w-[85%]",
-                message.role === "user"
-                  ? "bg-sage-500 text-white"
-                  : "bg-stone-100 text-stone-800",
-              )}
-            >
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            </div>
+    <div className="flex flex-col h-full bg-cloud-50/30 relative overflow-hidden">
+      {/* Header with refined Identity */}
+      <div className="h-[52px] px-4 flex items-center justify-between border-b border-mocha-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 box-border">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-mocha-100 rounded-lg">
+            <Sparkles className="w-3.5 h-3.5 text-mocha-700" />
           </div>
-        ))}
+          <div>
+            <h3 className="text-sm font-bold text-espresso-900">Check-Bot</h3>
+          </div>
+        </div>
+        <Button
+          intent="ghost"
+          size="icon"
+          onClick={() => resetSession(projectId ?? undefined)}
+          className="h-8 w-8 text-mocha-300 hover:text-mocha-600 hover:bg-mocha-50 transition-all duration-300 rounded-lg"
+          title="새 대화 시작"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {isLoading && (
-          <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-sage-100 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-sage-600" />
-            </div>
-            <div className="bg-stone-100 rounded-lg px-3 py-2">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce [animation-delay:0.1s]" />
-                <div className="w-2 h-2 rounded-full bg-stone-400 animate-bounce [animation-delay:0.2s]" />
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 scrollbar-thin scrollbar-thumb-mocha-100 scrollbar-track-transparent">
+        <AnimatePresence mode="wait">
+          {messages.length === 0 && !streaming ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="flex flex-col items-center justify-center h-full text-center p-8"
+            >
+              <div className="relative mb-8">
+                <motion.div
+                  animate={{
+                    rotate: 360,
+                  }}
+                  transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="absolute inset-0 opacity-10"
+                >
+                  <Network className="w-24 h-24 text-mocha-400" />
+                </motion.div>
+                <div className="w-20 h-20 rounded-2xl bg-mocha-50/30 backdrop-blur-md flex items-center justify-center relative z-10 shadow-paper border border-white/40">
+                  <Sparkles className="h-8 w-8 text-mocha-500/80" />
+                </div>
               </div>
+              <h3 className="text-xl font-display text-espresso-900 mb-2">
+                지적 여정을 시작하세요
+              </h3>
+              <p className="text-sm text-mocha-400 font-sans max-w-[240px] leading-relaxed">
+                GraphRAG 기반의 Check-Bot이 책의 방대한 맥락을 연결하여
+                답해드립니다.
+              </p>
+            </motion.div>
+          ) : (
+            <div key="message-list" className="space-y-10">
+              {messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  characters={characters || []}
+                  onTagClick={handleTagClick}
+                />
+              ))}
+
+              {/* 토스 스타일 분석 완료 애니메이션 */}
+              <AnimatePresence>
+                {showCompleteAnimation && (
+                  <motion.div
+                    key="analysis-complete"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                    className="flex flex-col items-center justify-center py-12 relative"
+                  >
+                    {/* 배경 글로우 효과 */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <div
+                        className="w-40 h-40 rounded-full blur-3xl"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(var(--sage-200), 0.5) 0%, rgba(var(--sage-100), 0.2) 50%, transparent 100%)",
+                        }}
+                      />
+                    </motion.div>
+
+                    {/* 파티클 효과 */}
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0.5, 1, 0.3],
+                          x: Math.cos((i * Math.PI * 2) / 8) * 55,
+                          y: Math.sin((i * Math.PI * 2) / 8) * 55,
+                        }}
+                        transition={{
+                          duration: 0.5,
+                          delay: 0.12 + i * 0.025,
+                          ease: "easeOut",
+                        }}
+                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-sage-400 to-sage-500"
+                        style={{
+                          left: "50%",
+                          top: "45%",
+                          marginLeft: -4,
+                          marginTop: -4,
+                        }}
+                      />
+                    ))}
+
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 18,
+                        delay: 0.05,
+                      }}
+                      className="relative z-10"
+                    >
+                      {/* 외곽 링 펄스 1 */}
+                      <motion.div
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={{ scale: 1.8, opacity: [0, 0.5, 0] }}
+                        transition={{
+                          duration: 0.45,
+                          delay: 0.12,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-full border-2 border-sage-300"
+                      />
+                      {/* 외곽 링 펄스 2 */}
+                      <motion.div
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={{ scale: 2.3, opacity: [0, 0.25, 0] }}
+                        transition={{
+                          duration: 0.55,
+                          delay: 0.2,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-full border border-sage-200"
+                      />
+
+                      {/* 메인 아이콘 */}
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 280,
+                          damping: 16,
+                        }}
+                        className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-sage-50 via-sage-100 to-sage-200 flex items-center justify-center shadow-xl border border-sage-200/60"
+                      >
+                        <CheckCircle2
+                          className="w-9 h-9 text-sage-600"
+                          strokeWidth={2.5}
+                        />
+                      </motion.div>
+                    </motion.div>
+
+                    <motion.span
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        delay: 0.28,
+                        duration: 0.22,
+                        ease: "easeOut",
+                      }}
+                      className="mt-5 text-sm font-semibold text-sage-700 tracking-wide"
+                    >
+                      분석 완료
+                    </motion.span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Streaming Response - 완료 애니메이션 후 표시 */}
+              {streaming && currentResponse && !showCompleteAnimation && (
+                <div className="flex flex-col gap-3 mr-auto items-start max-w-[95%]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-px w-4 bg-mocha-100" />
+                    <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase">
+                      check-bot
+                    </span>
+                  </div>
+                  <div className="bg-white border border-mocha-100/50 text-espresso-900 rounded-2xl shadow-paper rounded-tl-none p-4 w-full max-w-[90%] break-words relative shadow-sm">
+                    <MarkdownRenderer
+                      content={currentResponse + "▍"}
+                      characters={characters}
+                      onTagClick={handleTagClick}
+                    />
+                    {currentCards.length > 0 && (
+                      <div className="mt-4 flex flex-col gap-3">
+                        {currentCards.map((card: ContextCard, idx: number) => {
+                          if (card.cardType === "relationship") {
+                            return (
+                              <ChatRelationshipCard
+                                key={`stream-card-${idx}`}
+                                data={card.data}
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                    {currentSources.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-mocha-100/30">
+                        <SourceList sources={currentSources} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Generative Loading State - 프리미엄 분석 중 애니메이션 */}
+              {streaming && analyzing && !showCompleteAnimation && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex flex-col items-center justify-center py-10 relative"
+                >
+                  {/* 배경 글로우 */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <motion.div
+                      animate={{
+                        opacity: [0.3, 0.5, 0.3],
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0,
+                      }}
+                      className="w-36 h-36 rounded-full blur-2xl"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(166, 140, 114, 0.4) 0%, rgba(166, 140, 114, 0.2) 50%, transparent 100%)",
+                      }}
+                    />
+                  </div>
+
+                  {/* 메인 로딩 오브 */}
+                  <div className="relative w-20 h-20">
+                    {/* 중심 오브 */}
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.08, 1],
+                        boxShadow: [
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                          "0 0 30px rgba(0, 0, 0, 0.1)",
+                          "0 0 20px rgba(0, 0, 0, 0.05)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-4 rounded-full bg-gradient-to-br from-mocha-50 via-white to-mocha-100 flex items-center justify-center shadow-lg border border-mocha-100/50"
+                    >
+                      <Network className="w-5 h-5 text-mocha-500" />
+                    </motion.div>
+
+                    {/* 외곽 회전 링 */}
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-0 rounded-full border-2 border-dashed border-mocha-200/60"
+                    />
+
+                    {/* 두 번째 회전 링 (반대 방향) */}
+                    <motion.div
+                      animate={{ rotate: -360 }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-2 rounded-full border border-mocha-300/40"
+                    />
+
+                    {/* 궤도 위 도트들 */}
+                    {[...Array(3)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          rotate: 360,
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "linear",
+                          delay: i * 0.8,
+                        }}
+                        className="absolute inset-0"
+                        style={{ transformOrigin: "center center" }}
+                      >
+                        <motion.div
+                          animate={{
+                            scale: [0.8, 1.2, 0.8],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.4,
+                          }}
+                          className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-mocha-400 to-mocha-500"
+                          style={{
+                            top: -4,
+                            left: "50%",
+                            marginLeft: -4,
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* 텍스트 레이블 */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-5 flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs font-semibold text-mocha-500 tracking-wide">
+                      그래프 분석 중
+                    </span>
+                    <motion.div className="flex gap-1">
+                      {[...Array(3)].map((_, i) => (
+                        <motion.span
+                          key={i}
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                          className="text-mocha-400"
+                        >
+                          •
+                        </motion.span>
+                      ))}
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
             </div>
+          )}
+        </AnimatePresence>
+        <div ref={messagesEndRef} className="h-4" />
+      </div>
+
+      {/* Quick Action Chips & Input Area */}
+      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-cloud-50 via-cloud-50 to-transparent flex flex-col gap-3">
+        <AIChatInput
+          ref={chatInputRef}
+          projectId={projectId}
+          characters={characters}
+          events={events}
+          consistencyReport={consistencyReport || null}
+          onSend={handleSend}
+          streaming={streaming}
+          onCancel={cancelStream}
+          placeholder={
+            projectId
+              ? "Check-Bot에게 무엇을 물어볼까요?"
+              : "프로젝트를 선택해주세요"
+          }
+          disabled={streaming || !projectId}
+        />
+      </div>
+
+      {/* Character Detail Dialog */}
+      <CharacterDetailDialog
+        character={selectedCharacter}
+        isOpen={characterDialogOpen}
+        onClose={() => {
+          setCharacterDialogOpen(false);
+          setSelectedCharacter(null);
+        }}
+        projectId={projectId ?? undefined}
+      />
+    </div>
+  );
+}
+
+/**
+ * Message Bubble component with Serif/Sans pairing
+ */
+function MessageBubble({
+  message,
+  characters = [],
+  onTagClick,
+}: {
+  message: ChatMessage;
+  characters?: Character[];
+  onTagClick?: (tag: {
+    type: string;
+    label: string;
+    character?: Character;
+  }) => void;
+}) {
+  const isUser = message.role === "user";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "flex flex-col gap-3 w-full",
+        isUser ? "items-end" : "items-start",
+      )}
+    >
+      {/* Label */}
+      <div
+        className={cn(
+          "flex items-center gap-2 mb-1",
+          isUser ? "flex-row-reverse" : "flex-row",
+        )}
+      >
+        <div className="h-px w-4 bg-mocha-100" />
+        <span className="text-[10px] font-sans font-black tracking-widest text-mocha-400 uppercase text-opacity-80">
+          {isUser ? "Reader's Thought" : "Check-bot"}
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          "max-w-[85%] p-4 relative break-words shadow-sm",
+          isUser
+            ? "text-espresso-800 font-serif italic text-[0.95rem] leading-relaxed bg-mocha-50/30 rounded-2xl rounded-tr-none border border-mocha-100/30"
+            : "text-espresso-900 font-sans text-[0.9rem] leading-[1.7] bg-white rounded-2xl rounded-tl-none border border-mocha-100/50 shadow-paper",
+        )}
+      >
+        {!isUser && (
+          <div className="absolute -left-1 -top-1">
+            <Quote className="w-4 h-4 text-mocha-100 opacity-50" />
+          </div>
+        )}
+        <div className="min-w-0">
+          {isUser ? (
+            <div className="whitespace-pre-wrap">
+              {(() => {
+                // Parse and style tags: [#Conflict], [@Character], [!Event]
+                const parts = message.content.split(
+                  /(\[#[^\]]+\]|\[@[^\]]+\]|\[![^\]]+\])/g,
+                );
+                return parts.map((part, index) => {
+                  if (part.startsWith("[#") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-rose-700 bg-gradient-to-br from-rose-50/90 via-white/60 to-rose-50/20 border border-rose-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {label}
+                      </span>
+                    );
+                  }
+                  if (part.startsWith("[@") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    const char = characters.find(
+                      (c) => c.profile?.name === label,
+                    );
+                    const imageUrl = char?.imageUrl;
+
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-sage-700 bg-gradient-to-br from-sage-50/90 via-white/60 to-sage-50/20 border border-sage-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {imageUrl && (
+                          <img
+                            src={resolveImageUrl(imageUrl)}
+                            alt={label}
+                            className="w-3 h-3 rounded-full object-cover border border-sage-200/50 -ml-0.5"
+                          />
+                        )}
+                        {label}
+                      </span>
+                    );
+                  }
+                  if (part.startsWith("[!") && part.endsWith("]")) {
+                    const label = part.slice(2, -1);
+                    return (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 mx-0.5 text-[13px] font-bold tracking-wide text-mocha-700 bg-gradient-to-br from-mocha-50/90 via-white/60 to-mocha-50/20 border border-mocha-200/60 rounded-full shadow-sm backdrop-blur-md align-middle hover:shadow-md hover:scale-105 transition-all cursor-default"
+                      >
+                        {label}
+                      </span>
+                    );
+                  }
+                  return part;
+                });
+              })()}
+            </div>
+          ) : (
+            <MarkdownRenderer
+              content={message.content}
+              characters={characters}
+              onTagClick={onTagClick}
+            />
+          )}
+        </div>
+
+        {!isUser && message.sources && message.sources.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-mocha-100/30">
+            <SourceList sources={message.sources} />
+          </div>
+        )}
+
+        {/* Card Rendering */}
+        {!isUser && message.cards && message.cards.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3">
+            {message.cards.map((card, idx) => {
+              if (card.cardType === "relationship") {
+                return (
+                  <ChatRelationshipCard key={`card-${idx}`} data={card.data} />
+                );
+              }
+              return null;
+            })}
           </div>
         )}
       </div>
+    </motion.div>
+  );
+}
 
-      {/* Input */}
-      <div className="p-3 border-t">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="질문을 입력하세요..."
-            className="flex-1"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isLoading}
+/**
+ * RAG Source List with structural connectivity
+ */
+function SourceList({ sources }: { sources: SourceChunk[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="font-sans">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="group flex items-center gap-3 text-[11px] font-bold text-mocha-400 hover:text-mocha-600 transition-colors"
+      >
+        <div className="flex items-center justify-center p-1.5 rounded-lg bg-mocha-50/50 group-hover:bg-mocha-100/50 transition-colors">
+          <Network className="h-3 w-3" />
+        </div>
+        <span className="uppercase tracking-[0.1em]">
+          {sources.length} Connected Contexts
+        </span>
+        <div className="flex-1 h-px bg-mocha-50" />
+        {expanded ? (
+          <ChevronUp className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="mt-6 space-y-6 overflow-hidden pl-2"
           >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+            {sources.map((source, idx) => (
+              <SourceItem key={source.chunkUuid} source={source} idx={idx} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SourceItem({ source, idx }: { source: SourceChunk; idx: number }) {
+  const setCurrentChapter = useEditorStore((state) => state.setCurrentChapter);
+  // Optional: Highlight effect on hover
+
+  const handleClick = () => {
+    if (source.metadata?.documentId) {
+      setCurrentChapter(source.metadata.documentId);
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      role="button"
+      className="relative pl-6 group/source cursor-pointer transition-all hover:bg-mocha-50/30 rounded-lg -ml-2 py-2 pr-2"
+    >
+      {/* Vertical Line */}
+      <div className="absolute left-[7.5px] top-[14px] bottom-[-24px] w-px bg-mocha-100 last:bottom-0 group-last/source:hidden" />
+      {/* Node */}
+      <div className="absolute left-0 top-3 w-4 h-4 rounded-full border border-mocha-100 bg-white flex items-center justify-center z-10 shadow-sm transition-transform group-hover/source:scale-110 group-hover/source:border-mocha-300">
+        <div className="w-1.5 h-1.5 rounded-full bg-mocha-400 group-hover/source:bg-mocha-600 transition-colors" />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black text-mocha-300 uppercase tracking-tighter group-hover/source:text-mocha-500 transition-colors">
+            Source {idx + 1}
+          </span>
+          {source.metadata?.documentId && (
+            <span className="text-[10px] text-mocha-400 opacity-0 group-hover/source:opacity-100 transition-opacity">
+              이동하기 →
+            </span>
+          )}
+        </div>
+
+        <span className="text-xs font-bold text-espresso-800 leading-tight group-hover/source:text-mocha-900 group-hover/source:underline decoration-mocha-200 underline-offset-2 transition-all">
+          {source.metadata?.documentTitle || "Untitled Fragment"}
+        </span>
+        <div className="p-3 rounded-xl bg-[#FBFBF9] border border-mocha-100/20 text-[12px] text-espresso-600/90 leading-relaxed italic group-hover/source:border-mocha-200/50 group-hover/source:bg-white transition-all shadow-sm">
+          "{source.content}"
+        </div>
       </div>
     </div>
   );

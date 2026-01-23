@@ -39,8 +39,7 @@ export function useEditorEffects({
   }, [isDemo]);
 
   // 2. Auto-select first folder when documents load (one-time initialization)
-  /* eslint-disable react-hooks/set-state-in-effect */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useLayoutEffect(() => {
     if (isDemo || documents.length === 0) return;
     if (!selectedFolderId) {
@@ -49,17 +48,17 @@ export function useEditorEffects({
         setSelectedFolderId(firstFolder.id);
       }
     }
-  }, [isDemo, documents.length > 0]); // Only run when documents first load
+  }, [isDemo, documents, selectedFolderId, setSelectedFolderId]);
 
   // 3. Auto-select section logic
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useLayoutEffect(() => {
     if (isDemo || documents.length === 0) return;
     if (!selectedSectionId) {
       // First try to find a section within the selected folder
       if (selectedFolderId) {
         const firstSection = documents.find(
-          (d) => d.type === "text" && d.parentId === selectedFolderId
+          (d) => d.type === "text" && d.parentId === selectedFolderId,
         );
         if (firstSection) {
           setSelectedSectionId(firstSection.id);
@@ -76,8 +75,14 @@ export function useEditorEffects({
         }
       }
     }
-  }, [isDemo, selectedFolderId, documents.length > 0]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [
+    isDemo,
+    documents,
+    selectedFolderId,
+    selectedSectionId,
+    setSelectedSectionId,
+    setSelectedFolderId,
+  ]);
 
   // 4. Tour Prompt
   useEffect(() => {

@@ -98,12 +98,12 @@ export const DEMO_CHAPTER_CONTENTS: Record<string, string> = {
 // 데모용 챕터 트리 구조
 export const DEMO_CHAPTERS = [
   {
-    id: "part-1",
+    id: "chapter-demo-1",
     projectId: "demo",
     title: "제1부: 운명의 시작",
     content: "",
     order: 1,
-    type: "part" as const,
+    type: "chapter" as const,
     characterCount: 0,
     isPlot: false,
     createdAt: "2024-01-01",
@@ -112,7 +112,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-1",
     projectId: "demo",
-    parentId: "part-1",
+    parentId: "chapter-demo-1",
     title: "제1장: 만남",
     content: "",
     order: 1,
@@ -164,7 +164,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-2",
     projectId: "demo",
-    parentId: "part-1",
+    parentId: "chapter-demo-1",
     title: "제2장: 정령의 숲",
     content: "",
     order: 2,
@@ -201,12 +201,12 @@ export const DEMO_CHAPTERS = [
     updatedAt: "2024-01-01",
   },
   {
-    id: "part-2",
+    id: "chapter-demo-2",
     projectId: "demo",
     title: "제2부: 진실",
     content: "",
     order: 2,
-    type: "part" as const,
+    type: "chapter" as const,
     characterCount: 0,
     isPlot: true,
     createdAt: "2024-01-01",
@@ -215,7 +215,7 @@ export const DEMO_CHAPTERS = [
   {
     id: "chapter-3",
     projectId: "demo",
-    parentId: "part-2",
+    parentId: "chapter-demo-2",
     title: "제3장: 대적",
     content: "",
     order: 1,
@@ -244,219 +244,359 @@ export const DEMO_CHAPTERS = [
 export const DEMO_NOVEL_CONTENT = DEMO_CHAPTER_CONTENTS["chapter-1-1"];
 
 // =====================================================
-// 데모용 캐릭터 데이터 (10명)
+// 데모용 캐릭터 데이터 (10명) - 새 스키마
 // =====================================================
 import type { Character } from "@/types";
 
+// 헬퍼: 빈 기본 구조 생성
+const createDefaultCharacter = (
+  overrides: Partial<Character> & {
+    _id: string;
+    profile: Character["profile"];
+  },
+): Character => ({
+  _id: overrides._id,
+  projectId: overrides.projectId || "demo-project-id",
+  role: overrides.role || "supporting",
+  profile: overrides.profile,
+  aliases: overrides.aliases || [],
+  status: overrides.status || "active",
+  appearance: overrides.appearance || {
+    physique: "",
+    skinTone: "",
+    eyes: "",
+    nose: "",
+    mouth: "",
+    hairStyle: "",
+    hairColor: "",
+    attire: [],
+    expression: "",
+    scarsTattoos: [],
+    styleContext: { artStyle: "realistic" },
+  },
+  personality: overrides.personality || {
+    coreTraits: [],
+    flaws: [],
+    values: [],
+  },
+  relations: overrides.relations || {
+    graph: [],
+    eventRefs: [],
+    locationContext: "",
+  },
+  currentMood: overrides.currentMood || {
+    emotion: "neutral",
+    intensity: 5,
+    trigger: null,
+  },
+  inventory: overrides.inventory || [],
+  meta: overrides.meta || {
+    createdAt: null,
+    updatedAt: null,
+    dataVersion: "1.0",
+    lockVersion: 0,
+  },
+  imageUrl: overrides.imageUrl,
+});
+
 export const DEMO_CHARACTERS: Character[] = [
-  {
-    id: "char-1",
-    projectId: "demo",
-    name: "장발장 (Jean Valjean)",
+  createDefaultCharacter({
+    _id: "char-1",
     role: "protagonist",
-    imageUrl: "https://randomuser.me/api/portraits/men/50.jpg",
-    extras: {
-      나이: 50,
-      성별: "남성",
-      직업: "전과자 / 시장 / 기업가",
-      성격: ["자비로움", "강인함", "희생적"],
-      설명: "빵 한 조각을 훔친 죄로 19년간 복역한 후, 미리엘 주교의 감화로 새 삶을 살기로 결심한 인물.",
-      관계: [
-        "자베르 (추적자)",
-        "팡틴 (구원 대상)",
-        "코제트 (양녀)",
-        "마리우스 (사위)",
-      ],
-      등장: ["1.1 주교의 은촛대", "1.2 마들렌 시장", "2.1 코제트 구출"],
-      진행률: 80,
+    // 테스트용 샘플 이미지 (Unsplash placeholder)
+    imageUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+    profile: {
+      characterId: "char-1",
+      name: "장발장 (Jean Valjean)",
+      age: 50,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["자비로움", "강인함", "희생적"],
+        flaws: ["과거의 죄책감"],
+        values: ["구원", "희생"],
+      },
+      backstory:
+        "빵 한 조각을 훔친 죄로 19년간 복역한 후, 미리엘 주교의 감화로 새 삶을 살기로 결심한 인물.",
+      faction: {
+        name: "선한자들",
+        social: { rank: "시장", influence: 9, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-01",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-2",
-    projectId: "demo",
-    name: "자베르 (Javert)",
+    personality: {
+      coreTraits: ["자비로움", "강인함"],
+      flaws: ["과거의 죄책감"],
+      values: ["구원", "희생"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-2",
     role: "antagonist",
-    imageUrl: "https://randomuser.me/api/portraits/men/3.jpg",
-    extras: {
-      나이: 45,
-      성별: "남성",
-      직업: "경감",
-      성격: ["집요함", "원칙주의", "냉철함"],
-      설명: "법과 질서를 맹신하며, 장발장을 평생 쫓는 형사. 법 앞에는 예외가 없다고 믿는다.",
-      관계: ["장발장 (표적)", "팡틴 (체포 대상)"],
-      등장: ["1.2 마들렌 시장", "2.3 바리케이드"],
-      진행률: 60,
+    profile: {
+      characterId: "char-2",
+      name: "자베르 (Javert)",
+      age: 45,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["집요함", "원칙주의", "냉철함"],
+        flaws: ["융통성 부족"],
+        values: ["법과 질서"],
+      },
+      backstory:
+        "법과 질서를 맹신하며, 장발장을 평생 쫓는 형사. 법 앞에는 예외가 없다고 믿는다.",
+      faction: {
+        name: "법집행국",
+        social: { rank: "경감", influence: 7, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-02",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-3",
-    projectId: "demo",
-    name: "팡틴 (Fantine)",
+    personality: {
+      coreTraits: ["집요함", "원칙주의"],
+      flaws: ["융통성 부족"],
+      values: ["법과 질서"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-3",
     role: "supporting",
-    imageUrl: "https://randomuser.me/api/portraits/women/68.jpg",
-    extras: {
-      나이: 25,
-      성별: "여성",
-      직업: "공장 직공",
-      성격: ["모성애", "비극적", "순수함"],
-      설명: "코제트를 부양하기 위해 모든 것을 희생하는 어머니. 사회의 부조리에 짓밟힌 비운의 여인.",
-      관계: ["장발장 (은인)", "코제트 (딸)", "자베르 (공포의 대상)"],
-      등장: ["1.2 마들렌 시장"],
-      진행률: 100,
+    profile: {
+      characterId: "char-3",
+      name: "팡틴 (Fantine)",
+      age: 25,
+      gender: "여성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["모성애", "비극적", "순수함"],
+        flaws: ["나약함"],
+        values: ["딸을 위한 희생"],
+      },
+      backstory:
+        "코제트를 부양하기 위해 모든 것을 희생하는 어머니. 사회의 부조리에 짓밟힌 비운의 여인.",
+      faction: {
+        name: "빈민",
+        social: { rank: "노동자", influence: 1, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-03",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-4",
-    projectId: "demo",
-    name: "코제트 (Cosette)",
+    personality: {
+      coreTraits: ["모성애", "순수함"],
+      flaws: ["나약함"],
+      values: ["딸을 위한 희생"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-4",
     role: "protagonist",
-    imageUrl: "https://randomuser.me/api/portraits/women/42.jpg",
-    extras: {
-      나이: 18,
-      성별: "여성",
-      직업: "없음",
-      성격: ["순수함", "희망적", "사랑스러움"],
-      설명: "팡틴의 딸이자 장발장의 양녀. 어두운 과거를 뒤로하고 마리우스와 사랑에 빠진다.",
-      관계: [
-        "장발장 (양아버지)",
-        "팡틴 (어머니)",
-        "마리우스 (연인)",
-        "에포닌 (라이벌)",
-      ],
-      등장: ["2.1 코제트 구출", "2.2 사랑의 시작", "3.1 결혼식"],
-      진행률: 50,
+    profile: {
+      characterId: "char-4",
+      name: "코제트 (Cosette)",
+      age: 18,
+      gender: "여성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["순수함", "희망적", "사랑스러움"],
+        flaws: ["세상 물정에 어두움"],
+        values: ["사랑", "가족"],
+      },
+      backstory:
+        "팡틴의 딸이자 장발장의 양녀. 어두운 과거를 뒤로하고 마리우스와 사랑에 빠진다.",
+      faction: {
+        name: "선한자들",
+        social: { rank: "양녀", influence: 3, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-04",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-5",
-    projectId: "demo",
-    name: "마리우스 (Marius)",
+    personality: {
+      coreTraits: ["순수함", "희망적"],
+      flaws: ["세상 물정에 어두움"],
+      values: ["사랑", "가족"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-5",
     role: "protagonist",
-    imageUrl: "https://randomuser.me/api/portraits/men/86.jpg",
-    extras: {
-      나이: 20,
-      성별: "남성",
-      직업: "변호사 / 혁명가",
-      성격: ["이상주의", "열정적", "로맨틱"],
-      설명: "공화주의 사상을 가진 청년. 혁명에 가담하지만 코제트와의 사랑으로 갈등한다.",
-      관계: [
-        "코제트 (연인)",
-        "장발장 (장인)",
-        "앙졸라 (동지)",
-        "에포닌 (짝사랑받음)",
-      ],
-      등장: ["2.2 사랑의 시작", "2.3 바리케이드", "3.1 결혼식"],
-      진행률: 70,
+    profile: {
+      characterId: "char-5",
+      name: "마리우스 (Marius)",
+      age: 20,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["이상주의", "열정적", "로맨틱"],
+        flaws: ["우유부단"],
+        values: ["자유", "사랑"],
+      },
+      backstory:
+        "공화주의 사상을 가진 청년. 혁명에 가담하지만 코제트와의 사랑으로 갈등한다.",
+      faction: {
+        name: "ABC의 벗",
+        social: { rank: "회원", influence: 5, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-05",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-6",
-    projectId: "demo",
-    name: "에포닌 (Éponine)",
+    personality: {
+      coreTraits: ["이상주의", "열정"],
+      flaws: ["우유부단"],
+      values: ["자유", "사랑"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-6",
     role: "supporting",
-    imageUrl: "https://randomuser.me/api/portraits/women/90.jpg",
-    extras: {
-      나이: 18,
-      성별: "여성",
-      직업: "빈민",
-      성격: ["희생적", "질투", "비극적"],
-      설명: "테나르디에 부부의 딸. 어린 시절 코제트를 괴롭혔으나, 나중에 마리우스를 사랑하여 그를 위해 희생한다.",
-      관계: ["마리우스 (짝사랑)", "코제트 (질투/동경)", "테나르디에 (아버지)"],
-      등장: ["2.2 사랑의 시작", "2.3 바리케이드"],
-      진행률: 100,
+    profile: {
+      characterId: "char-6",
+      name: "에포닌 (Éponine)",
+      age: 18,
+      gender: "여성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["희생적", "질투", "비극적"],
+        flaws: ["짝사랑의 집착"],
+        values: ["진정한 사랑"],
+      },
+      backstory:
+        "테나르디에 부부의 딸. 어린 시절 코제트를 괴롭혔으나, 나중에 마리우스를 사랑하여 그를 위해 희생한다.",
+      faction: {
+        name: "테나르디에 일가",
+        social: { rank: "딸", influence: 2, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-06",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-7",
-    projectId: "demo",
-    name: "앙졸라 (Enjolras)",
+    personality: {
+      coreTraits: ["희생적", "용감"],
+      flaws: ["짝사랑의 집착"],
+      values: ["진정한 사랑"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-7",
     role: "supporting",
-    imageUrl: "https://randomuser.me/api/portraits/men/22.jpg",
-    extras: {
-      나이: 22,
-      성별: "남성",
-      직업: "혁명 리더",
-      성격: ["카리스마", "냉철함", "이상주의"],
-      설명: "아베쎄(ABC) 벗들의 리더. 혁명에 자신의 모든 것을 바치는 열정적인 지도자.",
-      관계: ["마리우스 (동지)", "그랑테르 (추종자)"],
-      등장: ["2.3 바리케이드"],
-      진행률: 100,
+    profile: {
+      characterId: "char-7",
+      name: "앙졸라 (Enjolras)",
+      age: 22,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["카리스마", "냉철함", "이상주의"],
+        flaws: ["감정 배제"],
+        values: ["자유", "평등"],
+      },
+      backstory:
+        "아베쎄(ABC) 벗들의 리더. 혁명에 자신의 모든 것을 바치는 열정적인 지도자.",
+      faction: {
+        name: "ABC의 벗",
+        social: { rank: "리더", influence: 8, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-07",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-8",
-    projectId: "demo",
-    name: "테나르디에 (Thénardier)",
+    personality: {
+      coreTraits: ["카리스마", "단호함"],
+      flaws: ["감정 배제"],
+      values: ["자유", "평등"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-8",
     role: "antagonist",
-    imageUrl: "https://randomuser.me/api/portraits/men/55.jpg",
-    extras: {
-      나이: 50,
-      성별: "남성",
-      직업: "여관 주인 / 사기꾼",
-      성격: ["탐욕스러움", "비열함", "기회주의"],
-      설명: "돈을 위해서라면 무슨 짓이든 하는 악당. 워털루 전쟁 때 장교를 구했다는 거짓말로 훈장을 받았다.",
-      관계: [
-        "팡틴 (착취 대상)",
-        "코제트 (학대 대상)",
-        "장발장 (사기 대상)",
-        "에포닌 (딸)",
-      ],
-      등장: ["1.2 마들렌 시장", "3.1 결혼식"],
-      진행률: 60,
+    profile: {
+      characterId: "char-8",
+      name: "테나르디에 (Thénardier)",
+      age: 50,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["탐욕스러움", "비열함", "기회주의"],
+        flaws: ["탐욕"],
+        values: ["돈", "자기 이익"],
+      },
+      backstory:
+        "돈을 위해서라면 무슨 짓이든 하는 악당. 워털루 전쟁 때 장교를 구했다는 거짓말로 훈장을 받았다.",
+      faction: {
+        name: "테나르디에 일가",
+        social: { rank: "가장", influence: 4, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-08",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-9",
-    projectId: "demo",
-    name: "가브로슈 (Gavroche)",
+    personality: {
+      coreTraits: ["교활함", "생존본능"],
+      flaws: ["탐욕"],
+      values: ["돈", "자기 이익"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-9",
     role: "sidekick",
-    imageUrl: "https://randomuser.me/api/portraits/men/15.jpg",
-    extras: {
-      나이: 12,
-      성별: "남성",
-      직업: "거리의 아이",
-      성격: ["용감함", "자유분방", "명랑함"],
-      설명: "파리의 부랑아. 테나르디에의 버려진 아들이며, 혁명군을 돕다 전사한다.",
-      관계: ["에포닌 (누나)", "앙졸라 (동지)", "마리우스 (동지)"],
-      등장: ["2.3 바리케이드"],
-      진행률: 100,
+    profile: {
+      characterId: "char-9",
+      name: "가브로슈 (Gavroche)",
+      age: 12,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["용감함", "자유분방", "명랑함"],
+        flaws: ["무모함"],
+        values: ["자유", "우정"],
+      },
+      backstory:
+        "파리의 부랑아. 테나르디에의 버려진 아들이며, 혁명군을 돕다 전사한다.",
+      faction: {
+        name: "파리 거리",
+        social: { rank: "부랑아", influence: 2, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-09",
-    updatedAt: "2024-12-20",
-  },
-  {
-    id: "char-10",
-    projectId: "demo",
-    name: "미리엘 주교 (Bishop Myriel)",
+    personality: {
+      coreTraits: ["용감함", "명랑함"],
+      flaws: ["무모함"],
+      values: ["자유", "우정"],
+    },
+  }),
+  createDefaultCharacter({
+    _id: "char-10",
     role: "mentor",
-    imageUrl: "https://randomuser.me/api/portraits/men/9.jpg",
-    extras: {
-      나이: 75,
-      성별: "남성",
-      직업: "주교",
-      성격: ["성자", "자비로움", "검소함"],
-      설명: "디뉴의 주교. 장발장에게 은촛대를 주며 그를 구원하고 정직한 삶으로 인도한다.",
-      관계: ["장발장 (구원자)"],
-      등장: ["1.1 주교의 은촛대"],
-      진행률: 100,
+    profile: {
+      characterId: "char-10",
+      name: "미리엘 주교 (Bishop Myriel)",
+      age: 75,
+      gender: "남성",
+      race: "인간",
+      mbti: null,
+      personality: {
+        coreTraits: ["성자", "자비로움", "검소함"],
+        flaws: [],
+        values: ["신앙", "용서", "구원"],
+      },
+      backstory:
+        "디뉴의 주교. 장발장에게 은촛대를 주며 그를 구원하고 정직한 삶으로 인도한다.",
+      faction: {
+        name: "성직자",
+        social: { rank: "주교", influence: 8, factionReputation: {} },
+      },
     },
-    createdAt: "2024-01-10",
-    updatedAt: "2024-12-20",
-  },
+    personality: {
+      coreTraits: ["자비로움", "검소함"],
+      flaws: [],
+      values: ["신앙", "용서", "구원"],
+    },
+  }),
 ];
+
+// =====================================================
+// 데모용 아이템 데이터 (레미제라블) - 기능 제거됨
+// =====================================================
+export interface DemoItem {
+  id: string;
+  name: string;
+  type: string;
+  extras?: {
+    설명?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export const DEMO_ITEMS: DemoItem[] = [];

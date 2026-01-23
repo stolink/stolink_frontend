@@ -1,245 +1,212 @@
-import { useState, useMemo } from "react";
-import {
-  NavLink,
-  Outlet,
-  useParams,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
-import {
-  PenLine,
-  BookOpen,
-  BarChart3,
-  Download,
-  Settings,
-  User,
-  LogOut,
-  Eye,
-  Clapperboard,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useAuthStore, useEditorStore } from "@/stores";
-import { BookReaderModal } from "@/components/common/BookReaderModal";
-import { useDocumentStore } from "@/repositories/LocalDocumentRepository";
-import type { Document } from "@/types/document";
-// 로고 이미지를 import하여 번들링 호환성 확보
-import mainLogo from "@/assets/main_logo.png";
+import { Outlet, useParams, useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, ChevronLeft } from "lucide-react";
+import { ActivityBar } from "./ActivityBar";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { ProjectAnalysisListener } from "@/components/common/ProjectAnalysisListener";
+import { useProject, useUpdateProject } from "@/hooks/useProjects";
+import { useEditorStore, useAnalysisBufferStore } from "@/stores";
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import { Button } from "@stolink/ui";
+import { Input } from "@stolink/ui";
+import { motion, AnimatePresence } from "framer-motion";
 
+/**
+ * ProjectLayout - Header-First Layout (Dashboard Style)
+ *
+ * Structure:
+ * - Header (Top, Full Width): Home/Back navigation, Project Title, Global Actions
+ * - Body (Bottom): ActivityBar (Left) + Main Content (Right)
+ */
 export function ProjectLayout() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
-  const { isFocusMode } = useEditorStore();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showReader, setShowReader] = useState(false);
+  const navigate = useNavigate();
+  const { data: project } = useProject(id || "", { enabled: !!id });
+  const { mutate: updateProject } = useUpdateProject();
+  const { saveStatus, lastSavedAt } = useEditorStore();
+  const {
+    isAnalyzing,
+    currentJobType,
+    progress: analysisProgress,
+  } = useAnalysisBufferStore();
 
-  // 에디터 페이지이고 집중 모드일 때 헤더 숨김
-  const isEditorPage = location.pathname.includes("/editor");
-  const shouldHideHeader = isEditorPage && isFocusMode;
+  // Check Demo Mode
+  const isDemo = location.pathname.includes("/demo");
+  const projectTitle = project?.title || "제목 없음";
 
-  // ============================================================
-  // 미리보기용 로컬 데이터 가져오기 (실시간 반영)
-  // useDocumentStore를 사용하여 Ctrl+S 없이도 편집 중인 내용 표시
-  // ============================================================
-  const allDocuments = useDocumentStore((state) => state.documents);
-  const localDocuments = useMemo(
-    () => Object.values(allDocuments).filter((doc) => doc.projectId === id),
-    [allDocuments, id]
-  );
+  // Title Editing State
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(projectTitle);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * Document 배열을 BookReaderModal의 Chapter 형식으로 변환
-   * - type이 'text'인 문서만 필터링 (폴더 제외)
-   * - order 순서대로 정렬
-   * - id, title, content 필드만 추출
-   */
-  const previewChapters = useMemo(() => {
-    return (localDocuments ?? [])
-      .filter((doc): doc is Document => doc?.type === "text")
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((doc) => ({
-        id: doc.id,
-        title: doc.title,
-        content: doc.content ?? "",
-      }));
-  }, [localDocuments]);
+  useEffect(() => {
+    if (project?.title) {
+      // eslint-disable-next-line
+      setEditedTitle(project.title);
+    }
+  }, [project?.title]);
 
-  // 현재 프로젝트 제목 (첫 번째 폴더 또는 기본값)
-  const projectTitle = useMemo(() => {
-    const folder = localDocuments?.find((doc: Document) => doc.type === "folder");
-    return folder?.title || "내 작품";
-  }, [localDocuments]);
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [isEditingTitle]);
 
-  const navItems = [
-    { to: `/projects/${id}/editor`, label: "에디터", icon: PenLine },
-    { to: `/projects/${id}/studio`, label: "스튜디오", icon: Clapperboard },
-    { to: `/projects/${id}/world`, label: "설정집", icon: BookOpen },
-    { to: `/projects/${id}/stats`, label: "통계", icon: BarChart3 },
-    { to: `/projects/${id}/export`, label: "파일", icon: Download },
-    { to: `/projects/${id}/settings`, label: "관리", icon: Settings },
-  ];
+  if (!id) {
+    return null;
+  }
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleTitleSave = () => {
+    if (editedTitle.trim() && editedTitle !== projectTitle) {
+      updateProject({
+        id,
+        payload: { title: editedTitle.trim() },
+      });
+    } else {
+      setEditedTitle(projectTitle);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      setEditedTitle(projectTitle);
+      setIsEditingTitle(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-paper">
-      {/* Header */}
-      {!shouldHideHeader && (
-        <header className="h-14 border-b bg-paper flex items-center justify-between px-4 shrink-0 z-20 relative">
-          {/* Left: Navigation & Title */}
-          <div className="flex items-center gap-4 min-w-[240px]">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate("/library")}
-                className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-stone-100 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-                <span className="text-sm font-medium">서재</span>
-              </button>
-              <div className="h-6 w-px bg-stone-200" />
-              <img
-                src={mainLogo}
-                alt="Sto-Link"
-                className="h-12 w-auto"
-              />
-            </div>
+    <div className="flex flex-col h-screen bg-background text-foreground min-w-[1024px]">
+      <ProjectAnalysisListener />
+      {/* Global Header - Fixed Top */}
+      {!isDemo && (
+        <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 shadow-sm z-20 relative">
+          <div className="flex items-center gap-2 flex-1 min-w-0 relative h-full">
+            {/* Analysis/Image Progress Bar (Centered in Nav Area) */}
+            <AnimatePresence>
+              {isAnalyzing &&
+                (currentJobType === "analysis" ||
+                  currentJobType === "image") && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-48 h-1 bg-primary/10 rounded-full overflow-hidden border border-primary/5 shadow-sm"
+                    >
+                      <motion.div
+                        className="h-full bg-primary shadow-[0_0_10px_rgba(164,119,100,0.4)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${analysisProgress}%` }}
+                        transition={{
+                          type: "spring",
+                          damping: 25,
+                          stiffness: 120,
+                        }}
+                      />
+                    </motion.div>
+                  </div>
+                )}
+            </AnimatePresence>
 
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <h1 className="font-heading font-semibold text-sm text-foreground">
-                  마법사의 여정
-                </h1>
-                <span className="px-1.5 py-0.5 rounded-md bg-stone-100 text-[10px] font-medium text-stone-600 border border-stone-200">
-                  DRAFT 1
-                </span>
+            {/* Home / Back to Library Button */}
+            <Button
+              intent="ghost"
+              size="sm"
+              onClick={() => navigate("/library")}
+              className="group gap-1.5 pl-2 pr-3 hover:bg-muted text-muted-foreground hover:text-primary transition-colors h-9 relative z-10"
+              title="서재로 돌아가기"
+            >
+              <ChevronLeft className="w-4 h-4 opacity-70 group-hover:-translate-x-0.5 transition-transform" />
+              <div className="p-1 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <BookOpen className="w-4 h-4 text-primary" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                <span className="text-[10px] text-muted-foreground">
-                  저장됨
-                </span>
+              <span className="text-sm font-medium hidden sm:inline-block">
+                서재
+              </span>
+            </Button>
+
+            <div className="w-px h-4 bg-border mx-2 shrink-0" />
+
+            {/* Editable Project Title */}
+            <div className="flex flex-col justify-center min-w-0">
+              {isEditingTitle ? (
+                <Input
+                  ref={titleInputRef}
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleKeyDown}
+                  className="h-7 text-sm font-bold px-2 min-w-[200px]"
+                />
+              ) : (
+                <h1
+                  className="text-sm font-bold text-foreground hover:bg-accent/50 rounded px-2 py-0.5 cursor-pointer transition-colors truncate leading-tight"
+                  onClick={() => setIsEditingTitle(true)}
+                  title="클릭하여 제목 수정"
+                >
+                  {projectTitle}
+                </h1>
+              )}
+
+              <div className="flex items-center gap-1.5 px-2 text-[10px] text-muted-foreground leading-none">
+                {saveStatus === "saved" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-green-500" />
+                    <span className="text-green-600/80 font-medium">
+                      저장됨
+                    </span>
+                  </>
+                )}
+                {saveStatus === "saving" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-blue-600/80 font-medium">
+                      저장 중...
+                    </span>
+                  </>
+                )}
+                {saveStatus === "unsaved" && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-amber-600/80 font-medium">
+                      편집 중
+                    </span>
+                  </>
+                )}
+                {lastSavedAt && saveStatus === "saved" && (
+                  <span className="text-muted-foreground/50 ml-1">
+                    {new Date(lastSavedAt).toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Center: Navigation Tabs */}
-          <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center p-1 bg-stone-100/50 rounded-lg border border-transparent">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                data-tour={item.to.includes("world") ? "world-tab" : undefined}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-white text-sage-600 shadow-sm border-stone-200"
-                      : "text-muted-foreground hover:text-foreground hover:bg-stone-200/50",
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Right: Actions & User */}
-          <div className="flex items-center gap-3 min-w-[240px] justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowReader(true)}
-            >
-              <Eye className="h-4 w-4" />
-              <span className="hidden lg:inline">미리보기</span>
-            </Button>
-
-            {/* User Menu Dropdown Trigger (Avatar) */}
-            <div className="relative pl-2 border-l border-stone-200">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-8 h-8 rounded-full border-2 border-white bg-sage-200 flex items-center justify-center text-xs font-medium text-sage-700 hover:ring-2 hover:ring-sage-200 transition-all focus:outline-none focus:ring-2 focus:ring-sage-400"
-              >
-                {user?.nickname?.[0] || "ME"}
-              </button>
-
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border z-50 py-2 animate-in fade-in zoom-in-95">
-                    <div className="px-4 py-3 border-b">
-                      <p className="font-medium text-sm">
-                        {user?.nickname || "작가님"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.email || "user@example.com"}
-                      </p>
-                    </div>
-                    <div className="py-1">
-                      <NavLink
-                        to="/library"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-stone-50 transition-colors"
-                      >
-                        <BookOpen className="h-4 w-4" />내 서재
-                      </NavLink>
-                      <button className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-stone-50 transition-colors">
-                        <User className="h-4 w-4" />
-                        프로필 설정
-                      </button>
-                    </div>
-                    <div className="border-t pt-1">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        로그아웃
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+          {/* Right Area - Placeholder for Global Actions */}
+          <div className="flex items-center gap-2">
+            {/* Future: User Profile, Notifications etc. */}
           </div>
         </header>
       )}
 
-      {/* Content */}
-      <main className="flex-1 overflow-hidden">
-        <Outlet />
-      </main>
+      {/* Content Area */}
+      <div className="flex flex-1 overflow-hidden w-full relative">
+        {/* Activity Bar - Sidebar */}
+        <ActivityBar projectId={id} />
 
-      {/* Book Reader Modal - 로컬 데이터 실시간 반영 */}
-      <BookReaderModal
-        isOpen={showReader}
-        onClose={() => setShowReader(false)}
-        chapters={previewChapters}
-        bookTitle={projectTitle}
-      />
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden w-full relative bg-background">
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+      </div>
     </div>
   );
 }

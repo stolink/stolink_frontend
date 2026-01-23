@@ -1,5 +1,5 @@
 ---
-description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 생성하거나 최신화합니다.
+description: (Fixed) 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 생성하거나 최신화합니다. GH CLI 자동 경로 설정 포함.
 ---
 
 > **참고:** 커밋 컨벤션은 `CLAUDE.md`를 따릅니다.
@@ -9,21 +9,50 @@ description: 변경사항 분석, 커밋, 푸시 후 PR 상태를 확인하여 �
 
 ---
 
+## 0. 환경 설정 및 브랜치 전략 준수 확인 (필수!)
+
+**GH CLI 설정**:
+
+```bash
+# GH CLI 경로 설정
+if ! command -v gh &> /dev/null; then
+    if [ -f "/opt/homebrew/bin/gh" ]; then
+        export PATH="/opt/homebrew/bin:$PATH"
+    elif [ -f "/usr/local/bin/gh" ]; then
+        export PATH="/usr/local/bin:$PATH"
+    fi
+fi
+
+# GH CLI 확인
+if ! command -v gh &> /dev/null; then
+    echo "❌ Error: 'gh' command not found. Please install GitHub CLI."
+    exit 1
+fi
+
+# Auth Status 확인
+if ! gh auth status &> /dev/null; then
+    echo "❌ Error: GitHub CLI is not authenticated. Please run 'gh auth login'."
+    exit 1
+fi
+```
+
+---
+
 ## 0. 브랜치 전략 준수 확인 (필수!)
 
-**⚠️ 직접 push 금지 브랜치**: `main`, `develop`
+**⚠️ 직접 push 금지 브랜치**: `main`, `dev`
 
 ```bash
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 ```
 
-| 현재 브랜치                      | push 가능? | 조치                                                                               |
-| -------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| `main`                           | ❌ 금지    | "main에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단**    |
-| `develop`                        | ❌ 금지    | "develop에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단** |
-| `feature/*`, `fix/*`, `hotfix/*` | ✅ 허용    | 계속 진행                                                                          |
+| 현재 브랜치                      | push 가능? | 조치                                                                            |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `main`                           | ❌ 금지    | "main에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단** |
+| `dev`                            | ❌ 금지    | "dev에 직접 push할 수 없습니다. feature 브랜치를 생성하세요." 안내 후 **중단**  |
+| `feature/*`, `fix/*`, `hotfix/*` | ✅ 허용    | 계속 진행                                                                       |
 
-**main/develop에 있는 경우 → 새 브랜치 생성 제안**:
+**main/dev에 있는 경우 → 새 브랜치 생성 제안**:
 
 ```bash
 # 권장 명령어 안내
@@ -51,12 +80,21 @@ git diff --staged --stat
 
 **변경사항이 있는 경우에만 실행**:
 
+> [!IMPORTANT]
+> **원자적 커밋(Atomic Commits)**: 변경사항이 여러 기능이나 서로 다른 수정 사항을 포함하고 있다면, `git add -p` 등을 사용하여 **기능별로 커밋을 나누어** 진행하십시오. 한 번에 모든 변경사항을 하나의 커밋으로 묶지 마십시오.
+
 ```bash
+# 기능별로 나누어 스테이징 및 커밋 (필요시 반복)
+# git add <file_functional_group>
+# git commit -m "<type>(<scope>): <설명>"
+
 # Conventional Commit 메시지 생성 (diff 분석 기반)
-git commit -m "<type>: <설명>" --no-verify
+# Hook 실행을 위해 --no-verify 제거 (Lint/Type Check 수행)
+git commit -m "<type>: <설명>"
 
 # 원격에 푸시
-git push origin $CURRENT_BRANCH --no-verify
+# Hook 실행을 위해 --no-verify 제거 (Type Check 수행)
+git push origin $CURRENT_BRANCH
 ```
 
 ---
@@ -66,13 +104,13 @@ git push origin $CURRENT_BRANCH --no-verify
 | 현재 브랜치 패턴           | Target Branch |
 | -------------------------- | ------------- |
 | `hotfix/*`                 | `main`        |
-| `feature/*`, `fix/*`, 기타 | `develop`     |
+| `feature/*`, `fix/*`, 기타 | `dev`         |
 
 ```bash
 if [[ "$CURRENT_BRANCH" == hotfix/* ]]; then
   TARGET_BRANCH="main"
 else
-  TARGET_BRANCH="develop"
+  TARGET_BRANCH="dev"
 fi
 ```
 
@@ -128,16 +166,70 @@ COMMITS=$(git log origin/$TARGET_BRANCH..$CURRENT_BRANCH --oneline)
 - Squash and Merge 권장
 ```
 
-### Step 3: PR 생성
+### Step 3: Issue 연결 또는 생성 (필수!)
+
+브랜치 이름에서 Issue 번호를 찾거나, 없으면 새로 생성하여 연결합니다.
+
+```bash
+# 0. 설정
+MANAGEMENT_REPO="stolink/stolink-manage"
+PROJECT_NUMBER="1"  # stolink board 프로젝트 번호
+PR_TITLE="<종합된 변경 제목>"
+
+# 2. 브랜치 이름에서 이슈 번호 추출 (예: feature/12-login -> 12)
+# 정규식: 슬래시(/) 뒤에 숫자가 오고, 그 뒤에 하이픈(-)이나 끝($)이 오는 경우
+DETECTED_ISSUE_NUM=$(echo "$CURRENT_BRANCH" | grep -oE '/[0-9]+(-|$)' | tr -d '/-')
+
+EXISTING_ISSUE_FOUND=false
+
+if [ -n "$DETECTED_ISSUE_NUM" ]; then
+  echo "🔍 브랜치에서 이슈 번호 감지: #$DETECTED_ISSUE_NUM"
+
+  # 중앙 레포에서 이슈가 존재하는지 확인
+  if gh issue view "$DETECTED_ISSUE_NUM" --repo "$MANAGEMENT_REPO" > /dev/null 2>&1; then
+    echo "✅ 중앙 레포($MANAGEMENT_REPO)에서 이슈 #$DETECTED_ISSUE_NUM 확인됨. 기존 이슈에 연결합니다."
+    ISSUE_NUM="$DETECTED_ISSUE_NUM"
+    EXISTING_ISSUE_FOUND=true
+  else
+    echo "⚠️ 중앙 레포에서 이슈 #$DETECTED_ISSUE_NUM 를 찾을 수 없습니다."
+  fi
+fi
+
+# 2. 기존 이슈가 없으면 중앙 레포에 새로 생성
+if [ "$EXISTING_ISSUE_FOUND" = false ]; then
+  echo "🆕 중앙 레포($MANAGEMENT_REPO)에 새로운 이슈를 생성합니다..."
+
+  # gh issue create로 이슈 생성 (--project 제거: deprecated API)
+  ISSUE_URL=$(gh issue create \
+    --repo "$MANAGEMENT_REPO" \
+    --title "$PR_TITLE" \
+    --body-file .pr_body_temp.md \
+    --label "auto-generated" \
+    --assignee "@me")
+
+  ISSUE_NUM=${ISSUE_URL##*/}
+  echo "✅ 이슈 #$ISSUE_NUM 생성 완료."
+
+  # 프로젝트에 이슈 추가 (Projects V2 API)
+  gh project item-add "$PROJECT_NUMBER" --owner stolink --url "$ISSUE_URL" 2>/dev/null && \
+    echo "✅ 프로젝트에 이슈 연결 완료." || \
+    echo "⚠️ 프로젝트 연결 실패 (수동 추가 필요)"
+fi
+
+# 3. PR 본문에 연결 키워드 추가 (Full URL 사용 권장 for cross-repo linking)
+echo -e "\n\nCloses $MANAGEMENT_REPO#$ISSUE_NUM" >> .pr_body_temp.md
+```
+
+### Step 4: PR 생성
 
 ```bash
 gh pr create \
-  --title "<종합된 변경 제목>" \
+  --title "$PR_TITLE" \
   --body-file .pr_body_temp.md \
   --base $TARGET_BRANCH
 ```
 
-### Step 4: 정리
+### Step 5: 정리
 
 ```bash
 rm .pr_body_temp.md
@@ -178,23 +270,26 @@ rm .pr_body_temp.md
 
 반드시 아래 내용을 보고:
 
-| 항목    | 값                              |
-| ------- | ------------------------------- |
-| 브랜치  | `$CURRENT_BRANCH`               |
-| 커밋    | O / X (커밋 메시지)             |
-| 푸시    | O / X                           |
-| PR 상태 | 신규 생성 / 업데이트 / 변경없음 |
-| PR URL  | `<URL>`                         |
-| Target  | `$TARGET_BRANCH`                |
+| 항목    | 값                                     |
+| ------- | -------------------------------------- |
+| 브랜치  | `$CURRENT_BRANCH`                      |
+| 커밋    | O / X (커밋 메시지)                    |
+| 푸시    | O / X                                  |
+| PR 상태 | 신규 생성 / 업데이트 / 변경없음        |
+| PR URL  | `<URL>`                                |
+| Issue   | `#<Number>` (신규 생성 또는 기존 연결) |
+| Target  | `$TARGET_BRANCH`                       |
 
 ---
 
 ## ⚠️ 주의사항
 
-1. **main/develop에 직접 push 금지** - feature 브랜치 사용 필수
+1. **main/dev에 직접 push 금지** - feature 브랜치 사용 필수
 2. **PR 본문 없이 생성 금지** - 항상 `.pr_body_temp.md` 작성 후 생성
 3. **PR 존재 확인 필수** - gh pr view로 확인 후 생성/업데이트 결정
 4. **변경사항 없어도 PR 상태 확인** - 기존 PR이 있으면 업데이트 가능
+5. **이슈 자동 연결**: 브랜치 이름에 번호(예: `feature/12-foo`)가 있으면 해당 이슈를 연결하고, 없으면 새로 생성합니다.
+6. **기능별 커밋 분리**: 하나의 커밋에 너무 많은 변경사항을 담지 말고 기능 단위로 나누어 커밋하십시오.
 
 ---
 
@@ -204,7 +299,7 @@ rm .pr_body_temp.md
 시작
   │
   ▼
-브랜치 확인 ──main/develop──▶ ❌ 중단 (새 브랜치 생성 안내)
+브랜치 확인 ──main/dev──▶ ❌ 중단
   │
   ▼ (feature/fix/hotfix)
   │
@@ -214,13 +309,16 @@ rm .pr_body_temp.md
 커밋 & 푸시
   │
   ▼
-Target 결정 (hotfix→main, 그 외→develop)
+Target 결정
   │
   ▼
 PR 존재? ──Yes──▶ 4-B: PR 업데이트
   │
   ▼ No
-4-A: PR 신규 생성 (본문 필수!)
+이슈 번호 감지? ──Yes (존재함)──▶ 기존 이슈 연결 ──┐
+  │                                           │
+  No (또는 없음)                              ▼
+  └─────────────────────────────▶ 신규 이슈 생성 ──▶ PR 신규 생성
   │
   ▼
 최종 보고

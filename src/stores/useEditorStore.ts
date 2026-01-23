@@ -3,7 +3,7 @@ import type { Chapter, ChapterTreeNode } from "@/types";
 
 interface EditorState {
   // Current editing state
-  viewMode: "editor" | "scrivenings" | "outline" | "corkboard";
+  viewMode: "editor" | "scrivenings" | "outline";
   currentProjectId: string | null;
   currentChapterId: string | null;
   currentSceneId: string | null;
@@ -13,7 +13,7 @@ interface EditorState {
   content: string;
   isSaving: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
-  lastSavedAt: Date | null;
+  lastSavedAt: string | null; // ISO timestamp for serialization
 
   // Chapter tree
   chapterTree: ChapterTreeNode[];
@@ -25,9 +25,6 @@ interface EditorState {
     direction: "horizontal" | "vertical";
     secondaryDocumentId: string | null;
   };
-
-  // UX Features
-  isFocusMode: boolean;
 
   // Actions
   setCurrentProject: (projectId: string) => void;
@@ -44,8 +41,7 @@ interface EditorState {
   toggleSplitView: () => void;
   setSplitDirection: (direction: "horizontal" | "vertical") => void;
   setSecondaryDocument: (docId: string | null) => void;
-  toggleFocusMode: () => void;
-  setViewMode: (mode: "editor" | "scrivenings" | "outline" | "corkboard") => void;
+  setViewMode: (mode: "editor" | "scrivenings" | "outline") => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -67,8 +63,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     direction: "vertical",
     secondaryDocumentId: null,
   },
-
-  isFocusMode: false,
 
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
 
@@ -93,7 +87,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSaveStatus: (status) =>
     set({
       saveStatus: status,
-      lastSavedAt: status === "saved" ? new Date() : get().lastSavedAt,
+      lastSavedAt:
+        status === "saved" ? new Date().toISOString() : get().lastSavedAt,
     }),
 
   // Fixed: Using array instead of Set for serialization compatibility
@@ -173,6 +168,5 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
     })),
 
-  toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
   setViewMode: (mode) => set({ viewMode: mode }),
 }));

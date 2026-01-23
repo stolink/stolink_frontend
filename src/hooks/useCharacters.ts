@@ -19,13 +19,22 @@ export const characterKeys = {
  */
 export function useCharacters(
   projectId: string,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: characterKeys.list(projectId),
     queryFn: async () => {
       const response = await characterService.getAll(projectId);
-      return response.data;
+      const data = response.data;
+
+      // [Fix] Deduplicate by _id to prevent React key warnings
+      const seen = new Set<string>();
+      return data.filter((c) => {
+        const id = c._id;
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
     },
     enabled: options?.enabled !== false && !!projectId,
   });
@@ -82,28 +91,41 @@ export function useUpdateCharacter() {
       payload: Partial<CreateCharacterInput>;
     }) => characterService.update(id, payload),
     onMutate: async ({ id, payload }) => {
+      // Cancel outgoing refetches to prevent overwrites
       await queryClient.cancelQueries({ queryKey: characterKeys.detail(id) });
       const previous = queryClient.getQueryData(characterKeys.detail(id));
 
+      // Optimistic update - immediately reflect in UI
       queryClient.setQueryData(
         characterKeys.detail(id),
-        (old: Character | undefined) => (old ? { ...old, ...payload } : old)
+        (old: Character | undefined) => (old ? { ...old, ...payload } : old),
       );
 
       return { previous, id };
     },
     onError: (_err, _variables, context) => {
+      // Rollback on error
       if (context?.previous) {
         queryClient.setQueryData(
           characterKeys.detail(context.id),
-          context.previous
+          context.previous,
         );
       }
     },
+    onSuccess: (data, variables) => {
+      // Update Detail Cache immediately with response data
+      // This prevents "flicker" where UI shows old data waiting for refetch
+      // Note: We do NOT update list cache here to prevent graph reset
+      if (data && data.data) {
+        queryClient.setQueryData(characterKeys.detail(variables.id), data.data);
+      }
+    },
     onSettled: (_data, _error, { id }) => {
-      queryClient.invalidateQueries({ queryKey: characterKeys.detail(id) });
-      // Invalidate all character lists since we don't know which project this belongs to
-      queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
+      // 4. Delayed Invalidation for Eventual Consistency (Neo4j propagation safety)
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: characterKeys.detail(id) });
+        queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
+      }, 1000);
     },
   });
 }

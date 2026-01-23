@@ -3,7 +3,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import SectionDividerView from "./SectionDividerView";
 
 export interface SectionDividerOptions {
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, unknown>;
 }
 
 declare module "@tiptap/core" {
@@ -42,9 +42,11 @@ export const SectionDivider = Node.create<SectionDividerOptions>({
         tag: 'div[data-type="section-divider"]',
         getAttrs: (dom) => {
           if (typeof dom === "string") return false;
+          const levelAttr = dom.getAttribute("data-level");
           return {
             documentId: dom.getAttribute("data-document-id"),
             title: dom.getAttribute("data-title"),
+            level: levelAttr ? parseInt(levelAttr, 10) : 0,
           };
         },
       },
@@ -58,6 +60,7 @@ export const SectionDivider = Node.create<SectionDividerOptions>({
         "data-type": "section-divider",
         "data-document-id": node.attrs.documentId,
         "data-title": node.attrs.title,
+        "data-level": String(node.attrs.level || 0),
       }),
     ];
   },

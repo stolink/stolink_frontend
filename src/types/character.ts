@@ -1,99 +1,333 @@
-// Character Types with flexible extras pattern
+// =====================================================
+// 📦 Character Types - New Backend Schema
+// =====================================================
 
-export interface Character {
-  // === 필수 필드 ===
-  id: string;
-  projectId: string;
-  name: string;
+// =====================================================
+// 🔗 Relationship Types
+// =====================================================
 
-  // === 주요 선택 필드 (UI에서 별도 표시) ===
-  role?: CharacterRole;
-  imageUrl?: string;
+/**
+ * 관계 타입 (callback_result.json 기반 확장)
+ * Backend uses uppercase, frontend accepts both for compatibility
+ */
+export type RelationType =
+  | "ALLY"
+  | "RIVAL"
+  | "NEUTRAL"
+  | "ROMANTIC"
+  | "ENEMY"
+  | "MENTOR"
+  | "FAMILY"
+  | "MASTER_SERVANT"
+  | "COWORKER"
+  | "CLASSMATE"
+  | "COMPLEX"
+  // Legacy lowercase values for backward compatibility (full UIRelationType support)
+  | "friendly"
+  | "hostile"
+  | "romantic"
+  | "family"
+  | "neutral"
+  | "complex"
+  | "ally"
+  | "enemy"
+  | "rival"
+  | "betrayed"
+  | "knows"
+  | "protects"
+  | "mentor";
 
-  // === 동적 추가 정보 ===
-  extras?: Record<string, string | number | boolean | string[]>;
+// Legacy aliases for compatibility
+export type BackendRelationshipType = RelationType;
+export type RelationshipType = RelationType;
 
-  // === 메타 정보 ===
-  createdAt: string;
-  updatedAt: string;
+/**
+ * 캐릭터 역할
+ */
+export type CharacterRole =
+  | "protagonist"
+  | "antagonist"
+  | "supporting"
+  | "mentor"
+  | "sidekick"
+  | "other";
+
+// =====================================================
+// 📊 Character Sub-Types (New Schema)
+// =====================================================
+
+/**
+ * 프로필 내 성격 정보 (callback_result.json schema)
+ * Backend fields: core_traits, flaws, values
+ */
+export interface ProfilePersonality {
+  coreTraits: string[]; // core_traits from backend
+  flaws: string[];
+  values: string[];
 }
 
-export type CharacterRole =
-  | 'protagonist'
-  | 'antagonist'
-  | 'supporting'
-  | 'mentor'
-  | 'sidekick'
-  | 'other';
+/**
+ * 캐릭터 프로필 정보
+ */
+export interface CharacterProfile {
+  /** 캐릭터 고유 식별자 (Character._id와 동일) */
+  _id?: string;
+  /** @deprecated _id를 사용하세요. */
+  characterId: string;
+  name: string;
+  age: number | null;
+  gender: string;
+  race: string;
+  mbti: string | null;
+  /** personality는 이제 객체입니다 (callback_result.json 기준) */
+  personality: ProfilePersonality;
+  backstory: string;
+  occupation?: string;
+  birthplace?: string;
+  family?: string;
+  faction: {
+    name: string | null;
+    social: {
+      rank: string;
+      influence: number;
+      factionReputation: Record<string, unknown>;
+    };
+  };
+}
 
+/**
+ * 캐릭터 외모 정보
+ */
+export interface CharacterAppearance {
+  physique: string;
+  skinTone: string;
+  eyes: string;
+  nose: string;
+  mouth: string;
+  hairStyle: string;
+  hairColor: string;
+  attire: string[];
+  expression: string;
+  scarsTattoos: string[];
+  styleContext: {
+    artStyle: string;
+  };
+}
+
+/**
+ * 캐릭터 성격 정보
+ */
+export interface CharacterPersonality {
+  coreTraits: string[];
+  strengths?: string[]; // Added
+  flaws: string[]; // Weaknesses
+  values: string[];
+}
+
+// ... (Rest of interfaces)
+
+/**
+ * 캐릭터 관계 (임베딩된 그래프 노드)
+ * callback_result.json schema: relations.graph[]
+ */
+export interface CharacterRelation {
+  id?: string; // Optional UUID from backend
+  target: string;
+  type: RelationType | string; // @deprecated Use relationTypes
+  relationTypes?: string[]; // New: Multiple relation types
+  history: string | null;
+  strength: number;
+  description: string;
+  /** public_stance from backend */
+  publicStance?: string;
+  /** private_feeling from backend */
+  privateFeeling?: string;
+  /** revealed_in_chapter for 4D Timeline */
+  revealedInChapter?: number;
+
+  // New optional attributes from Neo4j (for Radar Chart)
+  bidirectional?: boolean;
+  emotionalBond?: number;
+  functionalTrust?: number;
+  valueAlignment?: number;
+  interdependence?: number;
+  latentTension?: number;
+  since?: string; // Legacy/Optional
+}
+
+/**
+ * 캐릭터 관계 정보 컨테이너
+ */
+export interface CharacterRelations {
+  graph: CharacterRelation[];
+  eventRefs: string[];
+  locationContext: string;
+}
+
+/**
+ * 캐릭터 현재 감정 상태
+ */
+export interface CharacterMood {
+  emotion: string;
+  intensity: number;
+  trigger: string | null;
+}
+
+/**
+ * 인벤토리 아이템
+ */
+export interface InventoryItem {
+  itemId: string;
+  name: string;
+  description: string;
+}
+
+/**
+ * 캐릭터 메타 정보
+ */
+export interface CharacterMeta {
+  createdAt: string | null;
+  updatedAt: string | null;
+  dataVersion: string;
+  lockVersion: number;
+}
+
+/**
+ * 캐릭터 (새 백엔드 스키마)
+ */
+export interface Character {
+  _id: string;
+  projectId: string;
+  role: CharacterRole;
+  profile: CharacterProfile;
+  aliases: string[];
+  status: string;
+  appearance: CharacterAppearance;
+  personality: CharacterPersonality;
+  relations: CharacterRelations;
+  currentMood: CharacterMood;
+  inventory: InventoryItem[];
+  meta: CharacterMeta;
+  imageUrl?: string;
+  embedding?: number[];
+  motivation?: string; // Added,
+  firstAppearance?: string; // Added,
+  graphPosition?: { x: number; y: number }; // Added for D3 graph persistence
+}
+
+// =====================================================
+// 🔄 Legacy Compatibility Layer
+// =====================================================
+
+/**
+ * @deprecated Use Character.relations.graph instead
+ * 하위 호환성을 위한 레거시 관계 인터페이스
+ */
+export interface BackendRelationship {
+  id?: string | number;
+  target: string;
+  type: RelationType;
+  strength: number;
+  label?: string | null;
+  since?: string | null;
+  description?: string;
+  bidirectional?: boolean;
+  evolved_from?: RelationType;
+  history?: RelationshipEvent[] | string;
+}
+
+/**
+ * 관계 변화 이벤트
+ */
+export interface RelationshipEvent {
+  eventId: string;
+  title: string;
+  chapter?: string;
+  type: RelationType;
+  reason?: string;
+  date?: string;
+}
+
+/**
+ * 독립 relationships 컬렉션용 스키마 (source 포함)
+ */
+export interface Relationship {
+  source: string;
+  target: string;
+  type: string;
+  strength: number;
+  description?: string;
+  history?: string | RelationshipEvent[];
+}
+
+/**
+ * 상세 관계 정보 (D3 그래프용 확장)
+ */
+export interface DetailedRelationship extends Relationship {
+  id?: string;
+  relationType?: RelationType;
+  label?: string | null;
+  since?: string | null;
+  bidirectional?: boolean;
+  evolvedFrom?: RelationType | null;
+}
+
+/**
+ * @deprecated Use Character.relations.graph instead
+ */
 export interface CharacterRelationship {
   id: string;
   sourceId: string;
   targetId: string;
-  type: RelationshipType;
-  strength: number; // 1-10, 관계 강도
-
-  // 동적 추가 정보 (관계 설명, 시작 시점 등)
+  type: RelationType;
+  strength: number;
   extras?: Record<string, string | number | boolean>;
 }
 
-export type RelationshipType = 'friendly' | 'hostile' | 'neutral';
+// =====================================================
+// 🛠️ Helper Functions
+// =====================================================
 
-// For React Flow
-export interface CharacterNode {
-  id: string;
-  type: 'character';
-  position: { x: number; y: number };
-  data: Character;
+/**
+ * Character._id를 id로 접근할 수 있게 하는 헬퍼
+ * @deprecated 새 코드에서는 _id를 직접 사용
+ */
+export function getCharacterId(char: Character): string {
+  return char._id;
 }
 
-export interface RelationshipEdge {
-  id: string;
-  source: string;
-  target: string;
-  type: 'relationship';
-  data: CharacterRelationship;
+/**
+ * Character.profile.name을 간편하게 접근
+ */
+export function getCharacterName(char: Character): string {
+  return char.profile.name;
+}
+
+/**
+ * Character.profile.faction.name을 간편하게 접근
+ */
+export function getCharacterFaction(char: Character): string {
+  return char.profile.faction?.name || "무소속";
+}
+
+/**
+ * 관계 배열을 가져오는 헬퍼 (레거시 호환)
+ */
+export function getCharacterRelationships(
+  char: Character,
+): CharacterRelation[] {
+  return char.relations?.graph || [];
 }
 
 // =====================================================
-// 📍 장소 타입 (새로 추가)
+// 🧪 Simple Character Interface (Integration Test)
 // =====================================================
-export interface Place {
-  id: string;
-  projectId: string;
+
+export interface SimpleCharacter {
   name: string;
-
-  // 주요 선택 필드
-  type?: PlaceType;
-  imageUrl?: string;
-
-  // 동적 추가 정보 (위치, 역사, 특징 등)
-  extras?: Record<string, string | number | boolean | string[]>;
-
-  createdAt: string;
-  updatedAt: string;
+  role: string;
+  relationships: {
+    targetCharacterName: string;
+    type: string;
+  }[];
 }
-
-export type PlaceType = 'region' | 'building' | 'special' | 'other';
-
-// =====================================================
-// ⚔️ 아이템 타입 (새로 추가)
-// =====================================================
-export interface Item {
-  id: string;
-  projectId: string;
-  name: string;
-
-  // 주요 선택 필드
-  type?: ItemType;
-  currentOwnerId?: string; // 현재 소유자 캐릭터 ID
-  imageUrl?: string;
-
-  // 동적 추가 정보 (능력, 역사, 특징 등)
-  extras?: Record<string, string | number | boolean | string[]>;
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type ItemType = 'weapon' | 'accessory' | 'document' | 'consumable' | 'other';

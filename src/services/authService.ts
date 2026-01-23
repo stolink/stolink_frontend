@@ -11,8 +11,7 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
+  expiresIn: number; // 초 단위
 }
 
 export const authService = {
@@ -23,13 +22,16 @@ export const authService = {
   }) => {
     const response = await api.post<ApiResponse<User>>(
       "/auth/register",
-      payload
+      payload,
     );
     return response.data;
   },
 
   login: async (payload: { email: string; password: string }) => {
-    const response = await api.post<ApiResponse<User>>("/auth/login", payload);
+    const response = await api.post<ApiResponse<AuthResponse>>(
+      "/auth/login",
+      payload,
+    );
     return response.data;
   },
 
@@ -38,17 +40,17 @@ export const authService = {
     return response.data;
   },
 
-  refresh: async (refreshToken: string) => {
-    const response = await api.post<
-      ApiResponse<{ accessToken: string; refreshToken: string }>
-    >("/auth/refresh", { refreshToken });
+  refresh: async () => {
+    // 쿠키 기반 - body 없이 POST (쿠키 자동 전송)
+    const response =
+      await api.post<ApiResponse<{ expiresIn: number }>>("/auth/refresh");
     return response.data;
   },
 
   forgotPassword: async (email: string) => {
     const response = await api.post<ApiResponse<null>>(
       "/auth/forgot-password",
-      { email }
+      { email },
     );
     return response.data;
   },
@@ -65,7 +67,7 @@ export const authService = {
     if (payload.avatarUrl) params.append("avatarUrl", payload.avatarUrl);
 
     const response = await api.patch<ApiResponse<User>>(
-      `/auth/me?${params.toString()}`
+      `/auth/me?${params.toString()}`,
     );
     return response.data;
   },

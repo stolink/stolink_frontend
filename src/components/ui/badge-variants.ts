@@ -6,12 +6,14 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-mocha-500 text-white hover:bg-mocha-400",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-cloud-100 text-espresso-900 hover:bg-cloud-200",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-status-error/15 text-status-error hover:bg-status-error/20",
+        outline: "text-espresso-700 border-cloud-200",
+        success: "border-transparent bg-sage-100 text-sage-700",
+        warning: "border-transparent bg-mocha-100 text-status-warning",
       },
     },
     defaultVariants: {

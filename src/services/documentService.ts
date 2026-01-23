@@ -2,11 +2,10 @@ import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
 import type {
   Document as FrontendDocument,
-  CreateDocumentInput as FrontendCreateDocumentInput,
   UpdateDocumentInput as FrontendUpdateDocumentInput,
 } from "@/types/document";
 
-export type DocumentType = "folder" | "text";
+export type DocumentType = "folder" | "text" | "scrivenings";
 export type DocumentStatus = "draft" | "revised" | "final";
 
 // Backend API response format
@@ -29,6 +28,7 @@ export interface BackendDocument {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  isPublished: boolean;
   children?: BackendDocument[];
 }
 
@@ -63,6 +63,7 @@ export function mapBackendToFrontend(doc: BackendDocument): FrontendDocument {
     foreshadowingIds: [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    isPublished: doc.isPublished,
   };
 }
 
@@ -98,11 +99,11 @@ export const documentService = {
   // Get document tree for a project
   getTree: async (
     projectId: string,
-    params?: { tree?: boolean; type?: DocumentType }
+    params?: { tree?: boolean; type?: DocumentType },
   ) => {
     const response = await api.get<ApiResponse<Document[]>>(
       `/projects/${projectId}/documents`,
-      { params: { tree: true, ...params } }
+      { params: { tree: true, ...params } },
     );
     return response.data;
   },
@@ -116,11 +117,11 @@ export const documentService = {
   // Create document
   create: async (
     projectId: string,
-    payload: Omit<BackendCreateDocumentInput, "projectId">
+    payload: Omit<BackendCreateDocumentInput, "projectId">,
   ) => {
     const response = await api.post<ApiResponse<Document>>(
       `/projects/${projectId}/documents`,
-      { ...payload, projectId }
+      { ...payload, projectId },
     );
     return response.data;
   },
@@ -129,7 +130,7 @@ export const documentService = {
   update: async (id: string, payload: UpdateDocumentInput) => {
     const response = await api.patch<ApiResponse<Document>>(
       `/documents/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
@@ -140,19 +141,32 @@ export const documentService = {
     return response.data;
   },
 
-  // Get content only
-  getContent: async (id: string) => {
-    const response = await api.get<ApiResponse<{ content: string }>>(
-      `/documents/${id}/content`
-    );
+  // Get content with paging
+  getContent: async (id: string, page: number = 1) => {
+    const response = await api.get<
+      ApiResponse<{
+        content: string;
+        page: number;
+        totalPages: number;
+        hasNext: boolean;
+      }>
+    >(`/documents/${id}/content`, {
+      params: { page },
+    });
     return response.data;
   },
 
-  // Update content only
-  updateContent: async (id: string, content: string) => {
+  // Update content for a specific page
+  updateContent: async (id: string, content: string, page: number = 1) => {
     const response = await api.patch<
-      ApiResponse<{ id: string; wordCount: number; updatedAt: string }>
-    >(`/documents/${id}/content`, { content });
+      ApiResponse<{
+        id: string;
+        wordCount: number;
+        updatedAt: string;
+        page: number;
+        totalPages: number;
+      }>
+    >(`/documents/${id}/content`, { content, page });
     return response.data;
   },
 
@@ -167,11 +181,11 @@ export const documentService = {
 
   // Bulk update
   bulkUpdate: async (
-    updates: { id: string; changes: UpdateDocumentInput }[]
+    updates: { id: string; changes: UpdateDocumentInput }[],
   ) => {
     const response = await api.post<ApiResponse<null>>(
       "/documents/bulk-update",
-      { updates }
+      { updates },
     );
     return response.data;
   },

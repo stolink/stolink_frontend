@@ -1,9 +1,14 @@
-name: Frontend CI/CD
+name: Deploy
 
 on:
   push:
     branches:
-      - main
+      - release # production 환경
+      - dev # develop 환경
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   id-token: write # OIDC용
@@ -12,6 +17,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 브랜치에 따라 환경 자동 선택
+    environment: ${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -21,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -30,8 +37,10 @@ jobs:
       - name: Build project
         run: npm run build
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_URL: "/api"
+          VITE_BACKEND_URL: "https://${{ vars.CLOUDFRONT_URL }}"
           REACT_APP_MEDIA_URL: "https://${{ vars.CLOUDFRONT_URL }}/media"
+          VITE_COMMUNITY_URL: "https://${{ vars.STOREAD_CLOUDFRONT_URL }}"
 
       - name: Generate version info
         id: version
@@ -53,6 +62,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # 브랜치에 따라 환경 자동 선택
+    environment: ${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -68,15 +79,22 @@ jobs:
 
       - name: Deploy Frontend to S3
         run: |
-          aws s3 sync ./dist s3://${{ vars.FRONTEND_S3_BUCKET_NAME }} --delete
+          # 1. Assets 업로드 (해시된 파일 - 영구 캐시)
+          aws s3 sync ./dist/assets/ s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/assets/ \
+            --cache-control "max-age=31536000, immutable" \
+            --delete
 
-      - name: CloudFront Invalidation
+          # 2. 루트 파일들 (vite.svg, robots.txt, favicon 등 - assets 제외)
+          aws s3 sync ./dist/ s3://${{ vars.FRONTEND_S3_BUCKET_NAME }}/ \
+            --exclude "assets/*" \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --delete
+
+      - name: CloudFront Invalidation (index.html only)
         run: |
-          # URL을 통해 Distribution ID를 조회합니다.
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='${{ vars.CLOUDFRONT_URL }}'].Id | [0]" --output text)
-
-          # 캐시 무효화 실행
-          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/index.html"
 
       - name: Health Check
         run: |
@@ -101,12 +119,15 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'production' || 'develop' }}
+          echo "## 🚀 Frontend Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | \`${ENVIRONMENT}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Version | \`${{ needs.build.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| URL | https://${{ vars.CLOUDFRONT_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| S3 Bucket | \`${{ vars.FRONTEND_S3_BUCKET_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Deployed At | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY

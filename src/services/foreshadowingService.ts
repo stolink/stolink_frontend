@@ -36,25 +36,25 @@ export const foreshadowingService = {
     params?: {
       status?: ForeshadowingStatus;
       importance?: ForeshadowingImportance;
-    }
+    },
   ) => {
     const response = await api.get<ApiResponse<Foreshadowing[]>>(
       `/projects/${projectId}/foreshadowing`,
-      { params }
+      { params },
     );
     return response.data;
   },
 
   getUnresolved: async (projectId: string) => {
     const response = await api.get<ApiResponse<Foreshadowing[]>>(
-      `/projects/${projectId}/foreshadowing/unresolved`
+      `/projects/${projectId}/foreshadowing/unresolved`,
     );
     return response.data;
   },
 
   getById: async (id: string) => {
     const response = await api.get<ApiResponse<Foreshadowing>>(
-      `/foreshadowing/${id}`
+      `/foreshadowing/${id}`,
     );
     return response.data;
   },
@@ -62,36 +62,38 @@ export const foreshadowingService = {
   create: async (projectId: string, payload: CreateForeshadowingInput) => {
     const response = await api.post<ApiResponse<Foreshadowing>>(
       `/projects/${projectId}/foreshadowing`,
-      payload
+      payload,
     );
     return response.data;
   },
 
   update: async (
     id: string,
-    payload: Partial<CreateForeshadowingInput & { status: ForeshadowingStatus }>
+    payload: Partial<
+      CreateForeshadowingInput & { status: ForeshadowingStatus }
+    >,
   ) => {
     const response = await api.patch<ApiResponse<Foreshadowing>>(
       `/foreshadowing/${id}`,
-      payload
+      payload,
     );
     return response.data;
   },
 
   delete: async (id: string) => {
     const response = await api.delete<ApiResponse<null>>(
-      `/foreshadowing/${id}`
+      `/foreshadowing/${id}`,
     );
     return response.data;
   },
 
   addAppearance: async (
     id: string,
-    appearance: Omit<ForeshadowingAppearance, "isRecovery">
+    appearance: Omit<ForeshadowingAppearance, "isRecovery">,
   ) => {
     const response = await api.post<ApiResponse<Foreshadowing>>(
       `/foreshadowing/${id}/appearances`,
-      appearance
+      appearance,
     );
     return response.data;
   },
@@ -99,16 +101,16 @@ export const foreshadowingService = {
   recover: async (
     id: string,
     recoveryInfo: {
-      sceneId?: string;
+      documentId?: string;
       chapterId: string;
       chapterTitle: string;
       line: number;
       context: string;
-    }
+    },
   ) => {
     const response = await api.patch<ApiResponse<Foreshadowing>>(
       `/foreshadowing/${id}/recover`,
-      recoveryInfo
+      recoveryInfo,
     );
     return response.data;
   },

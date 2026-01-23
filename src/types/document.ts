@@ -1,22 +1,20 @@
-// Document Types - Unified model for Scrivener-like structure
-// Replaces separate Chapter/Scene types with a single recursive hierarchy
-
-export type DocumentType = "folder" | "text";
+// Document Types - Flat list structure (Hierarchy removed)
+// Replaces separate Chapter/Scene types with a single linear list
 
 export interface Document {
   // === Core Fields ===
   id: string;
-  projectId: string;
-  parentId?: string;
-  type: DocumentType;
+  projectId: string; // duplicate removed
+  parentId?: string; // Restored for proper hierarchy support
+  type: "folder" | "text" | "scrivenings"; // Restored type
 
   // === Content ===
   title: string;
-  content: string; // Only used for 'text' type
-  synopsis: string; // Shown on corkboard cards
+  content: string; // HTML content
+  synopsis: string;
 
   // === Ordering ===
-  order: number;
+  order: number; // Global order in project
 
   // === Metadata ===
   metadata: DocumentMetadata;
@@ -28,34 +26,33 @@ export interface Document {
   // === Timestamps ===
   createdAt: string;
   updatedAt: string;
+
+  // === Publishing Status ===
+  isPublished?: boolean; // 커뮤니티(Storead) 게시 완료 여부
 }
 
 export interface DocumentMetadata {
   status: DocumentStatus;
-  label?: string; // POV character, location, etc.
+  label?: string; // Tag/Label
   labelColor?: string;
   wordCount: number;
   targetWordCount?: number;
   includeInCompile: boolean;
-  keywords: string[];
-  notes: string;
+  keywords: string[]; // 태그 배열
+  notes: string; // 작가 메모
 }
 
 export type DocumentStatus = "draft" | "revised" | "final";
 
-// Tree structure for display
-export interface DocumentTreeNode extends Document {
-  children: DocumentTreeNode[];
-}
-
-// Input types
+// Create/Update Inputs
 export interface CreateDocumentInput {
   projectId: string;
-  parentId?: string;
-  type: DocumentType;
   title: string;
   synopsis?: string;
   targetWordCount?: number;
+  order?: number;
+  parentId?: string;
+  type: "folder" | "text" | "scrivenings";
 }
 
 export interface UpdateDocumentInput {
@@ -63,7 +60,13 @@ export interface UpdateDocumentInput {
   content?: string;
   synopsis?: string;
   order?: number;
+  parentId?: string;
   metadata?: Partial<DocumentMetadata>;
   characterIds?: string[];
   foreshadowingIds?: string[];
+}
+
+// Restored DocumentTreeNode for Repository usage
+export interface DocumentTreeNode extends Document {
+  children: DocumentTreeNode[];
 }

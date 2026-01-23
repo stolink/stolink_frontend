@@ -3,7 +3,7 @@
 export interface ChapterNode {
   id: string;
   title: string;
-  type: "part" | "chapter" | "section";
+  type: "chapter" | "section"; // chapter = 폴더 역할 (하위 폴더/섹션 포함 가능)
   characterCount?: number;
   isPlot?: boolean;
   isModified?: boolean;
@@ -22,16 +22,16 @@ export interface ChapterTreeProps {
   ) => void;
   onRenameChapter?: (id: string, newTitle: string) => void;
   onDeleteChapter?: (id: string) => void;
-  onDuplicateChapter?: (id: string) => void;
-  onConvertType?: (id: string, type: "chapter" | "section") => void;
+  onReorderChapter?: (parentId: string | null, orderedIds: string[]) => void;
+  onMoveToFolder?: (itemId: string, targetFolderId: string | null) => void;
 }
 
 // Status colors mapping
 export const statusColors: Record<string, string> = {
-  todo: "bg-stone-400",
-  inProgress: "bg-amber-400",
-  done: "bg-emerald-400",
-  revised: "bg-blue-400",
+  todo: "bg-relation-neutral",
+  inProgress: "bg-status-warning",
+  done: "bg-status-success",
+  revised: "bg-relation-family",
 };
 
 // Character count formatter

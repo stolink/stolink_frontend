@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { Extension, Editor } from "@tiptap/core";
 import Suggestion from "@tiptap/suggestion";
 import type {
   SuggestionProps,
@@ -21,7 +21,7 @@ import {
   ListOrdered,
   Quote,
   Minus,
-  User,
+  FilePlus,
 } from "lucide-react";
 
 export const SlashCommand = Extension.create({
@@ -29,6 +29,7 @@ export const SlashCommand = Extension.create({
 
   addOptions() {
     return {
+      onCreateSection: null as ((title: string) => void) | null,
       suggestion: {
         char: "/",
         command: ({
@@ -60,8 +61,25 @@ const getSuggestionItems = ({
   query,
 }: {
   query: string;
+  editor: Editor;
 }): SlashCommandItem[] => {
-  return [
+  const items: SlashCommandItem[] = [
+    {
+      title: "새 섹션",
+      icon: <FilePlus className="w-4 h-4" />,
+      command: ({ editor, range }: SlashCommandParams) => {
+        const onCreateSection = editor.extensionManager.extensions.find(
+          (ext) => ext.name === "slashCommand",
+        )?.options?.onCreateSection;
+
+        if (onCreateSection) {
+          // Delete the slash command text
+          editor.chain().focus().deleteRange(range).run();
+          // Call the callback to create a new section (sibling)
+          onCreateSection("새 섹션", false);
+        }
+      },
+    },
     {
       title: "제목 1",
       icon: <Heading1 className="w-4 h-4" />,
@@ -126,21 +144,18 @@ const getSuggestionItems = ({
         editor.chain().focus().deleteRange(range).setHorizontalRule().run();
       },
     },
-    {
-      title: "캐릭터 멘션",
-      icon: <User className="w-4 h-4" />,
-      command: ({ editor, range }: SlashCommandParams) => {
-        editor.chain().focus().deleteRange(range).insertContent("@").run();
-      },
-    },
-  ].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()));
+  ];
+
+  return items.filter((item) =>
+    item.title.toLowerCase().includes(query.toLowerCase()),
+  );
 };
 
 export const SlashCommandExtension = SlashCommand.configure({
   suggestion: {
     items: getSuggestionItems,
     render: () => {
-      let component: ReactRenderer<CommandListRef, any>;
+      let component: ReactRenderer<CommandListRef>;
       let popup: TippyInstance[];
 
       return {
@@ -155,7 +170,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           }
 
           popup = tippy("body", {
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
             appendTo: () => document.body,
             content: component.element,
             showOnCreate: true,
@@ -173,7 +188,7 @@ export const SlashCommandExtension = SlashCommand.configure({
           }
 
           popup[0].setProps({
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
           });
         },
 

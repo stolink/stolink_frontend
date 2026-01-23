@@ -1,7 +1,12 @@
 import api from "@/api/client";
 import type { ApiResponse, JobResponse } from "@/types/api";
+import type {
+  AnalysisResultData,
+  BackendConsistencyReport,
+} from "@/types/analysisResult";
+import { calculateContentHash } from "@/utils/hashUtils";
 
-const BASE_URL = "/ai";
+const BASE_URL = "/ai"; // Spring Backend endpoints
 
 interface ChatContext {
   includeCharacters?: boolean;
@@ -9,8 +14,18 @@ interface ChatContext {
   [key: string]: unknown;
 }
 
+// 프로젝트 분석 Job 상태 응답 타입
+export interface ProjectAnalysisJobStatus {
+  jobId: string | null;
+  status: "processing" | "pending" | "completed" | "failed" | null;
+  progress?: number;
+  lastCompletedAt?: string;
+}
+
+const CHAT_BASE_URL = "/ai-api"; // FastAPI Chat service
+
 export const aiService = {
-  // 1. Chat
+  // 1. Chat (FastAPI - stolink-chat)
   chat: async (payload: {
     projectId: string;
     documentId?: string;
@@ -19,7 +34,7 @@ export const aiService = {
   }) => {
     const response = await api.post<
       ApiResponse<{ message: string; suggestions: string[] }>
-    >(`${BASE_URL}/chat`, payload);
+    >(`${CHAT_BASE_URL}/stream`, payload);
     return response.data;
   },
 
@@ -35,19 +50,78 @@ export const aiService = {
   },
 
   // 3. Analyze Story (Long-running Job)
-  analyzeStory: async (projectId: string, documentIds: string[]) => {
+  analyzeStory: async (payload: {
+    projectId: string;
+    documentId?: string;
+    content?: string;
+    documentIds?: string[];
+    analysisType?: "partial_snippet" | "full";
+  }) => {
+    let url = `${BASE_URL}/analyze`;
+    const requestBody: Record<string, unknown> = { ...payload };
+
+    // If documentId is present, use the resource-specific endpoint
+    if (payload.documentId) {
+      url = `/documents/${payload.documentId}/analyze`;
+    }
+
+    // Map analysisType to analysis_type (snake_case)
+    if (payload.analysisType) {
+      requestBody.analysis_type = payload.analysisType;
+    }
+
     const response = await api.post<
       ApiResponse<{ jobId: string; status: string }>
-    >(`${BASE_URL}/analyze`, { projectId, documentIds });
+    >(url, requestBody);
+    return response.data;
+  },
+
+  // 4. Get Analysis Result (Directly by Document ID)
+  getAnalysisResult: async (documentId: string) => {
+    const response = await api.get<ApiResponse<AnalysisResultData>>(
+      `/documents/${documentId}/analysis`,
+    );
     return response.data;
   },
 
   // Job Status Polling
   getJobStatus: async <T>(jobId: string): Promise<JobResponse<T>> => {
     const response = await api.get<ApiResponse<JobResponse<T>>>(
-      `/jobs/${jobId}/status`
+      `/ai/jobs/${jobId}`,
     );
     return response.data.data;
+  },
+
+  // 5. Get Project Analysis Job Status (프로젝트 기준 최신 job 상태 조회)
+  getProjectAnalysisJob: async (
+    projectId: string,
+  ): Promise<ProjectAnalysisJobStatus> => {
+    const response = await api.get<ApiResponse<ProjectAnalysisJobStatus>>(
+      `/projects/${projectId}/analysis/job`,
+    );
+    return response.data.data;
+  },
+
+  // 6. Get Consistency Report (Latest)
+  getConsistencyReport: async (
+    projectId: string,
+  ): Promise<BackendConsistencyReport> => {
+    const response = await api.get<ApiResponse<BackendConsistencyReport>>(
+      `/projects/${projectId}/consistency-report`,
+    );
+    return response.data.data;
+  },
+
+  // SSE Stream URL for project-wide status (e.g., analysis, import)
+  getProjectStatusStreamUrl: (projectId: string): string => {
+    const baseUrl = import.meta.env.VITE_API_URL || "/api";
+    return `${baseUrl}/project/${projectId}/status/stream`;
+  },
+
+  // Job SSE Stream URL (for specific long-running jobs)
+  getJobStreamUrl: (jobId: string): string => {
+    const baseUrl = import.meta.env.VITE_API_URL || "/api";
+    return `${baseUrl}/ai/jobs/${jobId}/stream`;
   },
 
   // --- Mock Methods for Testing ---
@@ -85,6 +159,32 @@ export const aiService = {
       }, 1000);
     });
   },
+
+  mockGetConsistencyReport: async (
+    _projectId: string,
+  ): Promise<BackendConsistencyReport> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          job_id: "mock-job-empty",
+          created_at: new Date().toISOString(),
+          score: 100,
+          overall_score: 100,
+          requires_human_review: false,
+          conflicts: [],
+          resolution_summary: {
+            high_severity_count: 0,
+            total_conflicts: 0,
+            auto_fixable: 0,
+            needs_human_review: 0,
+            ready_for_update: 0,
+          },
+        });
+      }, 500);
+    });
+  },
+
+  calculateContentHash,
 };
 
 // Types for consistency check

@@ -14,17 +14,16 @@ export function NodeIcon({
   }
 
   switch (node.type) {
-    case "part":
     case "chapter":
-      // Folders (Parts & Chapters)
+      // Folders (Chapters)
       return isExpanded ? (
-        <FolderOpen className="h-4 w-4 text-sage-600" />
+        <FolderOpen className="h-4 w-4 text-mocha-500" />
       ) : (
-        <Folder className="h-4 w-4 text-sage-600" />
+        <Folder className="h-4 w-4 text-mocha-500" />
       );
     case "section":
     default:
       // Files (Sections)
-      return <FileText className="h-4 w-4 text-stone-500" />;
+      return <FileText className="h-4 w-4 text-muted-foreground" />;
   }
 }

@@ -10,7 +10,7 @@ import {
   DialogPortal,
   DialogOverlay,
 } from "@/components/ui/dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@stolink/ui";
 import { cn } from "@/lib/utils";
 
 const AlertDialog = Dialog;
@@ -26,7 +26,7 @@ const AlertDialogContent = React.forwardRef<
     ref={ref}
     className={cn(
       "max-w-[400px]", // Slightly narrower than default Dialog
-      className
+      className,
     )}
     {...props}
   />
@@ -40,9 +40,21 @@ const AlertDialogDescription = DialogDescription;
 
 const AlertDialogAction = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
-  <button ref={ref} className={cn(buttonVariants(), className)} {...props} />
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?:
+      | "default"
+      | "destructive"
+      | "outline"
+      | "secondary"
+      | "ghost"
+      | "link";
+  }
+>(({ className, variant = "default", ...props }, ref) => (
+  <button
+    ref={ref}
+    className={cn(buttonVariants({ variant }), className)}
+    {...props}
+  />
 ));
 AlertDialogAction.displayName = "AlertDialogAction";
 
@@ -53,9 +65,9 @@ const AlertDialogCancel = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      buttonVariants({ variant: "outline" }),
+      buttonVariants({ intent: "outline" }),
       "mt-2 sm:mt-0",
-      className
+      className,
     )}
     {...props}
   />

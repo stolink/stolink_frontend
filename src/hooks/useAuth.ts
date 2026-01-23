@@ -19,7 +19,6 @@ export const authKeys = {
  */
 export function useRegister() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   return useMutation({
     mutationFn: (payload: {
@@ -32,12 +31,11 @@ export function useRegister() {
       const isSuccess =
         response.success || response.status === "OK" || response.code === 200;
 
-      if (isSuccess && response.data) {
-        // Response data is the User object directly
-        const user = response.data;
-        // Tokens are handled via cookies, so pass empty strings
-        setAuth(user, "", "");
-        navigate("/library");
+      // If success flag is present OR if response seems to be a valid User object (has email/id)
+      if (isSuccess || (response.data?.email && response.data?.id)) {
+        // 회원가입 성공 시 로그인 페이지로 이동
+        alert("회원가입이 완료되었습니다. 로그인해주세요.");
+        navigate("/auth?tab=login");
       }
     },
   });
@@ -53,21 +51,33 @@ export function useLogin() {
   return useMutation({
     mutationFn: (payload: { email: string; password: string }) =>
       authService.login(payload),
-    onSuccess: (response: ApiResponse<User>) => {
-      // Check for success via boolean, string status code, or HTTP numeric code
-      const isSuccess =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (response: ApiResponse<AuthResponse> | any) => {
+      // 1. Standard ApiResponse format
+      const isStandardSuccess =
         response.success || response.status === "OK" || response.code === 200;
 
-      if (isSuccess && response.data) {
-        // Response data is the User object directly
-        const user = response.data;
-        // Tokens are handled via cookies, so pass empty strings or nulls if store allows
-        setAuth(user, "", "");
+      if ((isStandardSuccess && response.data) || response.data?.user) {
+        // 토큰은 쿠키에 자동 저장됨, user만 store에 저장
+        setAuth(response.data.user);
         navigate("/library");
+        return;
       }
+
+      // 2. Unwrapped response (Direct data return) or missing success flag
+      // If the response contains 'user' object directly, we assume it's data
+      if (response.user) {
+        setAuth(response.user);
+        navigate("/library");
+        return;
+      }
+
+      // 3. Fallback: Check if response itself is the data (though unlikely for AuthResponse which usually has structure)
+      // If we can't determine success, we might want to alert or check specific fields.
     },
-    onError: (error) => {
-      console.error("Login Failed:", error);
+    onError: () => {
+      // Login failure is expected (wrong password, etc.) - no console log needed
+      // UI error is handled by the component
     },
   });
 }
@@ -85,13 +95,13 @@ export function useLogout() {
     onSuccess: () => {
       logout();
       queryClient.clear(); // Clear all cached data
-      navigate("/auth");
+      navigate("/");
     },
     onError: () => {
       // Even if API call fails, clear local auth state
       logout();
       queryClient.clear();
-      navigate("/auth");
+      navigate("/");
     },
   });
 }
@@ -125,7 +135,7 @@ export function useUpdateProfile() {
       authService.updateMe(payload),
     onSuccess: (response) => {
       if (response.success && response.data) {
-        setUser(response.data, "");
+        setUser(response.data);
         queryClient.invalidateQueries({ queryKey: authKeys.me });
       }
     },

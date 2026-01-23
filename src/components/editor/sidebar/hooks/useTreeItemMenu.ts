@@ -1,32 +1,18 @@
 import { useState, type MouseEvent } from "react";
-import {
-  FolderPlus,
-  FilePlus,
-  Pencil,
-  Copy,
-  Trash2,
-  Folder,
-  FileText,
-} from "lucide-react";
+import { FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import type { MenuItemType } from "../ContextMenu";
 import type { ChapterNode } from "../types";
 
 interface UseTreeItemMenuProps {
   node: ChapterNode;
-  hasChildren: boolean;
   onAddChild?: (parentId: string, type?: "chapter" | "section") => void;
-  onDuplicate?: (id: string) => void;
-  onConvertType?: (id: string, type: "chapter" | "section") => void;
   onDelete?: (id: string) => void;
   setIsRenaming: (isRenaming: boolean) => void;
 }
 
 export function useTreeItemMenu({
   node,
-  hasChildren,
   onAddChild,
-  onDuplicate,
-  onConvertType,
   onDelete,
   setIsRenaming,
 }: UseTreeItemMenuProps) {
@@ -47,55 +33,33 @@ export function useTreeItemMenu({
     setShowMenu(true);
   };
 
+  // 폴더(chapter)인 경우에만 하위 항목 추가 가능
+  // 섹션(section)에서는 하위 항목 생성 불가
+  const isFolder = node.type === "chapter";
+
   const menuItems: MenuItemType[] = [
-    {
-      icon: FolderPlus,
-      label: "새 폴더 만들기",
-      onClick: () => onAddChild?.(node.id, "chapter"),
-    },
-    {
-      icon: FilePlus,
-      label: "새 섹션 만들기",
-      onClick: () => onAddChild?.(node.id, "section"),
-    },
-    { type: "divider" },
+    // 폴더일 때 "새 하위 폴더"와 "새 하위 섹션" 메뉴 표시
+    ...(isFolder && onAddChild
+      ? [
+          {
+            icon: FolderPlus,
+            label: "새 하위 폴더",
+            onClick: () => onAddChild(node.id, "chapter"),
+          },
+          {
+            icon: FilePlus,
+            label: "새 하위 섹션",
+            onClick: () => onAddChild(node.id, "section"),
+          },
+          { type: "divider" as const },
+        ]
+      : []),
     {
       icon: Pencil,
       label: "이름 변경",
       shortcut: "F2",
       onClick: () => setIsRenaming(true),
     },
-    {
-      icon: Copy,
-      label: "복제",
-      shortcut: "⌘D",
-      onClick: () => onDuplicate?.(node.id),
-    },
-    // Type conversion logic
-    ...(node.type === "section"
-      ? [
-          {
-            icon: Folder,
-            label: "폴더로 변환",
-            onClick: () => onConvertType?.(node.id, "chapter"),
-          },
-        ]
-      : []),
-    ...(node.type === "chapter" || node.type === "part"
-      ? [
-          {
-            icon: FileText,
-            label: "파일로 변환",
-            onClick: () => {
-              if (hasChildren) {
-                alert("하위 항목이 있는 폴더는 파일로 변환할 수 없습니다.");
-                return;
-              }
-              onConvertType?.(node.id, "section");
-            },
-          },
-        ]
-      : []),
     { type: "divider" },
     {
       icon: Trash2,

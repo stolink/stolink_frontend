@@ -1,30 +1,8 @@
 import api from "@/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { Project, ProjectStats } from "@/types";
 
-export interface Project {
-  id: string;
-  title: string;
-  genre: string;
-  description?: string;
-  coverImage?: string;
-  status: "writing" | "completed";
-  author?: string;
-  extras?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  stats?: ProjectStats;
-}
-
-export interface ProjectStats {
-  totalCharacters: number;
-  totalWords: number;
-  chapterCount: number;
-  characterCount: number;
-  foreshadowingRecoveryRate: number;
-  consistencyScore: number;
-  writingDays?: number;
-  estimatedPages?: number;
-}
+export type { Project, ProjectStats };
 
 export interface ProjectListParams {
   status?: "writing" | "completed" | "all";
@@ -86,4 +64,27 @@ export const projectService = {
     );
     return response.data;
   },
+
+  clone: async (id: string, request: ProjectCloneRequest) => {
+    const response = await api.post<ApiResponse<Project>>(
+      `/projects/${id}/clone`,
+      request,
+    );
+    return response.data;
+  },
+};
+
+export interface ProjectCloneRequest {
+  newTitle: string;
+}
+
+export const cloneProject = async (
+  projectId: string,
+  request: ProjectCloneRequest,
+): Promise<ApiResponse<Project>> => {
+  const response = await api.post<ApiResponse<Project>>(
+    `/projects/${projectId}/clone`,
+    request,
+  );
+  return response.data;
 };

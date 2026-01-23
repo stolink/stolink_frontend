@@ -2,13 +2,13 @@ import Mention from "@tiptap/extension-mention";
 import { ReactRenderer, ReactNodeViewRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
 import type { Instance as TippyInstance } from "tippy.js";
-import { SuggestionList } from "./SuggestionList";
-import type { SuggestionListRef } from "./SuggestionList";
+import { SuggestionList, type SuggestionListProps } from "./SuggestionList";
+import type { SuggestionListRef, MentionItem } from "./SuggestionList";
 import CharacterNodeView from "./CharacterNodeView";
-import { DEMO_CHARACTERS } from "@/data/demoData";
+import { DEMO_CHARACTERS, DEMO_ITEMS } from "@/data/demoData";
 
 // Re-export for use in CharacterNodeView and hover cards
-export { DEMO_CHARACTERS };
+export { DEMO_CHARACTERS, DEMO_ITEMS };
 
 export const CharacterMention = Mention.extend({
   addNodeView() {
@@ -23,13 +23,35 @@ export const CharacterMention = Mention.extend({
   },
   suggestion: {
     char: "@",
-    items: ({ query }) => {
-      return DEMO_CHARACTERS.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      );
+    items: ({ query }): MentionItem[] => {
+      const lowerQuery = query.toLowerCase();
+
+      // 캐릭터 필터링
+      const characters: MentionItem[] = DEMO_CHARACTERS.filter((char) =>
+        (char.profile?.name || "").toLowerCase().includes(lowerQuery),
+      ).map((char) => ({
+        id: char._id,
+        name: char.profile?.name || "이름 없음",
+        type: "character" as const,
+        imageUrl: undefined, // 새 스키마에 imageUrl 없음
+        role: char.role,
+      }));
+
+      // 아이템 필터링
+      const items: MentionItem[] = DEMO_ITEMS.filter((item) =>
+        item.name.toLowerCase().includes(lowerQuery),
+      ).map((item) => ({
+        id: item.id,
+        name: item.name,
+        type: "item" as const,
+        itemType: item.type,
+      }));
+
+      // 캐릭터 먼저, 그 다음 아이템 순서로 반환
+      return [...characters, ...items];
     },
     render: () => {
-      let component: ReactRenderer<SuggestionListRef, any>;
+      let component: ReactRenderer<SuggestionListRef, SuggestionListProps>;
       let popup: TippyInstance[];
 
       return {
@@ -44,7 +66,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup = tippy("body", {
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
             appendTo: () => document.body,
             content: component.element,
             showOnCreate: true,
@@ -62,7 +84,7 @@ export const CharacterMention = Mention.extend({
           }
 
           popup[0].setProps({
-            getReferenceClientRect: props.clientRect as any,
+            getReferenceClientRect: props.clientRect as (() => DOMRect) | null,
           });
         },
 

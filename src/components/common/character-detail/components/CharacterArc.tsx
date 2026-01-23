@@ -5,24 +5,54 @@ interface CharacterArcProps {
 }
 
 export function CharacterArc({ progress }: CharacterArcProps) {
+  // 마일스톤 위치 (25%, 50%, 75%)
+  const milestones = [25, 50, 75];
+
   return (
-    <div>
-      <h3 className="font-bold text-stone-500 text-xs uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
-        <TrendingUp className="h-4 w-4" /> Character Arc
+    <div className="space-y-4">
+      <h3 className="editorial-section-heading">
+        <TrendingUp className="h-5 w-5 text-primary/70" />
+        스토리 진행
       </h3>
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs font-medium text-stone-600">
-          <span>진행률</span>
-          <span>{progress}%</span>
+
+      <div className="editorial-card p-5 space-y-4">
+        {/* Progress Header */}
+        <div className="flex justify-between items-center">
+          <span className="magazine-caption not-italic">
+            캐릭터 아크 진행률
+          </span>
+          <span className="text-2xl font-semibold text-espresso-900 editorial-name">
+            {progress}%
+          </span>
         </div>
-        <div className="w-full bg-stone-100 rounded-full h-1.5 border border-stone-200">
+
+        {/* Progress Bar with Milestones */}
+        <div className="editorial-progress">
           <div
-            className="bg-primary h-1.5 rounded-full transition-all"
+            className="editorial-progress-fill"
             style={{ width: `${progress}%` }}
           />
+          {milestones.map((milestone) => (
+            <div
+              key={milestone}
+              className="editorial-progress-milestone"
+              style={{ left: `${milestone}%` }}
+            />
+          ))}
         </div>
-        <p className="text-[10px] text-stone-400 mt-1 leading-normal">
-          캐릭터 아크 진행 상황을 표시합니다.
+
+        {/* Milestone Labels */}
+        <div className="flex justify-between text-[10px] text-espresso-400 px-1">
+          <span>시작</span>
+          <span>전개</span>
+          <span>클라이맥스</span>
+          <span>결말</span>
+        </div>
+
+        {/* Description */}
+        <p className="text-xs text-espresso-500 pt-2 border-t border-cloud-100">
+          캐릭터의 스토리 아크 진행 상황을 시각화합니다. 시작부터 결말까지의
+          여정을 추적하세요.
         </p>
       </div>
     </div>

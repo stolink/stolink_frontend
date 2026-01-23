@@ -1,10 +1,17 @@
-import { useCallback, useMemo, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import {
   useDocumentStore,
   localDocumentRepository,
 } from "@/repositories/LocalDocumentRepository";
+import { useEditorStore } from "@/stores/useEditorStore";
+import { useForeshadowingStore } from "@/stores/useForeshadowingStore";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 import type {
   Document,
   DocumentTreeNode,
@@ -16,15 +23,30 @@ import {
   mapBackendToFrontend,
   type BackendDocument,
 } from "@/services/documentService";
+import { handle404 } from "@/lib/errorHandler";
+
+// Query Keys Factory
+export const documentKeys = {
+  all: ["documents"] as const,
+  trees: () => [...documentKeys.all, "tree"] as const,
+  tree: (projectId: string) => [...documentKeys.trees(), projectId] as const,
+  details: () => [...documentKeys.all, "detail"] as const,
+  detail: (documentId: string) =>
+    [...documentKeys.details(), documentId] as const,
+  contents: () => [...documentKeys.all, "content"] as const,
+  content: (documentId: string) =>
+    [...documentKeys.contents(), documentId] as const,
+};
 
 /**
  * Hook to access the entire document tree for a project
  */
 export function useDocumentTree(projectId: string) {
   const { _syncProjectDocuments } = useDocumentStore();
+  const lastSyncedDataRef = useRef<string>("");
 
   const { data: fetchedDocuments, isLoading: isFetching } = useQuery({
-    queryKey: ["documents", projectId],
+    queryKey: documentKeys.tree(projectId),
     queryFn: async () => {
       try {
         const response = await documentService.getTree(projectId);
@@ -47,19 +69,12 @@ export function useDocumentTree(projectId: string) {
         // Convert backend documents to frontend format
         return flatDocs.map(mapBackendToFrontend);
       } catch (error) {
-        // 404 means no documents yet - this is normal for new projects
-        if (
-          (error as { response?: { status?: number } })?.response?.status ===
-          404
-        ) {
-          return [];
-        }
-        throw error;
+        // 404 means no documents yet - return empty array for new projects
+        return handle404(error, []) ?? [];
       }
     },
     enabled: !!projectId,
-    staleTime: 0, // Always refetch to get latest tree from backend
-    refetchOnMount: "always", // Force refetch when component mounts
+    staleTime: 30000, // 30s - Reduces unnecessary tree refetches while maintaining sync via mutations
     retry: (failureCount, error) => {
       // Don't retry on 404 errors
       if (
@@ -74,7 +89,11 @@ export function useDocumentTree(projectId: string) {
   // Sync fetched documents to Zustand store
   useEffect(() => {
     if (fetchedDocuments && fetchedDocuments.length > 0) {
-      _syncProjectDocuments(projectId, fetchedDocuments);
+      const dataStr = JSON.stringify(fetchedDocuments);
+      if (lastSyncedDataRef.current !== dataStr) {
+        lastSyncedDataRef.current = dataStr;
+        _syncProjectDocuments(projectId, fetchedDocuments);
+      }
     }
   }, [projectId, fetchedDocuments, _syncProjectDocuments]);
 
@@ -82,18 +101,17 @@ export function useDocumentTree(projectId: string) {
   const storeDocuments = useDocumentStore(
     useShallow((state) =>
       Object.values(state.documents).filter(
-        (doc) => doc.projectId === projectId
-      )
-    )
+        (doc) => doc.projectId === projectId,
+      ),
+    ),
   );
 
-  // Use fetched documents if available, otherwise fall back to store
-  const documents =
-    fetchedDocuments && fetchedDocuments.length > 0
-      ? fetchedDocuments
-      : storeDocuments;
+  // Use store documents as the primary source of truth to support optimistic updates
+  // The store is kept in sync with backend data via the useEffect above
+  const documents = storeDocuments;
 
-  const tree = buildTree(documents);
+  // Memoize tree building to avoid expensive recalculation on every render
+  const tree = useMemo(() => buildTree(documents), [documents]);
 
   return {
     documents,
@@ -106,8 +124,8 @@ export function useDocumentTree(projectId: string) {
  * Hook to get a single document by ID
  */
 export function useDocument(id: string | null) {
-  const document = useDocumentStore((state) =>
-    id ? state.documents[id] : null
+  const document = useDocumentStore(
+    (state) => (id && state.documents[id]) || null,
   );
 
   const updateDocument = useCallback(
@@ -115,7 +133,7 @@ export function useDocument(id: string | null) {
       if (!id) return;
       await localDocumentRepository.update(id, updates);
     },
-    [id]
+    [id],
   );
 
   return {
@@ -134,13 +152,17 @@ export function useChildDocuments(parentId: string | null, projectId: string) {
       Object.values(state.documents).filter(
         (doc) =>
           doc.projectId === projectId &&
-          doc.parentId === (parentId ?? undefined)
-      )
-    )
+          doc.parentId === (parentId ?? undefined),
+      ),
+    ),
   );
 
+  const sortedChildren = useMemo(() => {
+    return [...children].sort((a, b) => a.order - b.order);
+  }, [children]);
+
   return {
-    children: children.sort((a, b) => a.order - b.order),
+    children: sortedChildren,
     isLoading: false,
   };
 }
@@ -152,29 +174,30 @@ export function useDocumentContent(id: string | null) {
   const queryClient = useQueryClient();
   const { _setContent } = useDocumentStore();
 
-  // Zustand store content as fallback
-  const storeContent = useDocumentStore((state) =>
-    id ? state.documents[id]?.content || "" : ""
-  );
-
   const {
-    data: fetchedContent,
+    data: infiniteData,
     isLoading,
     isFetching,
-  } = useQuery({
-    queryKey: ["document-content", id],
-    queryFn: async () => {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: documentKeys.content(id || ""),
+    queryFn: async ({ pageParam = 1 }) => {
       if (!id) return null;
       try {
-        const response = await documentService.getContent(id);
+        const response = await documentService.getContent(id, pageParam);
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
         if (isSuccess && response.data) {
-          return response.data.content;
+          return {
+            content: response.data.content,
+            page: response.data.page,
+            totalPages: response.data.totalPages,
+          };
         }
         return null;
       } catch (error) {
-        // 404 means content not found - use local cache
         if (
           (error as { response?: { status?: number } })?.response?.status ===
           404
@@ -184,11 +207,18 @@ export function useDocumentContent(id: string | null) {
         throw error;
       }
     },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage) return undefined;
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     enabled: !!id,
-    staleTime: 0, // Always refetch to get latest content from backend
-    refetchOnMount: "always", // Force refetch when component mounts
+    staleTime: 60000, // 1 min - Content is stable unless mutated
+    gcTime: 1000 * 60 * 10, // 10 mins cache for better UX when switching back to recently visited sections
     retry: (failureCount, error) => {
-      // Don't retry on 404 errors
       if (
         (error as { response?: { status?: number } })?.response?.status === 404
       ) {
@@ -198,18 +228,24 @@ export function useDocumentContent(id: string | null) {
     },
   });
 
-  // Sync fetched content to Zustand store
-  useEffect(() => {
-    if (id && fetchedContent !== undefined && fetchedContent !== null) {
-      _setContent(id, fetchedContent);
+  // Zustand store content as fallback
+  const storeContent = useDocumentStore((state) =>
+    id ? state.documents[id]?.content || "" : "",
+  );
+
+  // Aggregate content from all pages
+  const aggregatedContent = useMemo(() => {
+    if (!infiniteData || !infiniteData.pages) {
+      return storeContent;
     }
-  }, [id, fetchedContent, _setContent]);
+    const combined = infiniteData.pages
+      .map((page) => page?.content || "")
+      .join("");
+    return combined || storeContent;
+  }, [infiniteData, storeContent]);
 
   // Use fetched content if available, otherwise fall back to store content
-  const content =
-    fetchedContent !== undefined && fetchedContent !== null
-      ? fetchedContent
-      : storeContent;
+  const content = aggregatedContent;
 
   const saveContent = useCallback(
     async (newContent: string) => {
@@ -219,9 +255,11 @@ export function useDocumentContent(id: string | null) {
         useDocumentStore.getState().documents[id]?.content || "";
 
       try {
-        _setContent(id, newContent);
+        _setContent(id, newContent); // Optimistic update
 
-        const response = await documentService.updateContent(id, newContent);
+        // For infinite scroll, saving means saving the WHOLE document (rewrite)
+        // We pass page=1 to indicate start, relying on backend to handle full update or split
+        const response = await documentService.updateContent(id, newContent, 1);
 
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
@@ -235,44 +273,89 @@ export function useDocumentContent(id: string | null) {
             },
             updatedAt: response.data.updatedAt,
           });
-          // Update react-query cache with new content to prevent stale data on re-fetch
-          queryClient.setQueryData(["document-content", id], newContent);
+
+          // Manually update the infinite query cache to avoid a redundant GET request
+          // Since saveContent handles the whole document rewrite, we reset pages to reflect the current content
+          queryClient.setQueryData(
+            documentKeys.content(id),
+            (
+              old:
+                | {
+                    pages: {
+                      content: string;
+                      page: number;
+                      totalPages: number;
+                    }[];
+                    pageParams: number[];
+                  }
+                | undefined,
+            ) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: [
+                  {
+                    content: newContent,
+                    page: 1,
+                    totalPages: 1, // Full rewrite usually results in 1 page or backend handles re-pagination on next fetch
+                  },
+                ],
+                pageParams: [1],
+              };
+            },
+          );
         }
       } catch (error) {
         console.error("Failed to save content:", error);
         _setContent(id, originalContent);
       }
     },
-    [id, _setContent, queryClient]
+    [id, _setContent, queryClient],
   );
 
   return {
     content,
     saveContent,
     isLoading: isLoading || isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 }
 
 /**
  * Hook for bulk document content operations (Scrivenings view)
+ * 통합 뷰에서 여러 섹션의 내용을 한 번에 저장
  */
 export function useBulkDocumentContent() {
+  // 저장 상태를 전역 스토어에서 가져옴 (단일 뷰와 동일한 UI 표시)
+  const setSaveStatus = useEditorStore((state) => state.setSaveStatus);
+
   const bulkSaveContent = useCallback(
     async (updates: Record<string, string>) => {
+      if (Object.keys(updates).length === 0) return;
+
+      setSaveStatus("saving");
       try {
         const { _setBulkContent } = useDocumentStore.getState();
+        // 1. 로컬 상태 업데이트 (Zustand)
         _setBulkContent(updates);
 
+        // 2. 백엔드 API 호출 (여러 섹션 동시 저장)
         await Promise.all(
           Object.entries(updates).map(([id, content]) =>
-            documentService.updateContent(id, content)
-          )
+            documentService.updateContent(id, content),
+          ),
         );
-      } catch (error) {
-        console.error("Bulk save failed:", error);
+        // 3. 저장 상태 업데이트 (Zustand)
+        setSaveStatus("saved");
+      } catch (_error) {
+        // 에러 시 saved로 유지 (unsaved로 두면 무한 저장 시도 발생)
+        // 사용자가 수동으로 재시도할 수 있도록 함
+        setSaveStatus("saved");
       }
     },
-    []
+    [setSaveStatus],
   );
 
   return {
@@ -285,7 +368,7 @@ export function useBulkDocumentContent() {
  */
 export function useDocumentMutations(projectId: string) {
   const queryClient = useQueryClient();
-  const { _create, _update, _delete } = useDocumentStore();
+  const { _create, _update } = useDocumentStore();
 
   const createDocument = useCallback(
     async (input: Omit<CreateDocumentInput, "projectId">) => {
@@ -310,23 +393,21 @@ export function useDocumentMutations(projectId: string) {
           const frontendDoc = mapBackendToFrontend(response.data);
           _create(frontendDoc);
           // Invalidate documents query to refetch tree with new document
-          queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+          queryClient.invalidateQueries({
+            queryKey: documentKeys.tree(projectId),
+          });
           return frontendDoc;
         }
       } catch (error: unknown) {
         console.error(
           "[useDocumentMutations] Failed to create document:",
-          error
+          error,
         );
 
         // Fallback to local-only creation if backend fails
         const err = error as { response?: { status?: number } };
         if (err?.response?.status === 500 || err?.response?.status === 404) {
-          const localDocumentRepository =
-            await import("@/repositories/LocalDocumentRepository").then(
-              (m) => m.localDocumentRepository
-            );
-
+          // Using the statically imported localDocumentRepository
           try {
             const localDoc = await localDocumentRepository.create({
               projectId,
@@ -337,14 +418,14 @@ export function useDocumentMutations(projectId: string) {
           } catch (localError) {
             console.error(
               "[useDocumentMutations] Local fallback failed:",
-              localError
+              localError,
             );
           }
         }
       }
       return null;
     },
-    [projectId, _create, queryClient]
+    [projectId, _create, queryClient],
   );
 
   const updateDocument = useCallback(
@@ -362,34 +443,168 @@ export function useDocumentMutations(projectId: string) {
       }
       return null;
     },
-    [_update]
+    [_update],
   );
 
   const deleteDocument = useCallback(
     async (id: string) => {
+      // 1. Snapshot for rollback (Zustand & React Query)
+      const { documents, _delete, _create } = useDocumentStore.getState();
+      const deletedDoc = documents[id];
+      const previousQueryData = queryClient.getQueryData<Document[]>([
+        "documents",
+        projectId,
+      ]);
+
+      // 2. Optimistic Update
+      // 2.1. Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({
+        queryKey: documentKeys.tree(projectId),
+      });
+
+      // 2.2. Update React Query Cache (Server State)
+      if (previousQueryData) {
+        queryClient.setQueryData<Document[]>(["documents", projectId], (old) =>
+          old ? old.filter((doc) => doc.id !== id) : [],
+        );
+      }
+
+      // 2.3. Update Zustand Store (Client State)
+      _delete(id);
+
       try {
+        // 3. Sync with Backend
         const response = await documentService.delete(id);
         const isSuccess =
           response.success || response.status === "OK" || response.code === 200;
-        if (isSuccess) {
-          _delete(id);
+
+        if (!isSuccess) {
+          throw new Error("Failed to delete document");
         }
       } catch (error) {
         console.error("Failed to delete document:", error);
+        // 4. Rollback on failure
+        // 4.1. Rollback React Query Cache
+        if (previousQueryData) {
+          queryClient.setQueryData(["documents", projectId], previousQueryData);
+        }
+        // 4.2. Rollback Zustand Store
+        if (deletedDoc) {
+          _create(deletedDoc);
+        }
+      } finally {
+        // 5. Always refetch to ensure data consistency
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
+
+        // 6. 섹션 삭제 시 해당 섹션에 연결된 복선도 삭제 (고아 데이터 방지)
+        useForeshadowingStore.getState().deleteByDocumentId(id);
+
+        // 7. 분석 버퍼에서 삭제된 문서 및 하위 문서 제거 (Ghost Chunk 방지)
+        const { removeFromBuffer } = useAnalysisBufferStore.getState();
+        const idsToRemove = [id];
+
+        // 현재 상태에서 하위 문서 찾기 (Optimistic Update 전 상태인 documents 참조)
+        const findDescendants = (parentId: string) => {
+          Object.values(documents).forEach((d) => {
+            if (d.parentId === parentId) {
+              idsToRemove.push(d.id);
+              findDescendants(d.id);
+            }
+          });
+        };
+        findDescendants(id);
+
+        idsToRemove.forEach((docId) => removeFromBuffer(docId));
       }
     },
-    [_delete]
+    [projectId, queryClient],
   );
 
   const reorderDocuments = useCallback(
     async (parentId: string | null, orderedIds: string[]) => {
+      // 1. Snapshot previous order for rollback
+      // We explicitly capture state here to avoid closure staleness, though getState() is generally safe.
+      const { documents, _reorder } = useDocumentStore.getState();
+
+      const previousSiblingIds = Object.values(documents)
+        .filter(
+          (doc) =>
+            doc.projectId === projectId &&
+            doc.parentId === (parentId ?? undefined),
+        )
+        .sort((a, b) => a.order - b.order)
+        .map((doc) => doc.id);
+
+      // 2. Optimistic Update: Update local store immediately
+      _reorder(parentId, orderedIds);
+
+      // 3. Sync with Backend
       try {
         await documentService.reorder(parentId, orderedIds);
+        // 4. Ensure data consistency by invalidating queries
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
       } catch (error) {
         console.error("Failed to reorder documents:", error);
+        // 5. Rollback on failure
+        if (previousSiblingIds.length > 0) {
+          _reorder(parentId, previousSiblingIds);
+        }
       }
     },
-    []
+    [projectId, queryClient],
+  );
+
+  /**
+   * Move document to a different folder (optimistic update)
+   */
+  const moveDocument = useCallback(
+    async (itemId: string, targetFolderId: string | null) => {
+      const { documents, _update } = useDocumentStore.getState();
+      const document = documents[itemId];
+
+      if (!document) {
+        console.error("Document not found:", itemId);
+        return;
+      }
+
+      // 1. Backup previous parentId for rollback
+      const previousParentId = document.parentId;
+
+      // 2. Optimistic Update: Update local store immediately
+      _update(itemId, { parentId: targetFolderId ?? undefined });
+
+      // 3. Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: documentKeys.tree(projectId),
+      });
+
+      try {
+        // 4. Sync with Backend
+        await documentService.update(itemId, {
+          parentId: targetFolderId ?? undefined,
+        });
+
+        // 5. Ensure data consistency by invalidating queries
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
+      } catch (error) {
+        console.error("Failed to move document:", error);
+
+        // 6. Rollback on failure
+        _update(itemId, { parentId: previousParentId });
+
+        // 7. Re-invalidate to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: documentKeys.tree(projectId),
+        });
+      }
+    },
+    [projectId, queryClient],
   );
 
   return {
@@ -397,6 +612,7 @@ export function useDocumentMutations(projectId: string) {
     updateDocument,
     deleteDocument,
     reorderDocuments,
+    moveDocument,
   };
 }
 
@@ -405,7 +621,7 @@ export function useDocumentMutations(projectId: string) {
  */
 export function useDescendantDocuments(
   parentId: string | null,
-  projectId: string
+  projectId: string,
 ) {
   const documents = useDocumentStore((state) => state.documents);
 
@@ -439,6 +655,54 @@ export function useDescendantDocuments(
   };
 }
 
+/**
+ * Hook for fetching a document and all its descendants with level information
+ * Useful for hierarchical rendering (e.g., Scrivenings view with indentation)
+ */
+export function useDescendantDocumentsWithLevel(
+  parentId: string | null,
+  projectId: string,
+  options?: { textOnly?: boolean },
+) {
+  const documents = useDocumentStore((state) => state.documents);
+
+  const flatDocuments = useMemo(() => {
+    if (!parentId) return [];
+
+    type DocumentWithLevel = Document & { level: number };
+    const result: DocumentWithLevel[] = [];
+
+    const traverse = (currentId: string, level: number) => {
+      const children = Object.values(documents)
+        .filter((d) => d.parentId === currentId && d.projectId === projectId)
+        .sort((a, b) => a.order - b.order);
+
+      for (const child of children) {
+        // textOnly 옵션이면 folder 제외 (하위 탐색은 계속)
+        if (options?.textOnly && child.type === "folder") {
+          traverse(child.id, level + 1);
+          continue;
+        }
+
+        result.push({ ...child, level });
+
+        // 폴더인 경우 하위 탐색
+        if (child.type === "folder") {
+          traverse(child.id, level + 1);
+        }
+      }
+    };
+
+    traverse(parentId, 0);
+    return result;
+  }, [documents, parentId, projectId, options?.textOnly]);
+
+  return {
+    documents: flatDocuments,
+    isLoading: false,
+  };
+}
+
 function buildTree(documents: Document[]): DocumentTreeNode[] {
   const map = new Map<string, DocumentTreeNode>();
   const roots: DocumentTreeNode[] = [];
@@ -461,5 +725,16 @@ function buildTree(documents: Document[]): DocumentTreeNode[] {
     }
   });
 
-  return roots.sort((a, b) => a.order - b.order);
+  // Sort children of each node
+  map.forEach((node) => {
+    node.children.sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  });
+
+  return roots.sort((a, b) => {
+    if (a.order !== b.order) return a.order - b.order;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 }

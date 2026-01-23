@@ -2,73 +2,461 @@
 
 .ProseMirror {
   font-size: inherit;
-  line-height: 1.75;
-  color: #292524;
+  line-height: inherit;
+  color: inherit;
   width: 100% !important;
   max-width: 100% !important;
+  outline: none;
 }
 
+/* =====================================================
+   Smooth Caret Animation
+   ===================================================== */
+.ProseMirror-cursormirror {
+  transition:
+    left 120ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    top 120ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: left, top;
+}
+
+/* 타이핑 시 미세한 부드러움을 위한 하드웨어 가속 힌트 */
+.ProseMirror * {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ProseMirror {
+  caret-color: #bd9b8d; /* Mocha 400 */
+  /* 중요: 레이아웃 스래싱 방지 및 GPU 레이어 분리 */
+  will-change: contents, transform;
+  transform: translateZ(0);
+}
+
+/* Typography - Premium Serif for Body */
 .ProseMirror p {
-  margin-bottom: 1em;
+  font-family: "Spectral", "Pretendard", serif;
+  margin-bottom: var(--st-editor-paragraph-spacing, 1em);
+  text-indent: var(--st-editor-text-indent, 0);
   word-break: keep-all;
+  font-size: 1.1em; /* Slightly larger for readability */
+  line-height: var(--st-editor-line-height, 1.8) !important;
 }
 
+/* Typography - Display Serif for Headings */
 .ProseMirror h1 {
-  font-size: 1.875em;
-  font-weight: 700;
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 2.2em;
+  font-weight: 400; /* Serif Display looks better with normal weight */
   margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  color: #1c1917;
+  margin-bottom: 0.8em;
+  text-indent: 0;
+  color: #3d302a; /* Espresso 900 */
+  letter-spacing: -0.02em;
 }
 
 .ProseMirror h2 {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
-  color: #292524;
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.75em;
+  font-weight: 400;
+  margin-top: 1.4em;
+  margin-bottom: 0.6em;
+  text-indent: 0;
+  color: #5d4a3b; /* Mocha 700ish */
+  letter-spacing: -0.01em;
 }
 
 .ProseMirror h3 {
-  font-size: 1.25em;
-  font-weight: 500;
-  margin-top: 1em;
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.4em;
+  font-weight: 400;
+  margin-top: 1.2em;
   margin-bottom: 0.5em;
-  color: #44403c;
+  text-indent: 0;
+  color: #7d5a4b; /* Mocha 700 */
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid #86a789;
+  border-left: 3px solid #bd9b8d; /* Mocha 400 */
   padding-left: 1rem;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  font-family: "Spectral", serif;
   font-style: italic;
-  color: #57534e;
+  font-size: 1.1em;
+  color: #7d5a4b;
+  background-color: rgba(189, 155, 141, 0.1);
+  padding: 1rem;
+  border-radius: 0 8px 8px 0;
 }
 
 .ProseMirror ul,
 .ProseMirror ol {
   padding-left: 1.5rem;
   margin: 0.75rem 0;
+  font-family: "Spectral", serif;
 }
 
 .ProseMirror li {
   margin-bottom: 0.25rem;
 }
 
+/* Custom Highlight - Mocha Tone */
 .ProseMirror mark {
-  background-color: #fef08a;
+  background-color: rgba(
+    164,
+    119,
+    100,
+    0.2
+  ) !important; /* Mocha 500 low opacity */
   padding: 0.125rem 0.25rem;
-  border-radius: 0.125rem;
+  border-radius: 0.25rem;
+  color: #5d4a3b;
 }
 
+/* Plot Twist (Foreshadowing) - Sage Green (per CLAUDE.md) */
+.ProseMirror mark[data-id] {
+  background-color: rgba(
+    122,
+    152,
+    120,
+    0.2
+  ) !important; /* Sage 400 low opacity */
+  border-bottom: 2px solid #7a9878; /* Sage 400 */
+  padding-left: 1.5em;
+  position: relative;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.ProseMirror mark[data-id]::before {
+  content: "✦";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5f7d5f; /* Sage 500 */
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+/* Selection Color - Mocha */
 .ProseMirror ::selection {
-  background-color: #d1fae5;
+  background-color: rgba(164, 119, 100, 0.2); /* Mocha 500 */
+  color: inherit;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
-  color: #a8a29e;
+  color: #bd9b8d; /* Mocha 400 */
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
+  font-style: italic;
+}
+
+/* =====================================================
+   복선(Foreshadowing) 태그 스타일 - Sage Green Theme
+   ===================================================== */
+
+/* 기본 복선 태그 (미회수) */
+.ProseMirror .foreshadowing-tag {
+  background: linear-gradient(
+    135deg,
+    #f0f4ef 0%,
+    #e1e9e0 100%
+  ); /* Sage 50/100 */
+  border: 1px solid #c3d3c1; /* Sage 200 */
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 0 3px;
+  font-family: "Pretendard", sans-serif;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #3e4c3e; /* Sage 700 */
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(62, 76, 62, 0.05);
+}
+
+.ProseMirror .foreshadowing-tag::before {
+  content: "✦";
+  font-size: 0.8em;
+  opacity: 0.8;
+  color: #5f7d5f; /* Sage 500 */
+}
+
+.ProseMirror .foreshadowing-tag:hover {
+  background: linear-gradient(135deg, #e1e9e0 0%, #c3d3c1 100%);
+  border-color: #7a9878; /* Sage 400 */
+  box-shadow: 0 2px 8px rgba(95, 125, 95, 0.2);
+  transform: translateY(-1px);
+}
+
+/* 회수된 복선 태그 */
+.ProseMirror .foreshadowing-tag.recovered,
+.ProseMirror .foreshadowing-tag[data-recovered="true"] {
+  background: linear-gradient(135deg, #f1f8f1 0%, #dcfce7 100%); /* Green-ish */
+  border-color: #86efac;
+  color: #166534;
+  opacity: 0.8;
+}
+
+.ProseMirror .foreshadowing-tag.recovered::before,
+.ProseMirror .foreshadowing-tag[data-recovered="true"]::before {
+  content: "✓";
+  color: #166534;
+}
+
+/* 캐릭터 멘션 스타일 - Mocha Theme */
+.ProseMirror .character-mention {
+  background: linear-gradient(135deg, #fffcfb 0%, #f7f3f1 100%);
+  border: 1px solid #e5d0c5; /* Mocha 200 light */
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 0 3px;
+  font-family: "Pretendard", sans-serif;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #7d5a4b; /* Mocha 700 */
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(125, 90, 75, 0.05);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ProseMirror .character-mention::before {
+  content: "@";
+  font-size: 0.9em;
+  color: #bd9b8d; /* Mocha 400 */
+}
+
+.ProseMirror .character-mention:hover {
+  background: linear-gradient(135deg, #f7f3f1 0%, #efe5e0 100%);
+  border-color: #bd9b8d; /* Mocha 400 */
+  box-shadow: 0 4px 8px rgba(125, 90, 75, 0.15);
+  transform: translateY(-1px);
+}
+
+/* =====================================================
+   Conflict Navigation & Highlight Effects
+   ===================================================== */
+
+@keyframes wobble-highlight {
+  0%,
+  100% {
+    transform: translateY(0);
+    background-color: rgba(164, 119, 100, 0.4);
+  }
+  25% {
+    transform: translateY(-2px);
+    background-color: rgba(164, 119, 100, 0.6);
+  }
+  75% {
+    transform: translateY(2px);
+    background-color: rgba(164, 119, 100, 0.5);
+  }
+}
+
+.wobble-highlight {
+  animation: wobble-highlight 0.5s ease-in-out 3;
+  border-radius: 4px;
+  padding: 0 4px;
+  display: inline-block;
+}
+
+/* =====================================================
+   Theme Styles - Dark Mode & Eye-Care
+   ===================================================== */
+
+/* Dark Mode */
+.theme-dark .ProseMirror {
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror h1,
+.theme-dark .ProseMirror h2,
+.theme-dark .ProseMirror h3,
+.theme-dark .ProseMirror h4,
+.theme-dark .ProseMirror h5,
+.theme-dark .ProseMirror h6 {
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror blockquote {
+  border-left-color: #7d5a4b;
+  color: #bd9b8d;
+  background-color: rgba(125, 90, 75, 0.1);
+}
+
+.theme-dark .ProseMirror mark {
+  background-color: rgba(164, 119, 100, 0.4) !important;
+  color: #f1f0ec;
+}
+
+.theme-dark .ProseMirror .foreshadowing-tag {
+  background: linear-gradient(135deg, #3e4c3e 0%, #2d382d 100%);
+  border-color: #5f7d5f;
+  color: #c3d3c1;
+}
+
+.theme-dark .ProseMirror .character-mention {
+  background: linear-gradient(135deg, #4a3c35 0%, #3d302a 100%);
+  border-color: #7d5a4b;
+  color: #bd9b8d;
+}
+
+.theme-dark .ProseMirror ::selection {
+  background-color: rgba(164, 119, 100, 0.4);
+}
+
+.theme-dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #7d5a4b;
+}
+
+/* True Black Mode (OLED) */
+.theme-true-black .ProseMirror {
+  color: #f1f0ec;
+}
+
+.theme-true-black .ProseMirror h1,
+.theme-true-black .ProseMirror h2,
+.theme-true-black .ProseMirror h3 {
+  color: #f1f0ec;
+}
+
+/* Sepia Mode */
+.theme-sepia .ProseMirror {
+  color: #3d302a;
+}
+
+/* Eye-Care Mode */
+.theme-eye-care .ProseMirror {
+  color: #5b7b4b;
+}
+
+/* =====================================================
+   Focus Mode Styles
+   ===================================================== */
+
+.focus-mode-active .unfocused-node {
+  opacity: 0.25;
+  filter: blur(0.5px);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.focus-mode-active .focused-node {
+  opacity: 1;
+  filter: none;
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.focus-mode-active .unfocused-node:hover {
+  opacity: 0.5;
+  filter: none;
+}
+
+/* =====================================================
+   Heading 4-6 Styles
+   ===================================================== */
+
+.ProseMirror h4 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.2em;
+  font-weight: 400;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+  text-indent: 0;
+  color: #8b6b5a;
+}
+
+.ProseMirror h5 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1.1em;
+  font-weight: 400;
+  margin-top: 0.8em;
+  margin-bottom: 0.3em;
+  text-indent: 0;
+  color: #9b7b6a;
+}
+
+.ProseMirror h6 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-size: 1em;
+  font-weight: 400;
+  margin-top: 0.6em;
+  margin-bottom: 0.2em;
+  text-indent: 0;
+  color: #ab8b7a;
+}
+
+/* Dark mode heading 4-6 */
+.theme-dark .ProseMirror h4,
+.theme-dark .ProseMirror h5,
+.theme-dark .ProseMirror h6 {
+  color: #d4c4b4;
+}
+
+/* =====================================================
+   Reader/Preview Mode Styles
+   ===================================================== */
+
+/* Ensure empty paragraphs create visible line breaks */
+.reader-content p:empty,
+.reader-content p:only-child:empty {
+  min-height: 1.5em;
+  display: block;
+}
+
+/* Match editor styling in reader mode */
+.reader-content p {
+  margin-bottom: 0.5em;
+  line-height: 1.8;
+}
+
+.reader-content h1,
+.reader-content h2,
+.reader-content h3,
+.reader-content h4,
+.reader-content h5,
+.reader-content h6 {
+  font-family: "DM Serif Display", "Pretendard", serif;
+  font-weight: 400;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.reader-content blockquote {
+  border-left: 3px solid #bd9b8d;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #7d5a4b;
+}
+
+.reader-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.reader-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.reader-content mark {
+  background-color: rgba(164, 119, 100, 0.3);
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
 }

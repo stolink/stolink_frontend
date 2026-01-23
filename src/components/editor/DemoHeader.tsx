@@ -1,6 +1,6 @@
 import { ArrowLeft, Play, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@stolink/ui";
 
 interface DemoHeaderProps {
   isTourCompleted: boolean;
@@ -20,7 +20,7 @@ export default function DemoHeader({
           variant="ghost"
           size="sm"
           onClick={() => navigate("/")}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-card/20"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           홈으로
@@ -35,7 +35,7 @@ export default function DemoHeader({
             variant="ghost"
             size="sm"
             onClick={onStartTour}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-card/20"
           >
             <Play className="h-4 w-4 mr-1" />
             가이드 투어
@@ -44,7 +44,7 @@ export default function DemoHeader({
         <Button
           size="sm"
           onClick={() => navigate("/auth")}
-          className="bg-white text-sage-600 hover:bg-white/90"
+          className="bg-card text-sage-600 hover:bg-card/90"
         >
           <Sparkles className="h-4 w-4 mr-1" />
           회원가입하고 시작

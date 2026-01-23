@@ -5,21 +5,22 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-sage-500 text-white shadow hover:bg-sage-600",
+        default: "bg-mocha-500 text-white shadow-sm hover:bg-mocha-400",
         destructive:
           "bg-status-error text-white shadow-sm hover:bg-status-error/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-cloud-300 bg-transparent text-espresso-700 hover:bg-cloud-50 hover:text-espresso-900",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-sage-500 underline-offset-4 hover:underline",
+          "bg-cloud-100 text-espresso-900 shadow-sm hover:bg-cloud-200",
+        ghost: "text-espresso-700 hover:bg-cloud-100 hover:text-espresso-900",
+        link: "text-mocha-500 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-5 py-2",
         sm: "h-8 px-4 text-xs",
         lg: "h-11 px-8",
         icon: "h-9 w-9",
+        "icon-sm": "h-icon-sm w-icon-sm p-0",
       },
     },
     defaultVariants: {

@@ -17,7 +17,6 @@ export interface Foreshadowing {
 
   // === 등장 위치들 ===
   appearances: ForeshadowingAppearance[];
-
   createdAt: string;
   updatedAt: string;
 }
@@ -26,15 +25,17 @@ export type ForeshadowingStatus = "pending" | "recovered" | "ignored";
 export type ForeshadowingImportance = "major" | "minor";
 
 export interface ForeshadowingAppearance {
-  sceneId?: string; // Scene 레벨 추적 (신규)
-  chapterId: string;
-  chapterTitle: string;
-  line: number;
-  context: string; // 주변 텍스트
+  // === 위치 정보 ===
+  sectionTitle: string; // 섹션 제목 (필수)
+  documentId?: string; // 섹션 ID (선택, 레거시)
+
+  // === 상태 ===
   isRecovery: boolean; // 회수 지점인지
 
-  // 동적 추가 정보
-  extras?: Record<string, string | number | boolean>;
+  // === 레거시 호환 ===
+  sceneId?: string;
+  chapterId?: string;
+  chapterTitle?: string;
 }
 
 export interface CreateForeshadowingInput {
@@ -45,6 +46,7 @@ export interface CreateForeshadowingInput {
 }
 
 export interface UpdateForeshadowingInput {
+  tag?: string;
   status?: ForeshadowingStatus;
   description?: string;
   extras?: Record<string, string | number | boolean>;

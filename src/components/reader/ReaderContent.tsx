@@ -81,9 +81,9 @@ function ScrollModeContent({
   theme,
   fontSize,
 }: ScrollModeContentProps) {
-  const titleColor = theme === "dark" ? "text-white" : "text-stone-800";
+  const titleColor = theme === "dark" ? "text-white" : "text-espresso-900";
   const dividerColor =
-    theme === "dark" ? "border-stone-700" : "border-stone-200";
+    theme === "dark" ? "border-mocha-700" : "border-mocha-200";
 
   return (
     <div
@@ -101,10 +101,10 @@ function ScrollModeContent({
             {chapter.title}
           </h2>
           <div
-            className="font-body leading-relaxed"
+            className=" leading-relaxed reader-content"
             style={{ lineHeight: "1.9" }}
             dangerouslySetInnerHTML={{
-              __html: chapter.content.replace(/\n/g, "<br/><br/>"),
+              __html: chapter.content,
             }}
           />
           {idx < chapters.length - 1 && (
@@ -137,7 +137,7 @@ function BookModeContent({
   onNext,
   styles,
 }: BookModeContentProps) {
-  const arrowColor = theme === "dark" ? "text-stone-600" : "text-stone-300";
+  const arrowColor = theme === "dark" ? "text-mocha-400" : "text-mocha-300";
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-8">
@@ -179,9 +179,9 @@ function BookModeContent({
 
         {/* 콘텐츠 (자동으로 좌→우 흐름) */}
         <div
-          className="font-body h-full"
+          className=" h-full reader-content"
           dangerouslySetInnerHTML={{
-            __html: currentChapter.content.replace(/\n/g, "<br/><br/>"),
+            __html: currentChapter.content,
           }}
         />
       </div>

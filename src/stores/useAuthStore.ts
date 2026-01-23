@@ -1,71 +1,43 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  hasHydrated: boolean;
 
   // Actions
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
-  setUser: (user: User, token: string) => void;
+  setAuth: (user: User) => void;
+  setUser: (user: User) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
-  setHasHydrated: (hasHydrated: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      isLoading: false,
-      hasHydrated: false,
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  // hasHydrated removed
 
-      setAuth: (user, accessToken, refreshToken) =>
-        set({
-          user,
-          accessToken,
-          refreshToken,
-          isAuthenticated: true,
-        }),
-
-      setUser: (user, token) =>
-        set({
-          user,
-          accessToken: token,
-          isAuthenticated: true,
-        }),
-
-      logout: () =>
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        }),
-
-      setLoading: (loading) => set({ isLoading: loading }),
-
-      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+  setAuth: (user) =>
+    set({
+      user,
+      isAuthenticated: true,
     }),
-    {
-      name: "stolink-auth",
-      partialize: (state) => ({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
-    }
-  )
-);
+
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: true,
+    }),
+
+  logout: () =>
+    set({
+      user: null,
+      isAuthenticated: false,
+    }),
+
+  setLoading: (loading) => set({ isLoading: loading }),
+
+  // setHasHydrated removed
+}));
