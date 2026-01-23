@@ -71,6 +71,9 @@ interface CharacterDetailDialogProps {
   onSave?: (updated: Character) => void;
   /** Fallback project ID if character.projectId is missing */
   projectId?: string;
+  onRelationshipClick?: (link: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  hideRelationshipsTab?: boolean;
 }
 
 export default function CharacterDetailDialog({
@@ -79,6 +82,8 @@ export default function CharacterDetailDialog({
   onClose,
   onSave,
   projectId: propProjectId,
+  onRelationshipClick,
+  hideRelationshipsTab = false,
 }: CharacterDetailDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedCharacter, setEditedCharacter] = useState<Character | null>(
@@ -873,7 +878,9 @@ export default function CharacterDetailDialog({
                   <TabItem value="profile" icon={UserRound} label="프로필" />
                   <TabItem value="appearance" icon={Palette} label="외모" />
                   <TabItem value="personality" icon={Heart} label="성격" />
-                  <TabItem value="relationships" icon={Users} label="관계" />
+                  {!hideRelationshipsTab && (
+                    <TabItem value="relationships" icon={Users} label="관계" />
+                  )}
                   <TabItem value="biography" icon={BookOpen} label="기록" />
                 </TabsList>
 
@@ -1246,12 +1253,19 @@ export default function CharacterDetailDialog({
                   </TabsContent>
 
                   {/* RELATIONSHIPS TAB */}
-                  <TabsContent
-                    value="relationships"
-                    className="space-y-8 m-0 outline-none editorial-fade-in"
-                  >
-                    <CharacterRelationships relationships={relationships} />
-                  </TabsContent>
+                  {!hideRelationshipsTab && (
+                    <TabsContent
+                      value="relationships"
+                      className="space-y-8 m-0 outline-none editorial-fade-in"
+                    >
+                      <CharacterRelationships
+                        relationships={relationships}
+                        onRelationshipClick={(relId) => {
+                          onRelationshipClick?.({ id: relId });
+                        }}
+                      />
+                    </TabsContent>
+                  )}
 
                   {/* BIOGRAPHY TAB */}
                   <TabsContent

@@ -35,10 +35,12 @@ interface RelationshipUI {
   privateFeeling?: string;
   imageUrl?: string;
   description?: string;
+  id?: string; // Add relationship ID
 }
 
 interface CharacterRelationshipsProps {
   relationships: RelationshipUI[];
+  onRelationshipClick?: (id: string) => void;
 }
 
 // Section Config
@@ -120,10 +122,12 @@ function RelationshipCard({
   rel,
   gradient,
   borderColor,
+  onRelationshipClick,
 }: {
   rel: RelationshipUI;
   gradient: string;
   borderColor: string;
+  onRelationshipClick?: (id: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   // Show if any metric exists
@@ -143,7 +147,9 @@ function RelationshipCard({
         gradient,
         borderColor,
         "transition-all duration-300",
+        onRelationshipClick && "cursor-pointer",
       )}
+      onClick={() => rel.id && onRelationshipClick?.(rel.id)}
     >
       <div className="p-5 flex flex-col gap-4">
         {/* Header: Avatar & Main Info */}
@@ -325,6 +331,7 @@ function MetricBar({
 
 export function CharacterRelationships({
   relationships,
+  onRelationshipClick,
 }: CharacterRelationshipsProps) {
   // Grouping Logic
   const grouped = useMemo(() => {
@@ -385,6 +392,7 @@ export function CharacterRelationships({
                   rel={rel}
                   gradient={section.gradient}
                   borderColor={section.border}
+                  onRelationshipClick={onRelationshipClick}
                 />
               ))}
             </div>

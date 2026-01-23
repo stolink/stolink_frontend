@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { RelationType } from "@/types";
+import { toUIRelationType } from "../../constants";
 
 interface MoodBackgroundProps {
   type: RelationType | string | string[];
@@ -9,23 +10,26 @@ interface MoodBackgroundProps {
 
 // Mood configurations: [Gradient From, Gradient To, Ambient Color]
 const MOOD_CONFIGS: Record<string, [string, string, string]> = {
-  // Positive
-  ALLY: ["from-teal-50", "to-emerald-100", "bg-teal-200"],
-  ALLIANCE: ["from-teal-50", "to-emerald-100", "bg-teal-200"],
-  FRIEND: ["from-green-50", "to-teal-100", "bg-green-200"],
-  FRIENDLY: ["from-green-50", "to-teal-100", "bg-green-200"],
+  // Positive Group
+  ALLY: ["from-emerald-50", "to-teal-100", "bg-emerald-200"],
+  ALLIANCE: ["from-emerald-50", "to-teal-100", "bg-emerald-200"],
+  FRIEND: ["from-emerald-50", "to-teal-100", "bg-emerald-200"],
+  FRIENDLY: ["from-emerald-50", "to-teal-100", "bg-emerald-200"],
   ROMANTIC: ["from-pink-50", "to-rose-100", "bg-pink-200"],
-  FAMILY: ["from-indigo-50", "to-purple-100", "bg-purple-200"],
-  MENTOR: ["from-violet-50", "to-fuchsia-100", "bg-violet-200"],
+  FAMILY: ["from-indigo-50", "to-blue-100", "bg-indigo-200"],
+  MENTOR: ["from-amber-50", "to-orange-100", "bg-amber-100"],
+  PROTECTS: ["from-sky-50", "to-blue-100", "bg-sky-200"],
 
-  // Negative
+  // Negative Group
   RIVAL: ["from-orange-50", "to-red-100", "bg-orange-200"],
   ENEMY: ["from-red-50", "to-rose-100", "bg-red-200"],
   HOSTILE: ["from-red-50", "to-rose-100", "bg-red-200"],
+  BETRAYED: ["from-rose-100", "to-rose-200", "bg-rose-300"],
 
   // Neutral/Complex
   NEUTRAL: ["from-slate-50", "to-gray-100", "bg-gray-200"],
-  COMPLEX: ["from-violet-50", "to-fuchsia-100", "bg-violet-200"],
+  KNOWS: ["from-zinc-50", "to-slate-100", "bg-zinc-200"],
+  COMPLEX: ["from-violet-50", "to-purple-100", "bg-violet-200"],
   MASTER_SERVANT: ["from-slate-100", "to-zinc-200", "bg-slate-300"],
   COWORKER: ["from-blue-50", "to-sky-100", "bg-sky-200"],
 
@@ -36,7 +40,9 @@ const MOOD_CONFIGS: Record<string, [string, string, string]> = {
 export function MoodBackground({ type, className }: MoodBackgroundProps) {
   // Normalize to types array and clean strings
   const rawTypes = Array.isArray(type) ? type : [type];
-  const types = rawTypes.map((t) => (t || "").toString().toUpperCase().trim());
+  const types = rawTypes.map((t) =>
+    toUIRelationType((t || "").toString()).toUpperCase(),
+  );
 
   // Helper to find best config match
   const getConfig = (typeStr: string) => {

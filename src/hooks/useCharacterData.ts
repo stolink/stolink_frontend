@@ -127,6 +127,7 @@ export function useCharacterData(character: Character | null) {
         latentTension: rel.latentTension,
         // UI Flag for direction (Optional use)
         isIncoming: rel.direction === "incoming",
+        id: rel.id, // Add relationship ID
       };
     });
   }, [character?._id, character?.relations?.graph, allCharacters]);

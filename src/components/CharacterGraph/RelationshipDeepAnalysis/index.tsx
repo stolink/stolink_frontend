@@ -330,8 +330,9 @@ export function RelationshipDeepAnalysisModal({
                               <div className="flex items-center gap-4 mb-6">
                                 <span className="h-px flex-1 bg-espresso-900/10" />
                                 <h3 className="text-base font-bold text-espresso-400 uppercase tracking-[0.2em]">
-                                  Narrative Arc
+                                  관계 변천사 그래프
                                 </h3>
+
                                 <span className="h-px flex-1 bg-espresso-900/10" />
                               </div>
 
