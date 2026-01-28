@@ -15,6 +15,12 @@ import { useLogout } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import mainLogo from "@/assets/main_logo.png";
 import { PerformanceImage } from "@/components/common/PerformanceImage";
+import {
+  prefetchEditor,
+  prefetchWorld,
+  prefetchAnalytics,
+  prefetchSettings,
+} from "@/utils/routePrefetch";
 
 interface AppSidebarProps {
   projectId: string;
@@ -26,13 +32,29 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
   const { mutate: performLogout } = useLogout();
 
   const navItems = [
-    { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
-    { to: `/projects/${projectId}/world`, label: "리소스", icon: BookOpen },
-    { to: `/projects/${projectId}/stats`, label: "분석", icon: BarChart3 },
+    {
+      to: `/projects/${projectId}/editor`,
+      label: "에디터",
+      icon: PenLine,
+      prefetch: prefetchEditor,
+    },
+    {
+      to: `/projects/${projectId}/world`,
+      label: "리소스",
+      icon: BookOpen,
+      prefetch: prefetchWorld,
+    },
+    {
+      to: `/projects/${projectId}/stats`,
+      label: "분석",
+      icon: BarChart3,
+      prefetch: prefetchAnalytics,
+    },
     {
       to: `/projects/${projectId}/settings`,
       label: "프로젝트 설정",
       icon: Settings,
+      prefetch: prefetchSettings,
     },
   ];
 
@@ -85,6 +107,7 @@ export function AppSidebar({ projectId, projectTitle }: AppSidebarProps) {
                   : "text-muted-foreground hover:bg-white/60 hover:text-mocha-600",
               )
             }
+            onMouseEnter={item.prefetch}
           >
             {({ isActive }) => (
               <>

@@ -407,11 +407,7 @@ export function useDocumentMutations(projectId: string) {
         // Fallback to local-only creation if backend fails
         const err = error as { response?: { status?: number } };
         if (err?.response?.status === 500 || err?.response?.status === 404) {
-          const localDocumentRepository =
-            await import("@/repositories/LocalDocumentRepository").then(
-              (m) => m.localDocumentRepository,
-            );
-
+          // Using the statically imported localDocumentRepository
           try {
             const localDoc = await localDocumentRepository.create({
               projectId,

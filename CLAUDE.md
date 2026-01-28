@@ -184,13 +184,14 @@ docs/
 
 ### Relationship Colors (Muted for Graph)
 
-| 관계 유형 | HEX     | 설명                      |
-| --------- | ------- | ------------------------- |
-| Friendly  | #5B9A5E | Muted Green (신뢰, 협력)  |
-| Hostile   | #C45B52 | Muted Red (갈등, 적대)    |
-| Romance   | #C4687A | Muted Pink (애정, 열정)   |
-| Family    | #6B7BB5 | Muted Indigo (가족, 연결) |
-| Neutral   | #8A9AA5 | Blue Grey (중립)          |
+| 관계 유형 | HEX     | 설명                     |
+| --------- | ------- | ------------------------ |
+| Friendly  | #5B9A5E | Muted Green (신뢰, 협력) |
+| Hostile   | #C45B52 | Muted Red (갈등, 적대)   |
+| Romance   | #C4687A | Muted Pink (애정, 열정)  |
+| Family    | #0D9488 | Teal (가족, 연결)        |
+
+| Neutral | #8A9AA5 | Blue Grey (중립) |
 
 ## 디자인 원칙
 

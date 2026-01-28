@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
 import { BookCardSkeleton } from "@/components/library/BookCardSkeleton";
 import { InteractiveLightOverlay } from "@/components/effects";
+import { prefetchEditor } from "@/utils/routePrefetch";
 
 import { Button } from "@stolink/ui";
 import { Input } from "@stolink/ui";
@@ -744,6 +745,7 @@ export default function LibraryPage() {
                 variants={itemVariants}
                 initial={false}
                 className="h-full min-h-[320px]"
+                onMouseEnter={prefetchEditor}
               >
                 <BookCard
                   projectId={project.id}

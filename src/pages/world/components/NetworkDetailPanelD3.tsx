@@ -61,6 +61,7 @@ interface NetworkDetailPanelD3Props {
   links: RelationshipLink[];
   onClose: () => void;
   onViewProfile: () => void;
+  onRelationshipClick?: (link: RelationshipLink) => void;
 }
 
 export function NetworkDetailPanelD3({
@@ -69,6 +70,7 @@ export function NetworkDetailPanelD3({
   links,
   onClose,
   onViewProfile,
+  onRelationshipClick,
 }: NetworkDetailPanelD3Props) {
   // Fetch detailed character data to ensure all personality traits/values are available
   // (List API might return summarized data)
@@ -335,6 +337,7 @@ export function NetworkDetailPanelD3({
                     key={link.id}
                     className="editorial-card flex items-center gap-3 p-3 hover-lift cursor-pointer group editorial-fade-in"
                     style={{ animationDelay: `${idx * 50}ms` }}
+                    onClick={() => onRelationshipClick?.(link)}
                   >
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-stone-100 to-white flex items-center justify-center text-lg border border-cloud-100 shadow-sm overflow-hidden group-hover:shadow-md transition-shadow">
                       {otherChar?.imageUrl ? (

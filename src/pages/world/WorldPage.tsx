@@ -502,12 +502,20 @@ export default function WorldPage() {
     });
   };
 
-  const handleLinkClick = (link: RelationshipLink | null) => {
-    if (!link) {
+  const handleLinkClick = (linkOrId: RelationshipLink | string | null) => {
+    if (!linkOrId) {
       setIsRelationshipModalOpen(false);
       setRelationshipAnalysisData(null);
       return;
     }
+
+    // Resolve link if ID is passed
+    const link =
+      typeof linkOrId === "string"
+        ? links.find((l) => l.id === linkOrId)
+        : linkOrId;
+
+    if (!link) return;
 
     // 링크의 source와 target ID 추출
     const sourceId =
@@ -772,6 +780,7 @@ export default function WorldPage() {
                 links={links}
                 onClose={() => setSelectedCharacter(null)}
                 onViewProfile={() => setIsModalOpen(true)}
+                onRelationshipClick={handleLinkClick}
               />
 
               {/* CharacterGraph - Canvas (1000+ nodes) or SVG (legacy) */}
@@ -962,6 +971,8 @@ export default function WorldPage() {
         onSave={async (_updatedChar) => {
           // 캐릭터 수정 후 추가로 월드 페이지에서 처리할 로직이 있다면 여기에 작성
         }}
+        onRelationshipClick={handleLinkClick}
+        hideRelationshipsTab={true}
       />
 
       {/* Analysis Result Summary Modal */}

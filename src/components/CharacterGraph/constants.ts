@@ -52,12 +52,64 @@ export function toUIRelationType(type: string): UIRelationType {
     classmate: "knows",
     love: "romantic",
     crush: "romantic",
+    // Korean Mappings
+    가족: "family",
+    부모: "family",
+    자식: "family",
+    형제: "family",
+    자매: "family",
+    친척: "family",
+    동맹: "ally",
+    우호: "ally",
+    협력: "ally",
+    동료: "ally",
+    친구: "ally",
+    적대: "enemy",
+    원수: "enemy",
+    라이벌: "rival",
+    경쟁: "rival",
+    배신: "betrayed",
+    보호: "protects",
+    멘토: "mentor",
+    스승: "mentor",
+    제자: "mentor",
+    로맨스: "romantic",
+    사랑: "romantic",
+    연인: "romantic",
+    중립: "neutral",
+    안면: "knows",
+    복합: "complex",
     sibling: "family",
     parent: "family",
     child: "family",
     relative: "family",
   };
-  return mapping[normalized] || "neutral";
+
+  // 1. Exact match first
+  if (mapping[normalized]) return mapping[normalized];
+
+  // 2. Keyword/Pattern match as fallback for complex narrative labels (e.g., "#피보다 진한 유대, 가족")
+  for (const [key, value] of Object.entries(mapping)) {
+    if (normalized.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  return "neutral";
+}
+
+/**
+ * 관계 타입 또는 설명문에서 표준 색상 팔레트 추출
+ */
+export function getRelationshipPalette(type: string) {
+  const uiType = toUIRelationType(type);
+  return (
+    RELATION_PALETTE[uiType] || {
+      weak: "#CBD5E1",
+      standard: "#94A3B8",
+      deep: "#475569",
+    }
+  );
 }
 
 export const MOCHA_COLORS = {
@@ -99,7 +151,8 @@ export const RELATION_COLORS_HEX = {
   // Positive Group
   ally: "#10B981", // Emerald 500 (Trust)
   romantic: "#EC4899", // Pink 500 (Love)
-  family: "#0D9488", // Teal 600 (Firm Bond - Updated from Indigo)
+  family: "#854D0E", // Amber/Gold (Firm Warm Bond - Updated as requested)
+
   protects: "#0EA5E9", // Sky 500 (Shield)
   mentor: "#F59E0B", // Amber 500 (Wisdom/Light)
 
@@ -155,10 +208,11 @@ export const RELATION_PALETTE: Record<
     deep: "#831843",
   },
   family: {
-    weak: "#5EEAD4",
+    weak: "#FCD34D", // Amber 300
     standard: RELATION_COLORS_HEX.family,
-    deep: "#134E4A",
-  }, // Teal variations
+    deep: "#451A03", // Amber 950
+  }, // Amber variations
+
   protects: {
     weak: "#7DD3FC",
     standard: RELATION_COLORS_HEX.protects,
@@ -221,7 +275,8 @@ export const RELATION_BADGE_COLORS: Record<UIRelationType, string> = {
   ally: "bg-emerald-500 text-white border-emerald-500",
   enemy: "bg-rose-500 text-white border-rose-500",
   rival: "bg-orange-500 text-white border-orange-500",
-  family: "bg-teal-600 text-white border-teal-600",
+  family: "bg-amber-700 text-white border-amber-700",
+
   betrayed: "bg-rose-700 text-white border-rose-700",
   knows: "bg-zinc-400 text-white border-zinc-400",
   protects: "bg-sky-500 text-white border-sky-500",

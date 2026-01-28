@@ -344,7 +344,7 @@ export function RelationshipTimelineGraph({
                 dominantBaseline="middle"
                 className="fill-espresso-600 text-[10px] font-bold tracking-tight"
               >
-                나레이티브 본드 (Narrative Bond)
+                관계 변화
               </text>
             </g>
           </g>

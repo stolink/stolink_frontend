@@ -51,16 +51,16 @@ export function calculateCumulativeScores(
     // 새 이벤트 영향 추가
     let impact = event.importance * event.emotionalPolarity;
 
-    // [Resilience Logic] "Strong Trust Filter"
-    // If established trust exists, negative shocks are filtered through the "Goodwill" lens.
-    if (impact < 0 && cumulativeFriendly > 10) {
-      // Shield grows with trust (max 95% protection at trust score 100)
-      const shield = Math.min(cumulativeFriendly / 100, 0.95);
+    // [Resilience Logic] "Moderate Trust Filter"
+    // If established trust exists, negative shocks are buffered slightly.
+    if (impact < 0 && cumulativeFriendly > 20) {
+      // Shield is now more conservative (max 60% protection at trust score 100)
+      const shield = Math.min(cumulativeFriendly / 100, 0.6);
       const filteredImpact = impact * (1 - shield);
 
-      // [Velocity Cap] Even with filtered impact, prevent single-step "Emotional Shock"
-      // Unless the event is absolutely catastrophic (Importance > 9), cap the drop to -10.
-      const cap = event.importance > 9 ? -20 : -10;
+      // [Velocity Cap] Prevent extreme single-step drops for established relations
+      // unless importance is very high.
+      const cap = event.importance > 8 ? -40 : -25;
       impact = Math.max(filteredImpact, cap);
     }
 
@@ -289,21 +289,30 @@ function estimateEmotionalPolarity(event: Event): number {
     revelation: -2,
     discovery: 1,
     transformation: 2,
-    action: 1,
-    chat: 2,
-    dialogue: 3,
-    meeting: 4,
+    action: 0,
+    chat: 0,
+    dialogue: 1,
+    meeting: 1,
     reconciliation: 7,
     alliance: 8,
     support: 6,
     rescue: 10,
     romantic: 10,
-    friendly: 5,
-    resolution: 4,
+    friendly: 4,
+    resolution: 3,
     bond: 8,
   };
 
   let polarity = typePolarity[type] ?? 0;
+
+  // Apply Keyword Modifiers
+  if (hasNegative) {
+    // Strong penalty for negative context
+    polarity -= 5;
+  } else if (hasBonding || hasMeeting || hasVictory) {
+    // Slight boost for positive context if no negative terms
+    polarity += 2;
+  }
 
   // [Contextual Heuristics]
   // Rule A: Victory in Conflict = Shared Success (+score)
@@ -312,16 +321,17 @@ function estimateEmotionalPolarity(event: Event): number {
     !hasNegative &&
     (type === "conflict" || type === "confrontation" || type === "action")
   ) {
-    polarity = 6;
+    polarity = Math.max(polarity, 5);
   }
-  // Rule B: Important Meetings & Bonding = High Positive (e.g., Sango-choryeo case)
+  // Rule B: Important Meetings & Bonding = Positive
   if (
     (hasBonding || hasMeeting) &&
     !hasNegative &&
     (type === "meeting" || type === "dialogue" || type === "action")
   ) {
-    polarity = Math.max(polarity, 5); // Ensure it's treated as a significant positive start
+    polarity = Math.max(polarity, 3);
   }
+
   // Rule C: Tragedy as shared pain? (Optional: if they are already close, tragedy might not be negative sentiment between them)
   // For now, keep negative terms as negative.
 

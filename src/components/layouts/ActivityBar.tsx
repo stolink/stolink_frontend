@@ -1,5 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { PenLine, BookOpen, BarChart3, Settings } from "lucide-react";
+import {
+  prefetchEditor,
+  prefetchWorld,
+  prefetchAnalytics,
+  prefetchSettings,
+} from "@/utils/routePrefetch";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,6 +19,11 @@ interface ActivityBarItemProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick?: () => void;
+  onMouseEnter?: () => void;
+}
+
+interface ActivityBarProps {
+  projectId: string;
 }
 
 function ActivityBarItem({
@@ -20,11 +31,13 @@ function ActivityBarItem({
   icon: Icon,
   label,
   onClick,
+  onMouseEnter,
 }: ActivityBarItemProps) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
       className={({ isActive }) =>
         cn(
           "relative flex items-center justify-center w-full h-12 group transition-colors",
@@ -59,13 +72,29 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
   const { user } = useAuthStore();
 
   const navItems = [
-    { to: `/projects/${projectId}/editor`, label: "에디터", icon: PenLine },
-    { to: `/projects/${projectId}/world`, label: "리소스", icon: BookOpen },
-    { to: `/projects/${projectId}/stats`, label: "분석", icon: BarChart3 },
+    {
+      to: `/projects/${projectId}/editor`,
+      label: "에디터",
+      icon: PenLine,
+      prefetch: prefetchEditor,
+    },
+    {
+      to: `/projects/${projectId}/world`,
+      label: "리소스",
+      icon: BookOpen,
+      prefetch: prefetchWorld,
+    },
+    {
+      to: `/projects/${projectId}/stats`,
+      label: "분석",
+      icon: BarChart3,
+      prefetch: prefetchAnalytics,
+    },
     {
       to: `/projects/${projectId}/settings`,
       label: "프로젝트 설정",
       icon: Settings,
+      prefetch: prefetchSettings,
     },
   ];
 
@@ -83,6 +112,7 @@ export function ActivityBar({ projectId }: ActivityBarProps) {
             to={item.to}
             icon={item.icon}
             label={item.label}
+            onMouseEnter={item.prefetch}
           />
         ))}
       </nav>

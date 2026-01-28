@@ -6,78 +6,19 @@ import {
   collisionVertexShader,
   collisionFragmentShader,
 } from "./collisionShader";
+import { RELATION_COLORS, toUIRelationType } from "../../../constants";
 import type { StrengthFactor } from "@/types/relationshipAnalysis";
 import isEqual from "lodash-es/isEqual";
 
 /**
  * 관계 타입별 색상 매핑
  */
-const RELATION_TYPE_COLORS: Record<string, string> = {
-  // Friendly - Premium Darker Tones
-  friend: "#15803D", // Green 700 (Original)
-  ally: "#059669", // Emerald 600 (Distinct from Friend)
-  alliance: "#059669",
-  우호: "#15803D",
-  친구: "#15803D",
-  동료: "#0891B2", // Cyan 600
-  coworker: "#0891B2",
-
-  // Hostile - Premium Darker Tones
-  hostile: "#E11D48", // Rose 600
-  enemy: "#9F1239", // Rose 800 (Deep)
-  적대: "#E11D48",
-  원수: "#9F1239",
-  rival: "#D97706", // Amber 600
-  라이벌: "#D97706",
-
-  // Romantic
-  romantic: "#DB2777", // Pink 600
-  lover: "#DB2777",
-  연인: "#DB2777",
-  사랑: "#DB2777",
-  애정: "#DB2777",
-
-  // Family/Mentor
-  family: "#4F5861", // Slate-ish
-  mentor: "#7C3AED", // Violet 600
-  가족: "#4F5861",
-  멘토: "#7C3AED",
-  스승: "#7C3AED",
-
-  // Neutral
-  neutral: "#9CA3AF",
-  중립: "#9CA3AF",
-
-  // Complex
-  complex: "#7C3AED",
-  복합: "#7C3AED",
-};
-
 /**
- * 관계 타입에서 색상 추출
+ * 관계 타입에서 색상 추출 (SSOT)
  */
 function getColorForType(type: string): string {
-  if (!type) return "#A47764";
-  const normalized = type.toLowerCase();
-
-  // 1. Direct match check
-  if (RELATION_TYPE_COLORS[normalized]) {
-    return RELATION_TYPE_COLORS[normalized];
-  }
-
-  // 2. Contains check (Iterate keys)
-  for (const key in RELATION_TYPE_COLORS) {
-    if (normalized.includes(key)) {
-      return RELATION_TYPE_COLORS[key];
-    }
-  }
-
-  // 3. Fallback for known prefixes not in map
-  if (normalized.includes("partner")) return "#06B6D4"; // Coworker-like
-  if (normalized.includes("student") || normalized.includes("pupil"))
-    return "#8B5CF6"; // Mentor-like
-
-  return "#A47764"; // Default mocha
+  const uiType = toUIRelationType(type);
+  return RELATION_COLORS[uiType] || RELATION_COLORS.neutral;
 }
 
 /**

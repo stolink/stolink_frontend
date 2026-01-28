@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { v5 as uuidv5 } from "uuid";
 import { useAuthStore } from "@/stores";
 
 const CHAT_API_URL = "/ai-api";
@@ -317,13 +318,19 @@ export function useChatStream(options?: UseChatStreamOptions) {
     const { user } = useAuthStore.getState();
     if (!user?.id) return;
 
-    const sid = `${user.id}-${projectId}`;
+    // Use UUID v5 for deterministic Session ID (User ID + Project ID)
+    // Namespace: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" (DNS namespace as base, or custom)
+    // Custom Namespace for StoLink: "d1f1552f-dfc2-400d-9707-6ec7d4766727"
+    const NAMESPACE = "d1f1552f-dfc2-400d-9707-6ec7d4766727";
+    const sid = uuidv5(`${user.id}-${projectId}`, NAMESPACE);
+
     setSessionId(sid);
 
     try {
       const res = await fetch(`${CHAT_API_URL}/history/${sid}?limit=20`, {
         credentials: "include",
       });
+
       if (res.ok) {
         const data = await res.json();
         const loadedMessages: ChatMessage[] = data.messages.map(
@@ -365,9 +372,18 @@ export function useChatStream(options?: UseChatStreamOptions) {
           },
         );
         setMessages(loadedMessages);
+      } else {
+        // 404 is expected for new sessions, suppress error log
+        if (res.status !== 404) {
+          console.warn(`Failed to load history: ${res.status}`);
+        }
       }
     } catch (err) {
-      console.error("Failed to load chat history:", err);
+      // Network error or other issues
+      console.warn(
+        "Failed to load chat history (network or server error)",
+        err,
+      );
     }
   }, []);
 

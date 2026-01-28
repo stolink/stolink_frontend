@@ -108,48 +108,14 @@ const simplifyTerm = (term: string) => {
   return term;
 };
 
+import { RELATION_COLORS, toUIRelationType } from "../../constants";
+
 const getRelationColor = (type: string | string[]) => {
-  if (!type) return "#A47764";
-
   const rawType = Array.isArray(type) ? type[0] : type;
-  if (!rawType) return "#A47764";
+  if (!rawType) return RELATION_COLORS.neutral;
 
-  const t = rawType.toLowerCase();
-
-  // Hostile - Premium Darker Tones
-  if (t.includes("원수") || t.includes("enemy")) return "#9F1239"; // Rose 800
-  if (t.includes("적대") || t.includes("hostile")) return "#E11D48"; // Rose 600
-  if (t.includes("rival") || t.includes("라이벌")) return "#D97706"; // Amber 600
-
-  // Romantic - Premium Pink
-  if (
-    t.includes("연인") ||
-    t.includes("사랑") ||
-    t.includes("romantic") ||
-    t.includes("애정")
-  )
-    return "#DB2777"; // Pink 600
-
-  // Friendly - Premium Green/Teal
-  if (t.includes("ally") || t.includes("alliance")) return "#059669"; // Emerald 600
-  if (t.includes("동료") || t.includes("coworker")) return "#0891B2"; // Cyan 600
-  if (t.includes("친구") || t.includes("우호") || t.includes("friendly"))
-    return "#15803D"; // Green 700
-
-  // Mentor/Family - Premium Purple/Slate
-  if (t.includes("mentor") || t.includes("스승") || t.includes("멘토"))
-    return "#7C3AED"; // Violet 600
-  if (t.includes("family") || t.includes("가족")) return "#4F5861"; // Blue-Gray
-  if (t.includes("classmate") || t.includes("동창") || t.includes("동기"))
-    return "#F59E0B"; // Amber 500
-  if (t.includes("master_servant") || t.includes("군신") || t.includes("주종"))
-    return "#1E293B"; // Slate 800
-  if (t.includes("betrayal") || t.includes("배신")) return "#450A0A"; // Red 950
-  if (t.includes("protection") || t.includes("보호")) return "#3B82F6"; // Blue 500
-  if (t.includes("neutral") || t.includes("중립")) return "#94A3B8"; // Slate 400
-
-  if (t.includes("complex") || t.includes("복합")) return "#7C3AED";
-  return "#A47764";
+  const uiType = toUIRelationType(rawType);
+  return RELATION_COLORS[uiType] || RELATION_COLORS.neutral;
 };
 
 const getRelationIcon = (type: string) => {
