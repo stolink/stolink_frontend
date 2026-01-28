@@ -13,7 +13,6 @@ import type {
   RelationshipLink,
   CharacterRelationship,
 } from "@/types";
-import { roleLabels } from "./constants";
 
 import {
   AnalysisSummaryModal,
@@ -43,6 +42,7 @@ import { Button } from "@stolink/ui";
 import { EmptyIndicator } from "./components/EmptyIndicator";
 import { ForeshadowingPanel } from "./components/ForeshadowingPanel";
 import { NetworkDetailPanelD3 } from "./components/NetworkDetailPanelD3";
+import { CharacterCard } from "@/components/characters/CharacterCard";
 
 import { useProjectEvents } from "@/hooks/useEvents";
 import { useRelationshipLinks } from "@/hooks/useRelationshipLinks";
@@ -879,58 +879,12 @@ export default function WorldPage() {
 
               <div className="pt-20 px-8 pb-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {characters.map((character, index) => (
-                  <div
+                  <CharacterCard
                     key={`${character._id || (character as { id?: string }).id || "char"}-${index}`}
-                    className="editorial-card group cursor-pointer overflow-hidden aspect-[3/4] flex flex-col hover-lift editorial-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => handleCardClick(character)}
-                  >
-                    {/* Image Section - 70% height */}
-                    <div className="relative flex-[7] overflow-hidden bg-muted">
-                      {character.imageUrl ? (
-                        <>
-                          <img
-                            src={character.imageUrl}
-                            alt={character.profile?.name || ""}
-                            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-5xl opacity-50 group-hover:opacity-70 transition-opacity">
-                            {character.role === "protagonist"
-                              ? "🦸"
-                              : character.role === "antagonist"
-                                ? "🦹"
-                                : character.role === "mentor"
-                                  ? "🧙"
-                                  : "👤"}
-                          </span>
-                        </div>
-                      )}
-                      {/* Role Badge */}
-                      <div className="floating-badge">
-                        {roleLabels[character.role || "other"]}
-                      </div>
-                    </div>
-
-                    {/* Info Section - 30% height */}
-                    <div className="flex-[3] p-4 bg-paper flex flex-col justify-center border-t border-cloud-100">
-                      <h3 className="text-base font-bold text-espresso-900 line-clamp-1 group-hover:text-mocha-500 transition-colors">
-                        {character.profile?.name ||
-                          (character as { name?: string }).name ||
-                          "이름 없음"}
-                      </h3>
-                      {(character.profile?.backstory ||
-                        (character as { backstory?: string }).backstory) && (
-                        <p className="text-xs text-mocha-400 line-clamp-2 mt-1 leading-relaxed">
-                          {character.profile?.backstory ||
-                            (character as { backstory?: string }).backstory}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                    character={character}
+                    index={index}
+                    onClick={handleCardClick}
+                  />
                 ))}
               </div>
             </div>
