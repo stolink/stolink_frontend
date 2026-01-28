@@ -1,17 +1,17 @@
-import { useRef, forwardRef, useImperativeHandle } from "react";
+import { useRef, forwardRef, useImperativeHandle, Suspense } from "react";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import TiptapEditor, {
-  type TiptapEditorHandle,
-} from "@/components/editor/TiptapEditor";
-import ScriveningsEditor, {
-  type ScriveningsEditorHandle,
-} from "@/components/editor/ScriveningsEditor";
+// Components - LCP 최적화를 위해 동기적으로 임포트 (EditorContent 청크에 포함됨)
+import TiptapEditor from "@/components/editor/TiptapEditor";
+import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
 import OutlineView from "@/components/editor/OutlineView";
 import EmptyState from "@/components/editor/EmptyState";
+import EditorSkeleton from "@/components/editor/EditorSkeleton";
+import type { TiptapEditorHandle } from "@/components/editor/TiptapEditor";
+import type { ScriveningsEditorHandle } from "@/components/editor/ScriveningsEditor";
 import type { Document } from "@/types/document";
 
 interface EditorContentProps {
@@ -136,25 +136,29 @@ export const EditorContent = forwardRef<
     // 개요 뷰: 폴더의 자식들을 테이블로 표시
     if (viewMode === "outline") {
       return selectedFolderId ? (
-        <OutlineView
-          folderId={selectedFolderId}
-          projectId={projectId}
-          onSelectSection={onSelectSection}
-          onSynopsisUpdate={onSynopsisUpdate}
-        />
+        <Suspense fallback={<EditorSkeleton />}>
+          <OutlineView
+            folderId={selectedFolderId}
+            projectId={projectId}
+            onSelectSection={onSelectSection}
+            onSynopsisUpdate={onSynopsisUpdate}
+          />
+        </Suspense>
       ) : null;
     }
 
     // 통합 뷰: 폴더의 자식들을 스크롤로 연결하여 편집
     if (viewMode === "scrivenings") {
       return selectedFolderId ? (
-        <ScriveningsEditor
-          ref={scriveningsRef}
-          folderId={selectedFolderId}
-          projectId={projectId}
-          onUpdate={onCharacterCountChange}
-          onCreateSection={onCreateSection}
-        />
+        <Suspense fallback={<EditorSkeleton />}>
+          <ScriveningsEditor
+            ref={scriveningsRef}
+            folderId={selectedFolderId}
+            projectId={projectId}
+            onUpdate={onCharacterCountChange}
+            onCreateSection={onCreateSection}
+          />
+        </Suspense>
       ) : null;
     }
 
@@ -165,21 +169,23 @@ export const EditorContent = forwardRef<
           <ResizablePanelGroup direction={splitView.direction}>
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full overflow-hidden">
-                <TiptapEditor
-                  key={selectedSectionId || "default"}
-                  ref={editorRef}
-                  onUpdate={onCharacterCountChange}
-                  onContentChange={onContentChange}
-                  onCreateSection={onCreateSection}
-                  initialContent={currentContent}
-                  documentId={selectedSectionId}
-                  sectionTitle={currentSectionTitle}
-                  hideToolbar={isFocusMode}
-                  fetchNextPage={fetchNextPage}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                  onEditorCreate={onEditorCreate}
-                />
+                <Suspense fallback={<EditorSkeleton />}>
+                  <TiptapEditor
+                    key={selectedSectionId || "default"}
+                    ref={editorRef}
+                    onUpdate={onCharacterCountChange}
+                    onContentChange={onContentChange}
+                    onCreateSection={onCreateSection}
+                    initialContent={currentContent}
+                    documentId={selectedSectionId}
+                    sectionTitle={currentSectionTitle}
+                    hideToolbar={isFocusMode}
+                    fetchNextPage={fetchNextPage}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onEditorCreate={onEditorCreate}
+                  />
+                </Suspense>
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -190,12 +196,20 @@ export const EditorContent = forwardRef<
                   <span className="text-mocha-400">|</span>
                   <span className="ml-2 truncate">{currentSectionTitle}</span>
                 </div>
-                <TiptapEditor
-                  initialContent={currentContent}
-                  onUpdate={() => {}}
-                  readOnly
-                  hideToolbar
-                />
+                <Suspense
+                  fallback={
+                    <div className="p-4">
+                      <EditorSkeleton lines={5} />
+                    </div>
+                  }
+                >
+                  <TiptapEditor
+                    initialContent={currentContent}
+                    onUpdate={() => {}}
+                    readOnly
+                    hideToolbar
+                  />
+                </Suspense>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -204,21 +218,23 @@ export const EditorContent = forwardRef<
 
       return (
         <div className="h-full overflow-hidden">
-          <TiptapEditor
-            key={selectedSectionId ?? "empty"}
-            ref={editorRef}
-            onUpdate={onCharacterCountChange}
-            onContentChange={onContentChange}
-            onCreateSection={onCreateSection}
-            initialContent={currentContent}
-            documentId={selectedSectionId}
-            sectionTitle={currentSectionTitle}
-            hideToolbar={isFocusMode}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onEditorCreate={onEditorCreate}
-          />
+          <Suspense fallback={<EditorSkeleton />}>
+            <TiptapEditor
+              key={selectedSectionId ?? "empty"}
+              ref={editorRef}
+              onUpdate={onCharacterCountChange}
+              onContentChange={onContentChange}
+              onCreateSection={onCreateSection}
+              initialContent={currentContent}
+              documentId={selectedSectionId}
+              sectionTitle={currentSectionTitle}
+              hideToolbar={isFocusMode}
+              fetchNextPage={fetchNextPage}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onEditorCreate={onEditorCreate}
+            />
+          </Suspense>
         </div>
       );
     }

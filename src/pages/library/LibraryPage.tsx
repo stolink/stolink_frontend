@@ -37,6 +37,7 @@ import {
 } from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
 import { useLogout } from "@/hooks/useAuth";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   documentService,
   mapBackendToFrontend,
@@ -81,6 +82,7 @@ export default function LibraryPage() {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  useDocumentTitle("서재");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ========== 새로운 상태 변수들 ==========
@@ -454,6 +456,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-paper selection:bg-mocha-100 selection:text-mocha-900">
+      <h1 className="sr-only">서재 - 내 작품 관리</h1>
       <header className="sticky top-0 z-50 bg-paper/95 backdrop-blur-xl border-b border-cloud-200/80 shadow-sm">
         {/* Ver.1: SVG 동적 광원 효과 */}
         <InteractiveLightOverlay />

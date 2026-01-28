@@ -118,6 +118,12 @@ export function BookCard({
         // 선택됨 스타일
         isSelected && "ring-2 ring-mocha-500 bg-mocha-50",
       )}
+      onMouseEnter={() => {
+        // LCP 최적화: 카드 호버 시 에디터 페이지 청크 미리 로드 (브라우저 캐시 활용)
+        if (!isEditMode && !isProcessing) {
+          import("@/pages/editor/EditorPage");
+        }
+      }}
       onClick={handleCardClick}
     >
       {/* 편집 모드 체크박스 오버레이 */}

@@ -125,7 +125,7 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   return (
     <div className="!h-[52px] min-h-[52px] max-h-[52px] border-b border-border flex items-center justify-between px-4 shrink-0 bg-card overflow-hidden">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0 min-w-0">
         <button
           onClick={onToggleSidebar}
           className={cn(
@@ -170,15 +170,15 @@ export function EditorToolbar({
             onClick={onTriggerAnalysis}
             disabled={analysisStatus === "analyzing"}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+              "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap shrink-0",
               analysisStatus === "analyzing"
                 ? "bg-primary/10 text-primary cursor-not-allowed"
                 : "bg-primary/5 hover:bg-primary/10 text-primary hover:scale-105",
             )}
             title="AI 분석 실행"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>분석</span>
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">분석</span>
           </button>
         )}
 
@@ -222,15 +222,15 @@ export function EditorToolbar({
 
         <div className="h-4 w-px bg-border mx-1" />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {onShowReader && (
             <button
               onClick={onShowReader}
-              className="px-3 py-1 bg-secondary hover:bg-accent text-foreground rounded-lg transition-all border border-border hover:border-primary/30 flex items-center gap-1 font-medium text-xs shadow-sm"
+              className="px-2 sm:px-3 py-1 bg-secondary hover:bg-accent text-foreground rounded-lg transition-all border border-border hover:border-primary/30 flex items-center gap-1 font-medium text-xs shadow-sm whitespace-nowrap shrink-0"
               title="미리보기 (작품을 읽기 모드로 확인)"
             >
-              <Eye className="w-3.5 h-3.5" />
-              미리보기
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">미리보기</span>
             </button>
           )}
 

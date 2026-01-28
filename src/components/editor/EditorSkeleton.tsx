@@ -32,20 +32,21 @@ export function EditorSkeleton({ className, lines = 12 }: EditorSkeletonProps) {
     }));
   }, [lines]);
 
+  // CLS 방지: 실제 EditorContent와 동일한 높이를 차지하도록 h-full 사용
   return (
-    <div className={cn("space-y-4 animate-pulse", className)}>
+    <div className={cn("h-full flex flex-col animate-pulse p-6", className)}>
       {/* Title Skeleton */}
-      <div className="h-8 bg-mocha-100 rounded-lg w-2/3 mb-8" />
+      <div className="h-8 bg-mocha-100 rounded-lg w-2/3 mb-8 shrink-0" />
 
-      {/* Content Lines */}
-      <div className="space-y-3">
+      {/* Content Lines - 남은 공간 채우기 */}
+      <div className="flex-1 space-y-3">
         {lineStyles.map((style, i) => (
           <div key={i} className="h-4 bg-mocha-50 rounded" style={style} />
         ))}
       </div>
 
       {/* Additional paragraph break */}
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-3 shrink-0">
         {paraStyles.map((style, i) => (
           <div
             key={`para2-${i}`}
