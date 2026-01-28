@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/common/Footer";
 import { BookCardSkeleton } from "@/components/library/BookCardSkeleton";
 import { InteractiveLightOverlay } from "@/components/effects";
+import { prefetchEditor } from "@/utils/routePrefetch";
 
 import { Button } from "@stolink/ui";
 import { Input } from "@stolink/ui";
@@ -36,6 +37,7 @@ import {
 } from "@/hooks/useProjects";
 import { projectService } from "@/services/projectService";
 import { useLogout } from "@/hooks/useAuth";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   documentService,
   mapBackendToFrontend,
@@ -80,6 +82,7 @@ export default function LibraryPage() {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  useDocumentTitle("서재");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ========== 새로운 상태 변수들 ==========
@@ -453,6 +456,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-paper selection:bg-mocha-100 selection:text-mocha-900">
+      <h1 className="sr-only">서재 - 내 작품 관리</h1>
       <header className="sticky top-0 z-50 bg-paper/95 backdrop-blur-xl border-b border-cloud-200/80 shadow-sm">
         {/* Ver.1: SVG 동적 광원 효과 */}
         <InteractiveLightOverlay />
@@ -741,6 +745,7 @@ export default function LibraryPage() {
                 variants={itemVariants}
                 initial={false}
                 className="h-full min-h-[320px]"
+                onMouseEnter={prefetchEditor}
               >
                 <BookCard
                   projectId={project.id}

@@ -55,15 +55,19 @@ export default function EditorRightSidebar({
     direction: "left", // Right sidebar expands to the left
   });
 
-  if (!isOpen) return null;
+  // CLS 방지: null 반환 대신 width: 0으로 전환
+  // (레이아웃에서 완전히 제거하면 main area가 갑자기 확장되어 CLS 발생)
 
   return (
     <aside
       className={cn(
-        "border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-visible relative",
+        "border-l border-mocha-100 bg-cloud-50 hidden lg:flex shrink-0 overflow-hidden relative",
+        "transition-[width,opacity] duration-300 ease-in-out",
         isResizing && "transition-none", // Disable transitions while dragging
+        !isOpen && "!w-0 border-l-0 opacity-0",
       )}
-      style={{ width }}
+      style={{ width: isOpen ? width : 0 }}
+      aria-hidden={!isOpen}
     >
       {/* Resize Handle - Left Edge */}
       <div

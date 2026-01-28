@@ -90,7 +90,7 @@ export const useSceneStore = create<SceneStore>()(
             state.scenes[id].title = updates.title;
           if (updates.content !== undefined) {
             state.scenes[id].content = updates.content;
-            // state.scenes[id].metadata.wordCount = updates.content.length; // Removed to prevent flicker
+            state.scenes[id].metadata.wordCount = updates.content.length;
           }
           if (updates.order !== undefined)
             state.scenes[id].order = updates.order;

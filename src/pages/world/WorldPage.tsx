@@ -35,6 +35,7 @@ import { calculateDiffFromSnapshot } from "@/utils/analysisUtils";
 import { useAnalyzeStory } from "@/hooks/useAI";
 import { useCharacters, useUpdateCharacter } from "@/hooks/useCharacters";
 import { useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Components
@@ -54,6 +55,7 @@ export default function WorldPage() {
   const { id: projectId } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
+  useDocumentTitle("세계관");
 
   // projectId is guaranteed to be string here
   const { data: realCharacters = [] } = useCharacters(projectId || "", {
@@ -587,6 +589,7 @@ export default function WorldPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-paper overflow-hidden relative selection:bg-mocha-100 selection:text-mocha-900">
+      <h1 className="sr-only">세계관 - 캐릭터 관계도 및 설정 관리</h1>
       {/* ─────────────────────────────────────────────────────────────
           GLOBAL LOADING OVERLAY (Shutter Animation)
           이미지 생성(image 타입)은 백그라운드에서 조용히 진행되므로 오버레이 표시 안 함

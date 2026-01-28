@@ -20,6 +20,7 @@ import type { Character } from "@/types/character";
 import type { Event } from "@/types/event";
 import type { Conflict } from "@/types/analysisResult";
 import type { ConsistencyReport } from "@/types/analysisResult";
+import { useAnalysisBufferStore } from "@/stores/useAnalysisBufferStore";
 
 // Quick Actions Definition
 const QUICK_ACTIONS = [
@@ -75,17 +76,56 @@ export interface AIChatInputRef {
 
 export const AIChatInput = forwardRef(
   (props: AIChatInputProps, ref: ForwardedRef<AIChatInputRef>) => {
-    // 1. Prepare Data Options for Suggestions
-    const conflictOptions: SuggestionItem[] = useMemo(() => {
-      if (!props.consistencyReport?.conflicts) return [];
-      return props.consistencyReport.conflicts.map((c, i) => ({
-        id: c.id,
-        label: `개연성리포트_${i + 1}`,
-        subLabel: c.description,
-        type: "conflict",
-        data: c,
-      }));
+    // 0. Get processed conflicts status
+    // Refs for props to access in imperative getters
+    const reportRef = useRef(props.consistencyReport);
+
+    useEffect(() => {
+      reportRef.current = props.consistencyReport;
     }, [props.consistencyReport]);
+
+    // [FIX] Dynamic Getter: Fetches fresh data on invoke (bypassing React render/ref lag)
+    const getFreshConflictOptions = () => {
+      const report = reportRef.current;
+      const processedConflicts =
+        useAnalysisBufferStore.getState().processedConflicts;
+
+      if (!report?.conflicts) return [];
+
+      // 1. Filter first: Only show items visible in InsightsPanel (FLAG_FOR_HUMAN)
+      // This prevents showing internal/auto-resolved conflicts that the user can't see in the panel.
+      const visibleConflicts = report.conflicts.filter(
+        (c) => c.suggestedAction === "FLAG_FOR_HUMAN",
+      );
+
+      // 2. Map processed list to preserve display index based on FULL REPORT (Standardized Numbering)
+      const mapped = visibleConflicts.map((c) => {
+        // Find stored original index in the full report so numbers match InsightsPanel (e.g. #3 stays #3)
+        // InsightsPanel logic: fullConflicts.findIndex(fc => fc.id === c.id) + 1
+        const originalIndex = report.conflicts.findIndex(
+          (fc) => fc.id === c.id,
+        );
+        const displayIndex = originalIndex >= 0 ? originalIndex + 1 : 0;
+
+        return {
+          id: c.id,
+          label: `개연성리포트_${displayIndex}`,
+          subLabel: c.description,
+          type: "conflict",
+          data: { ...c, displayIndex },
+        };
+      });
+
+      // 3. Filter using fresh store state (Resolved/Deleted)
+      return mapped.filter((item) => {
+        const c = item.data as Conflict;
+        return !processedConflicts[c.id]; // Exclude resolved/deleted/ignored
+      }) as SuggestionItem[];
+    };
+
+    // Character & Event options are static enough to keep as useMemo/Ref or similar pattern if needed.
+    // For consistency, we can keep them as refs or move to getter pattern if they had dynamic filtering.
+    // Keeping existing pattern for others for now.
 
     const characterOptions: SuggestionItem[] = useMemo(() => {
       if (!props.characters) return [];
@@ -121,15 +161,13 @@ export const AIChatInput = forwardRef(
     }, [props.events]);
 
     // Refs for options to be used in imperative handle and config
-    const conflictOptionsRef = useRef(conflictOptions);
     const characterOptionsRef = useRef(characterOptions);
     const eventOptionsRef = useRef(eventOptions);
 
     useEffect(() => {
-      conflictOptionsRef.current = conflictOptions;
       characterOptionsRef.current = characterOptions;
       eventOptionsRef.current = eventOptions;
-    }, [conflictOptions, characterOptions, eventOptions]);
+    }, [characterOptions, eventOptions]);
 
     const slashOptions: SuggestionItem[] = useMemo(
       () =>
@@ -178,7 +216,7 @@ export const AIChatInput = forwardRef(
           suggestion: {
             char: "#",
             // eslint-disable-next-line react-hooks/refs
-            ...createSuggestionConfig(() => conflictOptionsRef.current),
+            ...createSuggestionConfig(getFreshConflictOptions),
           },
         }),
         Mention.extend({ name: "characterMention" }).configure({
@@ -221,39 +259,75 @@ export const AIChatInput = forwardRef(
         events: [] as Event[],
       };
 
+      // Helper to process nodes recursively
       const processNode = (node: JSONContent) => {
         if (node.type === "text") {
           textContent += node.text;
-        } else if (node.type === "conflictMention" && node.attrs) {
-          textContent += `[#${node.attrs.label}]`;
-          const c = conflictOptions.find((opt) => opt.id === node.attrs?.id);
-          if (c) contextData.conflicts.push(c.data as Conflict);
-        } else if (node.type === "characterMention" && node.attrs) {
-          textContent += `[@${node.attrs.label}]`;
-          const c = characterOptions.find((opt) => opt.id === node.attrs?.id);
-          if (c) contextData.characters.push(c.data as Character);
-        } else if (node.type === "eventMention" && node.attrs) {
-          textContent += `[!${node.attrs.label}]`;
-          const e = eventOptions.find((opt) => opt.id === node.attrs?.id);
-          if (e) contextData.events.push(e.data as Event);
+        } else if (node.type === "conflictMention") {
+          const conflictId = node.attrs?.id;
+          // [FIX] Use getFreshConflictOptions() or reportRef logic
+          // Since suggestions might be filtered, we blindly trust the ID from the node attributes
+          // and look it up in the FULL report (reportRef) to get the data object.
+
+          const report = reportRef.current;
+          // Find the conflict object from the full report
+          const conflictIndex =
+            report?.conflicts?.findIndex((c) => c.id === conflictId) ?? -1;
+          const conflict =
+            conflictIndex >= 0 ? report?.conflicts[conflictIndex] : undefined;
+
+          if (conflict) {
+            const label = node.attrs?.label || "개연성리포트";
+            textContent += `[#${label}]`;
+
+            // [FIX] Inject displayIndex so backend prompt numbering matches UI
+            // We use the 1-based index from the full list
+            contextData.conflicts.push({
+              ...conflict,
+              displayIndex: conflictIndex + 1,
+            });
+          } else {
+            // Fallback if not found (e.g. stale ID)
+            const label = node.attrs?.label || "Unknown";
+            textContent += `[#${label}]`;
+          }
+        } else if (node.type === "characterMention") {
+          const charId = node.attrs?.id;
+          const charOption = characterOptionsRef.current.find(
+            (c) => (c.data as Character)._id === charId,
+          );
+          if (charOption) {
+            textContent += `[@${charOption.label}]`;
+            contextData.characters.push(charOption.data as Character);
+          } else {
+            textContent += `[@${node.attrs?.label || "User"}]`;
+          }
+        } else if (node.type === "eventMention") {
+          const eventId = node.attrs?.id;
+          const eventOption = eventOptionsRef.current.find((e) => {
+            const d = e.data as Event;
+            return (
+              d.eventId === eventId ||
+              (d as { event_id?: string }).event_id === eventId
+            );
+          });
+          if (eventOption) {
+            textContent += `[!${eventOption.label}]`; // Use ! for event to distinct
+            contextData.events.push(eventOption.data as Event);
+          } else {
+            textContent += `[!${node.attrs?.label || "Event"}]`;
+          }
         }
 
         if (node.content) {
           node.content.forEach(processNode);
-        } else if (
-          node.type === "paragraph" &&
-          textContent.length > 0 &&
-          !textContent.endsWith("\n")
-        ) {
+        } else if (node.type === "paragraph") {
           textContent += "\n";
         }
       };
 
       if (json.content) {
-        json.content.forEach((block) => {
-          processNode(block);
-          textContent += "\n";
-        });
+        json.content.forEach(processNode);
       }
 
       props.onSend(
@@ -305,11 +379,14 @@ export const AIChatInput = forwardRef(
     const setEditorContent = (content: string) => {
       if (!editor) return false;
 
-      const conflicts = conflictOptionsRef.current;
+      // [FIX] Use getFreshConflictOptions() instead of removed conflictOptionsRef
+      const conflicts = getFreshConflictOptions();
       const chars = characterOptionsRef.current;
       const evts = eventOptionsRef.current;
 
       let html = content;
+      // Basic escaping to prevent XSS if content comes from untrusted source,
+      // though typically this content comes from internal prompts.
       html = html
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
