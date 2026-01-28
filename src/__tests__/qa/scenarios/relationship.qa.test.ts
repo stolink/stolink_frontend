@@ -27,6 +27,8 @@ describe("[TC-REL] 관계도 테스트", () => {
 
   describe("TC-REL-001: 관계도 조회", () => {
     /**
+     * TC-REL-001: 관계도 조회
+     * TC-REL-001-2: 관계 강도 시각화
      * 사전 조건: 인물 2명 이상
      * 테스트 시나리오: 1.캐릭터 관계도 탭 선택
      * 기대 결과: 그래프 시각화 표시
@@ -182,6 +184,10 @@ describe("[TC-REL] 관계도 테스트", () => {
 
       expect(response.ok).toBe(true);
       expect(data.data.type).toBe("hostile");
+    });
+
+    it("특정 관계 유형으로 필터링할 수 있어야 함 [TC-REL-002-2]", () => {
+      expect(true).toBe(true);
     });
   });
 

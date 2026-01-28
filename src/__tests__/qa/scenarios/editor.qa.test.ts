@@ -28,10 +28,12 @@ import {
   type DocumentType,
 } from "@/services/documentService";
 
+import * as idbKeyval from "idb-keyval";
+
 vi.mock("idb-keyval", () => ({
-  get: vi.fn().mockResolvedValue(null),
-  set: vi.fn().mockResolvedValue(undefined),
-  del: vi.fn().mockResolvedValue(undefined),
+  get: vi.fn(),
+  set: vi.fn(),
+  del: vi.fn(),
 }));
 
 describe("[TC-EDT] 에디터 테스트", () => {
@@ -649,6 +651,231 @@ describe("[TC-EDT] 에디터 테스트", () => {
       // 이 테스트는 실제 에디터 UI 컴포넌트 테스트에서 구현됩니다.
       // Hook 레벨에서는 문서 내용 저장에 영향을 주지 않음을 확인합니다.
       expect(true).toBe(true);
+    });
+  });
+
+  describe("TC-EDT-001: 실시간 저장 (Content Update)", () => {
+    /**
+     * TC-EDT-001: 실시간 저장 (Content Update)
+     * TC-EDT-001-2: 자동 저장(Debounce) 검증
+     * TC-EDT-001-3: 오프라인 편집 모드
+     */
+    it("본문 내용 수정 시 로컬 스토리지에 자동 저장되어야 함 [TC-EDT-001]", async () => {
+      // Mock idbKeyval.set for local storage check
+      vi.spyOn(idbKeyval, "set").mockResolvedValue(undefined);
+
+      useDocumentStore.setState({
+        documents: {
+          "doc-1": {
+            id: "doc-1",
+            projectId: "project-1",
+            title: "테스트",
+            type: "text",
+            content: "원본 내용",
+            synopsis: "",
+            order: 0,
+            metadata: {
+              status: "draft",
+              wordCount: 4,
+              includeInCompile: true,
+              keywords: [],
+              notes: "",
+            },
+            characterIds: [],
+            foreshadowingIds: [],
+            createdAt: "2025-01-01T00:00:00Z",
+            updatedAt: "2025-01-01T00:00:00Z",
+          },
+        },
+      });
+
+      vi.spyOn(documentService, "getContent").mockResolvedValueOnce({
+        success: true,
+        data: {
+          content: "원본 내용",
+          page: 1,
+          totalPages: 1,
+          hasNext: false,
+        },
+      });
+
+      const { result } = renderHook(() => useDocumentContent("doc-1"));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Simulate content change
+      result.current.saveContent("<p>새로운 내용입니다.</p>");
+
+      // Expect idbKeyval.set to be called for local storage
+      expect(idbKeyval.set).toHaveBeenCalledWith(
+        "doc-1-content",
+        "<p>새로운 내용입니다.</p>",
+      );
+    });
+
+    it("일정 시간(Debounce) 후 자동 저장이 트리거되어야 함 [TC-EDT-001-2]", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(documentService, "updateContent").mockResolvedValueOnce({
+        success: true,
+        data: {
+          id: "doc-1",
+          wordCount: 6,
+          updatedAt: "2025-01-01T00:00:00Z",
+          page: 1,
+          totalPages: 1,
+        },
+      });
+
+      useDocumentStore.setState({
+        documents: {
+          "doc-1": {
+            id: "doc-1",
+            projectId: "project-1",
+            title: "테스트",
+            type: "text",
+            content: "원본 내용",
+            synopsis: "",
+            order: 0,
+            metadata: {
+              status: "draft",
+              wordCount: 4,
+              includeInCompile: true,
+              keywords: [],
+              notes: "",
+            },
+            characterIds: [],
+            foreshadowingIds: [],
+            createdAt: "2025-01-01T00:00:00Z",
+            updatedAt: "2025-01-01T00:00:00Z",
+          },
+        },
+      });
+
+      vi.spyOn(documentService, "getContent").mockResolvedValueOnce({
+        success: true,
+        data: {
+          content: "원본 내용",
+          page: 1,
+          totalPages: 1,
+          hasNext: false,
+        },
+      });
+
+      const { result } = renderHook(() => useDocumentContent("doc-1"));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      result.current.saveContent("<p>첫 번째 변경</p>");
+      result.current.saveContent("<p>두 번째 변경</p>");
+      result.current.saveContent("<p>세 번째 변경</p>");
+
+      // Fast-forward less than debounce time
+      vi.advanceTimersByTime(400);
+      expect(documentService.updateContent).not.toHaveBeenCalled();
+
+      // Fast-forward past debounce time
+      vi.advanceTimersByTime(100); // Total 500ms
+      await waitFor(() => {
+        expect(documentService.updateContent).toHaveBeenCalledTimes(1);
+        expect(documentService.updateContent).toHaveBeenCalledWith("doc-1", {
+          content: "<p>세 번째 변경</p>",
+        });
+      });
+
+      vi.useRealTimers();
+    });
+
+    it("오프라인 상태에서도 편집 내용이 유지되어야 함 [TC-EDT-001-3]", async () => {
+      // Simulate offline mode
+      vi.spyOn(window, "navigator", "get").mockReturnValue({
+        ...window.navigator,
+        onLine: false,
+      });
+      vi.spyOn(idbKeyval, "set").mockResolvedValue(undefined);
+
+      useDocumentStore.setState({
+        documents: {
+          "doc-1": {
+            id: "doc-1",
+            projectId: "project-1",
+            title: "테스트",
+            type: "text",
+            content: "원본 내용",
+            synopsis: "",
+            order: 0,
+            metadata: {
+              status: "draft",
+              wordCount: 4,
+              includeInCompile: true,
+              keywords: [],
+              notes: "",
+            },
+            characterIds: [],
+            foreshadowingIds: [],
+            createdAt: "2025-01-01T00:00:00Z",
+            updatedAt: "2025-01-01T00:00:00Z",
+          },
+        },
+      });
+
+      vi.spyOn(documentService, "getContent").mockResolvedValueOnce({
+        success: true,
+        data: {
+          content: "원본 내용",
+          page: 1,
+          totalPages: 1,
+          hasNext: false,
+        },
+      });
+
+      const { result } = renderHook(() => useDocumentContent("doc-1"));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Simulate content change while offline
+      result.current.saveContent("<p>오프라인에서 편집된 내용</p>");
+
+      // Expect content to be saved to local storage (IndexedDB)
+      expect(idbKeyval.set).toHaveBeenCalledWith(
+        "doc-1-content",
+        "<p>오프라인에서 편집된 내용</p>",
+      );
+      // Expect no API call to updateContent
+      expect(documentService.updateContent).not.toHaveBeenCalled();
+
+      // Simulate going online and re-fetching content
+      vi.spyOn(window, "navigator", "get").mockReturnValue({
+        ...window.navigator,
+        onLine: true,
+      });
+      vi.spyOn(idbKeyval, "get").mockResolvedValueOnce(
+        "<p>오프라인에서 편집된 내용</p>",
+      );
+      vi.spyOn(documentService, "updateContent").mockResolvedValueOnce({
+        success: true,
+        data: {
+          id: "doc-1",
+          wordCount: 10,
+          updatedAt: "2025-01-01T00:00:00Z",
+          page: 1,
+          totalPages: 1,
+        },
+      });
+
+      // Re-render hook or trigger a re-sync mechanism (e.g., focus event)
+      // For this test, we'll manually trigger the expected behavior
+      await result.current.saveContent("<p>오프라인에서 편집된 내용</p>"); // This would trigger the sync
+
+      expect(documentService.updateContent).toHaveBeenCalledTimes(1);
+      expect(documentService.updateContent).toHaveBeenCalledWith("doc-1", {
+        content: "<p>오프라인에서 편집된 내용</p>",
+      });
     });
   });
 });
