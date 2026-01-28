@@ -34,6 +34,7 @@ export const Default: Story = {
       role: "protagonist",
       profile: {
         name: "김철수",
+        characterId: "char-1",
         age: 28,
         gender: "남성",
         occupation: "회사원",
