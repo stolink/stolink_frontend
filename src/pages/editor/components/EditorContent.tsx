@@ -9,7 +9,7 @@ import TiptapEditor from "@/components/editor/TiptapEditor";
 import ScriveningsEditor from "@/components/editor/ScriveningsEditor";
 import OutlineView from "@/components/editor/OutlineView";
 import EmptyState from "@/components/editor/EmptyState";
-import EditorSkeleton from "@/components/editor/EditorSkeleton";
+import { EditorSkeleton } from "@/components/editor/EditorSkeleton";
 import type { TiptapEditorHandle } from "@/components/editor/TiptapEditor";
 import type { ScriveningsEditorHandle } from "@/components/editor/ScriveningsEditor";
 import type { Document } from "@/types/document";
