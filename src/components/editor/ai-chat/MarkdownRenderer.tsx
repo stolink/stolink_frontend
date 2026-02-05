@@ -1,8 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { resolveImageUrl } from "@/utils/imageUtils";
 import type { Character } from "@/types/character";
 import { cn } from "@/lib/utils";
+
+// react-markdown 컴포넌트 props 타입 정의
+interface MarkdownComponentProps {
+  children?: ReactNode;
+  href?: string;
+  className?: string;
+}
 
 interface TagClickHandler {
   type: "character" | "conflict" | "event";
@@ -125,7 +132,7 @@ export function MarkdownRenderer({
       <ReactMarkdown
         components={{
           // Override anchor tag to render chips for specific matching URLs
-          a: ({ href, children, ...props }) => {
+          a: ({ href, children, ...props }: MarkdownComponentProps) => {
             if (!href) return <a {...props}>{children}</a>;
 
             if (href.startsWith("match:conflict/")) {
@@ -213,30 +220,30 @@ export function MarkdownRenderer({
             );
           },
           // Custom styling for other elements
-          p: ({ children }) => (
+          p: ({ children }: MarkdownComponentProps) => (
             <p className="mb-2 last:mb-0 leading-[1.7] text-espresso-800">
               {children}
             </p>
           ),
-          strong: ({ children }) => (
+          strong: ({ children }: MarkdownComponentProps) => (
             <strong className="font-bold text-espresso-900">{children}</strong>
           ),
-          ul: ({ children }) => (
+          ul: ({ children }: MarkdownComponentProps) => (
             <ul className="list-disc pl-5 space-y-1 mb-2 marker:text-mocha-300">
               {children}
             </ul>
           ),
-          ol: ({ children }) => (
+          ol: ({ children }: MarkdownComponentProps) => (
             <ol className="list-decimal pl-5 space-y-1 mb-2 marker:text-mocha-400">
               {children}
             </ol>
           ),
-          blockquote: ({ children }) => (
+          blockquote: ({ children }: MarkdownComponentProps) => (
             <blockquote className="border-l-2 border-mocha-200 pl-4 py-1 my-2 bg-mocha-50/30 italic text-mocha-700 rounded-r-lg">
               {children}
             </blockquote>
           ),
-          code: ({ children, className }) => {
+          code: ({ children, className }: MarkdownComponentProps) => {
             // Check if it's inline code or block
             const isInline = !className?.includes("language-");
             if (isInline) {
@@ -253,20 +260,20 @@ export function MarkdownRenderer({
             );
           },
           // Disable pre styling since we handle code block in `code` (or let pre be wrapper)
-          pre: ({ children }) => (
+          pre: ({ children }: MarkdownComponentProps) => (
             <pre className="not-prose m-0 bg-transparent">{children}</pre>
           ),
-          h1: ({ children }) => (
+          h1: ({ children }: MarkdownComponentProps) => (
             <h1 className="text-xl font-bold text-espresso-900 mt-4 mb-2 first:mt-0">
               {children}
             </h1>
           ),
-          h2: ({ children }) => (
+          h2: ({ children }: MarkdownComponentProps) => (
             <h2 className="text-lg font-bold text-espresso-800 mt-3 mb-2">
               {children}
             </h2>
           ),
-          h3: ({ children }) => (
+          h3: ({ children }: MarkdownComponentProps) => (
             <h3 className="text-base font-bold text-espresso-800 mt-3 mb-1">
               {children}
             </h3>
