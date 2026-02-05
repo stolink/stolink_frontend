@@ -9,7 +9,12 @@
 
 import { useState, useMemo } from "react";
 import { X, ArrowLeft, ArrowRight, Send, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@stolink/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { Stepper } from "./Stepper";
@@ -362,6 +367,9 @@ export function PublishingWizard({
               </p>
             </div>
           </div>
+          <DialogDescription className="sr-only">
+            커뮤니티 배포 마법사입니다. 3단계에 걸쳐 작품을 배포할 수 있습니다.
+          </DialogDescription>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"

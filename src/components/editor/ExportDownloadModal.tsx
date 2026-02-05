@@ -14,7 +14,12 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@stolink/ui";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -206,6 +211,9 @@ export function ExportDownloadModal({
               </p>
             </div>
           </div>
+          <DialogDescription className="sr-only">
+            {projectTitle}의 파일 다운로드 옵션을 선택하세요.
+          </DialogDescription>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
