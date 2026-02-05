@@ -31,8 +31,12 @@ describe("[TC-CHR] 캐릭터 관리 테스트", () => {
         http.get(`${API_URL}/projects/:projectId/characters`, () => {
           return HttpResponse.json({
             data: [
-              { id: "char-1", name: "주인공", role: "protagonist" },
-              { id: "char-2", name: "조력자", role: "supporter" },
+              {
+                _id: "char-1",
+                profile: { name: "주인공" },
+                role: "protagonist",
+              },
+              { _id: "char-2", profile: { name: "조력자" }, role: "supporter" },
             ],
           });
         }),
@@ -62,9 +66,8 @@ describe("[TC-CHR] 캐릭터 관리 테스트", () => {
         http.get(`${API_URL}/characters/:id`, ({ params }) => {
           return HttpResponse.json({
             data: {
-              id: params.id,
-              name: "상세 캐릭터",
-              profile: { age: 25, occupation: "모험가" },
+              _id: params.id,
+              profile: { name: "상세 캐릭터", age: 25, occupation: "모험가" },
             },
           });
         }),
@@ -88,8 +91,8 @@ describe("[TC-CHR] 캐릭터 관리 테스트", () => {
             };
             return HttpResponse.json({
               data: {
-                id: "new-char-id",
-                name: body.profile.name,
+                _id: "new-char-id",
+                profile: { name: body.profile.name },
                 role: body.role,
               },
             });
@@ -116,7 +119,7 @@ describe("[TC-CHR] 캐릭터 관리 테스트", () => {
           };
           return HttpResponse.json({
             data: {
-              id: params.id,
+              _id: params.id,
               profile: { name: body.profile?.name || "기존이름" },
             },
           });

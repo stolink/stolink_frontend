@@ -131,7 +131,7 @@ describe("[TC-LIB] 서재 관리 테스트", () => {
 
       // Note: projectService.getAll에 search 파라미터가 ProjectListParams에 포함되어야 함
       // 현재 ProjectListParams에는 search가 없으므로 query string 직접 확인 방식으로 시뮬레이션
-      const response = await projectService.getAll({ status: "all" } as Record<
+      const response = await projectService.getAll({ search: "소설" } as Record<
         string,
         string
       >);
