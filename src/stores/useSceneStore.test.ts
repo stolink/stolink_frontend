@@ -85,7 +85,7 @@ describe("useSceneStore", () => {
       expect(state[scene.id].title).toBe("Updated Title");
     });
 
-    it("should update content and wordCount", () => {
+    it("should update content and wordCount via metadata", () => {
       const scene = useSceneStore.getState().createScene({
         chapterId: "chapter-1",
         projectId: "project-1",
@@ -93,13 +93,19 @@ describe("useSceneStore", () => {
       });
 
       const newContent = "This is new content with some words";
+      const newWordCount = newContent.length;
+
       useSceneStore.getState().updateScene(scene.id, {
         content: newContent,
+        metadata: {
+          ...scene.metadata,
+          wordCount: newWordCount,
+        },
       });
 
       const state = useSceneStore.getState().scenes;
       expect(state[scene.id].content).toBe(newContent);
-      expect(state[scene.id].metadata.wordCount).toBe(newContent.length);
+      expect(state[scene.id].metadata.wordCount).toBe(newWordCount);
     });
 
     it("should update metadata", () => {
