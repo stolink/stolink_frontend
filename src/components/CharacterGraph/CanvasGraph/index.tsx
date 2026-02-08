@@ -405,8 +405,8 @@ export const CharacterGraphCanvas = forwardRef<
     // 리렌더링 시 깨끗한 데이터를 제공하기 위해 복제해야 함.
     const graphData = useMemo(
       () => ({
-        nodes: JSON.parse(JSON.stringify(initialNodes)),
-        links: JSON.parse(JSON.stringify(processedLinks)),
+        nodes: structuredClone(initialNodes), // 불변성 보호 (Modern JS)
+        links: structuredClone(processedLinks),
       }),
       [initialNodes, processedLinks],
     ) as ForceGraphData;

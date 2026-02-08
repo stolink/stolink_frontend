@@ -9,6 +9,7 @@ import type {
   SimpleCharacter,
 } from "@/types/character";
 import { resolveImageUrl } from "@/utils/imageUtils";
+import { safeParseCharacter } from "@/schemas/characterSchema";
 
 export type { Character };
 
@@ -43,8 +44,32 @@ export interface CreateCharacterInput {
 export type UpdateCharacterInput = Partial<CreateCharacterInput>;
 
 /**
- * 백엔드 응답 → 프론트엔드 Character 타입 변환
+ * 🆕 Zod 기반 백엔드 응답 변환 (런타임 검증 포함)
+ *
+ * - 성공: Zod 스키마로 검증 + 정규화된 Character 반환
+ * - 실패: 기존 수동 매핑으로 폴백 (하위 호환성)
+ */
+function transformWithZod(
+  backendChar: Record<string, unknown>,
+  fallbackFn: (char: BackendCharacter) => Character,
+): Character {
+  const parsed = safeParseCharacter(backendChar);
+  if (parsed) {
+    // Zod 파싱 성공: 정규화된 데이터를 Character 타입으로 변환
+    return {
+      ...parsed,
+      imageUrl: resolveImageUrl(parsed.imageUrl),
+    } as unknown as Character;
+  }
+  // Zod 파싱 실패: 기존 수동 매핑으로 폴백
+  console.warn("[characterService] Zod parse failed, using legacy transform");
+  return fallbackFn(backendChar as BackendCharacter);
+}
+
+/**
+ * 백엔드 응답 → 프론트엔드 Character 타입 변환 (레거시)
  * callback_result.json 스키마 기준 (snake_case → camelCase)
+ * @deprecated Zod 기반 transformWithZod로 대체 예정
  */
 // Helper to safe parse or return object
 const safeParse = (data: unknown, defaultVal: unknown): unknown => {
@@ -393,8 +418,10 @@ export const characterService = {
     // Inject projectId if not present in backend response
     const characters = Array.isArray(response.data.data)
       ? response.data.data.map((char) => {
-          const transformed = transformBackendCharacter(
-            char as BackendCharacter,
+          // 🆕 Zod 런타임 검증 + 폴백
+          const transformed = transformWithZod(
+            char as Record<string, unknown>,
+            transformBackendCharacter,
           );
           // Ensure projectId is set (backend may omit project_id)
           if (!transformed.projectId) {
@@ -411,9 +438,13 @@ export const characterService = {
     const response = await api.get<ApiResponse<Record<string, unknown>>>(
       `/characters/${id}`,
     );
+    // 🆕 Zod 런타임 검증 + 폴백
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data as BackendCharacter),
+      data: transformWithZod(
+        response.data.data as Record<string, unknown>,
+        transformBackendCharacter,
+      ),
     };
   },
 
@@ -422,9 +453,13 @@ export const characterService = {
       `/projects/${projectId}/characters`,
       payload,
     );
+    // 🆕 Zod 런타임 검증 + 폴백
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data as BackendCharacter),
+      data: transformWithZod(
+        response.data.data as Record<string, unknown>,
+        transformBackendCharacter,
+      ),
     };
   },
 
@@ -434,9 +469,13 @@ export const characterService = {
       payload,
     );
 
+    // 🆕 Zod 런타임 검증 + 폴백
     return {
       ...response.data,
-      data: transformBackendCharacter(response.data.data as BackendCharacter),
+      data: transformWithZod(
+        response.data.data as Record<string, unknown>,
+        transformBackendCharacter,
+      ),
     };
   },
 
